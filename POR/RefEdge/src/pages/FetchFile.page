@@ -1,0 +1,3012 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page controller="FetchFileController"  standardStylesheets="false" showHeader="true" tabstyle="RefEdgeDM__tab" id="pageId" sideBar="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0">
+	<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+		<script>  
+			$(document).ready(function() {
+				$('#phHeader td.left div').css({"width": "19vw", "height": "auto"});
+			});
+		</script>
+	
+	<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >
+		<apex:pageMessages id="pgmsgId" rendered="{!AND(IsPageAccessible,isFullLicenseAccessible)}"/>   
+	    <apex:pageMessage summary="{!$Label.Insufficient_Privileges}" strength="3" severity="Info" rendered="{!IF(isFullLicenseAccessible,NOT(IsPageAccessible),isFullLicenseAccessible)}" />
+	    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+	    
+    	<apex:includeScript value="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"/>   
+    	<apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />       
+    	<div class="slds-page-header" style="padding: 0.5%;border-bottom: 1px solid #d8dde6;">
+		    <div class="slds-grid slds-wrap">
+		        <div class="slds-col ">
+		            <div class="slds-media">  
+		                <div class="slds-media__figure">
+		                    <img class="slds-icon slds-icon" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+		                </div>
+		                <div>
+                        	<h1 class="slds-text-heading--medium" title="RefEdge DM">RefEdge DM</h1>
+                        </div>
+		            </div>
+		        </div>
+			</div>
+		</div>
+    	<apex:outputPanel rendered="{!AND(IsPageAccessible,isFullLicenseAccessible,isDataLoaderEnabled)}"> 
+	     	<apex:outputPanel rendered="{!!insertDone}"> 
+		        <style>		
+		         .freezeColumn {
+		             overflow-x:scroll;
+		             overflow-y:scroll;
+		             width: 94vw;
+		             max-height: 65vh;
+		         }		        	     
+		         ul li, ol li {
+		             margin-left: 0; 
+		         }  
+		         .noSidebarCell, .sidebarCell .fixed {
+				     padding: 0;
+				 }   
+				 .slds-tabs--path .slds-is-current+.slds-is-incomplete:before, .slds-tabs_path .slds-is-current+.slds-is-incomplete:before {
+				     background-color: #019ac5;
+				 }
+				 .slds-tabs--path .slds-is-current, .slds-tabs_path .slds-is-current {
+				     background-color: #019ac5;
+				 }
+				 .slds-select_container:after, .slds-select_container:before {
+				 	display: inline-block;
+				 	float:left;
+				 }
+				 .slds-select_container .slds-select, .slds-select {
+				 	display: inline-block;
+				 }		
+				 .slds-table--bordered, .slds-table_bordered {
+				    /* border-collapse: separate; */
+				    /* border-top: 1px solid #d8dde6; */
+				    /* border-bottom: 1px solid #d8dde6; */
+				}
+				/*.slds-fade-in-open.modal {
+    					background: rgba(0,0,0,0.5);
+					}
+				.slds-text-heading--label, .slds-text-heading_label {
+				    font-size: .75rem;
+				    line-height: 1.25; 
+				    text-transform: initial !important; 
+				    letter-spacing: .0625rem;
+				}
+				.slds-table {
+    				background-color: #ffffff; 
+    				font-size: inherit; }
+ 				.slds-table--bordered tbody td, .slds-table--bordered tbody th, .slds-table_bordered tbody td, .slds-table_bordered tbody th {
+    				border-top: 0;
+				}
+				.slds-table--bordered, .slds-table_bordered {
+				    border-collapse: separate;
+				    border-top: 0; 
+				    border-bottom:0; 
+				}	
+				table#tblAcc, th#tblAcc, td#tblAcc {
+				    font-weight: bold;
+				    border: 1px solid gray;
+				}	 */
+				table#tblRequired td {
+				    border-top: 0px solid #d8dde6;
+				    white-space: normal;
+				    padding: .3rem;
+    				white-space: normal;
+				}
+				table#tblRequired,table#tblAdditional,table#tblDefault th {
+				    text-transform:none !important;
+				} 
+				 
+				table#tblAdditional td {
+				    border-top: 0px solid #d8dde6;
+				    white-space: normal;
+				    padding: .3rem;
+    				white-space: normal;
+				}
+				table#tblDefault td {
+				    border-top: 0px solid #d8dde6;
+				    padding: .3rem;
+				    white-space: normal; 
+				}
+				table#tbAtt_01 td {
+					border-top: 1px solid #d8dde6;
+				    border-bottom: 1px solid #d8dde6;
+				    border-left: 1px solid #d8dde6;
+				    border-right: 1px solid #d8dde6; 
+				    padding-left: 4px; 
+				} 
+				
+				table#tbAtt_02 td {
+					border-top: 1px solid #d8dde6;
+				    border-bottom: 1px solid #d8dde6;
+				    border-left: 1px solid #d8dde6;
+				    border-right: 1px solid #d8dde6; 
+				    padding-left: 4px; 
+				}
+				
+				table#tbAcc td {
+					border-top: 1px solid #d8dde6;
+				    border-bottom: 1px solid #d8dde6;
+				    border-left: 1px solid #d8dde6;
+				    border-right: 1px solid #d8dde6; 
+				    padding-left: 4px; 
+				} 
+				
+				table#tblRequired,table#tblAdditional,table#tblDefault {
+				    border-top: 0px solid #d8dde6;
+				    border-bottom: 0px solid #d8dde6;
+				    background-color: #ffffff;
+				}
+				.customPopup {
+				    padding: 1px;
+				    background-color: #F8F8F8;
+				    box-shadow: 0 0 20px #6D6D6D;
+				    border: 1px solid GRAY;
+				    border-radius: 5px;
+				    position: absolute;
+				    top: 20%;
+				    left: 50%;
+				    margin-left: -20%;
+				    width: 40%;
+				    z-index: 10;
+				}
+				 
+		        </style>
+		        <script>
+		        	var isAddExportPara = false;
+			       	
+
+					function refreshPage() {     
+			            window.location.href = '{!JSENCODE($CurrentPage.URL)}';
+			        }
+			        
+			        function exportAction() {
+			        
+			        	if (angular.element(document.getElementById('angularPanel')).scope().isRefContent || isAddExportPara) {
+                            document.getElementById('export').className = 'slds-tabs--path__item slds-is-current';
+                            document.getElementById('selectSorting').className = 'slds-tabs--path__item slds-is-complete';
+                            
+                            if (angular.element(document.getElementById('angularPanel')).scope().exportCount > 50000 || angular.isUndefined(angular.element(document.getElementById('angularPanel')).scope().exportCount)) { 
+                                var scope = angular.element(document.getElementById('angularPanel')).scope();
+                                scope.exportCount = 50000;  
+                                scope.$apply();
+                            } else {  
+                                window.open('/apex/ExportPage?eo=' + angular.element(document.getElementById('angularPanel')).scope().objectSelected.apiName + ',' + angular.element(document.getElementById('angularPanel')).scope().fieldToSort.apiName + ',' + angular.element(document.getElementById('angularPanel')).scope().exportCount);
+                                refreshPage();
+                            }
+                        } else { 
+                            window.open('/apex/ExportPage?eo=' + angular.element(document.getElementById('angularPanel')).scope().objectSelected.apiName);
+                            refreshPage();
+                       	}                                                                     
+			        }
+			        
+			         function downloadTemplete() {
+			         	window.open('/apex/ExportPage?eo=Template,' + angular.element(document.getElementById('angularPanel')).scope().objectSelected.apiName); 
+			         }
+			        
+			        var myapp = angular.module('myapp', []);
+			        
+			        myapp.controller('MainCtrl', function ($scope, $q) {
+			            $scope.isloading = false; 
+						$scope.namespace = '{!JSENCODE(namespace)}';
+			           	$scope.contentSelected = false;	  
+			            $scope.allFieldList = [];
+			            $scope.allDisplayFields = [];
+						$scope.dateFormat = 'yyyy-MM-dd';
+			            $scope.fieldToSort = {}; 
+			            $scope.exportCount = 1000;
+			            $scope.isImport = false;
+			            $scope.isExport = true;
+			            $scope.isTemplate = false;  
+			            $scope.errorList = [];    
+			            $scope.mappingDone = false;      //Set when mapping is completed          
+			            $scope.insertDone = false;
+			            $scope.processComplete = false;
+			            $scope.isRefContent = false;
+			            $scope.isAllowSorting = false; 
+			            $scope.isRBI = false; 
+						$scope.isRequest = false;
+			            $scope.isFileUploadNeeded = false;
+			            $scope.objectSelected;
+			            $scope.actionSelected = '0';
+						$scope.selectedHeaderObject = {};
+			            $scope.selectedHeaderObject.selectedHeaderName = {};
+			            $scope.success = [];
+						$scope.successRecords = 0;
+						$scope.failRecords = 0;
+						$scope.totalRecords = 0;
+						$scope.doneRecords = 0;
+						$scope.showDetails = false;
+						$scope.showDetailsSlds = false;
+						$scope.isSLDS = '{!isSLDS}';
+						$scope.example = 'EXAMPLE';
+						$scope.accountDescriptionSuffix = 'In the next step (Edit Mapping) of your import you will associate the Account ID column with the Associated Accounts field.';
+						$scope.accountDescriptionSuffixRequest = 'In the next step (Edit Mapping) of your import you will associate the Account ID column with the Account field.';
+						$scope.attributeDescriptionFirstSuffix = 'Child Attributes related to the same parent can be comma-separated in the same field.';
+						$scope.attributeDescriptionSecondSuffix = 'In the next step (Edit Mapping) of your import you will be able to select each of the Attribute ID columns and map them to the' ;
+						$scope.filterDescriptionSuffix = 'In the next step (Edit Mapping) of your import you will be able to select each of the Filter ID columns and map them to the' ;
+						$scope.contactDescriptionSuffix = 'In the next step (Edit Mapping) of your import you will associate the Contact ID column with the Contact field.';
+						$scope.RequiredHeader = 'These fields/columns must be included in the import file.';
+						$scope.OptionalHeader = 'These fields/columns are optional.';
+						$scope.DefaultHeader = 'If this data is not included in the import the default values (shown below) from Custom Setting will be used.';
+						$scope.DMInfoHeader = 'RefEdge DM (Data Manager) gives ReferenceEdge administrators the ability to import and export ReferenceEdge data without Salesforce administrator assistance.';
+						$scope.DMInfoSubHeader = 'There are three choices in the Select Process picklist:';
+						$scope.ImportSection = 'Used to import Reference Content, Reference Profiles and Historical Request.';
+						$scope.refContentLink = 'More information on Reference Content imports.';
+						$scope.refProfileLink = 'More information on Reference Profile imports.';
+						$scope.refRequestLink = 'More information on Historical Request imports.';
+						$scope.ExportHeader = 'Access blank templates with column headers and example data. Required fields are noted in the templates.';
+						$scope.exportObjectHeader = 'Allows for the selection of specific data as well as sorting and limiting the number of records that are exported. The columns that are included in exports can be configured in';
+						$scope.isShowInfoBox = false;
+						$scope.showInfoDivs = true;
+						$scope.isRBIModel = false;
+		            	$scope.isRefContentModel = false;
+						$scope.isRequestModel = false;
+						$scope.isAdditionalPanel = true;
+						$scope.isDefaultPanel = true;
+						$scope.isAttributePanel = true;
+						$scope.isFilterPanel = true;
+						$scope.isAccountPanel = true;
+						$scope.isContactPanel = false;
+				        $scope.infoModelHeader = 'Reference Content Imports';
+						$scope.importProcessHeader = 'All records to be imported are shown below for your review. When you are ready to continue with the Import process click “Insert”.';
+						$scope.importProcessSubHeader = 'If any reference content items are to be uploaded you will be prompted to do so at the next step.';
+						$scope.improtedMessageLabel ='All records successfully imported!';
+						$scope.oneOrMoreNotImportedLabel = 'One or more records could not be imported. These are hilighted below. An email has also been sent detailing these unsuccessful records.';
+						$scope.allURLSuccessfullyImpotedLabel = 'All URL records successfully imported!';
+						$scope.clickNextLabel = 'Click the Next button to proceed to the next step and upload content for the remaining Reference Content record(s).';
+						$scope.DMMappingHeader = 'If you are importing accounts (Account IDs) the column in your import file should be mapped to the Associated Accounts field.';
+						$scope.DMMappingSubHeader = 'If you are importing attributes each of the Attribute ID columns in your import file should be mapped to the Attributes IDs (multiple columns can be mapped to the Attributes IDs).';
+						$scope.fieldHeader = 'Fields';
+						$scope.fieldDescription = 'The fields to which you can import data.';
+						$scope.MappedToHeader = 'Mapped To';
+						$scope.MappedToDescription = 'The column headers from your import file that you have mapped to fields. Column headers that match the field names will automatically be mapped.';
+						$scope.MappedHeader = 'Map ';
+						$scope.MappedDescription = 'A picklist of unmapped column headers from your import file. As you select (map) column headers they are removed from the picklist.';
+						$scope.insertFileText = 'Use the Choose File button to select the file that should be uploaded for each Reference Content record.';
+						$scope.recordsSuccessfullyCreated = 'All records successfully created!';
+						$scope.isFileType = false;
+						$scope.isUrlType = false;
+						$scope.isFileTypeFailed = false;
+						$scope.isUrlFailed = false; 
+						$scope.isSelect = true;
+						//initial function which is called on page load
+						$scope.load = function() {
+							
+							$scope.getDateFormat().then(function(result) {
+								if (result != null) {  
+									$scope.dateFormat = result;
+								}
+							});
+						}
+						
+						//Cast date format according to locale
+						$scope.getDateFormat = function () {
+							var deferred = $q.defer();
+							Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.FetchFileController.getDateFormat}', 
+							function(result, event) {
+								deferred.resolve(result);
+							},
+							{escape: true}
+							);
+							return deferred.promise;
+						}
+						$scope.getRecords = function() {   
+							$scope.headersObjectList.splice(0,1);
+			                var indexQuotes = $scope.content.indexOf('"');
+			                var tempContent = $scope.content;
+			                			                
+		                    while (indexQuotes >= 0) {
+		                        tempContent = tempContent.replace('"' , '^');
+		                        var endIndex = tempContent.indexOf('"');
+		                        tempContent = tempContent.replace('"' , '^');
+		                        $scope.content = $scope.content.slice(0 , indexQuotes) 
+		                                            + $scope.content.slice(indexQuotes, endIndex).replace(/\n/gi,'^') 
+		                                            + $scope.content.slice(endIndex , $scope.content.length) ;                   
+		                        indexQuotes = tempContent.indexOf('"')
+		                    } 		                    
+		                               
+			                var records = $scope.content.split('\n'); 
+			                
+			                for (var index = 1 ; index < records.length - 1 ; index++) {
+			                    var startIndex = records[index].indexOf('"'); 
+			                    
+			                    while (startIndex >= 0) {
+			                        records[index] = records[index].replace('"' , '');
+			                        var endIndex = records[index].indexOf('"');
+			                        records[index] = records[index].replace('"' , '');
+			                        records[index] = records[index].slice(0 , startIndex) 
+			                                            + records[index].slice(startIndex, endIndex).replace(/,/gi,';') 
+			                                            + records[index].slice(endIndex , records[index].length) ;                   
+			                        startIndex = records[index].indexOf('"')
+			                    }                
+			                    var entry = records[index].split(',');
+			                    var dataObject = new Map();                
+			                    dataObject["showBrowse"] = false;
+								dataObject["isNew"] = false;
+			                    dataObject["success"] = false;
+			                    dataObject["detail"] = '';
+			                    
+			                    for (var colIndex = 0 ; colIndex < entry.length ; colIndex++) {
+			                        
+			                        if ($scope.headersObjectList[colIndex].isMapped) {  
+			                             
+										if ($scope.isRefContent && $scope.headersObjectList[colIndex].mappedTo == 'Id' && entry[colIndex] == '') {
+			                                dataObject["isNew"] = true;                                                     
+			                            }   
+
+			                            if ($scope.isRefContent && $scope.headersObjectList[colIndex].mappedTo == $scope.namespace + 'Content_URL__c' && entry[colIndex] == '') {
+			                                dataObject["showBrowse"] = true;                                                     
+			                            }   
+			                             
+			                            if (dataObject[$scope.headersObjectList[colIndex].mappedTo] == null) {
+			                                var tempString = entry[colIndex].replace(/"/gi,'').replace(/;/gi,',');
+			                                dataObject[$scope.headersObjectList[colIndex].mappedTo] = tempString.replace(/\^/gi,'\n');
+			                            } else {
+			                                dataObject[$scope.headersObjectList[colIndex].mappedTo] = dataObject[$scope.headersObjectList[colIndex].mappedTo] + ',' + entry[colIndex].replace(/"/gi,'').replace(/;/gi,',');
+			                            }                              
+			                        }                                       
+			                    }                
+			                    $scope.dataList[index - 1] = dataObject;       
+			                }
+							            
+			                if ($scope.dataList.length > 0 ) {
+				                var errorRecord = [];                
+			                    errorRecord.push("Error");
+			                    $scope.totalRecords = $scope.dataList.length;
+			                    angular.forEach(Object.keys($scope.dataList[0]),function(data, index) {  
+			                    
+			                    	if (data != 'isNew' && data != 'showBrowse' && data != 'success' && data != 'detail') {                   
+		                        		errorRecord.push(data);
+		                     		}
+		                    	});              
+		                    	$scope.errorList.push(errorRecord);
+								$scope.mappingDone = true;
+                            	document.getElementById("editMapping").className = 'slds-tabs--path__item slds-is-complete';    
+								document.getElementById("upload").className = 'slds-tabs--path__item slds-is-current'; 
+			                } else {
+								alert('There are no records in the import. Please use the Back button and select another import file.');
+								$scope.mappingDone = false;
+							}
+			            }
+			            
+			            $scope.getImportObjects = function() {
+			                $scope.importObjects = [];
+			                Visualforce.remoting.Manager.invokeAction(
+			                    '{!$RemoteAction.FetchFileController.getImportObjects}' ,
+			                    
+			                    function(result, event){   
+			                    		var select = {};
+			                    		select['label'] = '--Select--';
+			                    		select['apiName'] = '--Select--';
+			                        	$scope.importObjects.push(select);
+			                        
+			                        if (result != null) {
+		                        		    	$scope.importObjects = 	$scope.importObjects.concat(result);
+		                        		    	$scope.objectSelected = $scope.importObjects[0];  
+			                        }
+			                    } , {} 
+			                );                  
+			            }
+			            
+			            $scope.getExportObjects = function() {
+			                $scope.exportObjects = [];
+			                Visualforce.remoting.Manager.invokeAction(
+			                    '{!$RemoteAction.FetchFileController.getExportObjects}' ,
+			                    
+			                    function(result, event){   
+			                    		var select = {};
+			                    		select['label'] = '--Select--';
+			                    		select['apiName'] = '--Select--';
+			                        	$scope.exportObjects.push(select);
+			                        
+			                        if (result != null) {
+		                        			$scope.exportObjects = 	$scope.exportObjects.concat(result);
+		                        			$scope.objectSelected = $scope.exportObjects[0]; 
+			                        }
+			                    } , {} 
+			                );                  
+			            }
+			            
+			            $scope.showModel = function(objApiName, objName) {  
+			            	$scope.referenceData = [];
+			            	$scope.isloading = true;
+			                Visualforce.remoting.Manager.invokeAction(
+			                    '{!$RemoteAction.FetchFileController.getReferenceFields}' , objApiName,
+			                    
+			                    function(result, event){   
+			                        
+									if (result != null) {
+		                        		  $scope.referenceData = result;
+										  
+										  if (objName == 'Library ID') {
+										  	$scope.modelHeader = 'Library';
+										  } else {
+										  	$scope.modelHeader = objName;
+										  } 
+
+		                        		  if ($scope.isSLDS == 'true') {
+		                        		  	$scope.showDetailsSlds = true;
+		                        		  } else {
+		                        		  	$scope.showDetails = true;
+		                        		  }
+		                        		  $scope.isloading = false;
+		                        		  $scope.$apply(); 
+			                        } else {
+			                        	$scope.isloading = false;
+			                        }
+			                    } , {} 
+			                ); 
+			            }
+			            $scope.getHeaders = function() {
+			                $scope.headers = [];           
+			                $scope.headersObjectList = [];        
+			                var headerObject = {};
+		                    $scope.headers[0] = '---Select---';
+		                    headerObject.name = $scope.headers[0];
+		                    headerObject["isMapped"] = false;
+		                    headerObject["mappedTo"] = '';
+		                    $scope.headersObjectList[0] = headerObject;
+			                var headerList = $scope.content.split('\n');
+			                headerList = headerList[0].split(',');
+			                 
+			                for(var index = 0 ; index < headerList.length ; index++) {
+			                    var headerObject = {};
+			                    $scope.headers[index + 1] = headerList[index].replace(/"/gi,'').trim();
+			                    headerObject.name = $scope.headers[index + 1];
+			                    headerObject["isMapped"] = false;
+			                    headerObject["mappedTo"] = '';
+			                    $scope.headersObjectList[index + 1] = headerObject;             
+			                }   
+			                $scope.selectedHeaderObject.selectedHeaderName = $scope.headersObjectList[0];
+			            }  
+			              
+			            $scope.resetPath = function (resetIds) {
+				            var idsToReset = resetIds.split(',');
+				             
+				            angular.forEach(idsToReset, function(value, key) {
+				            		document.getElementById(value).className = 'slds-tabs--path__item slds-is-incomplete';  
+				            });
+			            }  
+
+						$scope.convertToDate = function (date) {
+	                		date = (date == null) ? '' : date;
+							try {
+								var tempDF = $scope.dateFormat;
+								var tempDate = date + '';
+								tempDF = tempDF.split(/[./-]/g);
+								tempDate = tempDate.split(/[./-]/g);
+								var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+								var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+								var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+								var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+								
+								if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+									
+									if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+										return null;
+									}
+									return dateString;
+								} else {
+									return null;
+								}
+							} catch (e) {
+								return null;
+							}
+						}          
+			            
+			            //remoteAction call
+			            $scope.insertRemoteRefContent = function(key) { 
+			                var deferred = $q.defer();          
+			                var value = $scope.dataList[key];  
+							angular.forEach( $scope.allFieldList, function(field) {
+								
+								if (field.dataType == 'DATE' || field.dataType == 'DATETIME') {
+									var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+									
+									if (value[field.apiName] != null && value[field.apiName] != '' && !value[field.apiName].match(regEx))  {
+										var dateEntry = $scope.convertToDate(value[field.apiName]);
+										
+										if (dateEntry == null) {
+											var localTime = new Date(value[field.apiName]);
+											
+											if (localTime != 'Invalid Date') {
+												var year = localTime.getUTCFullYear();
+												var month = localTime.getMonth() +1;
+												var date = localTime.getDate();
+												var hours = localTime .getHours();
+												var minutes = localTime .getMinutes();
+												var seconds = localTime .getSeconds();
+												value[field.apiName] = year + "-" + month + "-" + date + " " + hours + ":" + minutes + ":" + seconds;
+											}
+										} else {
+											value[field.apiName] = dateEntry;
+										}
+									}
+								}
+							});
+			                            
+			                   	console.log(value);               
+			                    Visualforce.remoting.Manager.invokeAction(
+			                        '{!$RemoteAction.FetchFileController.insertRecords}',
+			                        value, $scope.objectSelected.apiName,			                        
+			                        function(result, event) {
+			                        	$scope.$apply(function() {
+			                                  
+			                                if (result.success == 'true') {
+												$scope.successRecords = $scope.successRecords + 1;
+			                                    deferred.resolve('refContent Inserted');
+												$scope.dataList[key].success = result.success;
+			                                    $scope.dataList[key].detail = $scope.parseResult(result.value);
+												$scope.dataList[key].data = $scope.parseResult(result.data);
+			                                    
+			                                    if ($scope.dataList[key].showBrowse == true) { 
+													var successElement = {};    
+													successElement.key = result.value;
+													successElement.data = $scope.parseResult(result.data);            
+													successElement.isNew = JSON.stringify($scope.dataList[key].isNew);     
+			                                        $scope.success.push(successElement);
+			                                        $scope.isFileUploadNeeded = true;
+													$scope.isFileType = true;
+			                                    } else {
+													 $scope.isUrlType = true;
+												}			                                    
+			                                } else {
+			                                	$scope.dataList[key].success = result.success;
+			                                    $scope.dataList[key].detail = $scope.parseResult(result.value);
+												$scope.failRecords = $scope.failRecords + 1;    
+			                                    deferred.resolve('refContent Failed');
+												
+												// Just mantaining flag for error.
+												if ($scope.dataList[key].showBrowse == true) { 
+													 $scope.isFileTypeFailed = true;
+												} else {
+													 $scope.isUrlFailed = true;
+												}
+			                                }
+			                            });
+			                        }, {timeout: 240000}
+			                    );               
+			                return deferred.promise;
+			            }
+			            
+			            $scope.insertRemote = function(key) {     
+			                $scope.isloading = true; 
+			                var dataTable = document.getElementById('insertBlock');
+			                dataTable.style = "opacity: 0.5";  
+			            	$scope.doneRecords = key;
+							
+			                if (key ==  $scope.dataList.length) { 
+			                	$scope.insertDone = true;
+			                    $scope.isloading = false;
+								setTotalCount('' + $scope.dataList.length);
+			                    dataTable.style = "opacity: 1";		                    
+			                    document.getElementById("upload").className = 'slds-tabs--path__item slds-is-complete';			                    
+			                   
+			                    if (!$scope.isFileUploadNeeded) {                        
+									document.getElementById("complete").className = 'slds-tabs--path__item slds-is-current';                        
+								} 
+			                } else {
+			                    $scope.insertRemoteRefContent(key).then(
+			                    
+			                        function() {             
+			                            $scope.insertRemote(key + 1);
+			                        }                   
+			                    );          
+			                }
+			            }   
+			            
+			            //remoteAction call
+			            $scope.getFields = function(isExport) {	
+			            	var deferred = $q.defer();		             
+				            $scope.namespace = '{!namespace}'; 
+				            var index = 0;  
+				            $scope.allFieldList = [];
+				            				  
+				            if ($scope.allFieldList.length == 0) {      
+				             	$scope.fieldToSort = {};
+				                Visualforce.remoting.Manager.invokeAction(
+				                    '{!$RemoteAction.FetchFileController.getFields}' ,
+									$scope.objectSelected.apiName,
+									isExport,
+				                    function(result, event) { 
+										if (result != null) {
+											$scope.isAdditionalPanel = false;
+											$scope.isDefaultPanel = false;
+											$scope.isAttributePanel = false;
+											$scope.isFilterPanel = false;
+											$scope.isAccountPanel = false;   
+											$scope.isContactPanel = false;                
+											$scope.allDisplayFields = result; 
+											$scope.allFieldList = [];  
+											
+
+											for (i = 0; i < $scope.allDisplayFields.length; i++) {
+												
+												if ($scope.allDisplayFields[i].lstField != null &&  $scope.allDisplayFields[i].lstField['section'] != null) {
+												
+													if ($scope.allDisplayFields[i].lstField.section == 'FILTERS') {
+														$scope.isFilterPanel = true
+													} else if ($scope.allDisplayFields[i].lstField.section == 'ATTRIBUTES') {
+														$scope.isAttributePanel = true
+													} else if ($scope.allDisplayFields[i].lstField.section == 'DEFAULT') {
+														$scope.isDefaultPanel = true;
+													} else if ($scope.allDisplayFields[i].lstField.section == 'ADDITIONAL') {
+														$scope.isAdditionalPanel = true;
+													} else if ($scope.allDisplayFields[i].lstField.section == 'ACCOUNTS') {
+														$scope.isAccountPanel = true;
+													} else if ($scope.allDisplayFields[i].lstField.section == 'CONTACTS') {
+														$scope.isContactPanel = true;
+													} 		
+												}
+												if (!$scope.allDisplayFields[i].onlyShow) {
+													$scope.allFieldList.push($scope.allDisplayFields[i]);
+												}  
+											}
+											console.log($scope.allFieldList);
+											
+											$scope.fieldToSort = $scope.allFieldList[index];   
+											deferred.resolve(result);
+										}
+				                    }
+				                );
+				            } 
+				            return deferred.promise;    
+			            }
+			            
+			            $scope.getMapped = function() {		                  
+			                $scope.getMappedFields().then(function(result) {
+								$scope.allFieldList = [];
+								
+								for (i = 0; i < result.length; i++) {
+									if (!result[i].onlyShow) {
+										$scope.allFieldList.push(result[i]);
+									}  
+								}
+			            	
+            	    			angular.forEach( $scope.allFieldList, function(value, key) {
+			                            
+			                      if (($scope.headers.indexOf(value.name)) > -1 || ($scope.headers.indexOf(value.apiName) > -1)) {
+			                          var hitIndex = ($scope.headers.indexOf(value.name) > -1 ) ? $scope.headers.indexOf(value.name) :  $scope.headers.indexOf(value.apiName);                     
+			                          $scope.headersObjectList[hitIndex].isMapped = true;
+			                          $scope.headersObjectList[hitIndex].mappedTo = value.apiName;
+			                          value.isMapped = true;
+			                          value.mappedTo.push($scope.headersObjectList[hitIndex].name);
+			                      }
+			                    });   
+			                }); 
+			            }
+			            
+			            //remoteAction call
+			            $scope.getMappedFields = function() {
+			            	
+			            		$scope.namespace = '{!namespace}';
+				            	var deferred = $q.defer();
+								Visualforce.remoting.Manager.invokeAction(
+			                    '{!$RemoteAction.FetchFileController.getFields}',
+								$scope.objectSelected.apiName,
+								false,
+			                    function(result, event) {
+			                        deferred.resolve(result);
+			                    },
+			                    {escape: true}
+			                );
+			                return deferred.promise;
+			            }
+			            
+			            $scope.initializeLists = function() {
+			                var stringToPass = {};
+			                $scope.showInfoDivs = false;
+							angular.forEach($scope.success, function(element) {
+								var dataElement = {};
+								dataElement['data'] = element.data;
+								dataElement['isNew'] = element.isNew;
+								stringToPass[element.key] = dataElement;
+							} );
+			                
+			                angular.forEach($scope.dataList, function(value, key) {
+			                          
+			                	if (value.success == 'false') {                
+			                    	var errorObject = [];
+			                    
+			                    	angular.forEach(Object.keys(value),function(data, index) {  
+			                    
+				                    	if (data != 'showBrowse' && data != 'success' && data != 'isNew') {                   
+			                        		errorObject.push(value[data]);
+			                     		}
+			                    	});              
+			                    	$scope.errorList.push(errorObject);
+			                 	}
+		               		});
+			                initializeRefIdList(JSON.stringify($scope.errorList), JSON.stringify(stringToPass),$scope.objectSelected.apiName);
+			                      
+			                if ($scope.isFileUploadNeeded) {                        
+			                    document.getElementById("fileUpload").className = 'slds-tabs--path__item slds-is-current';                        
+			                }      
+			                $scope.processComplete = true;
+			            }
+			                     
+			            $scope.showContent = function($fileContent) {
+				            document.getElementById("selectData").className = 'slds-tabs--path__item slds-is-complete';
+				            document.getElementById("editMapping").className = 'slds-tabs--path__item slds-is-current';
+			                $scope.content = $fileContent;
+			                $scope.contentSelected = true;
+							var input = document.getElementById('fileCSV');
+                            input.value = "";
+			                $scope.headers = [];
+			                $scope.dataList = [];
+			                $scope.getHeaders();
+			                $scope.getMapped();
+			            };
+			            
+			            $scope.checkRequiredMapping = function() {
+			                var unMappedRequired = [];
+			                var indexOfURL = -1;
+			                 
+			                for (var index = 0 ; index < $scope.allFieldList.length ; index++) {
+			                    
+			                    if ($scope.allFieldList[index].isRequired == true && $scope.allFieldList[index].isMapped == false) {
+			                        unMappedRequired.push($scope.allFieldList[index].name);
+			                    }   
+			                }
+			                
+			                if (unMappedRequired.length > 0) {
+			                    alert('{!$Label.Req_Fields_Unmapped}' + ' : ' + unMappedRequired);
+			                } else {
+			                    var errorRecord = [];                
+			                    errorRecord.push("Error");
+			                    
+			                    angular.forEach($scope.headersObjectList, function(value, key) {
+			                    
+			                      if (value.isMapped == true) {
+			                        errorRecord.push(value['mappedTo']);
+			                      }               
+			                    });
+			                    $scope.checkPermissions(errorRecord).then(function(result) {
+			                    
+				                    if (result.indexOf('true') != -1) {
+                                        $scope.getRecords();  
+                                    } else {
+                                        var tempResult = result;  
+                                        tempResult = tempResult.split(":");
+                                        tempResult = tempResult.length > 1 ? tempResult[1] : tempResult
+                                        alert(tempResult);
+                                    } 
+			                   	});           
+			                }                
+			            };
+			            
+			            //remoteAction call
+			            $scope.checkPermissions = function(errorRecord) {            	
+			            	var deferred = $q.defer();
+			                Visualforce.remoting.Manager.invokeAction(
+			                      '{!$RemoteAction.FetchFileController.checkPermissions}', errorRecord,
+			                      $scope.objectSelected.apiName,
+			                     function(result, event) {                        
+			                      deferred.resolve(result);
+			                     },
+			                    {escape: true}
+			                ); 
+			                return deferred.promise;     
+			            }
+			            
+			            $scope.showShort = function(item) {       
+			            
+			                if (item.length > 50) {
+			                    return item.substr(0,50) + '...';
+			                } else {
+			                    return item ;
+			                }
+			            }
+			            
+			            $scope.checkObjectSelected = function() {			             
+			              	$scope.isRefContent = false;
+			              	$scope.isRBI = false;
+							$scope.isRequest = false;
+			              	
+			                if ($scope.objectSelected.apiName == 'Reference_Content__c') {   
+			                		$scope.isRefContent = true; 
+									$scope.isAllowSorting = true;
+			                		isAddExportPara = true;
+			                } else if ($scope.objectSelected.apiName == 'Reference_Basic_Information__c') {
+			                		$scope.isRBI = true;
+			                		$scope.isAllowSorting = true;
+			                		isAddExportPara = true;
+			                		$scope.isRefContent = false;
+			                } else if ($scope.objectSelected.apiName == 'Reference_Request__c') {
+			                		$scope.isRequest = true;
+			                		$scope.isAllowSorting = true;
+			                		isAddExportPara = true;
+			                } else if ($scope.objectSelected.apiName == 'Account_with_Attributes__c' || $scope.objectSelected.apiName == 'Contact_with_Attributes__c' || $scope.objectSelected.apiName == 'Content_with_Attributes__c' || $scope.objectSelected.apiName == 'Unspecified_Request__c' || $scope.objectSelected.apiName == 'Reference_Request_Account__c') {
+			                		//$scope.isRBI = true;
+			                		$scope.isAllowSorting = true;
+			                		isAddExportPara = true;
+			                		$scope.isRefContent = false;
+			                } else {
+			                	$scope.isAllowSorting = false;
+			                	$scope.isRefContent = false;
+			                	isAddExportPara = false;
+			                }
+			            }
+			            
+			            $scope.setObjectSelected = function(isExport) { 
+							$scope.checkObjectSelected();
+							$scope.allFieldList = [];
+							$scope.isShowInfoBox = false;
+							$scope.isloading = true;
+
+							if ($scope.actionSelected == '2') {
+								$scope.getFields(isExport).then(function() {
+									document.getElementById('selectObjectTemplate').className = 'slds-tabs--path__item slds-is-complete';			                    
+									document.getElementById('template').className = 'slds-tabs--path__item slds-is-current';
+									//document.getElementById("templateDownload").style.marginLeft = "25vw"; 
+								}); 
+							} else {
+								$scope.getFields(isExport).then(function() {
+
+									if (($scope.isRefContent || $scope.isAllowSorting) && $scope.isExport) { 
+										document.getElementById('selectObjectExport').className = 'slds-tabs--path__item slds-is-complete';			                    
+										document.getElementById('export').className = 'slds-tabs--path__item slds-is-incomplete';
+										document.getElementById("actionSelector").style.marginLeft = "5vw";
+										document.getElementById("objectSelectorExport").style.marginLeft = "13vw";
+										document.getElementById("exportFunctionData").style.marginLeft = "12vw";
+										document.getElementById("exportFunctionData").style.marginRight = "0";
+										document.getElementById('selectSorting').className = 'slds-tabs--path__item slds-is-current';	
+									} else if ($scope.isImport) {
+									 
+											if ($scope.isImport) {
+												document.getElementById('selectObjectImport').className = 'slds-tabs--path__item slds-is-complete';
+												document.getElementById('selectData').className = 'slds-tabs--path__item slds-is-current';			                    	
+											} else {
+											document.getElementById('selectObjectExport').className = 'slds-tabs--path__item slds-is-complete';			                    
+											document.getElementById('export').className = 'slds-tabs--path__item slds-is-incomplete';
+											document.getElementById("actionSelector").style.marginLeft = "7vw";
+											document.getElementById("objectSelectorExport").style.marginLeft = "7vw";
+											document.getElementById("exportFunctionData").style.marginLeft = "7vw";
+											document.getElementById('selectSorting').className = 'slds-tabs--path__item slds-is-current';
+										} 
+									} else  {
+											document.getElementById('selectObjectExport').className = 'slds-tabs--path__item slds-is-complete';			                    
+											document.getElementById('export').className = 'slds-tabs--path__item slds-is-current';
+											document.getElementById("exportFunctionData").style.marginLeft = "25vw";     
+											document.getElementById("objectSelectorExport").style.marginLeft = "21vw";
+											$scope.allFieldList = [];
+									}
+								});
+							}
+							$scope.isloading = false;
+			            }
+			            
+			            $scope.parseResult = function(result) {
+							if (result != null) {
+								result = result.replace(/&quot/gi, '"');
+								result = result.replace(/&amp/g, '&');
+								result = result.replace(/&lt/g, '<');
+								result = result.replace(/&gt/g, '>');
+								result = result.replace(/;/g, '');
+								result = result.replace(/&#39/g, '\'');
+								return result;
+							}
+						}
+			            
+			            $scope.setActionSelected = function() {
+			            	$scope.isRefContent = false; 
+							$scope.isRBI = false;
+							$scope.isRequest = false;
+ 
+			                if ($scope.actionSelected == '1') {
+			                    $scope.resetPath('selectProcessImport,selectObjectImport,selectData,editMapping');
+			                    document.getElementById('selectProcessImport').className = 'slds-tabs--path__item slds-is-complete';
+			                    document.getElementById('selectObjectImport').className = 'slds-tabs--path__item slds-is-current';
+			                    document.getElementById("actionSelector").style.marginLeft = "3vw";  
+								document.getElementById("objectSelectorImport").style.marginLeft = "4vw";            
+			                    $scope.isImport = true; 
+			                    $scope.isExport = false; 
+			                    $scope.isTemplate = false; 
+								$scope.isSelect = false;
+			                    $scope.objectSelected = $scope.importObjects[0];
+			                } else if ($scope.actionSelected == '2') {
+			                    $scope.resetPath('selectProcessTemplate,selectObjectExport,template');
+			                    document.getElementById('selectProcessTemplate').className = 'slds-tabs--path__item slds-is-complete';
+			                   	document.getElementById('selectObjectTemplate').className = 'slds-tabs--path__item slds-is-current';
+			                    document.getElementById("actionSelector").style.marginLeft = "10vw";	
+								document.getElementById("objectSelectorImport").style.marginLeft = "21vw";   		                    
+			                    $scope.isTemplate = true; 
+			                    $scope.isImport = false; 
+			                    $scope.isExport = false;
+								$scope.isSelect = false;
+			                    $scope.objectSelected = $scope.importObjects[0];			                    
+			                } else if ($scope.actionSelected == '3') {
+			                    $scope.resetPath('selectProcessExport,selectObjectExport,export');
+								document.getElementById("objectSelectorImport").style.marginLeft = "20vw";   
+			                    document.getElementById('selectProcessExport').className = 'slds-tabs--path__item slds-is-complete';
+			                    document.getElementById('selectObjectExport').className = 'slds-tabs--path__item slds-is-current';			                    
+			                    document.getElementById("actionSelector").style.marginLeft = "10vw";
+			                    $scope.isExport = true; 
+			                    $scope.isImport = false; 
+			                    $scope.isTemplate = false;	
+			                    $scope.isRefContent = false;
+			                    $scope.isAllowSorting = false; 
+								$scope.isSelect = false;
+			                    $scope.objectSelected = $scope.exportObjects[0];   		                    
+			                } else {
+			                    $scope.isTemplate = true;
+			                    $scope.isImport = false; 
+			                    $scope.isExport = false;
+								$scope.isSelect = true;
+			                }
+			                $scope.isRefContent = false;     
+		            	} 
+		            	
+		            	$scope.resetToEditMapping = function() { 
+		            	
+		            		if ($scope.mappingDone && !$scope.insertDone) {
+		            			$scope.errorList = [];
+			            		$scope.dataList = [];
+		                        var headerObject = {};		                    
+			                    headerObject.name = '---Select---';
+			                    headerObject["isMapped"] = false;
+			                    headerObject["mappedTo"] = '';
+		                        $scope.headersObjectList.unshift(headerObject);   
+		                        $scope.selectedHeaderObject.selectedHeaderName = headerObject;
+		                        $scope.mappingDone = false;
+			            		document.getElementById("editMapping").className = 'slds-tabs--path__item slds-is-current';    
+		                        document.getElementById("upload").className = 'slds-tabs--path__item slds-is-incomplete';		                        
+		            		}		            			
+		            	}
+		            	$scope.resetToSelectObject = function() {
+		            		if ($scope.contentSelected && !$scope.insertDone) {
+		            			$scope.resetToUpload();
+		            		}
+		            		if ($scope.isRefContent) {
+		            			$scope.isRefContent = false;
+			            		$scope.objectSelected = $scope.importObjects[0];     
+			            		document.getElementById("selectObjectImport").className = 'slds-tabs--path__item slds-is-current';    
+		                        document.getElementById("selectData").className = 'slds-tabs--path__item slds-is-incomplete';		
+		            		}	
+		            		
+		            	}
+		            	
+		            	$scope.resetToSelectProcess = function() {
+		            	
+		            		if ($scope.objectSelected.apiName != '--Select--') {
+		            			$scope.objectSelected = $scope.importObjects[0];
+		            			$scope.resetToSelectObject();
+		            		}		            		
+		            		$scope.actionSelected = '0';
+							$scope.isSelect = '0';
+		            		document.getElementById("selectProcessImport").className = 'slds-tabs--path__item slds-is-current';    
+	                        document.getElementById("selectObjectImport").className = 'slds-tabs--path__item slds-is-incomplete';	
+		            	}
+		            			            	   
+		            	$scope.resetToUpload = function() {
+		            		if ($scope.mappingDone  && !$scope.insertDone) {  
+		            			$scope.resetToEditMapping();
+		            		}
+		            	
+		            		if ($scope.contentSelected && !$scope.insertDone) {	           			
+			            		$scope.content = '';
+			                    $scope.contentSelected = false;
+								var input = document.getElementById('fileCSV');
+                                input.value = "";
+			                    $scope.headers = [];           
+				                $scope.headersObjectList = [];
+				                $scope.allFieldList = [];                
+				                var headerObject = {};
+			                    $scope.headers[0] = '---Select---';
+			                    headerObject.name = $scope.headers[0];
+			                    headerObject["isMapped"] = false;
+			                    headerObject["mappedTo"] = '';
+			                    $scope.headersObjectList[0] = headerObject;
+			                    $scope.selectedHeaderObject.selectedHeaderName = {};	
+			                    document.getElementById("selectData").className = 'slds-tabs--path__item slds-is-current';
+					            document.getElementById("editMapping").className = 'slds-tabs--path__item slds-is-incomplete';
+					            $scope.getFields(false);
+		            		}		            		
+		            	} 
+			           
+			            $scope.handleHeaderSelect = function(dataItem, headerObject) {
+							if (headerObject!= null) {                  
+								
+								if ($scope.headers.indexOf(headerObject.name) != 0) {
+									headerObject.isMapped = true ;           
+									headerObject.mappedTo = dataItem.apiName;                                 
+									dataItem.mappedTo.push(headerObject.name);
+									dataItem.isMapped = true;
+									$scope.selectedHeaderObject.selectedHeaderName = $scope.headersObjectList[0];  
+								} else {
+									$scope.selectedHeaderObject.selectedHeaderName = $scope.headersObjectList[0];  
+								} 			                                
+							}
+						}
+			            
+			            $scope.redirectToCustomSetting = function() { 
+			            	window.open('{!URLFOR($Page.DataLoaderSettingPage)}', '_blank'); 
+		            	}
+		            	
+		            	
+		            	$scope.openInfoBox = function(obj) {   
+		            		var deferred = $q.defer();		  
+		            		var index = 0;  
+				            $scope.allFieldList = [];  
+							
+							if (obj == 'Reference_Basic_Information__c') {  
+								$scope.infoModelHeader = 'Reference Profile Imports';
+							} else if (obj == 'Reference_Content__c') {  
+								$scope.infoModelHeader = 'Reference Content Imports';
+							} else { 
+								$scope.infoModelHeader = 'Historical Request Imports';
+							}	
+
+							if (obj == 'Reference_Basic_Information__c') {  
+								$scope.isRBIModel = true;
+								$scope.isRequestModel = false;
+								$scope.isRefContentModel = false; 
+							} else if (obj == 'Reference_Content__c') {  
+								$scope.isRBIModel = false;
+								$scope.isRequestModel = false;
+								$scope.isRefContentModel = true;  
+							} else {
+								$scope.isRBIModel = false;
+								$scope.isRefContentModel = false; 
+								$scope.isRequestModel = true;
+							}	 
+							$scope.showInfoDivs = true;
+							$scope.isShowInfoBox = true; 
+							$scope.isOpenFromInfoBox = true; 
+							
+							if ($scope.isSLDS == 'true') {
+								$scope.showDetailsSlds = true;
+							} else {
+								$scope.showDetails = true;
+							}
+		                        		  
+				            if ($scope.allFieldList.length == 0) {
+								$scope.isloading = true;      
+				             	$scope.fieldToSort = {};
+				                Visualforce.remoting.Manager.invokeAction(
+				                    '{!$RemoteAction.FetchFileController.getFields}' ,
+									obj,
+									false,
+				                    function(result, event) { 
+				                    
+										if (result != null) {                    
+											$scope.allFieldList = []; 
+											$scope.allDisplayFields = result; 
+											
+											for (i = 0; i < $scope.allDisplayFields.length; i++) {
+												if (!$scope.allDisplayFields[i].onlyShow) {
+													$scope.allFieldList.push($scope.allDisplayFields[i]);
+												}  
+											}
+											console.log($scope.allFieldList);
+											
+											$scope.fieldToSort = $scope.allFieldList[index];   
+											$scope.showInfoDivs = true;
+											$scope.isShowInfoBox = true; 
+			            					$scope.isOpenFromInfoBox = true; 
+											$scope.isloading = false;
+											$scope.$apply(); 
+											deferred.resolve(result);  
+										} else {
+										 	$scope.isloading = false;
+										}
+				                    }
+				                );
+				            }  
+			            	//return deferred.promise;    
+		            	}
+		            	
+		            	$scope.closeModel = function() {  
+			            	$scope.showDetailsSlds = false;
+			            	$scope.isShowInfoBox = false;
+		            	}
+		            	
+	     			});
+		    
+				    myapp.directive('onReadFile', function ($parse) {
+				        return {
+				            restrict: 'A',
+				            scope: false,
+				            link: function(scope, element, attrs) {
+				                var fn = $parse(attrs.onReadFile);
+				                
+				                element.on('change', function(onChangeEvent) {
+				                    var reader = new FileReader();
+				                    reader.onload = function(onLoadEvent) {
+				                        scope.$apply(function() {
+				                            fn(scope, {$fileContent:onLoadEvent.target.result});
+				                        });
+				                    };
+				                    reader.readAsText((onChangeEvent.srcElement || onChangeEvent.target).files[0]);                
+				                });
+				            }
+				        };
+				    });
+		    	</script>
+		    	
+		    	<div id="angularPanel" align="left" ng-app="myapp" ng-controller="MainCtrl" ng-cloak="ng-cloak"  class="container" style="padding:1%;margin-left:1vw;margin-right:1vw">
+		    	
+				    <div class="slds-tabs--path" role="application" ng-init="load();">
+				        
+						
+						<ul ng-show="isImport && !isSelect" class="slds-tabs--path__nav" role="tablist">
+				            <li class="slds-tabs--path__item slds-is-current" role="presentation" id="selectProcessImport">
+				                <a disabled="disabled" class="slds-tabs--path__link" role="tab" aria-live="assertive" ng-click="resetToSelectProcess();">				                
+				                    <span class="slds-tabs--path__stage">              
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+							                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>              
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Process}</span>
+				                </a>
+				            </li>
+				            <li class="slds-tabs--path__item slds-is-incomplete" role="presentation" id="selectObjectImport">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1"  ng-click="resetToSelectObject();" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Object}</span>
+				                </a>
+				            </li>
+				            <li class="slds-tabs--path__item slds-is-incomplete" role="presentation" id="selectData">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" ng-click="resetToUpload();" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Data}</span>
+				                </a>
+				            </li>
+				            <li class="slds-tabs--path__item slds-is-incomplete" role="presentation" id="editMapping">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" ng-click="resetToEditMapping();" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Edit_Mapping}</span>
+				                </a>
+				            </li>
+				           	<li class="slds-tabs--path__item" ng-class="{'slds-is-complete' : insertDone, 'slds-is-incomplete' : !insertDone}" role="presentation" id="upload">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Insert}</span>
+				                </a>
+				            </li>
+				            <li ng-if="isFileUploadNeeded" class="slds-tabs--path__item" ng-class="{'slds-is-current' : insertDone, 'slds-is-incomplete' : !insertDone}" role="presentation" id="fileUpload">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Upload_File}</span>
+				                </a>
+				            </li>
+				            <li class="slds-tabs--path__item slds-is-incomplete" role="presentation" id="complete">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+										<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						    	            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						        	    </svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Completed}</span>
+				                </a>
+				            </li>
+				        </ul>
+				        <ul ng-show="isTemplate && !isSelect" class="slds-tabs--path__nav" role="tablist">
+				            <li class="slds-tabs--path__item slds-is-current " role="presentation" id="selectProcessTemplate">
+				                <a disabled="disabled" class="slds-tabs--path__link" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">              
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>              
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Process}</span>
+				                </a>
+				            </li>
+							<li class="slds-tabs--path__item slds-is-incomplete" id="selectObjectTemplate" role="presentation">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+							           	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+							            	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+							            </svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Object}</span>
+				                </a>
+				            </li>
+				            <li class="slds-tabs--path__item slds-is-incomplete" role="presentation" id="template">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Download_Template}</span>
+				                </a>
+				            </li>
+				        </ul>
+				        <ul ng-show="isExport && !isSelect" class="slds-tabs--path__nav" role="tablist">
+				            <li class="slds-tabs--path__item slds-is-current " role="presentation" id="selectProcessExport">
+				                <a disabled="disabled" class="slds-tabs--path__link" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">              
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>              
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Process}</span>
+				                </a>
+				            </li>
+				            <li class="slds-tabs--path__item slds-is-incomplete" id="selectObjectExport" role="presentation">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+							           	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+							            	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+							            </svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Object}</span>
+				                </a>
+				            </li>
+				            <li ng-if="isRefContent || isAllowSorting" class="slds-tabs--path__item slds-is-incomplete" id="selectSorting" role="presentation">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+							            <svg class="slds-icon slds-icon_small" aria-hidden="true">
+							            	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+							            </svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Filter_Export}</span>
+				                </a>
+				            </li>
+				            <li class="slds-tabs--path__item slds-is-incomplete" id="export" role="presentation">
+				                <a class="slds-tabs--path__link" aria-controls="content-path-1" aria-selected="false" tabindex="-1" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Export_Data}</span>
+				                </a>
+				            </li>
+				        </ul> 
+						<ul ng-show="isSelect" class="slds-tabs--path__nav" role="tablist" style="width:35%;">
+				            <li class="slds-tabs--path__item slds-is-current " role="presentation" id="selectProces">
+				                <a disabled="disabled" class="slds-tabs--path__link" role="tab" aria-live="assertive">
+				                    <span class="slds-tabs--path__stage">              
+						            	<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						                	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+						              	</svg>              
+						            </span>
+				                    <span class="slds-tabs--path__title">{!$Label.Select_Process}</span>
+				                </a>
+				            </li> 
+				        </ul>
+
+				    </div>
+				    <div id="fileSelect" ng-init="getExportObjects();getImportObjects();" style="min-height:10%;"  ng-show="!contentSelected">
+				        <div class="slds-form-element" id="actionSelector" style="min-width: 3vw;text-align: left;display: inline-block;float:left;margin-left:10vw;">
+				            <label class="slds-form-element__label" for="actions" >{!$Label.Select_Process}</label>
+				            <div class="slds-form-element__control">
+				                <div class="slds-select_container">
+				                    <select class="slds-select" id="actions" ng-model="actionSelected" ng-change="setActionSelected();">
+				                        <option value="0">--SELECT--</option>
+				                        <option value="1">{!$Label.Import}</option>
+				                        <option value="2">{!$Label.Export_Template}</option>
+				                        <option value="3">{!$Label.Export_Object_Records}</option>
+				                    </select>
+				                </div>
+				            </div>
+				        </div>
+				        <div ng-show="actionSelected == '1' || actionSelected == '2'" id="objectSelectorImport" class="slds-form-element" style="min-width: 2vw;text-align: left;display: inline-block;float:left; margin-left:20vw">
+				            <label class="slds-form-element__label" for="import" >{!$Label.Select_Object}</label>
+				            <div class="slds-form-element__control">
+				                <div class="slds-select_container">
+				                    <select class="slds-select" id="import" ng-options="h as h['label'] for h in importObjects" ng-model="objectSelected" ng-change="setObjectSelected(false);"></select>
+				                </div>
+				            </div>
+				        </div>
+				        <div ng-show="actionSelected == '3'" id="objectSelectorExport" class="slds-form-element" style="min-width:2vw;text-align: left;display: inline-block;float:left; margin-left:19vw">
+				            <label class="slds-form-element__label" for="export" >{!$Label.Select_Object}</label>
+				            <div class="slds-form-element__control">
+				                <div class="slds-select_container">
+				                    <select class="slds-select" id="exportList" ng-options="o as o['label'] for o in exportObjects" ng-model="objectSelected" ng-change="setObjectSelected(true);">
+				                    </select>
+				                </div>
+				            </div>
+				        </div> 
+				        <div ng-show="actionSelected == '3' && (isRefContent || isAllowSorting)" class="slds-form-element" style="min-width:2vw;text-align: left;display: inline-block;float:left; margin-left:7vw;width: 16%;">
+				            <label class="slds-form-element__label" for="fieldList">{!$Label.Select_Sorting}</label>
+				            <div class="slds-form-element__control" style="width:60%;">
+				                <div class="slds-select_container">
+				                    <select class="slds-select" id="fieldList" ng-options="o as o['name'] for o in allFieldList" ng-model="fieldToSort" ng-change="fieldSelectedchange();">
+				                    </select>
+				                </div>
+				            </div>
+				        </div>
+				        <div ng-show="actionSelected == '3' && (isRefContent || isAllowSorting)" class="slds-form-element" style="min-width:2vw;max-width:8vw;text-align: left;display: inline-block;float:left; margin-left:-4vw">
+				            <div class="slds-form-element">
+				                <label class="slds-form-element__label" for="limit">{!$Label.Record_Count}</label>
+				                <div class="slds-form-element__control">
+				                    <input type="number"  min="1" Max = "50000" id="limit" class="slds-input" placeholder="Record Limit" ng-model="exportCount" />
+				                </div>
+				            </div>
+				        </div>
+				        <div class="slds-form-element" ng-show="actionSelected == '1' && objectSelected.label != '--Select--'" style="min-width: 2vw;text-align: center;display: inline-block;float:left; margin-left:7vw">
+				            <span class="slds-form-element__label">{!$Label.Select_CSV}</span>
+				            <div class="slds-form-element__control">
+				                <div class="slds-file-selector slds-file-selector_files">
+				                    <input type="file" class="slds-file-selector__input slds-assistive-text" on-read-file="showContent($fileContent)" id="fileCSV" aria-describedby="file-selector-id" />
+				                    <label class="slds-file-selector__body" for="fileCSV">
+				                        <span class="slds-file-selector__button slds-button slds-button_neutral">{!$Label.Upload_File}</span>
+				                    </label>
+				                </div>
+				            </div>
+				        </div>
+				        <div class="slds-form-element" ng-show="actionSelected == '2'" style="min-width: 2vw;text-align: center;display: inline-block;float:left; margin-left:21vw; margin-top:2vh">
+				            <button id="templateDownload" ng-show="actionSelected == '2' && objectSelected.label != '--Select--'" class="slds-button slds-button_brand" type="button" onclick="downloadTemplete(); refreshPage();">{!$Label.DownLoad_Template}</button>
+				        </div>
+				        <div id="exportFunctionData" class="slds-form-element" ng-show="actionSelected == '3' && objectSelected.label != '--Select--'" style="min-width: 2vw;text-align: center;display: inline-block;float:left; margin-rigth:0;margin-left:25vw; margin:1%">
+				            <button class="slds-button slds-button_brand" type="button" onclick="exportAction();">{!$Label.Export_Data}</button>
+				        </div>
+				    </div>    
+			        <div ng-show="contentSelected" style="min-width:90%;">
+			            <div id="mappingDiv" ng-show="!mappingDone">
+			            	<button class="slds-button slds-button_brand" type="button" ng-click="resetToUpload();" style="float:left; margin:1%;">{!$Label.Back}</button>
+			                <button class="slds-button slds-button_brand" type="button" ng-click="checkRequiredMapping();" style="float:right; margin:1%;">{!$Label.Done}</button>
+							<div id="divStartDetails"   style="clear:both;padding-top: 10px;padding-left: 10px;">
+								
+								<table id="tbAcc" style="width:60%;font-weight:bold;margin-bottom: 10px;">
+									<tr>
+										<td style="width:25%">
+											<span class="slds-form-element__label" style="color:black;margin-left: 5px;">{{fieldHeader}}</span>
+										</td>
+										<td style="font-weight:normal;">
+											<span class="slds-form-element__label"  style="margin-left: 5px;">{{fieldDescription}}</span>
+										</td>
+									</tr>
+									<tr>
+										<td>
+											<span class="slds-form-element__label" style="color:black;;margin-left: 5px;">{{MappedToHeader}}</span>
+										</td>
+										<td style="font-weight:normal;">
+											<span class="slds-form-element__label"  style="margin-left: 5px;">{{MappedToDescription}}</span>
+										</td>
+									</tr>
+									<tr>
+										<td>
+											<span class="slds-form-element__label" style="color:black;margin-left: 5px;">{{MappedHeader}}</span>
+										</td>
+										<td style="font-weight:normal;">
+											<span class="slds-form-element__label"  style="margin-left: 5px;">{{MappedDescription}}</span>
+										</td>
+									</tr>
+								</table>
+								<!--<div>
+									<span class="slds-form-element__label" style="margin-top:8px;">{{DMMappingHeader}}</span>
+								</div>-->
+								<div> 
+									<span class="slds-form-element__label" >{{DMMappingSubHeader}}</span>
+								</div>
+							</div>
+			                <table id="headerTable" class="slds-table slds-table_bordered slds-table_col-bordered slds-table_cell-buffer">            
+			                    <tr class="slds-text-title_caps" style="text-align: center;">                          
+			                        <th>
+			                            <div class="slds-truncate" align="center">{!$Label.Fields}</div>
+			                        </th>                         
+									<th>
+			                            <div class="slds-truncate" align="center">{!$Label.Mapped_To}</div>
+			                        </th>
+			                         <th align="center">
+			                            <div align="center" style="display: inline-block;">{!$Label.Map}</div>
+			                        </th>
+			                    </tr>
+			                    <tr align="center" ng-repeat="item in allFieldList" style="text-align: center;">                        
+			                        <td class="">
+			                            <div class="slds-truncate" ng-bind="item.name"/>
+			                        </td>    
+			                        <td>                            
+			                            <div class="slds-col remove-flex" ng-repeat="name in item.mappedTo track by $index">
+			                                <div class="slds-pill" style="min-width: 4%;text-align: center;display: inline-block;float:left;">
+			                                	<span class="slds-pill__label">{{name}}</span>
+			                                    <button class="slds-button slds-button--icon-bare slds-pill__remove" ng-click="
+                                                       headersObjectList[headers.indexOf(name)].isMapped = false;
+                                                        headersObjectList[headers.indexOf(name)].mappedTo = '';
+                                                        item.mappedTo.splice($index,1);
+                                                        item.isMapped= item.mappedTo.length != 0 ? item.isMapped : false;    
+                                                        $scope.selectedHeaderObject.selectedHeaderName = $scope.headersObjectList[0];                                   
+                                                    ">
+		                                            <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility/close_60.png')}" alt="close" height="20" width="20"/>                                        
+		                                        </button>
+			                                </div>
+			                            </div>
+			                        </td>                                           
+			                        <td align="center">
+			                            <div class="slds-form-element" style="display: inline-block;">  
+			                              <div class="slds-form-element__control" style="display: inline-block;">
+			                                <div class="slds-select_container" style="display: inline-block;">                              
+			                                   <select class="slds-select" id="select-01" ng-options="h as h['name'] for h in headersObjectList | filter:isMapped ='false'" ng-model="selectedHeaderObject.selectedHeaderName" ng-change="handleHeaderSelect(this.item , selectedHeaderObject.selectedHeaderName)">                                              
+			                                   </select>                                 
+			                                </div>
+			                              </div>
+			                            </div>                    
+			                        </td>
+			                    </tr>
+			                </table><br/>                
+			            </div>           
+	            		<div ng-show = "mappingDone">
+				            <div ng-show="isloading" class="slds-spinner--medium" id="loading" style="position: absolute; z-index: 3;width: 10%;height: 10%; top: 35vh; left: 45vw;">
+				                <img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+				            	<div style="background-color: white;opacity:0.87;">
+									<div class="slds-truncate" align="center">  {{doneRecords}} Out Of {{totalRecords}}</div>
+									<div class="slds-truncate" align="center" style="color:green;">Successful : {{successRecords}}</div>
+									<div class="slds-truncate" align="center" style="color:red;">Failed : {{failRecords}}</div>
+								</div>
+							</div>
+		            		<div id="insertBlock" ng-show = "!processComplete" style="position: relative;">
+		            			<button class="slds-button slds-button_brand" ng-show="!insertDone" type="button" ng-click="resetToEditMapping();" style="float:left; margin:1%;">{!$Label.Back}</button>
+								<button class="slds-button slds-button_brand" ng-show="!insertDone" type = "button" ng-click="insertRemote(0);" style="float:right;margin:1%;">{!$Label.Insert}</button>
+								<button class="slds-button slds-button_brand" ng-show="insertDone && !isFileUploadNeeded" ng-click="initializeLists();" style="float:right;margin:1%">{!$Label.Completed}</button>
+								<button class="slds-button slds-button_brand" ng-show="insertDone && isFileUploadNeeded" ng-click="initializeLists();" style="float:right;margin:1%">{!$Label.Next}</button><br/>
+								
+								<div id="divUploadDetails" ng-show="!insertDone && mappingDone" style="clear:both;padding-top: 10px;margin-left: 12px;">
+									<div>
+										<span class="slds-form-element__label">{{importProcessHeader}}</span>
+									</div> 
+									<div>
+										<span class="slds-form-element__label" ng-show="objectSelected.apiName == 'Reference_Content__c'" style="margin-bottom:12px;">{{importProcessSubHeader}}</span>
+									</div> 			
+								</div>
+
+								<div id="divUploadDetails11" ng-show="insertDone && isFileUploadNeeded" style="padding-top: 10px;margin-left: 12px;">
+									<div style="text-align: center;">
+										<span class="slds-form-element__label" ng-show = "isFileTypeFailed || isUrlFailed" style="font-size: 14px;font-weight: bold;">{{oneOrMoreNotImportedLabel}}</span>
+										<span class="slds-form-element__label" ng-show = "!isFileTypeFailed && !isUrlFailed" style="font-size: 14px;font-weight: bold;">{{improtedMessageLabel}}</span>
+									</div>
+									<div>
+										<span class="slds-form-element__label" style="margin-bottom:12px;">{{clickNextLabel}}</span>
+									</div> 			
+								</div>
+
+								<div id="divUploadDetail" ng-show="insertDone && !isFileUploadNeeded" style="text-align: center;">
+									<div ng-show = "isUrlFailed || isFileTypeFailed">
+										<span class="slds-form-element__label" style="font-size: 14px;font-weight: bold;">{{oneOrMoreNotImportedLabel}}</span>
+									</div> 
+									<div ng-show = "!isUrlFailed && !isFileTypeFailed">
+										<span class="slds-form-element__label" style="font-size: 14px;font-weight: bold;">{{improtedMessageLabel}}</span>
+									</div>	 
+								</div>
+
+								
+								
+								<div id="divMain" class="freezeColumn">
+			 						<table  id="dataTable" class="slds-table slds-table_bordered slds-table_col-bordered slds-table_cell-buffer">            
+					                    <tr class="slds-text-title_caps" >
+					                        <th style="width:5vw;">
+					                        </th >
+					                        <th class="slds-cell-wrap" style="word-wrap:break-word;"> 
+					                            <div class="slds-truncate" align="center">{!$Label.Id}</div>
+					                        </th >  
+					                        <th class="slds-cell-wrap" ng-show="insertDone" style="word-wrap:break-word;"> 
+					                            <div class="slds-truncate" align="center">{!$Label.Error}</div>
+					                        </th >                        
+					                        <th class="slds-cell-wrap"  ng-show="item.apiName != 'Id'" ng-repeat="item in allFieldList | filter: {isMapped:true}" style="word-wrap:break-word;">
+					                            <div  ng-attr-title="{{item.name}}" ng-show="(item.apiName != namespace + 'Content_URL__c')" align="center" ng-bind="item.name" class="slds-truncate"/>
+					                            <div  ng-attr-title="{{item.name}}" ng-show="(item.apiName == namespace + 'Content_URL__c')" align="center" class="slds-truncate">{!$Label.Content}</div>
+					                        </th>
+					                    </tr>
+					                    <tr align="center" ng-repeat="data in dataList track by $index" ng-style="insertDone && {'background-color': data['success'] == 'false' ? '#FA8072' : '' }">
+					                        <td style="width:5vw;">
+					                            <div ng-bind="$index + 1"/>
+					                        </td >
+					                        <td style="word-wrap:break-word;">      
+						                       <span ng-show="data['success'] == 'true'">
+						                            <div  ng-attr-title="{{data['detail']}}" class="slds-truncate" align="center" ng-bind="data['detail']"></div>
+						                        </span>
+						                        <span ng-show="data['success'] != 'true'">
+						                            <div ng-attr-title="{{data['Id']}}" class="slds-truncate" align="center" ng-bind="data['Id']"></div>
+						                        </span>			                        
+					                        </td>  
+					                        <td ng-show="insertDone" class="slds-cell-wrap">
+						                        <span ng-show="(data['success'] == 'false')" > 
+						                            <div ng-attr-title="{{data['detail']}}" class="slds-truncate" align="center" ng-bind="data['detail']"></div>
+						                        </span>
+					                        </td >                         
+					                        <td class="slds-cell-wrap" ng-repeat="item in allFieldList | filter:{isMapped:true}" ng-show="item.apiName != 'Id'" style="word-wrap:break-word;">
+					                            <div class="slds-truncate" ng-show="(item.apiName != namespace + 'Content_URL__c')" ng-bind="data[item.apiName]" ng-attr-title="{{data[item.apiName]}}"/>                            
+					                            <div ng-show="(item.apiName == namespace + 'Content_URL__c')">
+					                                <div class="slds-truncate" ng-show="!(data['showBrowse'])" ng-bind="data[item.apiName]" ng-attr-title="{{data[item.apiName]}}"></div>
+					                                <div ng-show="data['showBrowse']">                                    
+					                                    <div class="slds-truncate">{!$Label.File}</div>
+					                                </div>
+					                            </div>                            
+					                        </td>                
+					                    </tr>
+					                </table>
+					        	</div>
+		            		</div>
+	            		</div>   
+	        		</div>  
+	        		
+	        		<div ng-show="showDetails && isShowInfoBox == false">
+                       	<div class="customPopup">
+                        	<div class="modalHeader" style="margin: 0; font-weight: bold;padding: 8px;background: #03A7E4;color:#FFFFFF;font-family: Arial,Helvetica,sans-serif;font-size: 13.3px;margin-left:2px;margin-right:2px;margin-top:2px;border-radius:4px;">
+                        		<a ng-click="showDetails=false" style="float:right;color:#ffffff;">
+                                       <svg class="slds-button__icon slds-button__icon_medium" aria-hidden="true">
+                                           <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                       </svg>
+                                       <span class="slds-assistive-text">Close</span>
+                                   </a>
+                                   <h2>{{modelHeader}}</h2>
+                        	</div>
+                        	<div class="divBAck">
+                        		<div class="slds-modal__content slds-p-around--medium lookup" style="overflow:auto;height:15rem;"> 
+		                       <div class="demo-only demo-only--sizing slds-grid slds-wrap" style="height: 25px; margin-left:20px;" >
+			                     
+								<div class="slds-size_1-of-2" style="width:50%;" ng-show ="modelHeader != 'Language'">
+									<span class="slds-form-element__label">{!$Label.Id}</span>
+								</div>
+								<div class="slds-size_1-of-2" style="width:50%;"> 
+								  	<span class="slds-form-element__label">{!$Label.Name}</span>
+								</div>
+							 	<div style="width:100%;height:1.5px;background:#E8EBF0;margin-left:-14px;"> </div>
+								</div>
+								 
+								<div class="demo-only demo-only--sizing slds-grid slds-wrap" style="height: 25px; margin-left:20px;" ng-repeat="field in referenceData">
+									<div class="slds-size_1-of-2" style="width:50%;" ng-show ="modelHeader != 'Language'">
+										 <span class="slds-form-element__label">{{field.id}}</span>
+									</div>
+									<div class="slds-size_1-of-2" style="width:50%;"> 
+									  <span class="slds-form-element__label">{{field.name}}</span>
+									</div>
+								</div>
+                       		</div> 
+                        	</div>
+                        	<div style=" padding: 9px;overflow: hidden;background: #EEEEEE;border-top: 1px solid #DDDDDD;padding-right: 17px">  
+                        		<a class="btn" style="text-decoration: none; color: black; font-size: 0.85em;float:right;padding-left: 10px; padding-right: 10px; margin-right: 5px;height: 23px" ng-click="showDetails=false">{!$Label.Ok}</a> 
+                        	</div> 
+                       	</div>
+                           <div class="popupBackground"></div>
+                       </div>
+				                         
+	        		<div ng-show='showDetailsSlds && isShowInfoBox == false'> 
+		               <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+		                  <div class="slds-modal__container modal__assocation_container">
+		                      <div class="slds-modal__header">
+		                          <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="closeModel();">
+		                              <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+		                              <span class="slds-assistive-text">Close</span>
+		                          </a>
+		                          <h2 class="slds-text-heading--medium">{{modelHeader}}</h2> 
+		                      </div>  
+		                      
+		                       <div class="slds-modal__content slds-p-around--medium lookup" style="overflow:auto;height:15rem;">  
+			                       <div class="demo-only demo-only--sizing slds-grid slds-wrap" style="height: 25px; margin-left:20px;" >
+				                      
+									<div class="slds-size_1-of-2" style="width:50%;" ng-show ="modelHeader != 'Language'">
+										<span class="slds-form-element__label" >{!$Label.Id}</span>
+									</div>
+									<div class="slds-size_1-of-2" style="width:50%;"> 
+									  	<span class="slds-form-element__label">{!$Label.Name}</span>
+									</div>
+								 	<div style="width:100%;height:1.5px;background:#E8EBF0;margin-left:-20px;"> </div>
+									</div>
+								 
+									<div class="demo-only demo-only--sizing slds-grid slds-wrap" style="height: 25px; margin-left:20px;" ng-repeat="field in referenceData">
+										<div class="slds-size_1-of-2" style="width:50%;" ng-show ="modelHeader != 'Language'">
+											 <span class="slds-form-element__label" >{{field.id}}</span>
+										</div>
+										<div class="slds-size_1-of-2" style="width:50%;"> 
+										  <span class="slds-form-element__label">{{field.name}}</span>
+										</div>
+									</div>
+                       		</div> 
+                       <div class="slds-modal__footer">
+                       		<a class="slds-button slds-button_brand" style="cursor: pointer;" ng-click="closeModel();">{!$Label.Ok}</a> 
+                       </div> 
+                  	 
+              		</div> 
+            		</div>
+             		<div class="slds-backdrop slds-backdrop--open"></div>
+         			</div> 
+         			
+         			<div ng-show='showInfoDivs && !contentSelected' style="min-height:26rem;">
+         				  
+	        			<!--Information Section for Reference Content-->
+		        		<div id="divFieldDetails" ng-show="(actionSelected == 1 && (isRefContent == true || isRBI == true || isRequest == true))" style="clear:both;padding-top: 10px;"> 
+		   					<!--Multiple Sections Start-->
+						    <div class="slds-section">
+						      <h3 class="slds-section__title">
+						        <button class="slds-button slds-section__title-action">
+						          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+						            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+						          </svg>{!$Label.Required_Information}</button>
+						      </h3>  
+						      <div class="slds-section__content">
+						        <p><span class="slds-form-element__label">{{RequiredHeader}}.</span></p>
+						        <table id = "tblRequired" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+		                                        cellspacing="1" width="100%" border="0"
+		                                        style="border-collapse: collapse; border-spacing: 1px">
+		                   			<thead>
+			                        	<tr class="slds-text-heading--label">
+			                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                      	<span class="slds-form-element__label">{!$Label.Name}</span>
+			                              </th>
+			                              <th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                        <span class="slds-form-element__label">{!$Label.Type}</span>
+			                              </th>
+			                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                       <span class="slds-form-element__label">{!$Label.Example}</span>
+			                              </th>
+			                              <th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+		                                       	<span class="slds-form-element__label">{!$Label.Discription}</span>
+			                              </th> 
+			                             </tr>
+			                       	</thead>
+		                       		<tbody>
+			                           <tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'REQUIRED'"> 
+			                              <td>  
+			                              		<div ng-if ="field.apiName == namespace + 'Library_ID__c' || field.apiName == namespace + 'Reference_Content_Type__c'">
+			                                   		<span class="slds-form-element__label"><a  ng-click = "showModel(field.apiName,field.name);" >{{field.name}}</a><span style="font-size: 15px; color: #f00;">*</span></span>
+			                                   	</div>
+			                                   	<div ng-if ="field.apiName != namespace + 'Library_ID__c' &&  field.apiName != namespace + 'Reference_Content_Type__c'">
+			                                   		<span class="slds-form-element__label">{{field.name}}<span style="font-size: 15px; color: #f00;">*</span></span>
+			                                   	</div> 
+			                              </td>
+			                              <td>  
+			                                  <span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+			                              </td>
+			                              <td> 
+			                                  <span class="slds-form-element__label">{{field.lstField.example}}</span>
+			                              </td>                
+			                              <td> 
+			                                  <span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+			                              </td> 
+			                            </tr> 
+		                        	</tbody>
+		                     	</table>  
+						      </div>
+						    </div>  
+						    <div class="slds-section" ng-show="!isRBI && isDefaultPanel">
+						      <h3 class="slds-section__title">
+						        <button class="slds-button slds-section__title-action">
+						          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+						            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+						          </svg>{!$Label.Default_Information}</button>
+						      </h3>
+						      <div class="slds-section__content">
+						        <p ng-show="isRefContent"><span class="slds-form-element__label">{{DefaultHeader}}</span></p>
+						        <table id ="tblDefault" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+		                                        cellspacing="1" width="100%" border="0"
+		                                        style="border-collapse: collapse; border-spacing: 1px">
+		                   			<thead>
+			                        	<tr class="slds-text-heading--label">
+			                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">	                              		
+		                                      	<span class="slds-form-element__label">{!$Label.Name}</span>
+			                              </th>
+			                              <th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                        <span class="slds-form-element__label">{!$Label.Type}</span>
+			                              </th>
+			                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                       <span class="slds-form-element__label">{!$Label.Example}</span>
+			                              </th>
+			                              <th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+		                                       	<span class="slds-form-element__label">{!$Label.Discription}</span>
+			                              </th> 
+			                             </tr>
+			                       	</thead>
+		                       		<tbody>
+			                           <tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'DEFAULT'"> 
+			                              <td > 
+			                                   <span class="slds-form-element__label">{{field.name}}</span>
+			                              </td>
+			                              <td>  
+			                                 <span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+			                              </td>
+			                              <td> 
+			                                  <span class="slds-form-element__label">{{field.lstField.example}}</span>
+			                              </td>                
+			                              <td> 
+			                                 <span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+			                              </td> 
+			                            </tr> 
+		                        	</tbody>
+		                     	</table>  
+						      </div>
+						     
+						    </div>
+						    <div class="slds-section" ng-show="isAdditionalPanel">
+						      <h3 class="slds-section__title">
+						        <button class="slds-button slds-section__title-action">
+						          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+						            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+						          </svg>{!$Label.Additional_Fields}</button>
+						      </h3>
+						      <div class="slds-section__content">
+						       <p> <span class="slds-form-element__label">{{OptionalHeader}}</span></p>
+						        <table id ="tblAdditional" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+		                                        cellspacing="1" width="100%" border="0"
+		                                        style="border-collapse: collapse; border-spacing: 1px">
+		                   			<thead>
+			                        	<tr class="slds-text-heading--label">
+			                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                      	<span class="slds-form-element__label">{!$Label.Name}</span>
+			                              </th>
+			                              <th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                       <span class="slds-form-element__label">{!$Label.Type}</span>
+			                              </th>
+			                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+		                                       <span class="slds-form-element__label">{!$Label.Example}</span>
+			                              </th>
+			                              <th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+		                                      <span class="slds-form-element__label">{!$Label.Discription}</span>
+			                              </th> 
+			                             </tr>
+			                       	</thead>
+		                       		<tbody>
+			                           <tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ADDITIONAL'"> 
+			                              <td >  
+			                                   <div ng-if ="field.apiName == namespace + 'Language__c'">
+			                                   		<span class="slds-form-element__label" ><a  ng-click = "showModel(field.apiName,field.name);" >{{field.name}}</a></span>  
+			                                   </div>
+			                                   	<div ng-if ="field.apiName != namespace + 'Language__c' && field.apiName != namespace + 'Referenceability__c'">
+													<span class="slds-form-element__label">{{field.name}}</span> 
+												</div>
+												<div ng-if ="field.apiName == namespace + 'Referenceability__c'">
+													<span class="slds-form-element__label" ><a  ng-click = "showModel(field.apiName,field.name);" >{{field.name}}</a></span>
+												</div>
+			                              </td>
+			                              <td>  
+			                                  <span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+			                              </td>
+			                              <td> 
+			                                  <span class="slds-form-element__label">{{field.lstField.example}}</span>
+			                              </td>                
+			                              <td> 
+			                                  <span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+			                              </td> 
+			                            </tr> 
+		                        	</tbody>
+		                     	</table>   
+						      </div>
+						    </div>
+						    <div class="slds-section" ng-show="!isRBI && isAttributePanel">
+						      <h3 class="slds-section__title">
+						        <button class="slds-button slds-section__title-action">
+						          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+						            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+						          </svg>{!$Label.Including_Attributes}</button>
+						      </h3>
+						      <div class="slds-section__content">
+						      	<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ATTRIBUTES'">
+						        	<span class="slds-form-element__label">{{field.lstField.description}}</span>
+						        	<i><span class="slds-form-element__label">{{example}}</span></i>
+						        	<table id="tbAtt_01" style="width:50%;font-weight:bold;">
+						        		<tr >
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Use CaseID</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Use Case</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Product</span>
+						        			</td>
+						        		</tr>
+						        		<tr>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">a0441000000GRmgf</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Analytics</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW</span>
+						        			</td>
+						        		</tr>
+						        	</table>
+						        	 
+						        	<span class="slds-form-element__label" style="margin-top:10px;">{{attributeDescriptionFirstSuffix}}</span>
+						        	<div></div>
+						        	<i><span  class="slds-form-element__label" >{{example}}</span></i>
+						        	<table id="tbAtt_02" style="width:50%;font-weight:bold;">
+						        		<tr> 
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Product</span>
+						        			</td>
+						        		</tr>
+						        		<tr> 
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC,a04410000003JIeZAAS</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW,SLA:Bronze</span>
+						        			</td>
+						        		</tr>
+						        	</table>
+						        	<span class="slds-form-element__label" style="margin-top:10px;">{{attributeDescriptionSecondSuffix}} <span ng-if="!isRequest"><b>Attribute IDs</b> field.</span> <span ng-if="isRequest"><b>Attributes</b> field.</span></span>
+						        	<img src="{!URLFOR($Resource.DM_AttributeSection)}" style="width:75%;"  alt="Account" />  
+						        </div>
+						      </div>
+						    </div>
+							<div class="slds-section" ng-show="isRequest && isFilterPanel">
+						      <h3 class="slds-section__title">
+						        <button class="slds-button slds-section__title-action">
+						          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+						            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+						          </svg>Including Filters</button>
+						      </h3>
+						      <div class="slds-section__content">
+						      	<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'FILTERS'">
+						        	<span class="slds-form-element__label">{{field.lstField.description}}</span>
+						        	<i><span class="slds-form-element__label">{{example}}</span></i>
+						        	<table id="tbAtt_01" style="width:50%;font-weight:bold;">
+						        		<tr >
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Use CaseID</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Use Case</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Product</span>
+						        			</td>
+						        		</tr>
+						        		<tr>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">a0441000000GRmgf</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Analytics</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW</span>
+						        			</td>
+						        		</tr>
+						        	</table>
+									<i><span  class="slds-form-element__label" >{{example}}</span></i>
+						        	<table id="tbAtt_02" style="width:50%;font-weight:bold;">
+						        		<tr> 
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">Product</span>
+						        			</td>
+						        		</tr>
+						        		<tr> 
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC,a04410000003JIeZAAS</span>
+						        			</td>
+						        			<td>
+						        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW,SLA:Bronze</span>
+						        			</td>
+						        		</tr>
+						        	</table>
+						        	<span class="slds-form-element__label" style="margin-top:10px;">{{filterDescriptionSuffix}} <b>Filters</b> field.</span>
+						        	<img src="{!URLFOR($Resource.DM_FilterSection)}" style="width:75%;"  alt="Account" />  
+						        </div>
+						      </div>
+							</div>
+						    <div class="slds-section" ng-show="!isRBI && isAccountPanel">
+    							<h3 class="slds-section__title">
+							      <button class="slds-button slds-section__title-action">
+							        <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+							          <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+							        </svg>Including Accounts</button>
+							    </h3>
+								<div class="slds-section__content" ng-show="isRefContent">
+								   	<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ACCOUNTS'"> 
+								    	<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+								    	<i><span  class="slds-form-element__label">{{example}}</span></i>
+								    	<table id="tbAcc" style="width:50%;font-weight:bold;">
+											<tr>
+												<td>
+													<span class="slds-form-element__label" style="color:black;">ACCOUNTID</span>
+												</td>
+												<td>
+													<span class="slds-form-element__label" style="color:black;">ACCOUNT</span>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<span class="slds-form-element__label" style="color:black;">0014100001FeR4aAAF,0014100000hSB3IAAW</span>
+												</td>
+												<td>
+													<span class="slds-form-element__label" style="color:black;">Roebuk Wade,Articat Inc.</span>
+												</td>
+											</tr>
+										</table>
+										<span class="slds-form-element__label" style="margin-top:10px;">{{parseResult(accountDescriptionSuffix)}}</span>
+										<img src="{!URLFOR($Resource.DM_AccountSection)}" style="width:75%;"  alt="Account" />  
+								   	</div>
+								</div> 
+								<div class="slds-section__content" ng-show="isRequest">
+								   <div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ACCOUNTS'"> 
+								    	<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+								    	<i><span  class="slds-form-element__label">{{example}}</span></i>
+								    	<table id="tbAcc" style="width:50%;font-weight:bold;">
+								   		<tr>
+								   			<td>
+								   				<span class="slds-form-element__label" style="color:black;">ACCOUNTID</span>
+								   			</td>
+								   			<td>
+								   				<span class="slds-form-element__label" style="color:black;">ACCOUNT</span>
+								   			</td>
+								   		</tr>
+								   		<tr>
+								   			<td>
+								   				<span class="slds-form-element__label" style="color:black;">0014100000hSB3IAAW</span>
+								   			</td>
+								   			<td>
+								   				<span class="slds-form-element__label" style="color:black;">Roebuk Wade</span>
+								   			</td>
+								   		</tr>
+								   	</table>
+								   	 
+								   	<span class="slds-form-element__label" style="margin-top:10px;">{{accountDescriptionSuffixRequest}}</span>
+								   	<img src="{!URLFOR($Resource.DM_AccountSectionRequest)}" style="width:75%;"  alt="Account" />  
+								   </div>
+								</div> 
+					    	</div>
+							<div class="slds-section" ng-show="isRequest && isContactPanel">
+						      <h3 class="slds-section__title">
+						        <button class="slds-button slds-section__title-action">
+						          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+						            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+						          </svg>Including Contact</button>
+						      </h3>
+						      <div class="slds-section__content">
+						      	<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'CONTACTS'"> 
+									<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+									<i><span  class="slds-form-element__label">{{example}}</span></i>
+									<table id="tbAcc" style="width:50%;font-weight:bold;">
+										<tr>
+											<td>
+												<span class="slds-form-element__label" style="color:black;">CONTACT ID</span>
+											</td>
+											<td>
+												<span class="slds-form-element__label" style="color:black;">CONTACT</span>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<span class="slds-form-element__label" style="color:black;">0030ab00000015Tgv</span>
+											</td>
+											<td>
+												<span class="slds-form-element__label" style="color:black;">John Smith</span>
+											</td>
+										</tr>
+									</table>
+									<span class="slds-form-element__label" style="margin-top:10px;">{{parseResult(contactDescriptionSuffix)}}</span>
+									<img src="{!URLFOR($Resource.DM_ContactSection)}" style="width:75%;"  alt="Account" />  
+								</div>
+						      </div>
+							</div>
+						<!--Multiple Sections End-->
+		   				</div> 
+						 
+	   					<div id="divStartTemplateDetails" ng-show="actionSelected == '2' && objectSelected.label != '--Select--'" style="clear:both;padding-top: 30px;padding-left: 15px;">
+							<div>
+								<span class="slds-form-element__label">Upon clicking the Download Template button your template will be prepared and a new window will open.</span>
+							</div>
+							<div>
+								<span class="slds-form-element__label" style="margin-top:12px;margin-bottom:12px;">Once the export is ready for download you will be prompted to provide a filename.</span>
+							</div>
+						</div> 
+						<div id="divStartTemplatePreDetails" ng-show="actionSelected == '3' || (actionSelected == '2' && objectSelected.label == '--Select--')" style="clear:both;padding-top: 30px;padding-left: 15px;">
+							<div>
+								<span class="slds-form-element__label">Select the object you want to export.</span>
+							</div>
+							<div>
+								<span class="slds-form-element__label" ng-show="actionSelected == 2" style="margin-top:12px;margin-bottom:12px;">Fields included in the exported template are controlled in <a ng-click="redirectToCustomSetting();"> ReferenceEdge Custom Settings</a> in the RefEdge DM section.</span>
+								<span class="slds-form-element__label" ng-show="actionSelected == 3" style="margin-top:12px;margin-bottom:12px;">Fields included in the export are controlled in <a ng-click="redirectToCustomSetting();"> ReferenceEdge Custom Settings</a> in the RefEdge DM section.</span>
+							</div>
+						</div>   
+	   				 	<!--Information Section for Reference Content ENds here-->
+	    				<div id="divStartDetailsInfo" ng-show="actionSelected == '0'" style="clear:both;padding-top: 10px;">
+						<div>
+							<span class="slds-form-element__label">{{DMInfoHeader}}</span>
+						</div>
+						<div>
+							<span class="slds-form-element__label" style="margin-top:12px;margin-bottom:12px;">{{DMInfoSubHeader}}</span>
+						</div>
+						<table id="tbAcc" style="width:60%;font-weight:bold;">
+				        		<tr>
+				        			<td style="width:25%">
+				        				<span class="slds-form-element__label" style="color:black;">{!$Label.Import}</span>
+				        			</td>
+				        			<td style="font-weight:normal;">
+				        				<span class="slds-form-element__label" >{{ImportSection}}</span>
+										<span class="slds-form-element__label"  style="width:70%;"><a ng-click="openInfoBox('Reference_Content__c');">{{refContentLink}}</a></span>
+										<span class="slds-form-element__label" style="width:70%;"><a ng-click="openInfoBox('Reference_Basic_Information__c');">{{refProfileLink}}</a></span>
+										<span class="slds-form-element__label" ><a ng-click="openInfoBox('Reference_Request__c');">{{refRequestLink}}</a></span>
+				        			</td>
+				        		</tr>
+				        		<tr>
+				        			<td>
+				        				<span class="slds-form-element__label" style="color:black;">{!$Label.Export_Template}</span>
+				        			</td>
+				        			<td style="font-weight:normal;">
+				        				<span class="slds-form-element__label">{{ExportHeader}}</span>
+				        			</td>
+				        		</tr>
+				        		<tr>
+				        			<td>
+				        				<span class="slds-form-element__label" style="color:black;">{!$Label.Export_Object_Records}</span>
+				        			</td>
+				        			<td style="font-weight:normal;">
+				        				<span class="slds-form-element__label">{{exportObjectHeader}}<a ng-click="redirectToCustomSetting();"> ReferenceEdge Custom Settings.</a></span>
+				        			</td>
+				        		</tr>
+			        	</table>
+					</div>
+    				</div>
+    				 
+    				<!-- Info Box div -->   
+    				<div ng-show='isShowInfoBox && showDetailsSlds'> 
+						<div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+							<div class="slds-modal__container modal__assocation_container">
+			                      <div class="slds-modal__header">
+			                          <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="closeModel();">
+			                              <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+			                              <span class="slds-assistive-text">Close</span>
+			                          </a>
+			                          <h2 class="slds-text-heading--medium">{{infoModelHeader}}</h2> 
+			                      </div>  
+			                      
+								<div id="divInfoBox" ng-show="isShowInfoBox" style="background:#ffffff;overflow: auto;padding-left: 5px;padding-right: 5px;">   
+		                      		<div id ="divInfoRefContnet">  
+							    		<div class="slds-section">
+											<h3 class="slds-section__title">
+											  <button class="slds-button slds-section__title-action">
+											    <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+											      <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+											    </svg>{!$Label.Required_Information}</button>
+											</h3>  
+									      	<div class="slds-section__content">
+										        <p><span class="slds-form-element__label">{{RequiredHeader}}.</span></p>
+										        <table id = "tblRequired" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+						                                        cellspacing="1" width="100%" border="0"
+						                                        style="border-collapse: collapse; border-spacing: 1px">
+						                   			<thead>
+							                        	<tr class="slds-text-heading--label">
+							                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+						                                      	<span class="slds-form-element__label">{!$Label.Name}</span>
+							                              </th>
+							                              <th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+						                                        <span class="slds-form-element__label">{!$Label.Type}</span>
+							                              </th>
+							                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+						                                       <span class="slds-form-element__label">{!$Label.Example}</span>
+							                              </th>
+							                              <th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+						                                       	<span class="slds-form-element__label">{!$Label.Discription}</span>
+							                              </th> 
+							                             </tr>
+							                       	</thead>
+						                       		<tbody>
+							                           <tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'REQUIRED'"> 
+							                              <td>  
+							                              		<div ng-if ="field.apiName == namespace + 'Library_ID__c' || namespace + field.apiName == 'Reference_Content_Type__c'">
+							                                   		<span class="slds-form-element__label"  ng-if = 'isOpenFromInfoBox == false'><a  ng-click = "showModel(field.apiName,field.name);" >{{field.name}}</a><span style="font-size: 15px; color: #f00;">*</span></span>
+							                                   		<span class="slds-form-element__label" ng-if = 'isOpenFromInfoBox == true'>{{field.name}}<span style="font-size: 15px; color: #f00;">*</span></span>  
+							                                   	</div>
+							                                   	<div ng-if ="field.apiName != namespace + 'Library_ID__c' &&  namespace + field.apiName != 'Reference_Content_Type__c'">
+							                                   		<span class="slds-form-element__label">{{field.name}}<span style="font-size: 15px; color: #f00;">*</span></span>
+							                                   	</div> 
+							                              </td>
+							                              <td>  
+							                                  <span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+							                              </td>
+							                              <td> 
+							                                  <span class="slds-form-element__label">{{field.lstField.example}}</span>
+							                              </td>                
+							                              <td> 
+							                                  <span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+							                              </td> 
+							                            </tr> 
+						                        	</tbody>
+						                     	</table>  
+										      </div>
+										    </div>  
+									    <div class="slds-section" ng-hide="isRBIModel">
+									      <h3 class="slds-section__title">
+									        <button class="slds-button slds-section__title-action">
+									          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+									            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+									          </svg>{!$Label.Default_Information}</button>
+									      </h3>
+									      <div class="slds-section__content">
+									        <p><span class="slds-form-element__label">{{DefaultHeader}}</span></p>
+									        <table id ="tblDefault" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+					                                        cellspacing="1" width="100%" border="0"
+					                                        style="border-collapse: collapse; border-spacing: 1px">
+					                   			<thead>
+						                        	<tr class="slds-text-heading--label">
+						                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">	                              		
+					                                      	<span class="slds-form-element__label">{!$Label.Name}</span>
+						                              </th>
+						                              <th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+					                                        <span class="slds-form-element__label">{!$Label.Type}</span>
+						                              </th>
+						                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+					                                       <span class="slds-form-element__label">{!$Label.Example}</span>
+						                              </th>
+						                              <th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+					                                       	<span class="slds-form-element__label">{!$Label.Discription}</span>
+						                              </th> 
+						                             </tr>
+						                       	</thead>
+					                       		<tbody>
+						                           <tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'DEFAULT'"> 
+						                              <td > 
+						                                   <span class="slds-form-element__label">{{field.name}}</span>
+						                              </td>
+						                              <td>  
+						                                 <span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+						                              </td>
+						                              <td> 
+						                                  <span class="slds-form-element__label">{{field.lstField.example}}</span>
+						                              </td>                
+						                              <td> 
+						                                 <span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+						                              </td> 
+						                            </tr> 
+					                        	</tbody>
+					                     	</table>  
+									      </div> 
+									    </div>
+									    <div class="slds-section">
+									      <h3 class="slds-section__title">
+									        <button class="slds-button slds-section__title-action">
+									          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+									            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+									          </svg>{!$Label.Additional_Fields}</button>
+									      </h3>
+									      <div class="slds-section__content">
+									       <p> <span class="slds-form-element__label">{{OptionalHeader}}</span></p>
+									        <table id ="tblAdditional" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+					                                        cellspacing="1" width="100%" border="0"
+					                                        style="border-collapse: collapse; border-spacing: 1px">
+					                   			<thead>
+						                        	<tr class="slds-text-heading--label">
+						                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+					                                      	<span class="slds-form-element__label">{!$Label.Name}</span>
+						                              </th>
+						                              <th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+					                                       <span class="slds-form-element__label">{!$Label.Type}</span>
+						                              </th>
+						                              <th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+					                                       <span class="slds-form-element__label">{!$Label.Example}</span>
+						                              </th>
+						                              <th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+					                                      <span class="slds-form-element__label">{!$Label.Discription}</span>
+						                              </th> 
+						                             </tr>
+						                       	</thead>
+					                       		<tbody>
+						                           <tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ADDITIONAL'"> 
+						                              <td >  
+						                                   <div ng-if ="field.apiName == namespace + 'Language__c'">
+						                                   		<span class="slds-form-element__label" ng-if = 'isOpenFromInfoBox == false'><a  ng-click = "showModel(field.apiName,field.name);" >{{field.name}}</a></span>  
+						                                   		<span class="slds-form-element__label" ng-if = 'isOpenFromInfoBox == true'>{{field.name}}</span>  
+						                                   	</div>
+						                                   	<div ng-if ="field.apiName != namespace + 'Language__c' && field.apiName != namespace + 'Referenceability__c'">
+						                                   		<span class="slds-form-element__label">{{field.name}}</span> 
+						                                   	</div>
+															<div ng-if ="field.apiName == namespace + 'Referenceability__c'">
+																<span class="slds-form-element__label">{{field.name}}</span>  
+															</div>
+						                              </td>
+						                              <td>  
+						                                  <span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+						                              </td>
+						                              <td> 
+						                                  <span class="slds-form-element__label">{{field.lstField.example}}</span>
+						                              </td>                
+						                              <td> 
+						                                  <span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+						                              </td> 
+						                            </tr> 
+					                        	</tbody>
+					                     	</table>   
+									      </div>
+									    </div>
+									    <div class="slds-section" ng-hide="isRBIModel && isAttributePanel">
+									      <h3 class="slds-section__title">
+									        <button class="slds-button slds-section__title-action">
+									          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+									            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+									          </svg>{!$Label.Including_Attributes}</button>
+									      </h3>
+									      <div class="slds-section__content">
+									      	<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ATTRIBUTES'">
+									        	<span class="slds-form-element__label">{{field.lstField.description}}</span>
+									        	<i><span class="slds-form-element__label">{{example}}</span></i>
+									        	<table id="tbAtt_01" style="width:50%;font-weight:bold;">
+									        		<tr >
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Use CaseID</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Use Case</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Product</span>
+									        			</td>
+									        		</tr>
+									        		<tr>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">a0441000000GRmgf</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Analytics</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW</span>
+									        			</td>
+									        		</tr>
+									        	</table>
+									        	 
+									        	<span class="slds-form-element__label" style="margin-top:10px;">{{attributeDescriptionFirstSuffix}}</span>
+									        	<div></div>
+									        	<i><span  class="slds-form-element__label" >{{example}}</span></i>
+									        	<table id="tbAtt_02" style="width:50%;font-weight:bold;">
+									        		<tr> 
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Product</span>
+									        			</td>
+									        		</tr>
+									        		<tr> 
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC,a04410000003JIeZAAS</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW,SLA:Bronze</span>
+									        			</td>
+									        		</tr>
+									        	</table>
+									        	<span class="slds-form-element__label" style="margin-top:10px;">{{attributeDescriptionSecondSuffix}} <span ng-if="!isRequestModel"><b>Attribute IDs</b> field.</span> <span ng-if="isRequestModel"><b>Attributes</b> field.</span></span>
+						        				<img src="{!URLFOR($Resource.DM_AttributeSection)}" style="width:75%;"  alt="Account" />  
+									        </div>
+									      </div>
+									    </div>
+										<div class="slds-section" ng-show="isRequestModel">
+									      <h3 class="slds-section__title">
+									        <button class="slds-button slds-section__title-action">
+									          <svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+									            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+									          </svg>Including Filters</button>
+									      </h3>
+									      <div class="slds-section__content">
+									      	<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'FILTERS'">
+									        	<span class="slds-form-element__label">{{field.lstField.description}}</span>
+									        	<i><span class="slds-form-element__label">{{example}}</span></i>
+									        	<table id="tbAtt_01" style="width:50%;font-weight:bold;">
+									        		<tr >
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Use CaseID</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Use Case</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Product</span>
+									        			</td>
+									        		</tr>
+									        		<tr>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">a0441000000GRmgf</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Analytics</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW</span>
+									        			</td>
+									        		</tr>
+									        	</table>
+									        	<i><span  class="slds-form-element__label" >{{example}}</span></i>
+									        	<table id="tbAtt_02" style="width:50%;font-weight:bold;">
+									        		<tr> 
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">ProductID</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">Product</span>
+									        			</td>
+									        		</tr>
+									        		<tr> 
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC,a04410000003JIeZAAS</span>
+									        			</td>
+									        			<td>
+									        				<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW,SLA:Bronze</span>
+									        			</td>
+									        		</tr>
+									        	</table>
+									        	<span class="slds-form-element__label" style="margin-top:10px;">{{filterDescriptionSuffix}} <b>Filters</b> field.</span>
+									        	<img src="{!URLFOR($Resource.DM_FilterSection)}" style="width:75%;"  alt="Account" />  
+									        </div>
+									      </div>
+									    </div>
+									    <div class="slds-section" ng-show="!isRBIModel">
+											<h3 class="slds-section__title">
+											<button class="slds-button slds-section__title-action">
+												<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+												<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+												</svg>Including Accounts</button>
+											</h3>
+											<div class="slds-section__content" ng-if="isRefContentModel">
+												<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ACCOUNTS'"> 
+													<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+													<i><span  class="slds-form-element__label">{{example}}</span></i>
+													<table id="tbAcc" style="width:50%;font-weight:bold;">
+														<tr>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">ACCOUNTID</span>
+															</td>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">ACCOUNT</span>
+															</td>
+														</tr>
+														<tr>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">0014100001FeR4aAAF,0014100000hSB3IAAW</span>
+															</td>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">Roebuk Wade,Articat Inc.</span>
+															</td>
+														</tr>	
+													</table>
+													<span class="slds-form-element__label" style="margin-top:10px;">{{parseResult(accountDescriptionSuffix)}}</span>
+													<img src="{!URLFOR($Resource.DM_AccountSection)}" style="width:75%;"  alt="Account" />  
+												</div>
+											</div>
+											<div class="slds-section__content" ng-if="isRequestModel">
+												<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ACCOUNTS'"> 
+													<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+													<i><span  class="slds-form-element__label">{{example}}</span></i>
+													<table id="tbAcc" style="width:50%;font-weight:bold;">
+														<tr>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">ACCOUNTID</span>
+															</td>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">ACCOUNT</span>
+															</td>
+														</tr>
+														<tr>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">0014100000hSB3IAAW</span>
+															</td>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">Roebuk Wade</span>
+															</td>
+														</tr>	
+													</table>
+													<span class="slds-form-element__label" style="margin-top:10px;">{{accountDescriptionSuffixRequest}}</span>
+													<img src="{!URLFOR($Resource.DM_AccountSectionRequest)}" style="width:75%;"  alt="Account" />  
+												</div>
+											</div>
+		  								</div>
+										<div class="slds-section" ng-show="isRequestModel">
+											<h3 class="slds-section__title">
+											<button class="slds-button slds-section__title-action">
+												<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+												<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+												</svg>Including Contact</button>
+											</h3>
+											<div class="slds-section__content">
+												<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'CONTACTS'"> 
+													<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+													<i><span  class="slds-form-element__label">{{example}}</span></i>
+													<table id="tbAcc" style="width:50%;font-weight:bold;">
+														<tr>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">CONTACT ID</span>
+															</td>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">CONTACT</span>
+															</td>
+														</tr>
+														<tr>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">0030ab00000015Tgv</span>
+															</td>
+															<td>
+																<span class="slds-form-element__label" style="color:black;">John Smith</span>
+															</td>
+														</tr>
+													</table>
+													<span class="slds-form-element__label" style="margin-top:10px;">{{parseResult(contactDescriptionSuffix)}}</span>
+													<img src="{!URLFOR($Resource.DM_ContactSection)}" style="width:75%;"  alt="Account" />  
+												</div>
+											</div>
+											</div>
+			           				</div>  
+	    						</div>
+		                       <div class="slds-modal__footer">
+		                       		<a class="slds-button slds-button_brand" style="cursor: pointer;" ng-click="closeModel();">{!$Label.Close}</a> 
+		                       </div> 
+	              			</div> 
+	            		</div>
+             			<div class="slds-backdrop slds-backdrop--open"></div>
+         			</div>  
+         			
+         			<!-- SHow info box for classic -->
+         			<div ng-show="isShowInfoBox && showDetails">
+                       	<div class="customPopup"  style="width: 60% !important;left: 40%;!important">
+	                        	<div class="modalHeader" style="margin: 0; font-weight: bold;padding: 8px;background: #03A7E4;color:#FFFFFF;font-family: Arial,Helvetica,sans-serif;font-size: 13.3px;margin-left:2px;margin-right:2px;margin-top:2px;border-radius:4px;padding-bottom:3px;">
+	                        		<a ng-click="showDetails=false" style="float:right;color:#ffffff;">
+	                                       <svg class="slds-button__icon slds-button__icon_medium" aria-hidden="true">
+	                                           <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                       </svg>
+	                                       <span class="slds-assistive-text">Close</span>
+	                                   </a>
+	                                   <h2>{{infoModelHeader}}</h2>
+	                        	</div>
+	                        	<div class="divBAck">
+	                        		<div class="slds-modal__content slds-p-around--medium lookup" style="overflow:auto;height:15rem;"> 
+				                       	<div class="demo-only demo-only--sizing slds-grid slds-wrap" > 
+										 	<div id ="divInfoRefContnet" style="width:100%">  
+												<div class="slds-section">
+													<h3 class="slds-section__title">
+														<button class="slds-button slds-section__title-action">
+														<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+															<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+														</svg>{!$Label.Required_Information}</button>
+													</h3>  
+													<div class="slds-section__content">
+														<p><span class="slds-form-element__label">{{RequiredHeader}}.</span></p>
+														<table id = "tblRequired" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+																		cellspacing="1" width="100%" border="0"
+																		style="border-collapse: collapse; border-spacing: 1px">
+															<thead>
+																<tr class="slds-text-heading--label">
+																	<th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																		<span class="slds-form-element__label">{!$Label.Name}</span>
+																	</th>
+																	<th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																		<span class="slds-form-element__label">{!$Label.Type}</span>
+																	</th>
+																	<th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																		<span class="slds-form-element__label">{!$Label.Example}</span>
+																	</th>
+																	<th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+																		<span class="slds-form-element__label">{!$Label.Discription}</span>
+																	</th> 
+																	</tr>
+															</thead>
+															<tbody>
+																<tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'REQUIRED'"> 
+																	<td>  
+																		<div ng-if ="field.apiName == namespace + 'Library_ID__c' || field.apiName == 'Reference_Content_Type__c'"> 
+																			<span class="slds-form-element__label" ng-if = 'isOpenFromInfoBox == true'>{{field.name}}<span style="font-size: 15px; color: #f00;">*</span></span>  
+																		</div>
+																		<div ng-if ="field.apiName != namespace + 'Library_ID__c' &&  field.apiName != 'Reference_Content_Type__c'">
+																			<span class="slds-form-element__label">{{field.name}}<span style="font-size: 15px; color: #f00;">*</span></span>
+																		</div> 
+																	</td>
+																	<td>  
+																		<span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+																	</td>
+																	<td> 
+																		<span class="slds-form-element__label">{{field.lstField.example}}</span>
+																	</td>                
+																	<td> 
+																		<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+																	</td> 
+																</tr> 
+															</tbody>
+														</table>  
+													</div>
+												</div>  
+												<div class="slds-section" ng-hide="isRBIModel">
+													<h3 class="slds-section__title">
+													<button class="slds-button slds-section__title-action">
+														<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+														<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+														</svg>{!$Label.Default_Information}</button>
+													</h3>
+													<div class="slds-section__content">
+													<p><span class="slds-form-element__label">{{DefaultHeader}}</span></p>
+													<table id ="tblDefault" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+																	cellspacing="1" width="100%" border="0"
+																	style="border-collapse: collapse; border-spacing: 1px">
+														<thead>
+															<tr class="slds-text-heading--label">
+																<th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">	                              		
+																	<span class="slds-form-element__label">{!$Label.Name}</span>
+																</th>
+																<th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																	<span class="slds-form-element__label">{!$Label.Type}</span>
+																</th>
+																<th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																	<span class="slds-form-element__label">{!$Label.Example}</span>
+																</th>
+																<th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+																	<span class="slds-form-element__label">{!$Label.Discription}</span>
+																</th> 
+																</tr>
+														</thead>
+														<tbody>
+															<tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'DEFAULT'"> 
+																<td > 
+																	<span class="slds-form-element__label">{{field.name}}</span>
+																</td>
+																<td>  
+																	<span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+																</td>
+																<td> 
+																	<span class="slds-form-element__label">{{field.lstField.example}}</span>
+																</td>                
+																<td> 
+																	<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+																</td> 
+															</tr> 
+														</tbody>
+													</table>  
+													</div> 
+												</div>
+												<div class="slds-section">
+													<h3 class="slds-section__title">
+													<button class="slds-button slds-section__title-action">
+														<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+														<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+														</svg>{!$Label.Additional_Fields}</button>
+													</h3>
+													<div class="slds-section__content">
+													<p> <span class="slds-form-element__label">{{OptionalHeader}}</span></p>
+													<table id ="tblAdditional" cellpadding="1" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+																	cellspacing="1" width="100%" border="0"
+																	style="border-collapse: collapse; border-spacing: 1px">
+														<thead>
+															<tr class="slds-text-heading--label">
+																<th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																	<span class="slds-form-element__label">{!$Label.Name}</span>
+																</th>
+																<th  class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																	<span class="slds-form-element__label">{!$Label.Type}</span>
+																</th>
+																<th class="slds-is-sortable" scope="col" style="width:15%; text-transform:none !important;">
+																	<span class="slds-form-element__label">{!$Label.Example}</span>
+																</th>
+																<th class="slds-is-sortable" scope="col" style="text-transform:none !important;">
+																	<span class="slds-form-element__label">{!$Label.Discription}</span>
+																</th> 
+																</tr>
+														</thead>
+														<tbody>
+															<tr class="slds-hint-parent" ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ADDITIONAL'"> 
+																<td >  
+																	<div ng-if ="field.apiName == namespace + 'Language__c'">
+																		<span class="slds-form-element__label" ng-if = 'isOpenFromInfoBox == false'><a  ng-click = "showModel(field.apiName,field.name);" >{{field.name}}</a></span>  
+																		<span class="slds-form-element__label" ng-if = 'isOpenFromInfoBox == true'>{{field.name}}</span>  
+																	</div>
+																	<div ng-if ="field.apiName != namespace + 'Language__c'">
+																		<span class="slds-form-element__label">{{field.name}}</span> 
+																	</div>
+																</td>
+																<td>  
+																	<span class="slds-form-element__label">{{field.lstField.fieldType}}</span>
+																</td>
+																<td> 
+																	<span class="slds-form-element__label">{{field.lstField.example}}</span>
+																</td>                
+																<td> 
+																	<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+																</td> 
+															</tr> 
+														</tbody>
+													</table>   
+													</div>
+												</div>
+												<div class="slds-section" ng-hide="isRBIModel">
+													<h3 class="slds-section__title">
+													<button class="slds-button slds-section__title-action">
+														<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+														<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+														</svg>{!$Label.Including_Attributes}</button>
+													</h3>
+													<div class="slds-section__content">
+													<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ATTRIBUTES'">
+														<span class="slds-form-element__label">{{field.lstField.description}}</span>
+														<i><span class="slds-form-element__label">{{example}}</span></i>
+														<table id="tbAtt_01" style="width:50%;font-weight:bold;">
+															<tr >
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Use CaseID</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Use Case</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">ProductID</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Product</span>
+																</td>
+															</tr>
+															<tr>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">a0441000000GRmgf</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Analytics</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW</span>
+																</td>
+															</tr>
+														</table>
+														<span class="slds-form-element__label" style="margin-top:10px;">{{attributeDescriptionFirstSuffix}}</span>
+														<div></div>
+														<i><span  class="slds-form-element__label" >{{example}}</span></i>
+														<table id="tbAtt_02" style="width:50%;font-weight:bold;">
+															<tr> 
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">ProductID</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Product</span>
+																</td>
+															</tr>
+															<tr> 
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC,a04410000003JIeZAAS</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW,SLA:Bronze</span>
+																</td>
+															</tr>
+														</table>
+														<span class="slds-form-element__label" style="margin-top:10px;">{{attributeDescriptionSecondSuffix}} <span ng-if="!isRequestModel"><b>Attribute IDs</b> field.</span> <span ng-if="isRequestModel"><b>Attributes</b> field.</span></span>
+						        						<img src="{!URLFOR($Resource.DM_AttributeSection)}" style="width:75%;"  alt="Account" />  
+													</div>
+													</div>
+												</div>
+												<div class="slds-section" ng-show="isRequestModel">
+													<h3 class="slds-section__title">
+													<button class="slds-button slds-section__title-action">
+														<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+														<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+														</svg>Including Filters</button>
+													</h3>
+													<div class="slds-section__content">
+													<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'FILTERS'">
+														<span class="slds-form-element__label">{{field.lstField.description}}</span>
+														<i><span class="slds-form-element__label">{{example}}</span></i>
+														<table id="tbAtt_01" style="width:50%;font-weight:bold;">
+															<tr >
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Use CaseID</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Use Case</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">ProductID</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Product</span>
+																</td>
+															</tr>
+															<tr>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">a0441000000GRmgf</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Analytics</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW</span>
+																</td>
+															</tr>
+														</table>
+														<i><span  class="slds-form-element__label" >{{example}}</span></i>
+														<table id="tbAtt_02" style="width:50%;font-weight:bold;">
+															<tr> 
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">ProductID</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">Product</span>
+																</td>
+															</tr>
+															<tr> 
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">a04410000003JIdqAAC,a04410000003JIeZAAS</span>
+																</td>
+																<td>
+																	<span class="slds-form-element__label" style="color:black;">GenWatt Diesel 100kW,SLA:Bronze</span>
+																</td>
+															</tr>
+														</table>
+														<span class="slds-form-element__label" style="margin-top:10px;">{{filterDescriptionSuffix}} <b>Filters</b> field.</span>
+														<img src="{!URLFOR($Resource.DM_FilterSection)}" style="width:75%;"  alt="Account" />  
+													</div>
+													</div>
+												</div>
+												<div class="slds-section" ng-hide="isRBIModel">
+													<h3 class="slds-section__title">
+														<button class="slds-button slds-section__title-action">
+														<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+															<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+														</svg>{!$Label.Including_Accounts}</button>
+													</h3>
+													<div class="slds-section__content" ng-if="isRefContentModel">
+														<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ACCOUNTS'"> 
+															<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+															<i><span  class="slds-form-element__label">{{example}}</span></i>
+															<table id="tbAcc" style="width:50%;font-weight:bold;">
+																<tr>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">ACCOUNTID</span>
+																	</td>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">ACCOUNT</span>
+																	</td>
+																</tr>
+																<tr>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">0014100001FeR4aAAF,0014100000hSB3IAAW</span>
+																	</td>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">Roebuk Wade,Articat Inc.</span>
+																	</td>
+																</tr>	
+															</table>
+															
+															<span class="slds-form-element__label" style="margin-top:10px;">{{parseResult(accountDescriptionSuffix)}}</span>
+															<img src="{!URLFOR($Resource.DM_AccountSection)}" style="width:75%;"  alt="Account" />  
+														</div>
+													</div>
+													<div class="slds-section__content" ng-if="isRequestModel">
+														<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'ACCOUNTS'"> 
+															<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+															<i><span  class="slds-form-element__label">{{example}}</span></i>
+															<table id="tbAcc" style="width:50%;font-weight:bold;">
+																<tr>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">ACCOUNTID</span>
+																	</td>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">ACCOUNT</span>
+																	</td>
+																</tr>
+																<tr>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">0014100000hSB3IAAW</span>
+																	</td>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">Roebuk Wade</span>
+																	</td>
+																</tr>	
+															</table>
+															<span class="slds-form-element__label" style="margin-top:10px;">{{parseResult(accountDescriptionSuffixRequest)}}</span>
+															<img src="{!URLFOR($Resource.DM_AccountSectionRequest)}" style="width:75%;"  alt="Account" />  
+														</div>
+													</div>
+												</div>
+												<div class="slds-section" ng-show="isRequestModel">
+													<h3 class="slds-section__title">
+														<button class="slds-button slds-section__title-action">
+														<svg aria-hidden="true" class="slds-section__title-action-icon slds-button__icon slds-button__icon--left">
+															<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+														</svg>Including Contacts</button>
+													</h3>
+													<div class="slds-section__content">
+														<div ng-repeat="field in allDisplayFields" ng-if ="field.lstField.section == 'CONTACTS'"> 
+															<span class="slds-form-element__label">{{parseResult(field.lstField.description)}}</span>
+															<i><span  class="slds-form-element__label">{{example}}</span></i>
+															<table id="tbAcc" style="width:50%;font-weight:bold;">
+																<tr>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">CONTACTS ID</span>
+																	</td>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">CONTACT</span>
+																	</td>
+																</tr>
+																<tr>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">0030ab00000015Tgv</span>
+																	</td>
+																	<td>
+																		<span class="slds-form-element__label" style="color:black;">John Smith</span>
+																	</td>
+																</tr>	
+															</table>
+															<span class="slds-form-element__label" style="margin-top:10px;">{{parseResult(contactDescriptionSuffix)}}</span>
+															<img src="{!URLFOR($Resource.DM_ContactSection)}" style="width:75%;"  alt="Account" />  
+														</div>
+													</div>
+												</div>
+					         				</div>  
+			    						</div> 
+									</div> 
+	                       		</div> 
+	                       		<div style=" padding: 9px;overflow: hidden;background: #EEEEEE;border-top: 1px solid #DDDDDD;padding-right: 17px">  
+                        			<a class="btn" style="text-decoration: none; color: black; font-size: 0.85em;float:right;padding-left: 10px; padding-right: 10px; margin-right: 5px;height: 23px" ng-click="showDetails=false">{!$Label.Close}</a> 
+                        		</div> 
+                        	</div>
+                        	
+                       	</div>
+                       <div class="popupBackground"></div> 
+    				</div>  
+	     	</apex:outputPanel> 
+		    <script> 
+		    /*SLDS Sections*/
+				$('.slds-section__content').hide();
+				$('.slds-section__title').find('button').find('svg').css('transition', '0.3s');
+				$('.slds-section__title').click(function(){
+				    if($(this).parent().parent().hasClass('Minerva18SectionGroupSingle')){
+				        if($(this).parent().hasClass('slds-is-open')){
+				            $(this).parent().removeClass('slds-is-open');
+				            $(this).parent().find('.slds-section__content').hide();
+				        }
+				        else{
+				            $(this).parent().parent().find('.slds-section').removeClass('slds-is-open');
+				            $(this).parent().parent().find('.slds-section__content').hide();
+				            $(this).parent().toggleClass('slds-is-open');
+				            $(this).parent().find('.slds-section__content').show();
+				        }    
+				    }
+				    else{
+				        $(this).parent().toggleClass('slds-is-open');
+				        if($(this).parent().hasClass('slds-is-open')){
+				            $(this).parent().find('.slds-section__content').show();
+				        }else{
+				            $(this).parent().find('.slds-section__content').hide();
+				        }
+				    }
+				});
+			/*SLDS Sections*/
+		    function checkSize(element) { 
+		     
+		         if (element.files[0].size > 10000000) {
+		            alert('{!$Label.File_Size_Error}');
+		            element.value = null;
+		         }     
+		    }	
+		    	    
+		    $(window).load(function(){ 
+		    	$("#divInfoRefContnet").appendTo('#divInfoBox');
+		    });
+			    
+		    </script>
+		    <div class="slds-spinner--medium" id="loadingImage" style="position: absolute; z-index: 10;width: 5%;height: 5%;top: 40vh; left: 40vw;display: none;">
+         		<img src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+   	  	    </div>
+		    <div id="fileUploadDiv" style="position: relative;">
+		        <apex:form id="formId" style="margin-left:1vw;margin-right:1vw">        
+			        <apex:actionFunction action="{!initializeRefIdList}" name="initializeRefIdList" reRender="formId" >
+			             <apex:param value="" name="errorIdList" assignTo="{!errorString}"/>
+			             <apex:param value="" name="refIdList" assignTo="{!idListString}"/>
+			             <apex:param value="" name="apiName" assignTo="{!objectName}"/>
+			        </apex:actionFunction>  
+			        <apex:actionFunction action="{!setTotalCount}" name="setTotalCount" reRender="false" >		             
+			             <apex:param value="" name="totalRecordcount" assignTo="{!totalRecordCountString}"/>
+			        </apex:actionFunction>        
+			        <apex:actionFunction action="{!insertContent}" name="insertContent" >                   
+			        </apex:actionFunction>
+			        <apex:outputPanel rendered="{!insertDone}" id="OPfileSelect">               
+			           <apex:actionRegion rendered="{!!processComplete}" id="ARfileSelect">   
+			              <button class="slds-button slds-button_brand" style="float:right; margin:1%" onclick=" document.getElementById('fileUpload').className = 'slds-tabs--path__item slds-is-complete';
+	                                                                                               document.getElementById('complete').className = 'slds-tabs--path__item slds-is-current';
+	                                                                                               insertContent();
+	                                                                                               alert('Upload in progress. When the upload completes a confirmation email will be sent to you.');
+	                                                                                               document.getElementById('loadingImage').style.display = 'block';
+	                                                                                               document.getElementById('fileUploadDiv').style = 'opacity: 0.5';
+	                                                                                               return false;">Insert Files</button>             
+			           </apex:actionRegion>		           
+			           <apex:outputPanel id="panel">                                    
+			           	<apex:outputPanel rendered="{!!processComplete}" id="PBfileSelect">  
+						   <div id="divStartDetails" style="text-align: center;padding-top: 10px;padding-left: 15px;">   
+								<div>
+									<span class="slds-form-element__label" style="margin-top:8px;font-size: 14px;font-weight: bold;">All records successfully created!</span>
+								</div>
+								<div> 
+									<span class="slds-form-element__label" style="float:left;" >Use the Choose File button to select the file that should be uploaded for each Reference Content record.</span>
+								</div>
+							</div>   
+				        	<table id="fileTable" class="slds-table slds-table_bordered slds-table_col-bordered slds-table_cell-buffer" style="min-width:70vh">            
+				            	<tr class="slds-text-title_caps">                          
+			                        <th>
+		                            	<div class="slds-truncate" align="center">{!$Label.Reference_Content}</div>
+		                        	</th>                         
+		                         	<th>
+		                            	<div class="slds-truncate" align="center">{!$Label.Reference_Content_File}</div>
+		                        	</th>	                         
+		                    	</tr>
+		                    	<apex:repeat value="{!refToContent}" var="item" id="refContentTable"> 
+				                    <tr align="center">                        
+				                        <td>      
+				                        	<apex:outputText value="{!item.refName}" id="refName"/>                   
+				                        </td>                                           
+				                        <td>
+					                        <div class="slds-form-element">						              
+								              <div class="slds-form-element__control">
+								                <div class="slds-file-selector slds-file-selector_files">     
+								                	<apex:inputFile styleClass="slds-file-selector__input" value="{!item.contentData}" id="refFile" fileName="{!item.fileName}" onchange="checkSize(this);"></apex:inputFile>           
+		  					                    </div>                
+								              </div>
+								            </div>			                        	
+				                        </td>
+				                    </tr>
+				                </apex:repeat>
+			                </table><br/>
+			            </apex:outputPanel>
+			           </apex:outputPanel>                       
+			        </apex:outputPanel>  
+	       		</apex:form>
+       		</div>  
+      	</apex:outputPanel>
+        <apex:outputPanel rendered="{!!isDataLoaderEnabled}">
+        	<apex:pageMessage summary="{!$Label.Data_Loader_Disabled}" severity="error" strength="2" />
+        	<apex:pageMessages />
+     	</apex:outputPanel> 
+     	
+    </html>
+</apex:page>

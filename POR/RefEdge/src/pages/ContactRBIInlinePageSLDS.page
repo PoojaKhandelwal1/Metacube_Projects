@@ -1,0 +1,1495 @@
+<!--
+* ReferenceEdge
+* 
+* Point of Reference, Inc. - Copyright 2014 All rights reserved.
+*
+* @company : Point of Reference, Inc.
+* @website : www.point-of-reference.com
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+* WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+* POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+* MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+* AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+* ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+* WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+* WRITTEN CONSENT FROM COMPANY.
+-->
+<apex:page standardController="Contact"
+           id="pageId"
+           showHeader="false"
+           standardStylesheets="false"
+           extensions="SLDSContactRBIInlineController"
+           sidebar="false"
+           applyHtmlTag="false"
+           applyBodyTag="false"
+           docType="html-5.0">
+    
+    <html>
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/custom-slds.css')}" />   
+            <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+            <script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script> 
+            <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+            <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+            <apex:includeScript value="/support/console/44.0/integration.js" />
+
+            <style type="text/css">
+                .bPageHeader {
+                display:none;
+                }
+                .slds-dueling-list__options, .slds-picklist__options {
+                    width: 12rem!important;
+                }
+                #multiSelectBox .slds-form-element {
+                    width: 12rem!important;
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux{ 
+                background-color: white !important;
+                border-radius: 20%;
+                
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux:after, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux:after{
+                border-color : gray;
+                }
+                a {
+                cursor: pointer;
+                }
+                .slds {
+                    font: 100% / 1.5 "Salesforce Sans", Arial, sans-serif;
+                    font-style: normal;
+                    font-variant-ligatures: normal;
+                    font-variant-caps: normal;
+                    font-variant-numeric: normal;
+                    font-variant-east-asian: normal;
+                    font-weight: normal;
+                    font-stretch: normal;
+                    font-size: 100%;
+                    line-height: 1.5;
+                    font-family: "Salesforce Sans", Arial, sans-serif;
+                    background: white;
+                    color: #16325c;
+                    -webkit-tap-highlight-color: transparent;
+                }
+                #error-block {
+                background-color: #DA4949;
+                color: WHITE;
+                font-size: 15px;
+                border-radius: 5px;
+                }
+                .slds-form-element__static{
+                font-size: 13px !important;
+                }
+                .tooltip:hover .tooltipHelpShow {
+				    display : inline;
+                    bottom: 65px;
+                    position: absolute;
+				}
+				.tooltip:hover .tooltipHelpHide {
+				    display : none;
+                    bottom: 65px;
+                    position: absolute;
+				}
+                .tooltip:hover .tooltipHelpShowRef {
+				    display : inline;
+                    top: -55px;
+                    position: absolute;
+				}
+                .tooltip:hover .tooltipHelpHideRef {
+				    display : none;
+                    top: -55px;
+                    position: absolute;
+				}
+
+				.tooltipHelpShow {
+				    display : none;
+                    bottom: 65px;
+                    line-height: 0.95rem;
+                    position: absolute;
+				}
+                .tooltipHelpShowRef {
+				    display : none;
+                    top: -55px;
+                    line-height: 0.95rem;
+                    position: absolute;
+				}
+				.tooltipHelpHide {
+				    display : inline;
+                    bottom: 65px;
+                    position: absolute;
+				}
+                .tooltipHelpHideRef {
+				    display : inline;
+                    top: -55px;
+                    position: absolute;
+				}
+            </style>
+            
+            <script>
+            Date.prototype.getUnixTime = function() { return this.getTime()/1000|0 };
+            var myApp = angular.module('myApp', ['angularjs-datetime-picker', 'angularMultiSelectList']);
+            
+            myApp.controller('myCtrl', function ($scope, $window, $q, $filter) {
+                $scope.isEdit = false;
+                $scope.isError = false;
+                $scope.isInformationSection = false;
+                $scope.isUseLimitSection = false;
+                $scope.isRewardSection = false;
+                $scope.isExtraSection = false;
+                $scope.currencyIsoCode ='{!JSENCODE(currencyIsoCode)}'; 
+                $scope.RBI;
+                $scope.contactId = '{!JSENCODE(Contact.Id)}';
+                $scope.nameSpace = '{!JSENCODE(nameSpace)}';
+                $scope.contactName = '{!JSENCODE(Contact.Name)}';
+                $scope.lastSectionHeader = '';
+                $scope.errMsg = '';
+                $scope.isEditEnabled = false;
+                $scope.isUpdate = false;
+                $scope.infoFields = [];
+                $scope.limitFields = [];
+                $scope.rewardFields = [];
+                $scope.extraFields = [];
+                $scope.summaryFields = {};
+                $scope.oldInactiveReason = '';
+                $scope.oldRefStatus = '';
+                $scope.isShowSummary = false;
+                $scope.isHidden = false;
+                //re #859
+                $scope.showRefMsg = false;
+                $scope.showAttMsg = false;
+                $scope.redirectToRef = false;
+                $scope.redirectToAtt = false;
+                $scope.accountField = 'Account__c';
+                $scope.referenceabilityStatus = 'Referenceability_Status__c';
+                $scope.inactiveReason = 'Inactive_Reason__c';
+                $scope.showTotalRefs = false;
+                $scope.showConfirmation = false;
+                $scope.confirmMsg = '';
+                $scope.dateFormat = 'yyyy-MM-dd';
+                //  REF-1975
+                $scope.attributes = '';
+				
+				//Initial Function called when page loads
+                	$scope.load  = function() {
+					
+					$scope.getDateFormat().then(function(result) {
+						
+						if (result != null) {  
+	                   	   $scope.dateFormat = result;
+			            }
+					    $scope.init(); 
+	                });
+				}
+				
+				$scope.getDateFormat = function () {
+					var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+		               '{!$RemoteAction.SLDSContactRBIInlineController.getDateFormat}', 
+		               function(result, event) {
+		                   deferred.resolve(result);
+		               },
+		               {escape: true}
+		            );
+                    return deferred.promise;
+				}
+				
+                $scope.init = function () {
+                    $scope.fetchRBI().then(function(result) {
+                        if (result != null) {
+                            $scope.RBI = result;
+                            $scope.RBI.CurrencyIsoCode = $scope.RBI.CurrencyIsoCode == null ? $scope.currencyIsoCode : $scope.RBI.CurrencyIsoCode;
+                            $scope.typeOld = $scope.RBI[$scope.nameSpace + 'Is_Referenceable__c'] ? 'Member' : $scope.RBI[$scope.nameSpace + 'Reference_Program_Candidate__c'] ? 'Candidate' : '';
+                            $scope.attributes = $scope.RBI[$scope.nameSpace + 'Attributes__c'];
+
+                            if ($scope.RBI.Id != null) {
+                                $scope.isUpdate = true;
+                            }	                        
+                            
+                            if ($scope.RBI[$scope.nameSpace + $scope.referenceabilityStatus] == 'Inactive') {   
+                        		$scope.isHidden = false;
+                    		} else {
+                        		$scope.isHidden = true;
+                    		}
+                    		
+                            if ($scope.RBI[$scope.nameSpace + $scope.inactiveReason] != null) {
+                                $scope.oldInactiveReason = $scope.RBI[$scope.nameSpace + $scope.inactiveReason];
+                            }
+                            
+                            if ($scope.RBI[$scope.nameSpace + $scope.referenceabilityStatus] != null) {
+                                $scope.oldRefStatus = $scope.RBI[$scope.nameSpace + $scope.referenceabilityStatus];
+                            }
+                            
+                            $scope.showTotalReferenceUses().then(function(resultNew) {
+                            	
+                            	if (resultNew != null) {
+                            		$scope.refTypes = resultNew;
+                            	}
+                            });
+                            
+                            
+                            //  REF-1975
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.SLDSContactRBIInlineController.rollUpAttribute}',
+                                $scope.RBI[$scope.nameSpace + 'Contact__c'],
+                                $scope.RBI[$scope.nameSpace + 'Account__c'],
+                                function(result, event) {
+                                    result = $scope.parseResult(result);
+                                    if(typeof($scope.attributes) != "undefined" && result != '') {
+                                        $scope.attributes = $scope.attributes + ', '+result; 
+                                    } else if(typeof($scope.attributes) == "undefined" && result != '') {
+                                        $scope.attributes = result; 
+                                    }
+                                    $scope.$apply();
+                                }
+                            );
+
+                            $scope.isEditEnabled = (({!$ObjectType.Reference_Basic_Information__c.updateable} && $scope.RBI.Id != null) 
+                                                    || ({!$ObjectType.Reference_Basic_Information__c.createable} && $scope.RBI.Id == null));
+                        }
+                    });
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getInfoFields}', 
+                        $scope.contactId,
+                        function(result, event) {
+                            
+                            if (result != null) {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {
+                                    $scope.infoFields = JSON.parse(result);
+                                    $scope.isInformationSection = true;
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getLimitFields}', 
+                        $scope.contactId,
+                        function(result, event) {
+                            
+                            if (result != null) {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {
+                                    $scope.limitFields = JSON.parse(result);
+                                    $scope.isUseLimitSection = true;
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getRewardFields}', 
+                        $scope.contactId,
+                        function(result, event) {
+                            
+                            if (result != null) {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {
+                                    $scope.rewardFields = JSON.parse(result);
+                                    $scope.isRewardSection = true;
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getExtraFields}', 
+                        $scope.contactId,
+                        function(result, event) {
+                            
+                            if (result != null && result.length > 2) {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {
+                                    $scope.extraFields = JSON.parse(result);
+                                    $scope.isExtraSection = true;
+                                    angular.forEach(
+                                        $scope.extraFields,
+                                        function(item) {
+                                        
+                                            if (item.fieldType == 'MULTIPICKLIST' && $scope.RBI[item.apiName] != null) {
+                                                var apiList = $scope.RBI[item.apiName].split(';');
+                                                angular.forEach(
+                                                    item.picklistEntries,
+                                                    function(entry) {
+                                                        if (apiList.includes(entry.name)) {
+                                                            item.picklistEntriesSelected.push(entry);
+                                                        }
+                                                    }
+                                                );
+                                            }
+                                        }
+                                    );
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getSummaryFields}', 
+                        function(result, event) {
+                            if (result != null) {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {                                	
+                                	$scope.summaryField = JSON.parse(result);
+                                    $scope.isShowSummary = true;
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getPickList}', 
+                        $scope.contactId,
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            
+                            if (result != null) {
+                                $scope.$apply(function () {
+                                    $scope.selectOptions = JSON.parse(result);
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getLastSectionHeader}', 
+                        $scope.contactId,
+                        function(result, event) {
+                            
+                            if (result != null) {
+                                $scope.$apply(function () {
+                                    $scope.lastSectionHeader = result;
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                };
+                
+                $scope.editRBI = function() {
+                    $scope.isEdit = true;
+                    angular.forEach(
+                        $scope.extraFields,
+                        function(item) {
+                        
+                            if (item.fieldType == 'DATE') {
+                            		
+                                if ($scope.RBI[item.apiName] == null) {
+                                    $scope.RBI[item.apiName] = '';
+                                } else {
+                                    $scope.RBI[item.apiName] = $filter('date')($scope.RBI[item.apiName], $scope.dateFormat);
+                                }
+                            }
+                            
+                            if (item.fieldType == 'DATETIME') {
+                            
+                                if ($scope.RBI[item.apiName] == null) {
+                                    $scope.RBI[item.apiName] = '';
+                                } else {
+                                    $scope.RBI[item.apiName] = $filter('date')($scope.RBI[item.apiName], $scope.dateFormat);
+                                }
+                            }
+                        }
+                    );
+                }
+                
+                //re #859 to check the condition to show the popup or not
+                $scope.saveRBIPopup = function() { 
+                	
+                	if (true) {
+                		$scope.showRefMsg = true;
+                	} else {
+                		$scope.saveRBI(false);
+                	}
+                }
+                
+                //re #859 to redirecting to add ref type page
+                $scope.gotoRefPage = function() {
+                	$scope.redirectToRef = true;
+                	$scope.saveRBI(false);
+                }
+                
+                //re #859 to redirecting to add attribute page
+                $scope.gotoAttPage = function() {
+                	$scope.redirectToAtt = true;
+                	$scope.saveRBI(false);
+                }
+                
+                $scope.saveRBI = function(isFromConfirm) { 
+                	if (!isFromConfirm) {
+                        $scope.showRefMsg = false;
+                        $scope.showAttMsg = false;
+                        $scope.showConfirmation = false;
+                        
+                        //Check for inactive resason
+                        if ($scope.RBI[$scope.nameSpace + $scope.referenceabilityStatus] == 'Inactive' && ($scope.RBI[$scope.nameSpace + $scope.inactiveReason] == null || $scope.RBI[$scope.nameSpace + $scope.inactiveReason] == '' || $scope.RBI[$scope.nameSpace + $scope.inactiveReason].trim().length === 0)) { 
+                            $scope.isError = true;
+                            $scope.errMsg = 'Please Provide the Inactive reason.';
+                        } else {
+                            $scope.isError = false;
+                        }  
+                        
+                        angular.forEach($scope.extraFields, function(value, key) {
+                            
+                            if (value.fieldType == 'DATE' || value.fieldType == 'DATETIME') {
+                                var dateString = $scope.convertToDate($scope.RBI[value.apiName]);
+                                
+                                if (dateString != null) {
+                                    //REF-2088
+                                    if ($scope.RBI[value.apiName] == null || $scope.RBI[value.apiName].toString() == "NaN" || $scope.RBI[value.apiName] == '' ) {
+                                        delete $scope.RBI[value.apiName];
+                                    } else {
+                                        var dateValue = new Date(dateString).getTime() + 86300000;
+                                        value.dateValue = $scope.RBI[value.apiName];
+                                        $scope.RBI[value.apiName] = dateValue;
+                                    }
+                                } else {
+                                    $scope.isError = true;
+                                    $scope.errMsg = '{!$Label.Date_Invalid}' + $scope.RBI[value.apiName]; 
+                                }
+                            } else if (value.fieldType == 'MULTIPICKLIST') {
+                                var MPEntries = '';
+                                $scope.RBI[value.apiName] = '';
+                                angular.forEach(value.picklistEntriesSelected, function(entry) {
+                                    $scope.RBI[value.apiName] = $scope.RBI[value.apiName] == '' ? entry.name : $scope.RBI[value.apiName] + ';' + entry.name;
+                                });
+                            }
+                        });
+                        
+                        if (!$scope.isError) {  
+                            $scope.checkPermission().then(function(result) {
+                                
+                                if (result != '') {
+                                    $scope.isError = true;
+                                    $scope.errMsg = result;
+                                } else {
+                                    $scope.isError = false;
+                                }
+                                
+                                if (!$scope.isError) {
+                                    var typeNew = $scope.RBI[$scope.nameSpace + 'Is_Referenceable__c'] ? 'Member' : $scope.RBI[$scope.nameSpace + 'Reference_Program_Candidate__c'] ? 'Candidate' : '';
+                                    
+                                    if (!($scope.RBI[$scope.nameSpace + 'Is_Referenceable__c'] && $scope.RBI[$scope.nameSpace + 'Reference_Program_Candidate__c']) && $scope.typeOld != '' && typeNew != '' && typeNew != $scope.typeOld && $scope.typeOld == 'Member' ) {
+                                        $scope.showConfirmation = true;
+                                        $scope.confirmMsg = '{!$Label.Member_to_Candidate_confirm}';
+                                    } else if ((!($scope.RBI[$scope.nameSpace + 'Is_Referenceable__c'] && $scope.RBI[$scope.nameSpace + 'Reference_Program_Candidate__c'])) && $scope.typeOld != '' && typeNew != '' && typeNew != $scope.typeOld && $scope.typeOld == 'Candidate' ) {
+                                        $scope.showConfirmation = true;
+                                        $scope.confirmMsg = '{!$Label.Candidate_to_Member_confirm}';
+                                    } else {
+                                        delete $scope.RBI.attributes;
+                                        delete $scope.RBI[$scope.nameSpace + 'RUL_Date_Available__c'];
+                                        delete $scope.RBI[$scope.nameSpace + 'RUL_Date_Available_f__c'];
+                                        delete $scope.RBI.CurrencyIsoCode;
+                                        delete $scope.RBI[$scope.nameSpace + 'RUL_Last_Activity_Date__c'];
+                                        delete $scope.RBI[$scope.nameSpace + 'RUL_Last_Updated_By__c'];
+                                        if ($scope.RBI[$scope.nameSpace + 'Account__r'] != null) {
+                                            delete $scope.RBI[$scope.nameSpace + 'Account__r'].attributes;
+                                        }
+                                        if ($scope.RBI[$scope.nameSpace + 'Contact__r'] != null) {
+                                            delete $scope.RBI[$scope.nameSpace + 'Contact__r'].attributes;
+                                        }
+                                        if ($scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'] == null || $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'].toString() == "NaN" || $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'] == '' ) {
+                                            delete $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'];
+                                        } else {
+                                            var dateValue = new Date($scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c']).getTime() + 86300000;
+                                            $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'] = dateValue;
+                                        }
+                                        
+                                        Visualforce.remoting.Manager.invokeAction(
+                                            '{!$RemoteAction.SLDSContactRBIInlineController.saveRBIRecords}',
+                                            $scope.RBI, $scope.oldInactiveReason,  $scope.oldRefStatus,
+                                            function(result, event) {
+                                                $scope.$apply(function() {
+                                                    result = $scope.parseResult(result);
+                                                    
+                                                    if (result.startsWith('Error') == false) {
+                                                        $scope.isError = false;
+                                                        $scope.isEdit = false;
+                                                        $scope.RBI = JSON.parse(result);
+                                                        $scope.typeOld = $scope.RBI[$scope.nameSpace + 'Is_Referenceable__c'] ? 'Member' : $scope.RBI[$scope.nameSpace + 'Reference_Program_Candidate__c'] ? 'Candidate' : '';
+                                                        
+                                                        //re #859 
+                                                        if ($scope.redirectToRef) {
+                                                            redirectToURL('{!$Page.AddNewReferenceability}?contactRBI=' + $scope.contactId);
+                                                        } else if ($scope.redirectToAtt) {
+                                                            redirectToURL('{!$Page.AddLabelAttributesPage}?Id=' + $scope.contactId);
+                                                        } else {
+                                                            //regarding #840
+                                                            redirectToBack($scope.contactId);	                                            
+                                                        }
+                                                    } else { 
+                                                        result = result.replace(/&#39/g, '\'');
+                                                        $scope.errMsg = result.substring(5);;
+                                                        $scope.isError = true;
+                                                        angular.forEach($scope.extraFields, function(value, key) {
+                        
+                                                            if (value.fieldType == 'DATE' || value.fieldType == 'DATETIME') {
+                                                                    $scope.RBI[value.apiName] = value.dateValue;
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                            },
+                                            {escape: true}
+                                        );      
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        $scope.showConfirmation = false;
+                        delete $scope.RBI.attributes;
+                        delete $scope.RBI.CurrencyIsoCode;
+                        delete $scope.RBI[$scope.nameSpace + 'RUL_Date_Available__c'];
+                        delete $scope.RBI[$scope.nameSpace + 'RUL_Date_Available_f__c'];
+                        delete $scope.RBI[$scope.nameSpace + 'RUL_Last_Activity_Date__c'];
+                        delete $scope.RBI[$scope.nameSpace + 'RUL_Last_Updated_By__c'];
+                        if ($scope.RBI[$scope.nameSpace + 'Account__r'] != null) {
+                            delete $scope.RBI[$scope.nameSpace + 'Account__r'].attributes;
+                        }
+                        if ($scope.RBI[$scope.nameSpace + 'Contact__r'] != null) {
+                            delete $scope.RBI[$scope.nameSpace + 'Contact__r'].attributes;
+                        }
+                        if ($scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'] == null || $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'].toString() == "NaN" || $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'] == '' ) {
+                            delete $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'];
+                        } else {
+                            var dateValue = new Date($scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c']).getTime() + 86300000;
+                            $scope.RBI[$scope.nameSpace + 'Joined_Reference_Program__c'] = dateValue;
+                        }
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.SLDSContactRBIInlineController.saveRBIRecords}',
+                            $scope.RBI, $scope.oldInactiveReason,  $scope.oldRefStatus,
+                            function(result, event) {
+                                $scope.$apply(function() {
+                                    result = $scope.parseResult(result);
+                                    
+                                    if (result.startsWith('Error') == false) {
+                                        $scope.isError = false;
+                                        $scope.isEdit = false;
+                                        $scope.RBI = JSON.parse(result);
+                                        $scope.typeOld = $scope.RBI[$scope.nameSpace + 'Is_Referenceable__c'] ? 'Member' : $scope.RBI[$scope.nameSpace + 'Reference_Program_Candidate__c'] ? 'Candidate' : '';
+                            
+                                        //re #859 
+                                        if ($scope.redirectToRef) {
+                                            redirectToURL('{!$Page.AddNewReferenceability}?contactRBI=' + $scope.contactId);
+                                        } else if ($scope.redirectToAtt) {
+                                            redirectToURL('{!$Page.AddLabelAttributesPage}?Id=' + $scope.contactId);
+                                        } else {
+                                            //regarding #840
+                                            redirectToBack($scope.contactId);	                                            
+                                        }
+                                    } else { 
+                                        result = result.replace(/&#39/g, '\'');
+                                        $scope.errMsg = result.substring(5);;
+                                        $scope.isError = true;
+                                    }
+                                });
+                            },
+                            {escape: true}
+                        );
+                    }
+                }
+                
+                $scope.cancelRBI = function() {
+                    $scope.isEdit = false;
+                    $scope.isError = false;
+                    
+                    $scope.fetchRBI().then(function(result) {
+                        if (result != null) {
+                            $scope.RBI = result;
+                            $scope.typeOld = $scope.RBI[$scope.nameSpace + 'Is_Referenceable__c'] ? 'Member' : $scope.RBI[$scope.nameSpace + 'Reference_Program_Candidate__c'] ? 'Candidate' : '';
+                        }
+                    });
+                }
+                
+                //#1070 : convert date to yyyy-MM-dd format befor sending to controller
+                $scope.convertToDate = function (date) {
+                		date = (date == null) ? '' : date;
+                		var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+                		
+                		if (date == null || date == '' || date.toString() == "NaN") {
+                			return '';
+                		}
+                		
+                		if (date.match(regEx))  { 
+                			tempDF = date.split('-');
+                			if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+                				return null;
+                			}
+                			return date; 
+					}
+					
+               		try {
+               			var tempDF = $scope.dateFormat;
+               			var tempDate = date + '';
+               			tempDF = tempDF.split(/[./-]/g);
+               			tempDate = tempDate.split(/[./-]/g);
+               			var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+               			var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+               			var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+               			var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+	              	 	
+              	 		if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+              	 			
+              	 			if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+	              	 			return null;
+	              	 		}
+     				 		return dateString;
+     				 	} else {
+     				 		var numDate = new Date(parseInt(date));
+     				 		
+     				 		if (numDate != 'InvalidDate' && numDate != 'Invalid Date' ) {
+     				 			return date;
+     				 		} else {
+     				 			return null;
+     				 		}
+     				 	}
+     				} catch (e) {
+     					return null;
+     				}
+                }
+                
+                $scope.checkDate = function (day, month, year){
+                	var returnval = true;
+                		if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == '' ||
+                			parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+                			returnval = false;
+            			} else {
+            				day = parseInt(day);
+            				month = parseInt(month);
+            				year = parseInt(year);
+            			}
+				    returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+				    var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+				    				: (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+				    returnval = (day > days) ? false : returnval;
+			        return returnval;
+                }
+                
+                $scope.checkPermission = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getPermissionsMessage}',
+                        $scope.isUpdate,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                $scope.showTotalReferenceUses = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.showTotalReferenceUses}',
+                        $scope.contactId,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                $scope.fetchRBI = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SLDSContactRBIInlineController.getRBI1}',
+                        $scope.contactId,
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            result = JSON.parse(result);
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                $scope.parseResult = function(result) {
+                    
+                    if (result != null) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/&#39/g, '\'');
+                        result = result.replace(/;/g, '');
+                    }
+                    return result;
+                }
+                
+                /*Method used to show/hide Inactive Reason */
+                $scope.statusChanged = function(field){
+                    
+                    if (field == 'Inactive') {   
+                        $scope.isHidden = false;
+                    } else {
+                        $scope.isHidden = true;
+                    }
+                }
+            });
+
+            var redirectionUrl;
+
+            function openUrl(result) {
+                var primaryTabId = result.id;
+                sforce.console.openSubtab(primaryTabId, redirectionUrl, true, null, null, null, null);
+            }
+
+            //regarding #840
+            function redirectToBack(contactId) {
+
+                if ((typeof sforce != 'undefined') && sforce != null && !sforce.console.isInConsole()) {
+                    sforce.one.navigateToSObject(contactId, 'detail');
+                }
+            }
+            //re #859
+            function redirectToURL(url) {
+                redirectionUrl = url;
+
+                if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                    sforce.console.getEnclosingPrimaryTabId(openUrl);
+                } else if ((typeof sforce != 'undefined') && sforce != null) {
+                    sforce.one.navigateToURL(url, true);
+                }
+            }
+            </script>
+        </head>
+        
+        <body class="slds">
+            <div>
+                <div class="slds-scrollable--y">
+                    <div class="slds-m-horizontal--xx-small">
+                        <form id="frmId">
+                            <div ng-app="myApp" ng-controller="myCtrl" ng-cloak="ng-cloak" ng-init="load();">
+                                <div class="slds-page-header__detail-row" style="margin:0;padding:10px 0;" role="banner">
+                                    <div class="slds-grid">
+                                        <div class="slds-col">
+                                            <div><apex:image url="{!$Resource.RefEdgeLogo}" style="width:150px;float: left;"/></div>
+                                        </div>
+                                        <div class="slds-col slds-no-flex slds-align-middle">
+                                            <a ng-click="editRBI()" ng-show="!isEdit && isEditEnabled" class="slds-button slds-button--neutral">{!$Label.Edit}</a>
+                                            <a ng-click="cancelRBI()" ng-show="isEdit" class="slds-button slds-button--neutral">{!$Label.Cancel}</a>
+                                            <a ng-click="saveRBIPopup()" ng-show="isEdit && (RBI.Id == null || RBI.Id == '')" class="slds-button slds-button--brand">{!$Label.Save}</a>
+                                            <a ng-click="saveRBI(false)" ng-show="isEdit && RBI.Id != null && RBI.Id != ''" class="slds-button slds-button--brand">{!$Label.Save}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="error-block" ng-show="isError" class="slds-p-around--small">
+                                    <strong>
+                                        {!$Label.Please_review_the_following_errors}
+                                    </strong>
+                                    <p>
+                                        {{errMsg}}
+                                    </p>
+                                </div>
+                                <div id="outer-block" ng-show="isInformationSection || isUseLimitSection || isRewardSection">
+                                    <div id="detailBlock" ng-show="!isEdit">
+                                        <div ng-show="isInformationSection">
+                                            <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                                {!$Label.Reference_Information}
+                                            </div>
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in infoFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                    <div ng-show="field.apiName != ''" ng-hide = "field.apiName == inactiveReason &&  RBI[nameSpace+referenceabilityStatus] != 'Inactive'" style="min-height:65px;">
+                                                        <div class="slds-form-element">
+                                                            <label class="slds-form-element__label" style="margin-right: 0;">{{field.label}}</label>
+                                                            <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                                <div class="slds-form-element ">
+                                                                    <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                    <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                        <svg class="slds-button__icon" aria-hidden="true">
+                                                                            <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                        </svg>
+                                                                        <span class="slds-assistive-text">Help</span>
+                                                                    </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground " ng-class="{'tooltipHelpHideRef' : field.apiName == namespace + 'Referenceability__c' , 'tooltipHelpHide' : field.apiName != namespace + 'Referenceability__c'}" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div> 
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground" ng-class="{'tooltipHelpShowRef' : field.apiName == namespace + 'Referenceability__c' , 'tooltipHelpShow' : field.apiName != namespace + 'Referenceability__c'}" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                                </div>
+                                                                
+                                                            </div>
+                                                            <div ng-show="field.fieldType == 'BOOLEAN'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">
+                                                                        <label class="slds-checkbox">
+                                                                            <input type="checkbox" ng-model="RBI[nameSpace+field.apiName]" disabled="disabled" />
+                                                                            <span class="slds-checkbox--faux"  style="margin-top: 0.5rem; margin-bottom: 0.5rem;"></span>
+                                                                        </label>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType == 'DATE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{field.dateValue}}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-if="field.fieldType == 'CURRENCY'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{RBI.CurrencyIsoCode}} {{RBI[nameSpace+field.apiName]}}</span>
+                                                                </div>
+                                                            </div>  
+                                                            <div ng-show="field.fieldType != 'CURRENCY' && field.fieldType != 'BOOLEAN' && field.fieldType != 'DATE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static"  ng-show="field.apiName != 'Total_Reference_Use__c' && field.apiName != 'Attributes__c'">{{RBI[nameSpace+field.apiName]}}</span>
+                                                                    <span class="slds-form-element__static"  ng-show="field.apiName == 'Attributes__c'">{{attributes}}</span>
+                                                                    <a ng-click="$parent.showTotalRefs = true;" ng-show="field.apiName == 'Total_Reference_Use__c'">{{RBI[nameSpace+field.apiName]}}</a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div ng-show="field.apiName == ''" style="min-height:65px;">
+                                                        <label class="slds-form-element__label"></label>
+                                                        <div class="slds-form-element__control">
+                                                            <span class="slds-form-element__static"></span>
+                                                        </div>
+                                                    </div><hr width="97%" style="margin:0 0 5px 0;"  ng-hide = "field.apiName == inactiveReason &&  RBI[nameSpace+referenceabilityStatus] != 'Inactive'"/>                                                </div>
+                                            </div>
+                                        </div>
+                                        <div ng-show="isUseLimitSection">
+                                            <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                                {!$Label.Reference_Use_Limits}
+                                            </div>
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in limitFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                    <div ng-show="field.apiName != ''" style="min-height:65px;">
+                                                        <div class="slds-form-element">
+                                                            <label class="slds-form-element__label" style="margin-right: 0;">{{field.label}}</label>
+                                                            <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                                <div class="slds-form-element ">
+                                                                    <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                    <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                        <svg class="slds-button__icon" aria-hidden="true">
+                                                                            <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                        </svg>
+                                                                        <span class="slds-assistive-text">Help</span>
+                                                                    </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-if="field.fieldType == 'BOOLEAN'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">
+                                                                        <label class="slds-checkbox">
+                                                                            <input type="checkbox" ng-model="RBI[nameSpace+field.apiName]" disabled="disabled" />
+                                                                            <span class="slds-checkbox--faux"  style="margin-top: 0.5rem; margin-bottom: 0.5rem;"></span>
+                                                                        </label>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType == 'DATE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{field.dateValue}}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType != 'BOOLEAN' && field.fieldType != 'DATE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{RBI[nameSpace+field.apiName]}}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div ng-show="field.apiName == ''" style="min-height:65px;">
+                                                        <label class="slds-form-element__label"></label>
+                                                        <div class="slds-form-element__control">
+                                                            <span class="slds-form-element__static"></span>
+                                                        </div>
+                                                    </div><hr width="97%" style="margin:0 0 5px 0;"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div ng-show="isRewardSection">
+                                            <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                                {!$Label.Rewards_Status}
+                                            </div>
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in rewardFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                    <div ng-show="field.apiName != ''">
+                                                        <div class="slds-form-element">
+                                                            <label class="slds-form-element__label" style="margin-right: 0;">{{field.label}}</label>
+                                                            <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                                <div class="slds-form-element ">
+                                                                    <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                    <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                        <svg class="slds-button__icon" aria-hidden="true">
+                                                                            <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                        </svg>
+                                                                        <span class="slds-assistive-text">Help</span>
+                                                                    </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType == 'DATE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{field.dateValue}}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType != 'BOOLEAN' && field.fieldType != 'DATE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{RBI[nameSpace+field.apiName]}}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div ng-show="field.apiName == ''">
+                                                        <label class="slds-form-element__label" ></label>
+                                                        <div class="slds-form-element__control">
+                                                            <span class="slds-form-element__static"></span>
+                                                        </div>
+                                                    </div><hr width="97%" style="margin:0 0 5px 0;"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div ng-show="isExtraSection">
+                                            <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                                {{lastSectionHeader}}
+                                            </div>
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in extraFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                    <div ng-show="field.apiName != ''">
+                                                        <div class="slds-form-element">
+                                                            <label class="slds-form-element__label" style="margin-right: 0;">{{field.label}}</label>
+                                                            <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                                <div class="slds-form-element ">
+                                                                    <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                    <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                        <svg class="slds-button__icon" aria-hidden="true">
+                                                                            <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                        </svg>
+                                                                        <span class="slds-assistive-text">Help</span>
+                                                                    </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType == 'BOOLEAN'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">
+                                                                        <label class="slds-checkbox">
+                                                                            <input type="checkbox" ng-model="RBI[field.apiName]" disabled="disabled"/>
+                                                                            <span class="slds-checkbox--faux"  style="margin-top: 0.5rem; margin-bottom: 0.5rem;"></span>
+                                                                        </label>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType != 'BOOLEAN' && field.fieldType != 'REFERENCE' && field.fieldType != 'DATE' && field.fieldType != 'DATETIME'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static" ng-bind="RBI[field.apiName]"/>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType == 'DATE' || field.fieldType == 'DATETIME'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{field.dateValue}}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div ng-show="field.fieldType == 'REFERENCE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">{{contactName}}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div ng-show="field.apiName == ''">
+                                                        <label class="slds-form-element__label"></label>
+                                                        <div class="slds-form-element__control">
+                                                            <span class="slds-form-element__static"></span>
+                                                        </div>
+                                                    </div><hr width="97%" style="margin:0 0 5px 0;"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div ng-show="isShowSummary">	    
+		                                    <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                                        {!$Label.Summary}
+		                                    </div>                                  
+		                                    <div class="slds-grid slds-wrap">
+		                                        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+		                                            <div ng-show="field.apiName != ''">
+		                                                <div class="slds-form-element">
+		                                                    <label class="slds-form-element__label" style="margin-right: 0;">{{summaryField.label}}</label>
+                                                            <div style="display: inline-flex;" class="tooltip" ng-show="summaryField.inlineHelpText != '' && summaryField.inlineHelpText != null">
+                                                                <div class="slds-form-element ">
+                                                                    <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                    <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                        <svg class="slds-button__icon" aria-hidden="true">
+                                                                            <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                        </svg>
+                                                                        <span class="slds-assistive-text">Help</span>
+                                                                    </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" style="bottom:70px" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{summaryField.inlineHelpText}}</div>
+                                                                </div>
+                                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" style="bottom:70px" role="tooltip" id="help">
+                                                                    <div class="slds-popover__body" style="padding: 0.5rem;">{{summaryField.inlineHelpText}}</div>
+                                                                </div>
+                                                            </div>
+		                                                    <div class="slds-form-element__control">
+		                                                        <pre style="line-height: 21px;white-space: pre-wrap;padding:unset;border:none;background-color: unset;font-family: unset;word-break: unset;color: #556886;" class="slds-form-element__static">{{RBI[nameSpace+summaryField.apiName]}}</pre>
+		                                                    </div>                                                            
+		                                                </div>
+		                                            </div><hr width="97%" style="margin:0 0 5px 0;"/>
+		                                        </div>
+		                                    </div>                                        
+                                    	</div>
+                                    </div>                                    
+                                </div>
+                                <div id="editBlock" ng-show="isEdit">
+                                    <div ng-show="isInformationSection">
+                                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                            {!$Label.Reference_Information}
+                                        </div>
+                                        <div class="slds-grid slds-wrap">
+                                            <div ng-repeat="field in infoFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                <div ng-show="field.apiName != ''" ng-hide = "field.apiName == inactiveReason &&  RBI[nameSpace+referenceabilityStatus] != 'Inactive'">
+                                                    <div class="slds-form-element">
+                                                        <label class="slds-form-element__label" ng-show = "field.apiName != inactiveReason" style="margin-right: 0;">{{field.label}}</label>
+                                                        <label class="slds-form-element__label" ng-show = "field.apiName == inactiveReason" style="margin-right: 0;">{!$Label.Inactive_Reason}<span style="font-size: 20px; color: #f00;">*</span></label>
+                                                        <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                            <div class="slds-form-element ">
+                                                                <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                    </svg>
+                                                                    <span class="slds-assistive-text">Help</span>
+                                                                </p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground " ng-class="{'tooltipHelpHideRef' : field.apiName == namespace + 'Referenceability__c' , 'tooltipHelpHide' : field.apiName != namespace + 'Referenceability__c'}" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div> 
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground" ng-class="{'tooltipHelpShowRef' : field.apiName == namespace + 'Referenceability__c' , 'tooltipHelpShow' : field.apiName != namespace + 'Referenceability__c'}" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'BOOLEAN' && (field.apiName == 'Reference_Program_Candidate__c' || field.apiName == 'Is_Referenceable__c')">
+                                                            <div class="slds-form-element">
+                                                                <label class="slds-checkbox" >
+                                                                    <input type="checkbox" ng-model="RBI[nameSpace+field.apiName]" />
+                                                                    <span class="slds-checkbox--faux"  style="margin-top: 0.5rem; margin-bottom: 0.5rem;"></span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'PICKLIST'">
+                                                            <div class="slds-form-element__control">
+                                                                <select style="width:97%" class="slds-select" ng-model="RBI[nameSpace+field.apiName]" ng-change="statusChanged(RBI[nameSpace+field.apiName])">
+                                                                    <option label="--None--" value=""></option>
+                                                                    <option ng-repeat="option in selectOptions" ng-selected="option == RBI[nameSpace+field.apiName]" value="{{option}}">{{option}}</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'DATE'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static">{{field.dateValue}}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'CURRENCY'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static">{{RBI.CurrencyIsoCode}} {{RBI[nameSpace+field.apiName]}}</span>
+                                                            </div>
+                                                        </div>  
+                                                        <div ng-if="field.fieldType == 'TEXTAREA' || field.fieldType == 'DOUBLE'"  ng-hide = "field.apiName == inactiveReason">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static" ng-show="field.apiName != 'Attributes__c'">{{RBI[nameSpace+field.apiName]}}</span>  
+                                                                <span class="slds-form-element__static" ng-show="field.apiName == 'Attributes__c'">{{attributes}}</span>
+                                                            </div>
+                                                        </div>                                                        
+                                                        <div ng-if ="field.fieldType == 'TEXTAREA'" ng-hide = "isHidden">
+                                                            <div class="slds-form-element__control" ng-show = "field.apiName == inactiveReason">
+                                                                <textarea rows="3" cols="50" class="slds-input" ng-model="RBI[nameSpace+field.apiName]"  style="width:94%" ></textarea> 
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="field.apiName == ''">
+                                                    <label class="slds-form-element__label"></label>
+                                                    <div class="slds-form-element__control">
+                                                        <span class="slds-form-element__static"></span>
+                                                    </div>
+                                                </div><hr width="97%" style="margin:0 0 5px 0;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div ng-show="isUseLimitSection">
+                                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                            {!$Label.Reference_Use_Limits}
+                                        </div>
+                                        <div class="slds-grid slds-wrap">
+                                            <div ng-repeat="field in limitFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                <div ng-show="field.apiName != ''">
+                                                    <div class="slds-form-element">
+                                                        <label class="slds-form-element__label" style="margin-right: 0;">{{field.label}}</label>
+                                                        <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                            <div class="slds-form-element ">
+                                                                <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                    </svg>
+                                                                    <span class="slds-assistive-text">Help</span>
+                                                                </p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'BOOLEAN'">
+                                                            <div class="slds-form-element">
+                                                                <label class="slds-checkbox">
+                                                                    <input type="checkbox" ng-model="RBI[nameSpace+field.apiName]" />
+                                                                    <span class="slds-checkbox--faux" style="margin-top: 0.5rem; margin-bottom: 0.5rem;"></span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'STRING'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static" ng-show="field.apiName == 'RUL_Last_Updated_By__c'">{{RBI[nameSpace+field.apiName]}}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'DOUBLE'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static" ng-show="field.apiName == 'RUL_Activities_used__c' || field.apiName == 'RUL_Activities_available__c'">{{RBI[nameSpace+field.apiName]}}</span>
+                                                                <input style="width:97%" type="number" class="slds-input" ng-model="RBI[nameSpace+field.apiName]" ng-show="field.apiName == 'RUL_Period__c' || field.apiName == 'RUL_Activities_will_do__c'" />
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'DATE'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static">{{field.dateValue}}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="field.apiName == ''">
+                                                    <label class="slds-form-element__label"></label>
+                                                    <div class="slds-form-element__control">
+                                                        <span class="slds-form-element__static"></span>
+                                                    </div>
+                                                </div><hr width="97%" style="margin:0 0 5px 0;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div ng-show="isRewardSection">
+                                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                            {!$Label.Rewards_Status}
+                                        </div>
+                                        <div class="slds-grid slds-wrap">
+                                            <div ng-repeat="field in rewardFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                <div ng-show="field.apiName != ''">
+                                                    <div class="slds-form-element">
+                                                        <label class="slds-form-element__label" style="margin-right: 0;">{{field.label}}</label>
+                                                        <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                            <div class="slds-form-element ">
+                                                                <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                    </svg>
+                                                                    <span class="slds-assistive-text">Help</span>
+                                                                </p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'DOUBLE'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static">{{RBI[nameSpace+field.apiName]}}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="field.apiName == ''">
+                                                    <label class="slds-form-element__label"></label>
+                                                    <div class="slds-form-element__control">
+                                                        <span class="slds-form-element__static"></span>
+                                                    </div>
+                                                </div><hr width="97%" style="margin:0 0 5px 0;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div ng-show="isExtraSection">
+                                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+                                            {{lastSectionHeader}}
+                                        </div>
+                                        <div class="slds-grid slds-wrap">
+                                            <div ng-repeat="field in extraFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+                                                <div ng-show="field.apiName != ''">
+                                                    <div class="slds-form-element">
+                                                        <label class="slds-form-element__label" style="margin-right: 0;">{{field.label}}</label>
+                                                        <div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != '' && field.inlineHelpText != null">
+                                                            <div class="slds-form-element ">
+                                                                <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                    </svg>
+                                                                    <span class="slds-assistive-text">Help</span>
+                                                                </p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{field.inlineHelpText}}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'BOOLEAN'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static">
+                                                                    <label class="slds-checkbox">
+                                                                        <input type="checkbox" ng-model="RBI[field.apiName]"/>
+                                                                        <span class="slds-checkbox--faux"  style="margin-top: 0.5rem; margin-bottom: 0.5rem;"></span>
+                                                                    </label>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'STRING'">
+                                                            <div class="slds-form-element__control">
+                                                                <input style="width:97%" type="text" class="slds-input" ng-model="RBI[field.apiName]"/>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'TEXTAREA'">
+                                                            <div class="slds-form-element__control">
+                                                                <input style="width:97%" type="text" class="slds-input" ng-model="RBI[field.apiName]"/>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType != 'BOOLEAN' && field.fieldType != 'TEXTAREA' && field.fieldType != 'STRING' && field.fieldType != 'REFERENCE' && field.fieldType != 'DATE' && field.fieldType != 'DATETIME' && field.fieldType != 'PICKLIST' && field.fieldType != 'MULTIPICKLIST'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static" ng-bind="RBI[field.apiName]"/>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'DATE' || field.fieldType == 'DATETIME'">
+                                                            <div class="slds-form-element__control">
+                                                                <input class="slds-input" ng-model="RBI[field.apiName]" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker" style="width:97%" />
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'REFERENCE'">
+                                                            <div class="slds-form-element__control">
+                                                                <span class="slds-form-element__static">{{contactName}}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-show="field.fieldType == 'PICKLIST'">
+                                                            <div class="slds-form-element__control">
+                                                                <select style="width:97%" class="slds-select" ng-model="RBI[field.apiName]">
+                                                                    <option label="--None--" value=""></option>
+                                                                    <option ng-repeat="option in field.picklistEntries" ng-selected="option.name == RBI[field.apiName]" value="{{option.name}}">{{option.value}}</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div ng-if="field.fieldType == 'MULTIPICKLIST'">
+                                                            <div class="slds-form-element__control">									
+                                                                <multi-select ng-model="field.picklistEntriesSelected"
+                                                                    available="field.picklistEntries"
+                                                                    selected-label="Selected"
+                                                                    available-label="Available" 
+                                                                    display-attr="name">
+                                                                </multi-select>                                      
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="field.apiName == ''">
+                                                    <label class="slds-form-element__label"></label>
+                                                    <div class="slds-form-element__control">
+                                                        <span class="slds-form-element__static"></span>
+                                                    </div>
+                                                </div><hr width="97%" style="margin:0 0 5px 0;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div ng-show="isShowSummary">	
+		                               	<div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+	                                        {!$Label.Summary}
+	                                    </div>                                    
+	                                    <div class="slds-grid slds-wrap">
+	                                        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2">
+	                                            <div ng-show="field.apiName != ''">
+	                                                <div class="slds-form-element">
+	                                                    <label class="slds-form-element__label" style="margin-right: 0;">{{summaryField.label}}</label>
+                                                        <div style="display: inline-flex;" class="tooltip" ng-show="summaryField.inlineHelpText != '' && summaryField.inlineHelpText != null">
+                                                            <div class="slds-form-element ">
+                                                                <div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+                                                                <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                                    </svg>
+                                                                    <span class="slds-assistive-text">Help</span>
+                                                                </p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{summaryField.inlineHelpText}}</div>
+                                                            </div>
+                                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                                <div class="slds-popover__body" style="padding: 0.5rem;">{{summaryField.inlineHelpText}}</div>
+                                                            </div>
+                                                        </div>
+	                                                    <div class="slds-form-element__control">
+	                                                        <textarea rows="2" style="width:97%;line-height: unset;" type="text" class="slds-input" ng-model="RBI[nameSpace+summaryField.apiName]" />
+	                                                    </div>                                                            
+	                                                </div>
+	                                            </div><hr width="97%" style="margin:0 0 5px 0;"/>
+	                                        </div>
+	                                    </div>                                        
+                                	</div>  
+                                </div>
+                            	<div ng-show="showRefMsg">
+				                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+				                        <div class="slds-modal__container">
+				                            <div class="slds-modal__header">
+				                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showRefMsg = false;">
+				                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+				                                    <span class="slds-assistive-text">Close</span>
+				                                </a>
+				                            </div>
+				                            <div class="slds-modal__content slds-p-around--medium">
+				                                <div>
+				                                    {!$Label.Add_Ref_Type}
+				                                </div>
+				                            </div>
+				                            <div class="slds-modal__footer">
+			                                    <a class="slds-button slds-button--brand" ng-click="gotoRefPage()">{!$Label.Yes}</a>
+			                                    <a class="slds-button slds-button--neutral" ng-click="showRefMsg = false;showAttMsg = true;">{!$Label.No}</a>
+			                                    <a class="slds-button slds-button--neutral" ng-click="saveRBI(false)">{!$Label.Cancel}</a>
+				                            </div>
+				                        </div>
+				                    </div>
+				                    <div class="slds-backdrop slds-backdrop--open"></div>
+			                    </div>
+			                    <div ng-show="showAttMsg">
+				                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+				                        <div class="slds-modal__container">
+				                            <div class="slds-modal__header">
+				                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showAttMsg = false;">
+				                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+				                                    <span class="slds-assistive-text">Close</span>
+				                                </a>
+				                            </div>
+				                            <div class="slds-modal__content slds-p-around--medium">
+				                                <div>
+				                                    {!$Label.Add_Attributes}
+				                                </div>
+				                            </div>
+				                            <div class="slds-modal__footer">
+			                                    <a class="slds-button slds-button--brand" ng-click="gotoAttPage()">{!$Label.Yes}</a>
+			                                    <a class="slds-button slds-button--neutral" ng-click="saveRBI(false)">{!$Label.No}</a>
+				                            </div>
+				                        </div>
+				                    </div>
+				                    <div class="slds-backdrop slds-backdrop--open"></div>
+			                    </div>
+			                    <div ng-show="showTotalRefs">
+				                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+				                        <div class="slds-modal__container">
+				                            <div class="slds-modal__header">
+			                                    <h2 class="slds-text-heading--medium">{!$ObjectType.Reference_Basic_Information__c.fields.Total_Reference_Use_f__c.Label}</h2>
+				                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showTotalRefs = false;">
+				                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+				                                    <span class="slds-assistive-text">Close</span>
+				                                </a>
+				                            </div>
+				                            <div class="slds-modal__content slds-p-around--medium slds-scrollable--y">
+				                                <table class="slds-table slds-table--bordered" ng-show="refTypes.length > 0">
+						                            <tbody>
+						                                <tr class="slds-text-heading--label" ng-repeat="ref in refTypes | orderBy: 'name'">
+						                                    <td scope="col">
+						                                        <span class="slds-truncate">
+						                                            {{ref.name}}
+						                                        </span>
+						                                    </td>
+						                                    <td scope="col">
+						                                        <span class="slds-truncate">
+						                                            {{ref.refCount}}
+						                                        </span>
+						                                    </td>
+						                                </tr>
+						                            </tbody>
+					                            </table>
+					                            <div ng-show="refTypes.length == 0">
+					                            	{!$Label.No_Records_Found}
+					                            </div>
+				                            </div>
+				                            <div class="slds-modal__footer">
+			                                    <a class="slds-button slds-button--brand" ng-click="showTotalRefs = false;">{!$Label.OK}</a>
+				                            </div>
+				                        </div>
+				                    </div>
+				                    <div class="slds-backdrop slds-backdrop--open"></div>
+			                    </div>
+                                <div ng-show="showConfirmation">
+				                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+				                        <div class="slds-modal__container">
+				                            <div class="slds-modal__header">
+                                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showConfirmation = false;">
+				                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+				                                    <span class="slds-assistive-text">Close</span>
+				                                </a>
+                                                <h2 class="slds-text-heading--medium" style="font-family: 'Salesforce Sans',Arial,sans-serif!important;">{!$Label.Send_notification}</h2>
+				                            </div>
+				                            <div class="slds-modal__content slds-p-around--medium">
+				                                <div>
+				                                    {{confirmMsg}}
+				                                </div>
+				                            </div>
+				                            <div class="slds-modal__footer">
+			                                    <a class="slds-button slds-button--brand" ng-click="saveRBI(true)">{!$Label.Yes}</a>
+			                                    <a class="slds-button slds-button--neutral" ng-click="showConfirmation = false;">{!$Label.No}</a>
+				                            </div>
+				                        </div>
+				                    </div>
+				                    <div class="slds-backdrop slds-backdrop--open"></div>
+			                    </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

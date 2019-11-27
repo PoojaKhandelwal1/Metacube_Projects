@@ -1,0 +1,328 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Contact_Reference_Content__c" extensions="AddNewRelatedConRefContentControllerSLDS"
+            showHeader="false"
+            sidebar="false"
+            standardstylesheets="false"
+            applyHtmlTag="false"
+            applyBodyTag="false"
+            docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            <c:LookupPicklistSLDS id="picklistId"/>
+            <style>
+            	.top-padding {
+            		padding-top: 1.75rem;
+            	}
+                .required{
+                	color:red;
+                	display: inline;
+                	font-weight:bold;
+                }
+                .slds {
+                	background: white !important;
+                }
+                @media only screen and (max-width: 500px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    //width: 90%;
+	                    max-width: 380px;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	width: 141px;
+    					margin: 10px auto 0 auto;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 42%;
+	                   width:15%;
+	                }
+				}
+				@media only screen and (min-width: 501px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    width: 50%;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	float: right;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 47%;
+	                   width:4%;
+	                }
+				}
+				.slds-notify--toast {
+                	min-width: auto !important;
+                	padding: 15px 12px;
+                }  
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.7;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.7;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .remove-flex{
+                    flex:none !important;
+                    webkit-flex:none !important;
+                }
+                .container {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+                var addContactContentApp = angular.module('addContactContentApp', ['lookupPicklistApp']);
+                var addContactContentCon = addContactContentApp.controller('addContactContentCon', function($scope, $location, $q) {
+                    $scope.info;
+                    $scope.contactId = '{!JSENCODE(contactId)}';
+                    $scope.returnUrl = '{!JSENCODE(returnUrl)}';
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.isloading = true;
+                    $scope.isallDataFetched = false;
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.objectAPIName = 'Reference_Content__c';
+                    $scope.objectLabel = '{!$ObjectType.Reference_Content__c.Label}';
+                    $scope.objectLabelAcc = 'Contact';
+                    $scope.objectAPINameAcc = 'Contact';
+                    
+                    
+                    //initial function which is called on page load
+                    $scope.intialFunction = function() {
+                    	
+                        if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+                            $scope.fetchInfo().then(function(result) {
+                                $scope.info = result;
+                                console.log($scope.info);
+                            	$scope.isallDataFetched = true;
+                            	$scope.isloading = false;
+                            });
+                        }
+                    }
+                    
+                    //to parse any string
+                    $scope.parseResult = function(result) {
+                    
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                            return result;
+                        }
+                    }
+                    
+                    //method to save
+                    $scope.save = function() {
+                    	$scope.isloading = true;
+                    	
+                    	$scope.submit().then(function(result) {
+                        	$scope.isloading = false;
+                        	
+                        	if (result != '') {
+                        		$scope.isError = true;
+                    			$scope.errorMsg = result;
+                        	} else {
+                        		redirectToBack();
+                        	}
+                        });
+                    }
+                    
+                    // method to save reward
+                    $scope.submit = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddNewRelatedConRefContentControllerSLDS.submit}',
+                            angular.toJson($scope.info), 
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.fetchInfo = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddNewRelatedConRefContentControllerSLDS.fetchInfo}', $scope.contactId, $scope.returnUrl,
+                            function(result, event) {
+                              	deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.back = function() {
+                    	redirectToBack();
+                    }
+                });
+                
+                function redirectToBack() {
+                
+                    if ('{!JSENCODE(returnUrl)}' != '') {
+               			sforce.one.navigateToSObject('{!JSENCODE(returnUrl)}', 'detail');
+               		} else if ('{!JSENCODE(contactId)}' != '') {
+               			sforce.one.navigateToSObject('{!JSENCODE(contactId)}', 'detail');
+               		}
+                }
+            </script>
+        </head>
+        
+        <body ng-app="addContactContentApp" class="slds">
+        	<div class="container">
+	            <form id="frmId" ng-controller="addContactContentCon" ng-cloak="ng-cloak" >
+	                <div ng-show="isFullLicenseAccessible == 'false'">
+	                    <svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+	                        <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	                    </svg>
+	                    {!$Label.User_License}
+	                </div>
+	                <div ng-init="intialFunction();" ng-show="isFullLicenseAccessible == 'true' && isallDataFetched">
+	                    <!-- header -->
+	                    <div class="slds-page-header" role="banner">
+						    <div class="slds-grid slds-wrap">
+						        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-media">
+						                <div class="slds-media__figure">
+						                    <img class="slds-icon slds-icon--large" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+						                </div>
+						                <div class="slds-grid" style="margin-top: 1%;">
+	                                        <div ng-show="info.isFromContact">
+	                                            <h1 class="slds-text-heading--medium" title="{!$Label.T_Related_Reference_Content}">{!$Label.T_Related_Reference_Content}</h1>
+	                                        </div>
+	                                        <div ng-show="!info.isFromContact">
+	                                            <h1 class="slds-text-heading--medium" title="{!$Label.New_Associated_Contact}">{!$Label.New_Associated_Contact}</h1>
+	                                        </div>
+	                                    </div>
+						            </div>
+						        </div>
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-button-group buttonStyle" role="group">
+						                <button class="slds-button slds-button--neutral" ng-click="back();">{!$Label.Cancel}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="save();">{!$Label.Save}</button>
+						            </div>
+						        </div>
+						    </div>
+						</div>
+	                    <!-- toast msg block -->
+	                    <div id="toast-msg" ng-show="isError" class="slds-notify_container">
+	                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+	                            <span class="slds-assistive-text">{!$Label.Error}</span>
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{errorMsg}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <!-- main block -->
+	                    <div style="padding:12px">
+		                    <div class="slds-grid slds-wrap" ng-show="info.isFromContact">
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<div class="slds-form-element">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Contact_Reference_Content__c.fields.Contact__c.Label}</label>
+		                               	<div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                	<span class="slds-form-element__static">
+		                                        <a style="cursor: pointer;" href="/{{info.contactId}}" target="_blank">{{parseResult(info.contactName)}}</a>
+		                                    </span>
+		                                </div>	
+		                          	</div>
+		                    	</div>
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<div class="slds-form-element">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Contact_Reference_Content__c.fields.Reference_Content__c.label}<div class="required">*</div></label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+			                                <lookup-picklist object-Name="objectLabel" object-Api-Name="objectAPIName" selected-Id="info.refConId" selected-Name="info.refConName"></lookup-picklist>
+		                                </div>	
+		                           	</div>
+		                    	</div>
+		                    </div>
+		                    <div class="slds-grid slds-wrap" ng-show="!info.isFromContact">
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<div class="slds-form-element">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Contact_Reference_Content__c.fields.Reference_Content__c.label}</label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                	<span class="slds-form-element__static">
+		                                        <a style="cursor: pointer;" href="/{{info.refConId}}" target="_blank">{{parseResult(info.refConName)}}</a>
+		                                    </span>
+		                                </div>	
+		                           	</div>
+		                    	</div>
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<div class="slds-form-element">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Contact_Reference_Content__c.fields.Contact__c.Label}<div class="required">*</div></label>
+		                               	<div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                    <lookup-picklist object-Name="objectLabelAcc" object-Api-Name="objectAPINameAcc" selected-Id="info.contactId" selected-Name="info.contactName"></lookup-picklist>
+		                                </div>	
+		                          	</div>
+		                    	</div>
+		                    </div>
+		               	</div>
+	               	</div>
+	                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+	                	<img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

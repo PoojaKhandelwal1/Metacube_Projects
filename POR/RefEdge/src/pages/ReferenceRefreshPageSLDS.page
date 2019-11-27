@@ -1,0 +1,2371 @@
+<!--
+* ReferenceEdge
+* 
+* Point of Reference, Inc. - Copyright 2014 All rights reserved.
+* 
+* @company : Point of Reference, Inc.
+* @website : www.point-of-reference.com
+* 
+* Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"),
+* WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE,
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+* POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING,
+* MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR,
+* AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF
+* ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING,
+* WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS
+* WRITTEN CONSENT FROM COMPANY.
+--> 
+<apex:page sidebar="false" controller="ReferenceRefreshControllerSLDS" docType="html-5.0" standardStylesheets="false" action="{!userMappingRecord}">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script>
+    var isSLDS = false;
+
+    jQuery(document).ready(function() {
+        var elm = document.getElementById('AppBodyHeader');
+
+        if (elm == null) {
+            isSLDS = true;
+        }
+    });
+</script>
+
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	
+	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.BootstrapFiles, 'bootstrap.css')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.JqueryFiles, 'jquery-ui-1.9.2.custom.min.css')}"/>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+        <apex:includeScript value="/support/console/44.0/integration.js" />
+
+        <script>
+            jQuery(document).ready(function() {
+                var elm = document.getElementById('AppBodyHeader');
+
+                if (elm != null) {
+                    var element = document.getElementById("parentDiv");
+                    element.classList.remove("PORcontainer");
+                    element.setAttribute('style', 'font-family:Arial,Helvetica,sans-serif !important;');
+                    var ele = document.getElementById("loadingSpinner");
+                    ele.classList.add("classicSpin");
+                } else {
+                    var element = document.getElementById("parentDiv");
+                    element.setAttribute('style', 'font-family:"Salesforce Sans",Arial,sans-serif !important;'); 
+                }
+            });
+        </script>
+        
+		<style>
+            .classicSpin {
+            	margin-top: 200px;
+            }
+			.btn-next {
+				padding-left: 0.5rem!important;
+			}
+			.overlay {
+				z-index : 100000;
+				max-width: 23rem!important;
+			}
+			.overlay {
+				z-index : 100000;
+			}
+			.PORcontainer {
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				overflow-x: hidden;
+				overflow-y: scroll;
+			}
+			.slds-nubbin--bottom-left:after, .slds-nubbin--bottom-left:before, .slds-nubbin_bottom-left:after, .slds-nubbin_bottom-left:before {
+			 	left: 8.5rem;
+			}
+			.fixedHeader {
+				width: 100%;
+                background-color: WHITE;
+                z-index: 999;
+                position: fixed;
+                top: 0;
+			}
+			.disabledAnchor {
+				pointer-events: none;
+				color: #dddbda;
+			}
+			.slds-popover_tooltip {
+				max-width: 17rem;
+			}
+			.tooltip {
+				margin-right:0.7vw;
+			}
+			.tooltip:hover .tooltipHelpShow {
+				position : absolute;
+				display : inline;
+				left: -130px;
+				bottom: 30px;
+			}
+			.tooltipHelpShow {
+				display : none;
+				position : absolute;
+				line-height: 0.95rem;
+				left: -130px;
+				bottom: 30px;
+			}
+			.modal-container {
+				position: fixed;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				left: 0;
+				z-index: 9999;
+			}
+			.activateLink {
+				text-decoration: none;
+			    display: block;
+		        float: right;
+		        margin-right: 1.5%;
+			}
+			@media screen and (max-width: 767px) {
+				.desktopVisible {
+					display: none;
+				}
+				.mobileVisible {
+					display: block;
+				}
+				.horizontal-padding-large {
+					padding-right: 0.5rem;
+    				padding-left: 0.5rem;
+				}
+				.updateLink {
+					float: right;
+				}
+			}
+			@media screen and (min-width: 768px) {
+				.desktopVisible {
+					display: block;
+				}
+				.mobileVisible {
+					display: none;
+				}
+				.horizontal-padding-large {
+					padding-right: 1.5rem;
+    				padding-left: 1.5rem;
+				}
+				.custom-width {
+					width: 75% !important;
+				}
+				.updateLink {
+					float: none;
+					margin-left: 3%;
+				}
+			}
+			.myList {
+				position: fixed;
+				z-index: 100;
+				overflow: hidden;
+				height: 0px;
+				background-color: WHITE;
+				transition: all linear 0.15s;
+				border-radius: 3px;
+    			box-shadow: 0 0 10px white;
+    			max-width: 70%
+			}
+			.openList {
+				height: 450px;
+				overflow: auto;
+			}
+			.backdrop {
+				position: fixed;
+				z-index: 99;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-color: #939ea9;
+				visibility: hidden;
+				opacity: 0;
+				transition: visibility 0s 2s, opacity 0.15s linear;
+			}
+			.backdropOpen {
+				visibility: visible;
+				opacity: 0.8;
+				transition: opacity 0.15s linear;
+			}
+			.menu-item {
+				display: block;
+			    width: 100%;
+			    padding: 10px;
+			    text-decoration: none;
+			}
+			.menu-item:HOVER {
+			    background-color: #f4f6f9;
+			    text-decoration: none;
+			}
+			.extraMargin {
+				margin-bottom: 120px;
+			}
+            .extraLeftPadding {
+                padding-left: 1.25rem;
+            }
+		</style>
+		
+        <script>
+            var counter = 0;
+            var msg = '';
+            var isshowOverLay = '{!showOverlay}';
+            var header = '';
+            var content = '';
+            var addcls = '';
+            var removcls = '';
+            var loc = '';
+            var frmTop = '';
+            var frmLft = '';
+            var totlstps = '10';
+            var showContactSection = false;
+            var helpAssistant = '{!JSENCODE(helpAssistant)}';  
+            //  REF-1532
+            var globalHeaderHeight = 0;
+            var isFinishStep = true;
+        
+            if (jQuery('.globalHeaderBar')[0]) {
+                globalHeaderHeight = jQuery("#AppBodyHeader").height() + jQuery("#globalHeaderBar").height();
+            } else {            
+                globalHeaderHeight = jQuery("#AppBodyHeader").height();
+            }
+            function startTour() {
+                /*  REF-1860
+                    objective : To show HelpOverlays
+                    modified By : Dixita Sept 2018
+                */ 
+                counter = 0; 
+                msg = '';
+                header = '';
+                content = '';
+                addcls = '';
+                removcls = '';
+                loc = '';
+                frmTop = '';
+                frmLft = ''; 
+                isFinishStep = true;
+                ShowOrHideComponent(true); 
+            }
+            
+            function ShowOrHideComponent(action) { 
+                if (!showContactSection) {
+                    var myEl = angular.element( document.querySelector( '#outerSection' ) );
+                    myEl.addClass('extraMargin');
+                } else {
+                    var myEl = angular.element( document.querySelector( '#outerSection' ) );
+                    myEl.removeClass('extraMargin');
+                }
+                counter ++; 
+                var parentDiv = (isSLDS) ? document.getElementById("parentDiv") : window; 
+                jQuery(parentDiv).scrollTop(0); 
+                
+                if (counter > totlstps) {
+                    action = false;
+                }
+
+                if (action) {
+                    var helpOverlayMap = JSON.parse('{!JSENCODE(helpOverlay)}');
+                    console.log(helpOverlayMap[counter]);
+
+                    if (counter == 1) { 							
+                        content = helpAssistant + ' ' + helpOverlayMap[1].value;
+                        header = helpOverlayMap[1].header;
+                        addcls = '';
+                        removcls = 'arrow_box_bottom arrow_box_right arrow_compbox arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                        loc = 'accDetail';
+						if(!isSLDS) {
+							frmTop = 4 - globalHeaderHeight;
+						} else {
+                        	frmTop = 2 - globalHeaderHeight;
+						}
+                        frmLft = '80';
+                        
+                    } else if (counter == 2) {    
+                        header = helpOverlayMap[2].header;
+                        content = helpOverlayMap[2].value;
+                        addcls = 'arrow_compbox';
+                        removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner arrow_box_bottom';
+                        loc = 'accToUpdate'; 
+                        if(!isSLDS) {
+							frmTop = 10 - globalHeaderHeight;
+						} else {
+                        	frmTop = 10 - globalHeaderHeight;
+						}
+                        frmLft = '300';
+                        
+                    } else if (counter == 3) { 
+                        header = helpOverlayMap[3].header;
+                        content = helpOverlayMap[3].value;
+                        addcls = 'arrow_compbox';
+                        removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner arrow_box_bottom';
+                        loc = 'accDetail'; 
+						if(!isSLDS){
+							frmTop = 1 - globalHeaderHeight;
+						} else {
+							frmTop = globalHeaderHeight;
+						}
+                        frmLft = '85';
+                    } else if (counter == 4) {
+                        header = helpOverlayMap[4].header;
+                        var string = helpOverlayMap[4].value;
+                        content = string;
+                        addcls = 'arrow_box_top_right';
+                        removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                        loc = 'status'; 
+                        if(!isSLDS){
+							frmTop = -10 - globalHeaderHeight;
+						} else {
+							frmTop = -10 - globalHeaderHeight;
+						}
+                        frmLft = -390; 
+                    } else if (counter == 5) {   
+                        var parentDiv = (isSLDS) ? document.getElementById("parentDiv") : window; 
+                        parentDiv.scrollBy(0, jQuery('#refUpdatediv').offset().top - 100);
+                        header = helpOverlayMap[5].header;
+                        content = helpOverlayMap[5].value;
+                        addcls = 'arrow_compbox';
+                        removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                        loc = 'refUpdate'; 
+                        if(!isSLDS){
+							frmTop = -10 - globalHeaderHeight;
+						} else {
+							frmTop = -10 - globalHeaderHeight;
+						}
+                        frmLft = 60; 
+                    } else if (counter == 6) {  
+                        var parentDiv = (isSLDS) ? document.getElementById("parentDiv") : window; 
+                        parentDiv.scrollBy(0, jQuery('#attUpdatediv').offset().top - 100);
+                        header = helpOverlayMap[6].header;
+                        content = helpOverlayMap[6].value;
+                        addcls = 'arrow_compbox';
+                        removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                        loc = 'attUpdate'; 
+                        if(!isSLDS){
+							frmTop = -10 - globalHeaderHeight;
+						} else {
+							frmTop = -10 - globalHeaderHeight;
+						}
+                        frmLft = 60; 
+                    } else if (counter == 7) {    
+                        loc = jQuery('#removediv1').offset().top == 0 ? 'removediv' :'removediv1';
+					
+                        var parentDiv = (isSLDS) ? document.getElementById("parentDiv") : window; 
+                        parentDiv.scrollBy(0, jQuery('#'+loc).offset().top - 100);
+                        header = helpOverlayMap[7].header;
+                        content = helpOverlayMap[7].value;
+                        addcls = 'arrow_compbox';
+                        removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                        if(!isSLDS){
+							frmTop = -10 - globalHeaderHeight;
+						} else {
+							frmTop = -10 - globalHeaderHeight;
+						}
+                        frmLft = 70; 
+                    } else if (counter == 8 && showContactSection) {    
+                        loc = 'contacts';
+                        var parentDiv = (isSLDS) ? document.getElementById("parentDiv") : window; 
+                        parentDiv.scrollBy(0, jQuery('#contacts').offset().top - 100);
+                        header = helpOverlayMap[8].header;
+                        content = helpOverlayMap[8].value;
+                        addcls = 'arrow_box_top';
+                        removcls = 'arrow_compbox arrow_box_bottom arrow_box_top_right arrow_box_top_Corner';
+                        if(!isSLDS){
+							frmTop = 60 - globalHeaderHeight;
+						} else {
+							frmTop = 60 - globalHeaderHeight;
+						}
+                        frmLft = 0; 
+                    } else if ((counter == 8 && !showContactSection) || (counter == 9 && showContactSection)) {    
+                        header = helpOverlayMap[9].header;
+                        content = helpOverlayMap[9].value;
+                        addcls = 'arrow_box_top_right';
+                        removcls = 'arrow_box_top arrow_box_bottom arrow_box_top_right arrow_box_top_Corner';
+                        loc = 'buttonpanel'; 
+                        if(!isSLDS){
+							frmTop = -13 - globalHeaderHeight;
+							frmLft = -401; 
+						} else {
+							frmTop = -5 - globalHeaderHeight;
+							frmLft = -375;
+						}                         
+                    } else if ((counter == 9 && !showContactSection) || (counter == 10 && showContactSection)) {    
+                        header = helpOverlayMap[10].header;
+                        content = helpOverlayMap[10].value;
+                        addcls = 'arrow_box_top_right';
+                        removcls = 'arrow_box_top arrow_box_bottom arrow_box_top_right arrow_box_top_Corner';
+                        loc = 'buttonpanel'; 
+                        if(!isSLDS){
+							frmTop = -10 - globalHeaderHeight;
+							frmLft = -250;
+						} else {
+							frmTop = -10 - globalHeaderHeight;
+							frmLft = -215;
+						}                          
+                    } else { 
+                        action = false;   
+                    }
+                } else {
+                    action = false;
+                    isshowOverLay = false
+                    var myEl = angular.element( document.querySelector( '#outerSection' ) );
+                    myEl.removeClass('extraMargin');
+                } 
+                showHideHelpOverlays(action, header, content, loc, addcls, removcls, totlstps, frmTop, frmLft); 
+            }
+		</script>
+		
+        <script>
+            var profileUpdateApp = angular.module('profileUpdateApp', []);
+			profileUpdateApp.directive("scroll", function($window) {
+				return function(scope, element, attrs) {
+					angular.element($window).bind("scroll", function() {
+						
+						if (this.pageYOffset >= 50) {
+							scope.pageScrolled = true;
+						} else {
+							scope.pageScrolled = false;
+						}
+						scope.$apply();
+					});
+				};
+			});
+			var profileUpdateCtrl = profileUpdateApp.controller('profileUpdateCtrl',
+				function($scope, $q) {
+					$scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+					$scope.isLoading = false;
+					$scope.pageNo = {!pageNo};
+					$scope.userId = '{!JSENCODE(userId)}';
+					$scope.accountId = '{!JSENCODE(accountId)}';
+					$scope.showMore = {!showMore};
+					$scope.newContactCreatesNomination = false;
+                    $scope.isSLDS = isSLDS;
+					
+					$scope.showMoreAccounts = false;
+					$scope.showPagination = false;
+					$scope.showNextLink = false;
+					$scope.showPrevLink = false;
+					$scope.selectedAccountId = '';
+					$scope.selectedProfileUpdateId = '';
+					$scope.selectedProfileUpdateRecord = {};
+					$scope.selectedAccountContactIds = [];
+					$scope.currentPage = 0;
+					$scope.recordIndex = 0;
+					
+					$scope.profileUpdateWrapperList = [];
+					$scope.alreadyPresentProfileUpdates = [];
+					$scope.accountIds = [];
+					$scope.accountContactIdsMap = {};
+					$scope.profileUpdatePaginationMap = {};
+					$scope.accountAttMappingsList = [];
+					$scope.contactAttMappingsList = [];
+					
+					$scope.referenceabilityTypesToExcludeAccount = [];	//new Set<String>();
+			        $scope.referenceabilityTypesToExcludeContact = {};	//new Map<String, Set<String>>();
+			        $scope.attributesToExcludeForAccount = [];			//new Set<String>();
+			        $scope.attributesToExcludeContact = {};				//new Map<String, Set<String>>();
+			        $scope.attributesToAddAccount = [];					//new Set<String>();
+			        $scope.refTypeToAddAccount = [];					//new Set<String>();
+			        $scope.attributeToAddContact = {};					//new Map<String, Set<String>>();
+		        	$scope.referenceabilityToAddContact = {};			//new Map<String, Set<String>>();
+			        
+			        $scope.accountLabelAttributesMap = {};
+			        $scope.accountAttributeWrapperList = [];
+			        $scope.accountNonRelatedAttMappingIds = [];
+			        $scope.accountRefTypesList = [];
+			        $scope.accountReferenceability = '';
+			        $scope.isNoChangeOnProfileUpdate = true;
+			        $scope.accountNotReferenceable = false;
+			        $scope.accountNotReferenceableReason = '';
+			        $scope.tempNotReferenceableReason = '';
+			        $scope.showNotReferenceableReasonModal = false;
+					$scope.contactWrapperList = [];
+					$scope.isAccountActivated = false;
+					$scope.showList = false;
+					$scope.nonReferenceableContactsList = [];
+					$scope.selectedContactId = '';
+					$scope.showAddNewContactError = false;
+					$scope.showActivateConfirmation = false;
+					$scope.activationMessage = '{!$Label.Activate_Message}';
+					$scope.tempActivationMessage = '';
+					$scope.activateModalHeader = '';
+					
+                    sforce.console.addEventListener('closeTab', function() {
+                        $scope.createDataForSelectedAccount();
+                    });
+
+					$scope.initialFunction = function() {
+						$scope.isLoading = true;
+						$scope.getAttMappings();
+						
+						$scope.getProfileUpdateWrapperList().then(function(result) {
+							
+							if (result.length > 0) {
+								
+								if (result.length > 3) {
+									result.splice(3, 1);
+									$scope.showMoreAccounts = true;
+								}
+								$scope.profileUpdateWrapperList = result;
+								
+								angular.forEach(
+									$scope.profileUpdateWrapperList,
+									function(profileUpdate) {
+										
+										if ($scope.accountIds.indexOf(profileUpdate['accountId']) == -1) {
+											$scope.accountIds.push(profileUpdate['accountId']);
+										}
+										
+										if ($scope.recordIndex == 0 && $scope.accountId == '') {
+							                $scope.selectedAccountId = profileUpdate['accountId'];
+							                $scope.selectedProfileUpdateId = profileUpdate['id'];
+							                $scope.selectedProfileUpdateRecord = profileUpdate;
+							            } else if ($scope.accountId != '' && profileUpdate['accountId'] == $scope.accountId) {
+							            	$scope.selectedAccountId = profileUpdate['accountId'];
+							                $scope.selectedProfileUpdateId = profileUpdate['id'];
+							                $scope.selectedProfileUpdateRecord = profileUpdate;
+							            } else if ($scope.recordIndex == 0 && $scope.showMore && $scope.accountId != '') {
+							            	$scope.selectedAccountId = profileUpdate['accountId'];
+							                $scope.selectedProfileUpdateId = profileUpdate['id'];
+							                $scope.selectedProfileUpdateRecord = profileUpdate;
+							            }
+							            
+							            if ($scope.alreadyPresentProfileUpdates.indexOf(profileUpdate['id']) == -1) {
+							            	$scope.alreadyPresentProfileUpdates.push(profileUpdate['id']);
+							            }
+							            
+							            if (!($scope.currentPage in $scope.profileUpdatePaginationMap)) {
+							            	$scope.profileUpdatePaginationMap[$scope.currentPage] = [];
+							            }
+							            
+							            if ($scope.profileUpdatePaginationMap[$scope.currentPage].indexOf(profileUpdate['id']) == -1) {
+							            	$scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+							            }
+							            $scope.recordIndex++;
+									}
+								);
+								$scope.recordIndex = 0;
+								$scope.getAccountContactIdsMap(false);
+								
+								if ($scope.selectedAccountId == '' && !$scope.showMore) {
+									$scope.currentPage = 0;
+									
+									if ($scope.pageNo == null) {
+										$scope.pageNo = 0;
+									}
+									var accountPageNo = $scope.pageNo;
+									$scope.profileUpdateWrapperList = [];
+									$scope.showMoreAccounts = false;
+									
+									$scope.getProfileUpdateWrapperListForPageNo(accountPageNo).then(function(result) {
+										angular.forEach(
+											result,
+											function(profileUpdate) {
+												
+												if ($scope.accountIds.indexOf(profileUpdate['accountId']) == -1) {
+													$scope.accountIds.push(profileUpdate['accountId']);
+												}
+												
+												if ($scope.recordIndex == 10) {
+													$scope.recordIndex = 0;
+													$scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+										            
+										            if ($scope.currentPage < accountPageNo) {
+								                		$scope.profileUpdateWrapperList = [];
+								                	}
+								            		$scope.currentPage++;
+								            		$scope.showPagination = true;
+												}
+												
+												if ($scope.accountId != null && profileUpdate['accountId'] == $scope.accountId && $scope.currentPage <= accountPageNo) {
+								        			$scope.selectedAccountId = profileUpdate['accountId'];
+							                		$scope.selectedProfileUpdateId = profileUpdate['id'];
+							                		$scope.selectedProfileUpdateRecord = profileUpdate;
+								        		} else if ($scope.currentPage == accountPageNo && $scope.recordIndex == 0) {
+								        			$scope.selectedAccountId = profileUpdate['accountId'];
+							                		$scope.selectedProfileUpdateId = profileUpdate['id'];
+							                		$scope.selectedProfileUpdateRecord = profileUpdate;
+								        		}
+								        		
+								        		if ($scope.currentPage <= accountPageNo) {
+								        			
+								        			if ($scope.alreadyPresentProfileUpdates.indexOf(profileUpdate['id']) == -1) {
+										            	$scope.alreadyPresentProfileUpdates.push(profileUpdate['id']);
+										            }
+										            
+										            if ($scope.profileUpdateWrapperList.indexOf(profileUpdate) == -1) {
+										            	$scope.profileUpdateWrapperList.push(profileUpdate);
+										            }
+										            
+										            if (!($scope.currentPage in $scope.profileUpdatePaginationMap)) {
+										            	$scope.profileUpdatePaginationMap[$scope.currentPage] = [];
+										            }
+										            
+										            if ($scope.profileUpdatePaginationMap[$scope.currentPage].indexOf(profileUpdate['id']) == -1) {
+										            	$scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+										            }
+										            ++$scope.recordIndex;
+								        		}
+											}
+										);
+										$scope.getAccountContactIdsMap(false);
+										
+							        	if ($scope.currentPage > accountPageNo) {
+								            $scope.showNextLink = true;
+								            $scope.currentPage--;
+								        }
+								        
+								        if ($scope.currentPage > 0) {
+								        	$scope.showPrevLink = true;
+								        }
+								        $scope.createDataForSelectedAccount();
+									});
+								} else {
+									$scope.createDataForSelectedAccount();
+								}
+							} else {
+								$scope.isLoading = false;
+							}
+
+							if ({!showOverlay} && $scope.profileUpdateWrapperList.length > 0) {
+								setTimeout(function() { 
+									$scope.isLoading = false;
+									ShowOrHideComponent(true);  
+								}, 3000);
+							} 
+						});
+					}
+
+                    //REF-1976
+					$scope.setRemoveReasonsFromCookie = function() {
+                        var accRef,accRefReason,contactList;
+                        accRef = localStorage.getItem("accRef");
+                        accRefReason = localStorage.getItem("accRefreason", $scope.accountNotReferenceableReason);
+                        //contactList = JSON.parse(localStorage.getItem("contactList"));
+                        
+                        if (accRef == true || accRef == 'true') {
+                        	$scope.accountNotReferenceable = true;
+                            if (accRefReason != null || accRefReason != '') {
+                            	$scope.accountNotReferenceableReason = accRefReason;
+                                $scope.isNoChangeOnProfileUpdate = false;
+                            }
+                        }
+                        localStorage.removeItem("accRef");
+                        localStorage.removeItem("accRefreason");
+                        
+                    }
+                    //REF-1976
+                    $scope.createCookies = function() {
+                        var isAccountRef = JSON.stringify($scope.accountNotReferenceable);
+                        localStorage.setItem("accRef", isAccountRef);
+                        localStorage.setItem("accRefreason", $scope.accountNotReferenceableReason);
+                       
+					}
+					
+					$scope.getAccountContactIdsMap = function(isShowMoreClicked) {
+						$scope.accountContactIdsMap = {};
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getAccountContactIdsMap}',
+							$scope.accountIds,
+							function(result, event) {
+								$scope.$apply(function() {
+									result = $scope.parseResult(result);
+									$scope.accountContactIdsMap = JSON.parse(result);
+									
+									if (isShowMoreClicked) {
+										$scope.isLoading = false;
+									}
+								});
+							}
+						);
+					}
+					
+					$scope.getAttMappings = function() {
+						$scope.accountAttMappingsList = [];
+						$scope.contactAttMappingsList = [];
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getAttMappings}',
+							function(result, event) {
+								result = $scope.parseResult(result);
+								result = JSON.parse(result);
+								
+								angular.forEach(
+									result,
+									function(attMappingWrapper) {
+										
+										if (attMappingWrapper['objectName'] == 'Account') {
+											$scope.accountAttMappingsList.push(attMappingWrapper);
+										} else if (attMappingWrapper['objectName'] == 'Contact') {
+											$scope.contactAttMappingsList.push(attMappingWrapper);
+										}
+									}
+								);
+							}
+						);
+					}
+					
+					$scope.handleAccountSelect = function(selectedProfileUpdate) {
+						
+						if ($scope.selectedProfileUpdateId != selectedProfileUpdate['id']) {
+							
+							angular.forEach(
+								$scope.profileUpdateWrapperList,
+								function(profileUpdate) {
+									profileUpdate['isSelected'] = false;
+								}
+							);
+							selectedProfileUpdate['isSelected'] = true;
+							$scope.isLoading = true;
+							$scope.showList = false;
+							$scope.selectedAccountId = selectedProfileUpdate['accountId'];
+			                $scope.selectedProfileUpdateId = selectedProfileUpdate['id'];
+			                $scope.selectedProfileUpdateRecord = selectedProfileUpdate;
+			                $scope.accountAttributeWrapperList = [];
+			                $scope.accountNotReferenceableReason = '';
+			                $scope.accountNotReferenceable = false;
+			                $scope.createDataForSelectedAccount();
+						}
+					}
+					
+					$scope.createDataForSelectedAccount = function() {
+						$scope.isNoChangeOnProfileUpdate = true;
+						$scope.referenceabilityTypesToExcludeAccount = [];
+				        $scope.referenceabilityTypesToExcludeContact = {};
+				        $scope.attributesToExcludeForAccount = [];
+				        $scope.attributesToExcludeContact = {};
+				        $scope.attributesToAddAccount = [];
+				        $scope.refTypeToAddAccount = [];
+				        $scope.attributeToAddContact = {};
+			        	$scope.referenceabilityToAddContact = {};
+			        	$scope.accountLabelAttributesMap = {};
+			        	$scope.isAccountActivated = false;
+						
+						$scope.getProfileUpdateDetailWrapperList().then(function(result) {
+							
+							if (result != null && result.length > 0) {
+								$scope.isNoChangeOnProfileUpdate = false;
+								
+								angular.forEach(
+									result,
+									function(profileUpdateDetail) {
+										
+										if (profileUpdateDetail['acceptReject'] == '') {
+											
+											if (profileUpdateDetail['contactId'] != '') {
+												
+												if (profileUpdateDetail['isAdded']) {
+													
+													if (profileUpdateDetail['isAttribute']) {
+														
+														if (!(profileUpdateDetail['contactId'] in $scope.attributeToAddContact)) {
+						                                    $scope.attributeToAddContact[profileUpdateDetail['contactId']] = [];
+						                                }
+						                                
+						                                if ($scope.attributeToAddContact[profileUpdateDetail['contactId']].indexOf(profileUpdateDetail['recordIdToInsert']) == -1) {
+							                                $scope.attributeToAddContact[profileUpdateDetail['contactId']].push(profileUpdateDetail['recordIdToInsert']);
+						                                }
+													}
+													
+						                            if (profileUpdateDetail['isReferenceability']) {
+						                            	
+														if (!(profileUpdateDetail['contactId'] in $scope.referenceabilityToAddContact)) {
+						                                    $scope.referenceabilityToAddContact[profileUpdateDetail['contactId']] = [];
+						                                }
+						                                
+						                                if ($scope.referenceabilityToAddContact[profileUpdateDetail['contactId']].indexOf(profileUpdateDetail['changedTo']) == -1) {
+							                                $scope.referenceabilityToAddContact[profileUpdateDetail['contactId']].push(profileUpdateDetail['changedTo']);
+						                                }
+						                            }
+												}
+												
+												if (profileUpdateDetail['isRemoved']) {
+													
+													if (profileUpdateDetail['isAttribute']) {
+														
+														if (!(profileUpdateDetail['contactId'] in $scope.attributesToExcludeContact)) {
+						                                    $scope.attributesToExcludeContact[profileUpdateDetail['contactId']] = [];
+						                                }
+						                                
+						                                if ($scope.attributesToExcludeContact[profileUpdateDetail['contactId']].indexOf(profileUpdateDetail['recordIdToDelete']) == -1) {
+							                                $scope.attributesToExcludeContact[profileUpdateDetail['contactId']].push(profileUpdateDetail['recordIdToDelete']);
+						                                }
+													}
+													
+													if (profileUpdateDetail['isReferenceability']) {
+														
+														if (!(profileUpdateDetail['contactId'] in $scope.referenceabilityTypesToExcludeContact)) {
+						                                    $scope.referenceabilityTypesToExcludeContact[profileUpdateDetail['contactId']] = [];
+						                                }
+						                                
+						                                if ($scope.referenceabilityTypesToExcludeContact[profileUpdateDetail['contactId']].indexOf(profileUpdateDetail['recordIdToDelete']) == -1) {
+							                                $scope.referenceabilityTypesToExcludeContact[profileUpdateDetail['contactId']].push(profileUpdateDetail['recordIdToDelete']);
+						                                }
+													}
+												}
+											} else {
+												
+												if (profileUpdateDetail['isAdded']) {
+													
+													if (profileUpdateDetail['isAttribute']) {
+														
+														if ($scope.attributesToAddAccount.indexOf(profileUpdateDetail['recordIdToInsert']) == -1) {
+															$scope.attributesToAddAccount.push(profileUpdateDetail['recordIdToInsert']);
+														}
+													}
+													
+													if (profileUpdateDetail['isReferenceability']) {
+														
+														if ($scope.refTypeToAddAccount.indexOf(profileUpdateDetail['changedTo']) == -1) {
+															$scope.refTypeToAddAccount.push(profileUpdateDetail['changedTo']);
+														}
+													}
+												}
+												
+												if (profileUpdateDetail['isRemoved']) {
+													
+													if (profileUpdateDetail['isAttribute']) {
+														
+														if ($scope.attributesToExcludeForAccount.indexOf(profileUpdateDetail['recordIdToInsert']) == -1) {
+															$scope.attributesToExcludeForAccount.push(profileUpdateDetail['recordIdToInsert']);
+														}
+													}
+													
+													if (profileUpdateDetail['isReferenceability']) {
+														
+														if ($scope.referenceabilityTypesToExcludeAccount.indexOf(profileUpdateDetail['recordIdToDelete']) == -1) {
+															$scope.referenceabilityTypesToExcludeAccount.push(profileUpdateDetail['recordIdToDelete']);
+														}
+													}
+												}
+											}
+										}
+									}
+								);
+							}
+							$scope.accountNotReferenceable = false;
+							
+							$scope.getAccountAttributesMap().then(function(result) {
+								
+								if (Object.keys(result).length > 0) {
+									$scope.accountLabelAttributesMap = result;
+								}
+								
+								angular.forEach(
+									$scope.accountAttMappingsList,
+									function(attMapping) {
+										
+										if (attMapping['isRelatedMapping']) {
+											var attWrapper = {};
+											attWrapper['attMappingId'] = attMapping['id'];
+											attWrapper['labelName'] = attMapping['filterLabelName'];
+											attWrapper['isFromMapping'] = true;
+											attWrapper['isRelatedMapping'] = true;
+											attWrapper['parentAttributeMappingId'] = attMapping['fieldAPIName'];
+											attWrapper['attributes'] = '';
+											attWrapper['noChange'] = false;
+											var isPresent = false;
+											
+											angular.forEach(
+												$scope.accountAttributeWrapperList,
+												function(accAtt) {
+													
+													if (accAtt['attMappingId'] == attWrapper['attMappingId']) {
+														isPresent = true;
+													}
+												}
+											);
+											
+											if (!isPresent) {
+												$scope.accountAttributeWrapperList.push(attWrapper);
+											}
+										} else {
+					                        var attWrapper = {};
+											attWrapper['attMappingId'] = attMapping['id'];
+											attWrapper['labelName'] = attMapping['filterLabelName'];
+											attWrapper['isFromMapping'] = true;
+											attWrapper['isRelatedMapping'] = false;
+											attWrapper['parentAttributeMappingId'] = attMapping['fieldAPIName'];
+											attWrapper['noChange'] = false;
+											
+											if (attMapping['filterLabelName'] in $scope.accountLabelAttributesMap) {
+												attWrapper['attributes'] = $scope.accountLabelAttributesMap[attMapping['filterLabelName']];
+												
+												if ($scope.accountNonRelatedAttMappingIds.indexOf(attMapping['filterLabelName']) == -1) {
+													$scope.accountNonRelatedAttMappingIds.push(attMapping['filterLabelName']);
+												}
+											}
+											var isPresent = false;
+											
+											angular.forEach(
+												$scope.accountAttributeWrapperList,
+												function(accAtt) {
+													
+													if (accAtt['attMappingId'] == attWrapper['attMappingId']) {
+														isPresent = true;
+													}
+												}
+											);
+											
+											if (!isPresent) {
+												$scope.accountAttributeWrapperList.push(attWrapper);
+											}
+										}
+									}
+								);
+								
+								angular.forEach(
+									Object.keys($scope.accountLabelAttributesMap),
+									function(labelName) {
+										
+										if ($scope.accountNonRelatedAttMappingIds.indexOf(labelName) == -1) {
+					                        var attWrapper = {};
+											attWrapper['attributes'] = $scope.accountLabelAttributesMap[labelName];
+											attWrapper['labelName'] = labelName;
+											attWrapper['isFromMapping'] = false;
+											attWrapper['noChange'] = false;
+											var isPresent = false;
+											
+											angular.forEach(
+												$scope.accountAttributeWrapperList,
+												function(accAtt) {
+													
+													if (accAtt['attMappingId'] == attWrapper['attMappingId']) {
+														isPresent = true;
+													}
+												}
+											);
+											
+											if (!isPresent) {
+												$scope.accountAttributeWrapperList.push(attWrapper);
+											}
+										}
+									}
+								);
+								$scope.accountReferenceability = '';
+								
+								$scope.getAccountReferenceabilities().then(function(result) {
+									$scope.accountRefTypesList = [];
+									
+									angular.forEach(
+										result,
+										function(refWrapper) {
+											$scope.accountRefTypesList.push(refWrapper);
+											
+											if ($scope.accountReferenceability == '') {
+												$scope.accountReferenceability = refWrapper['refTypeName'];
+											} else {
+												$scope.accountReferenceability += ', ' + refWrapper['refTypeName'];
+											}
+										}
+									);
+									
+									angular.forEach(
+										$scope.refTypeToAddAccount,
+										function(refName) {
+											
+											if ($scope.accountReferenceability == '') {
+												$scope.accountReferenceability = refName;
+											} else if ($scope.accountReferenceability.indexOf(refName) == -1) {
+												$scope.accountReferenceability += ', ' + refName;
+											}
+										}
+									);
+								});
+								$scope.createDataForContacts();
+							});
+						});
+					}
+					
+					$scope.createDataForContacts = function() {
+						$scope.selectedAccountContactIds = [];
+						
+						if ($scope.selectedAccountId in $scope.accountContactIdsMap) {
+							
+							angular.forEach(
+								$scope.accountContactIdsMap[$scope.selectedAccountId],
+								function(conId) {
+									
+									if ($scope.selectedAccountContactIds.indexOf(conId) == -1) {
+										$scope.selectedAccountContactIds.push(conId);
+									}
+									
+									if (!(conId in $scope.referenceabilityToAddContact)) {
+										$scope.referenceabilityToAddContact[conId] = [];
+									}
+									
+									if (!(conId in $scope.referenceabilityTypesToExcludeContact)) {
+										$scope.referenceabilityTypesToExcludeContact[conId] = [];
+									}
+									
+									if (!(conId in $scope.attributesToExcludeContact)) {
+										$scope.attributesToExcludeContact[conId] = [];
+									}
+									
+									if (!(conId in $scope.attributeToAddContact)) {
+										$scope.attributeToAddContact[conId] = [];
+									}
+								}
+							);
+							$scope.getContactWrapperList();
+						}
+					}
+					
+					$scope.getContactWrapperList = function() {
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getContactWrapperList}',
+							$scope.selectedAccountContactIds,
+							angular.toJson($scope.contactAttMappingsList),
+							angular.toJson($scope.attributesToExcludeContact),
+							angular.toJson($scope.attributeToAddContact),
+							angular.toJson($scope.referenceabilityTypesToExcludeContact),
+							angular.toJson($scope.referenceabilityToAddContact),
+							function(result, event) {
+								result = $scope.parseResult(result);
+								$scope.contactWrapperList = JSON.parse(result);
+                                //REF-1976
+                                $scope.setRemoveReasonsFromCookie();
+								showContactSection = $scope.contactWrapperList.length > 0;
+								totlstps = showContactSection ? '10' : '9';
+								$scope.isLoading = false;
+							}
+						);
+					}
+					
+					$scope.getAccountReferenceabilities = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getAccountReferenceabilities}',
+							$scope.selectedAccountId,
+							$scope.referenceabilityTypesToExcludeAccount,
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getAccountAttributesMap = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getAccountAttributesMap}',
+							$scope.selectedAccountId,
+							$scope.attributesToAddAccount,
+							$scope.attributesToExcludeForAccount,
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getProfileUpdateDetailWrapperList = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getProfileUpdateDetailList}',
+							$scope.selectedProfileUpdateId,
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getProfileUpdateWrapperList = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getProfileUpdatesList}',
+							$scope.userId,
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getProfileUpdateWrapperListForPageNo = function(accountPageNo) {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getProfileUpdatesListForPageNo}',
+							$scope.userId, accountPageNo,
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getAlreadyPresentProfileUpdates = function(profileUpdateIds) {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getAlreadyPresentProfileUpdates}',
+							$scope.userId,
+							angular.toJson(profileUpdateIds),
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getAlreadyNotPresentProfileUpdates = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getAlreadyNotPresentProfileUpdates}',
+							$scope.userId,
+							angular.toJson($scope.alreadyPresentProfileUpdates),
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.parseResult = function(result) {
+						result = result.replace(/&quot/gi, '"');
+						result = result.replace(/&amp/g, '&');
+						result = result.replace(/&lt/g, '<');
+						result = result.replace(/&gt/g, '>');
+						result = result.replace(/;/g, '');
+						result = result.replace(/&#39/g, '\'');
+						return result;
+					}
+					
+					$scope.showMoreRecords = function() {
+						$scope.isLoading = true;
+						$scope.currentPage = 0;
+						$scope.recordIndex = 0;
+						$scope.profileUpdatePaginationMap = {};
+						$scope.profileUpdateWrapperList = [];
+						$scope.showMoreAccounts = false;
+						$scope.showMore = false;
+						var breakFlag = false;
+						
+						$scope.getProfileUpdateWrapperListForPageNo($scope.currentPage).then(function(result) {
+							
+							angular.forEach(
+								result,
+								function(profileUpdate) {
+									
+									if (!breakFlag) {
+										
+										if ($scope.accountIds.indexOf(profileUpdate['accountId']) == -1) {
+											$scope.accountIds.push(profileUpdate['accountId']);
+										}
+										
+							            if ($scope.recordIndex == 10) {
+							                $scope.recordIndex = 11;
+							                $scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+											$scope.showPagination = true;
+								            breakFlag = true;
+							            }
+							            
+							            if (!breakFlag) {
+							            	
+								            if ($scope.recordIndex == 0) {
+								                //$scope.selectedAccountId = profileUpdate['accountId'];
+						                		//$scope.selectedProfileUpdateId = profileUpdate['id'];
+						                		//$scope.selectedProfileUpdateRecord = profileUpdate;
+								            }
+								            
+								            if ($scope.alreadyPresentProfileUpdates.indexOf(profileUpdate['id']) == -1) {
+								            	$scope.alreadyPresentProfileUpdates.push(profileUpdate['id']);
+								            }
+								            
+								            if ($scope.profileUpdateWrapperList.indexOf(profileUpdate) == -1) {
+								            	$scope.profileUpdateWrapperList.push(profileUpdate);
+								            }
+								            
+								            if (!($scope.currentPage in $scope.profileUpdatePaginationMap)) {
+								            	$scope.profileUpdatePaginationMap[$scope.currentPage] = [];
+								            }
+								            
+								            if ($scope.profileUpdatePaginationMap[$scope.currentPage].indexOf(profileUpdate['id']) == -1) {
+								            	$scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+								            }
+								            $scope.recordIndex++;
+							            }
+								        
+								        if ($scope.recordIndex == 11) {
+								            $scope.showNextLink = true;
+								        }
+								        //$scope.createDataForSelectedAccount();
+									}
+								}
+							);
+							$scope.getAccountContactIdsMap(true);
+						});
+					}
+					
+					$scope.showPrevRecords = function() {
+						$scope.isLoading = true;
+						$scope.currentPage = $scope.currentPage - 1;
+						$scope.profileUpdateWrapperList = [];
+						$scope.recordIndex = 0;
+        				$scope.showNextLink = true;
+						
+						if ($scope.currentPage == 0) {
+							$scope.showPrevLink = false;
+						}
+						
+						if ($scope.currentPage in $scope.profileUpdatePaginationMap) {
+							var tempProfileUpdateIds = angular.copy($scope.profileUpdatePaginationMap[$scope.currentPage]);
+							var breakFlag = false;
+							
+							$scope.getAlreadyPresentProfileUpdates(tempProfileUpdateIds).then(function(result) {
+								
+								angular.forEach(
+									result,
+									function(profileUpdate) {
+										
+										if (!breakFlag) {
+											
+											if ($scope.recordIndex == 10) {
+								                $scope.recordIndex = 11;
+								                $scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+									            breakFlag = true;
+								            }
+											
+											if (!breakFlag) {
+												
+												if ($scope.accountIds.indexOf(profileUpdate['accountId']) == -1) {
+													$scope.accountIds.push(profileUpdate['accountId']);
+												}
+												
+												if ($scope.recordIndex == 0) {
+								                    $scope.selectedAccountId = profileUpdate['accountId'];
+									                $scope.selectedProfileUpdateId = profileUpdate['id'];
+									                $scope.selectedProfileUpdateRecord = profileUpdate;
+								                }
+								            	
+									            if ($scope.alreadyPresentProfileUpdates.indexOf(profileUpdate['id']) == -1) {
+									            	$scope.alreadyPresentProfileUpdates.push(profileUpdate['id']);
+									            }
+								            	
+									            if ($scope.profileUpdateWrapperList.indexOf(profileUpdate) == -1) {
+									            	$scope.profileUpdateWrapperList.push(profileUpdate);
+									            }
+									            
+									            if (!($scope.currentPage in $scope.profileUpdatePaginationMap)) {
+									            	$scope.profileUpdatePaginationMap[$scope.currentPage] = [];
+									            }
+									            
+									            if ($scope.profileUpdatePaginationMap[$scope.currentPage].indexOf(profileUpdate['id']) == -1) {
+									            	$scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+									            }
+									            $scope.recordIndex++;
+											}
+										}
+									}
+								);
+								$scope.getAccountContactIdsMap(false);
+								$scope.createDataForSelectedAccount();
+							});
+						}
+					}
+					
+					$scope.showNextRecords = function() {
+						$scope.isLoading = true;
+						$scope.currentPage = $scope.currentPage + 1;
+						$scope.profileUpdateWrapperList = [];
+						$scope.recordIndex = 0;
+						
+						if ($scope.currentPage in $scope.profileUpdatePaginationMap) {
+							var tempProfileUpdateIds = angular.copy($scope.profileUpdatePaginationMap[$scope.currentPage]);
+							var breakFlag = false;
+							
+							$scope.getAlreadyPresentProfileUpdates(tempProfileUpdateIds).then(function(result) {
+								
+								angular.forEach(
+									result,
+									function(profileUpdate) {
+										
+										if (!breakFlag) {
+											
+											if ($scope.accountIds.indexOf(profileUpdate['accountId']) == -1) {
+												$scope.accountIds.push(profileUpdate['accountId']);
+											}
+											
+											if ($scope.recordIndex == 10) {
+							                    $scope.recordIndex = 11;
+							                    $scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+							                    breakFlag = true;
+							                }
+						                    
+						                    if (!breakFlag) {
+							                    
+								                if ($scope.recordIndex == 0) {
+								                    $scope.selectedAccountId = profileUpdate['accountId'];
+									                $scope.selectedProfileUpdateId = profileUpdate['id'];
+									                $scope.selectedProfileUpdateRecord = profileUpdate;
+								                }
+								            	
+									            if ($scope.alreadyPresentProfileUpdates.indexOf(profileUpdate['id']) == -1) {
+									            	$scope.alreadyPresentProfileUpdates.push(profileUpdate['id']);
+									            }
+								            	
+									            if ($scope.profileUpdateWrapperList.indexOf(profileUpdate) == -1) {
+									            	$scope.profileUpdateWrapperList.push(profileUpdate);
+									            }
+								            	
+									            if (!($scope.currentPage in $scope.profileUpdatePaginationMap)) {
+									            	$scope.profileUpdatePaginationMap[$scope.currentPage] = [];
+									            }
+									            
+									            if ($scope.profileUpdatePaginationMap[$scope.currentPage].indexOf(profileUpdate['id']) == -1) {
+									            	$scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+									            }
+									            $scope.recordIndex++;
+						                    }
+										}
+									}
+								);
+								var tempPageNo = $scope.currentPage + 1;
+								
+					            if ($scope.recordIndex == 11 || (tempPageNo in $scope.profileUpdatePaginationMap)) {
+					                $scope.showNextLink = true;
+					            } else {
+					                $scope.showNextLink = false;
+					            }
+								$scope.getAccountContactIdsMap(false);
+					            $scope.createDataForSelectedAccount();
+							});
+						} else {
+							$scope.profileUpdatePaginationMap[$scope.currentPage] = [];
+							var breakFlag = false;
+							
+							$scope.getAlreadyNotPresentProfileUpdates().then(function(result) {
+								
+								angular.forEach(
+									result,
+									function(profileUpdate) {
+										
+										if (!breakFlag) {
+											
+											if ($scope.accountIds.indexOf(profileUpdate['accountId']) == -1) {
+												$scope.accountIds.push(profileUpdate['accountId']);
+											}
+											
+							                if ($scope.recordIndex == 10) {
+							                    $scope.recordIndex = 11;
+							                    $scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+							                    breakFlag = true;
+							                }
+							                
+							                if (!breakFlag) {
+							                	
+							                	if ($scope.recordIndex == 0) {
+								                    $scope.selectedAccountId = profileUpdate['accountId'];
+									                $scope.selectedProfileUpdateId = profileUpdate['id'];
+									                $scope.selectedProfileUpdateRecord = profileUpdate;
+								                }
+								            	
+									            if ($scope.alreadyPresentProfileUpdates.indexOf(profileUpdate['id']) == -1) {
+									            	$scope.alreadyPresentProfileUpdates.push(profileUpdate['id']);
+									            }
+								            	
+									            if ($scope.profileUpdateWrapperList.indexOf(profileUpdate) == -1) {
+									            	$scope.profileUpdateWrapperList.push(profileUpdate);
+									            }
+									            
+									            if (!($scope.currentPage in $scope.profileUpdatePaginationMap)) {
+									            	$scope.profileUpdatePaginationMap[$scope.currentPage] = [];
+									            }
+									            
+									            if ($scope.profileUpdatePaginationMap[$scope.currentPage].indexOf(profileUpdate['id']) == -1) {
+									            	$scope.profileUpdatePaginationMap[$scope.currentPage].push(profileUpdate['id']);
+									            }
+									            $scope.recordIndex++;
+							                }
+										}
+									}
+								);
+								var tempPageNo = $scope.currentPage + 1;
+								
+					            if ($scope.recordIndex == 11 || (tempPageNo in $scope.profileUpdatePaginationMap)) {
+					                $scope.showNextLink = true;
+					            } else {
+					                $scope.showNextLink = false;
+					            }
+								$scope.getAccountContactIdsMap(false);
+					            $scope.createDataForSelectedAccount();
+							});
+						}
+        				$scope.showPrevLink = true;
+					}
+
+					$scope.updateAccReferenceability = function() {
+						
+						if ($scope.selectedAccountId != '') {
+							$scope.isLoading = true;
+							$scope.createCookies();
+							
+							if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                                sforce.console.openPrimaryTab(null, '{!URLFOR($Page.AddNewReferenceability)}'
+													+ '&retURL=/' + $scope.selectedAccountId
+													+ '&accRefRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage, true, null, null, null);
+							} else if ((typeof sforce != 'undefined') && sforce != null) {
+								
+                                if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+                                    var url = '{!URLFOR($Page.AddNewReferenceability)}'
+                                                        + '?retURL=/' + $scope.selectedAccountId
+                                                        + '&accRefRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage;
+                                    window.location.href = url;
+                                } else {
+                                    var url = '{!URLFOR($Page.AddNewReferenceability)}'
+                                                        + '&retURL=/' + $scope.selectedAccountId
+                                                        + '&accRefRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage;
+                                    sforce.one.navigateToURL(url, true);
+                                }
+                            } else {
+								var url = '{!URLFOR($Page.AddNewReferenceability)}'
+													+ '?retURL=/' + $scope.selectedAccountId
+													+ '&accRefRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage;
+								window.location.href = url;
+							}
+						}
+					}
+					
+					$scope.updateAccAttributes = function() {
+						
+						if ($scope.selectedAccountId != '') {
+							$scope.isLoading = true;
+							$scope.createCookies();
+							
+                            if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                                sforce.console.openPrimaryTab(null, '{!URLFOR($Page.AddLabelAttributesPage)}'
+													+ '&Id=' + $scope.selectedAccountId
+													+ '&refRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage, true, null, null, null);
+							} else if ((typeof sforce != 'undefined') && sforce != null) {
+								
+                                if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+                                    var url = '{!URLFOR($Page.AddLabelAttributesPage)}'
+                                                        + '?Id=' + $scope.selectedAccountId
+                                                        + '&refRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage;
+                                    window.location.href = url;
+                                } else {
+                                    var url = '{!URLFOR($Page.AddLabelAttributesPage)}'
+                                                        + '&Id=' + $scope.selectedAccountId
+                                                        + '&refRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage;
+                                    sforce.one.navigateToURL(url, true);
+                                }
+                            } else {
+								var url = '{!URLFOR($Page.AddLabelAttributesPage)}'
+													+ '?Id=' + $scope.selectedAccountId
+													+ '&refRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage;
+								window.location.href = url;
+							}
+						}
+					}
+					
+					$scope.updateConReferenceability = function(contactWrapper) {
+						
+						if (contactWrapper['contactId'] != '') {
+							$scope.isLoading = true;
+							$scope.createCookies();
+							
+                            if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                                sforce.console.openPrimaryTab(null, '{!URLFOR($Page.AddNewReferenceability)}'
+													+ '&retURL=/' + contactWrapper['contactId']
+													+ '&conRefRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage
+													+ '&PUMAccountId=' + $scope.selectedAccountId, true, null, null, null);
+							} else if ((typeof sforce != 'undefined') && sforce != null) {
+								
+                                if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+                                    var url = '{!URLFOR($Page.AddNewReferenceability)}'
+                                                        + '?retURL=/' + contactWrapper['contactId']
+                                                        + '&conRefRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage
+                                                        + '&PUMAccountId=' + $scope.selectedAccountId;
+                                    window.location.href = url;
+                                } else {
+                                    var url = '{!URLFOR($Page.AddNewReferenceability)}'
+                                                        + '&retURL=/' + contactWrapper['contactId']
+                                                        + '&conRefRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage
+                                                        + '&PUMAccountId=' + $scope.selectedAccountId;
+                                    sforce.one.navigateToURL(url, true);
+                                }
+                            } else {
+								var url = '{!URLFOR($Page.AddNewReferenceability)}'
+													+ '?retURL=/' + contactWrapper['contactId']
+													+ '&conRefRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage
+													+ '&PUMAccountId=' + $scope.selectedAccountId;
+								window.location.href = url;
+							}
+						}
+					}
+					
+					$scope.updateConAttributes = function(contactWrapper) {
+						
+						if (contactWrapper['contactId'] != '') {
+							$scope.isLoading = true;
+							$scope.createCookies();
+							
+                            if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                                sforce.console.openPrimaryTab(null, '{!URLFOR($Page.AddLabelAttributesPage)}'
+													+ '&Id=' + contactWrapper['contactId']
+													+ '&refRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage
+													+ '&PUMAccountId=' + $scope.selectedAccountId, true, null, null, null);
+							} else if ((typeof sforce != 'undefined') && sforce != null) {
+								
+                                if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+                                    var url = '{!URLFOR($Page.AddLabelAttributesPage)}'
+                                                        + '?Id=' + contactWrapper['contactId']
+                                                        + '&refRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage
+                                                        + '&PUMAccountId=' + $scope.selectedAccountId;
+                                    window.location.href = url;
+                                } else {
+                                    var url = '{!URLFOR($Page.AddLabelAttributesPage)}'
+                                                        + '&Id=' + contactWrapper['contactId']
+                                                        + '&refRefreshId=' + $scope.selectedProfileUpdateId
+                                                        + '&pageno=' + $scope.currentPage
+                                                        + '&PUMAccountId=' + $scope.selectedAccountId;
+                                    sforce.one.navigateToURL(url, true);
+                                }
+                            } else {
+								var url = '{!URLFOR($Page.AddLabelAttributesPage)}'
+													+ '?Id=' + contactWrapper['contactId']
+													+ '&refRefreshId=' + $scope.selectedProfileUpdateId
+													+ '&pageno=' + $scope.currentPage
+													+ '&PUMAccountId=' + $scope.selectedAccountId;
+								window.location.href = url;
+							}
+						}
+					}
+					
+					$scope.openNotReferenceableModal = function(conWrapper) {
+						
+						if (conWrapper != null) {
+							$scope.tempNotReferenceableReason = angular.copy(conWrapper['contactNotReferenceableReason']);
+							conWrapper['isNotReferenceableClicked'] = true;
+						} else {
+							$scope.tempNotReferenceableReason = angular.copy($scope.accountNotReferenceableReason);
+							$scope.showNotReferenceableReasonModal = true
+						}
+					}
+					
+					$scope.makeAccountNotReferenceable = function() {
+						
+						if ($scope.accountNotReferenceableReason == '') {
+							$scope.showNotReferenceableReasonError = true;
+						} else {
+							$scope.showNotReferenceableReasonError = false;
+							$scope.accountNotReferenceable = true;
+							$scope.showNotReferenceableReasonModal = false;
+							$scope.isAccountActivated = false;
+							$scope.isNoChangeOnProfileUpdate = false;
+							$scope.isAccountActivated = false;
+						}
+					}
+
+                    //REF-1976
+                    $scope.makeContactInactive = function(conWrapper) {
+                        $scope.isLoading = true;
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.makeContactInactive}',
+							conWrapper['contactId'],
+							conWrapper['contactNotReferenceableReason'],
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                
+                                angular.forEach($scope.contactWrapperList, function (con, key) {
+                                    
+                                    if (con['contactId'] == result) {
+                                        $scope.isNoChangeOnProfileUpdate = false;
+                                        con['contactRefStatus'] = 'Inactive';
+                                        con['contactNotReferenceableReason'] = '';
+                                        con['contactNotReferenceable'] = false;
+                                    }
+                                    
+                                    if (con['contactNotReferenceableReason'] != '') {
+                                    	$scope.isNoChangeOnProfileUpdate = false;
+                                    }
+                                });
+                                
+                                if ($scope.accountNotReferenceableReason != '') {
+                                	 $scope.isNoChangeOnProfileUpdate = false;   
+                                }
+                                $scope.$apply();
+                                $scope.isLoading = false;
+                                $scope.$apply();
+                            }
+						);
+                        
+                    }
+					
+					$scope.makeContactNotReferenceable = function(conWrapper) {
+						
+						if (conWrapper['contactNotReferenceableReason'] == null || conWrapper['contactNotReferenceableReason'] == '') {
+							$scope.showNotReferenceableReasonError = true;
+						} else {
+							$scope.showNotReferenceableReasonError = false;
+							conWrapper['contactNotReferenceable'] = true;
+							conWrapper['isNotReferenceableClicked'] = false;
+							conWrapper['isContactActivated'] = false;
+							$scope.isNoChangeOnProfileUpdate = false;
+							$scope.makeContactInactive(conWrapper);
+						}
+					}
+					
+					$scope.cancelNotReferenceableModal = function(conWrapper) {
+						$scope.showNotReferenceableReasonError = false;
+						
+						if (conWrapper != null) {
+							conWrapper['isNotReferenceableClicked'] = false;
+							conWrapper['contactNotReferenceableReason'] = angular.copy($scope.tempNotReferenceableReason);
+						} else {
+							$scope.showNotReferenceableReasonModal = false;
+							$scope.accountNotReferenceableReason = angular.copy($scope.tempNotReferenceableReason);
+						}
+					}
+					
+					$scope.saveUpdates = function() {
+						$scope.isLoading = true;
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.saveUpdates}',
+	                		$scope.selectedProfileUpdateId,
+	                		$scope.selectedProfileUpdateRecord['isQuarantined'],
+							$scope.selectedAccountId,
+							$scope.accountNotReferenceable,
+			        		$scope.accountNotReferenceableReason,
+			        		angular.toJson($scope.contactWrapperList),
+			        		angular.toJson($scope.accountAttributeWrapperList),
+							$scope.accountReferenceability,
+							$scope.isAccountActivated,
+							function(result, event) {
+								
+								if (result == 'success') {
+									
+                                    if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                                        sforce.console.openPrimaryTab(null, '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+                                                        + '&userId=' + $scope.selectedProfileUpdateRecord['ownerId']
+                                                        + '&accountId=' + $scope.selectedAccountId
+                                                        + '&pageno=' + $scope.currentPage
+                                                        + '&helpoverlay=false'
+                                                        + '&showmore=' + $scope.showMoreAccounts, true, null, null, null);
+                                    } else if ((typeof sforce != 'undefined') && sforce != null) {
+                                        
+                                        if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+                                            var url = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+                                                        + '?userId=' + $scope.selectedProfileUpdateRecord['ownerId']
+                                                        + '&accountId=' + $scope.selectedAccountId
+                                                        + '&pageno=' + $scope.currentPage
+                                                        + '&helpoverlay=false'
+                                                        + '&showmore=' + $scope.showMoreAccounts;
+                                            window.location.href = url;
+                                        } else {
+                                            var url = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+                                                        + '&userId=' + $scope.selectedProfileUpdateRecord['ownerId']
+                                                        + '&accountId=' + $scope.selectedAccountId
+                                                        + '&pageno=' + $scope.currentPage
+                                                        + '&helpoverlay=false'
+                                                        + '&showmore=' + $scope.showMoreAccounts;
+                                            sforce.one.navigateToURL(url, true);
+                                        }
+                                    } else {
+                                        var url = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+                                                    + '?userId=' + $scope.selectedProfileUpdateRecord['ownerId']
+                                                    + '&accountId=' + $scope.selectedAccountId
+                                                    + '&pageno=' + $scope.currentPage
+                                                    + '&helpoverlay=false'
+                                                    + '&showmore=' + $scope.showMoreAccounts;
+                                        window.location.href = url;
+                                    }
+								} else if (result != null && result.startsWith('success')) {
+									showDisolvingAlert(result);
+									
+									if ((typeof sforce != 'undefined') && sforce != null && Object.keys(sforce).length == 2) {
+										url1 = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+													+ '&userId=' + $scope.selectedProfileUpdateRecord['ownerId']
+													+ '&accountId=' + $scope.selectedAccountId
+													+ '&pageno=' + $scope.currentPage
+													+ '&helpoverlay=false'
+													+ '&showmore=' + $scope.showMoreAccounts;
+									} else {
+										url1 = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+													+ '?userId=' + $scope.selectedProfileUpdateRecord['ownerId']
+													+ '&accountId=' + $scope.selectedAccountId
+													+ '&pageno=' + $scope.currentPage
+													+ '&helpoverlay=false'
+													+ '&showmore=' + $scope.showMoreAccounts;
+									}
+								} else {
+									console.log('save result-->');
+									console.log(result);
+								}
+								
+							}
+						);
+					}
+					
+					$scope.activateContact = function(conWrapper) {
+						conWrapper['isContactActivated'] = true;
+						conWrapper['contactNotReferenceable'] = false;
+						conWrapper['contactNotReferenceableReason'] = '';
+						$scope.isNoChangeOnProfileUpdate = false;
+						$scope.activateModalHeader = '{!$Label.Activate}' + ' ' + '{!$Label.Contact}';
+						$scope.tempActivationMessage = angular.copy($scope.activationMessage);
+						$scope.tempActivationMessage = $scope.tempActivationMessage.replace('@@@', conWrapper['contactName']);
+						$scope.showActivateConfirmation = true;
+					}
+					
+					$scope.activateAccount = function() {
+						$scope.isAccountActivated = true;
+						$scope.isNoChangeOnProfileUpdate = false;
+						$scope.accountNotReferenceable = false;
+						$scope.accountNotReferenceableReason = '';
+						$scope.activateModalHeader = '{!$Label.Activate}' + ' ' + '{!$Label.Account}';
+						$scope.tempActivationMessage = angular.copy($scope.activationMessage);
+						$scope.tempActivationMessage = $scope.tempActivationMessage.replace('@@@', $scope.selectedProfileUpdateRecord['accountName']);
+						$scope.showActivateConfirmation = true;
+					}
+					
+					$scope.openAddNewContactModal = function() {
+						$scope.nonReferenceableContactsList = [];
+						$scope.isLoading = true;
+						$scope.selectedContactId = '';
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceRefreshControllerSLDS.getNonReferenceableContacts}',
+							$scope.selectedAccountId,
+							function(result, event) {
+								$scope.$apply(function() {
+									result = result.split('@@@');
+									$scope.newContactCreatesNomination = result[1];
+									result = $scope.parseResult(result[0]);
+									$scope.nonReferenceableContactsList = JSON.parse(result);
+									$scope.showAddNewContactModal = true;
+									$scope.isLoading = false;
+								});
+							}
+						);
+					}
+					
+					$scope.addNewContact = function() {
+						
+						if ($scope.selectedContactId == '') {
+							$scope.showAddNewContactError = true;
+						} else {
+							$scope.isLoading = true;
+							var url = '';
+							
+							if ($scope.newContactCreatesNomination == 'true') {
+								
+								if ((typeof sforce != 'undefined') && sforce != null && Object.keys(sforce).length == 2) {
+									url = '{!URLFOR($Page.NominationFormSLDS)}'
+											+ '&PUMAccountId=' + $scope.selectedAccountId
+											+ '&PUMContactId=' + $scope.selectedContactId
+											+ '&showMore=' + $scope.showMoreAccounts
+											+ '&pageNo=' + $scope.currentPage
+											+ '&userId=' + $scope.selectedProfileUpdateRecord['ownerId'];
+								} else {
+									url = '{!URLFOR($Page.NominationFormSLDS)}'
+											+ '?PUMAccountId=' + $scope.selectedAccountId
+											+ '&PUMContactId=' + $scope.selectedContactId
+											+ '&showMore=' + $scope.showMoreAccounts
+											+ '&pageNo=' + $scope.currentPage
+											+ '&userId=' + $scope.selectedProfileUpdateRecord['ownerId'];
+								}
+							} else {
+								
+								if ((typeof sforce != 'undefined') && sforce != null && Object.keys(sforce).length == 2) {
+									url = '{!URLFOR($Page.ReferenceProfileFormPage)}'
+											+ '&PUMAccId=' + $scope.selectedAccountId
+											+ '&PUMConId=' + $scope.selectedContactId
+											+ '&showMore=' + $scope.showMoreAccounts
+											+ '&pageNo=' + $scope.currentPage
+											+ '&userId=' + $scope.selectedProfileUpdateRecord['ownerId'];
+								} else {
+									url = '{!URLFOR($Page.ReferenceProfileFormPage)}'
+											+ '?PUMAccId=' + $scope.selectedAccountId
+											+ '&PUMConId=' + $scope.selectedContactId
+											+ '&showMore=' + $scope.showMoreAccounts
+											+ '&pageNo=' + $scope.currentPage
+											+ '&userId=' + $scope.selectedProfileUpdateRecord['ownerId'];
+								}
+							}
+
+                            if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                                sforce.console.openPrimaryTab(null, url, true, null, null, null);
+                            } else if ((typeof sforce != 'undefined') && sforce != null) {
+                                
+                                if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+								    window.location.href = url;
+                                } else {
+								    sforce.one.navigateToURL(url, true);
+                                }
+                            } else {
+                                window.location.href = url;
+                            }
+						}
+					}
+					
+					$scope.cancelAddNewContact = function() {
+						$scope.showAddNewContactError = false;
+						$scope.showAddNewContactModal = false;
+					}
+				}
+			);
+			
+			var url1 = '';
+			
+			function showDisolvingAlert(rewards) {
+				
+				if (rewards != '') {
+					var str_array = rewards.split('***');
+					
+					if (str_array.length == 3) {
+						notification(str_array[1], str_array[2]);
+					}
+				}
+			}
+			
+			function redirectToBack() {
+				
+                if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                    sforce.console.openPrimaryTab(null, url1, true, null, null, null);
+                } else if ((typeof sforce != 'undefined') && sforce != null) {
+                    
+                    if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+                        window.location.href = url1;
+                    } else {
+                        sforce.one.navigateToURL(url1, true);
+                    }
+                } else {
+                    window.location.href = url1;
+                }
+			}
+		</script>
+	</head>
+	
+	<body style="padding:0!important;">
+		<div id="parentDiv" class="PORcontainer" ng-app="profileUpdateApp" ng-controller="profileUpdateCtrl" ng-cloak="ng-cloak">
+			<c:RewardNotification />
+			<div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+	            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+					<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					</svg>
+				</span>
+	            {!$Label.User_License}
+	        </div>
+			
+			<div ng-show="isFullLicenseAccessible" ng-init="initialFunction()">
+                <div id="loadingSpinner" role="status" ng-show="isLoading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+					<span class="slds-assistive-text">Loading</span>
+					<div class="slds-spinner__dot-a"></div>
+					<div class="slds-spinner__dot-b"></div>
+				</div>
+				<div id="pagehrd" style="padding: 1px 1px;position: fixed;width:100%;"></div>
+	        	<div ng-show="!isLoading">
+					<div ng-show="profileUpdateWrapperList.length == 0" class="slds-m-around_large">
+						<span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+							<svg class="slds-icon slds-icon_small" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+							</svg>
+						</span>
+			            {!$Label.No_More_Reference_Profiles_to_Update}
+					</div>
+					<div ng-show="profileUpdateWrapperList.length > 0">
+						<!-- <div class="slds-page-header" scroll="scroll" ng-class="{fixedHeader: pageScrolled}"> -->
+						<div class="slds-page-header">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-col slds-has-flexi-truncate">
+									<div class="slds-media slds-media_center">
+										<div class="slds-media__figure" ng-show="isSLDS">
+											<span class="slds-icon_container">
+												<img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" />
+											</span>
+										</div>
+										<div class="slds-media__body" ng-class="{'extraLeftPadding' : !isSLDS}">
+											<p class="slds-text-title_caps">Profile Update</p>
+											<h1 class="desktopVisible slds-page-header__title slds-m-right_small slds-align-middle slds-truncate">
+												<a href="/{{selectedProfileUpdateRecord['accountId']}}" target="_blank" style="text-decoration: none; color: #54698D">
+													{{selectedProfileUpdateRecord['accountName']}}
+												</a>
+											</h1>
+											<h1 class="mobileVisible slds-page-header__title slds-m-right_small slds-align-middle slds-truncate">
+												<div ng-click="showList = !showList" style="cursor: pointer; color: #54698D; white-space: normal;">
+													{{selectedProfileUpdateRecord['accountName']}}
+													<span class="slds-icon_container slds-icon-utility-down">
+														<svg class="slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
+															<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+														</svg>
+														<span class="slds-assistive-text">Select Account</span>
+													</span>
+												</div>
+												<div ng-class="{openList : showList}" class="myList">
+													<nav class="slds-nav-vertical slds-p-vertical_x-small">
+														<div class="slds-nav-vertical__section">
+															<ul>
+																<li ng-repeat="profileUpdate in profileUpdateWrapperList" class="slds-nav-vertical__item" style="border-bottom: 1px solid #d8dde6; margin: 0">
+																	<a class="slds-nav-vertical__action" href="#" ng-click="handleAccountSelect(profileUpdate)" style="text-decoration: none; color: #54698D; white-space: normal;">
+																		{{profileUpdate['accountName']}}
+																		<br />
+																		Contacts:&nbsp;{{accountContactIdsMap[profileUpdate['accountId']].length}}
+																	</a>
+																</li>
+															</ul>
+														</div>
+													</nav>
+													<a ng-show="showMoreAccounts" ng-click="showMoreRecords()" href="#" class="slds-nav-vertical__action" style="text-decoration: none">
+														{!$Label.Show_me_more_Accounts}
+													</a>
+													<div ng-show="!showMoreAccounts && showPagination" style="margin: 5px;">
+														<div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-grid_align-spread">
+															<a ng-disabled="!showPrevLink" ng-click="showPrevRecords()" ng-class="{disabledAnchor : !showPrevLink}" class="slds-button slds-button_neutral" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+																<svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
+																	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft')}"></use>
+																</svg>
+																{!$Label.Previous}
+															</a>
+															<!-- <div style="text-align: center" ng-show="profileUpdateWrapperList.length > 0">
+																{{profileUpdateWrapperList[0]['recordIndex'] + (currentPage * 10)}}&nbsp;-&nbsp;{{profileUpdateWrapperList[profileUpdateWrapperList.length - 1]['recordIndex'] + (currentPage * 10)}}&nbsp;of&nbsp;{{alreadyPresentProfileUpdates.length}}
+															</div> -->
+															<a ng-disabled="!showNextLink" ng-click="showNextRecords()" ng-class="{disabledAnchor : !showNextLink}" class="slds-button slds-button_neutral" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+																{!$Label.Next}
+																<svg class="slds-button__icon slds-button__icon_right" aria-hidden="true">
+																	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronright')}"></use>
+																</svg>
+															</a>
+														</div>
+													</div>
+												</div>
+												<div ng-click="showList = !showList" ng-class="{backdropOpen : showList}" class="backdrop"></div>
+											</h1>
+										</div>
+									</div>
+								</div>
+								<div class="slds-col slds-no-flex slds-grid slds-align-bottom desktopVisible" ng-show="selectedProfileUpdateId != ''" id="buttonpanel">
+									<a ng-class="{'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}" ng-click="openAddNewContactModal()">{!$Label.Add_Referenceable_Contact}</a>
+									<a ng-show="!isNoChangeOnProfileUpdate" ng-click="saveUpdates()" ng-class="{'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}">{!$Label.Save_Updates}</a>
+									<a ng-show="isNoChangeOnProfileUpdate" ng-click="saveUpdates()" ng-class="{'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}">{!$Label.No_Updates}</a>
+									<div onclick="startTour();return false" id="helpoverlayId" style="cursor: pointer; float: right;">
+										<span class="slds-icon_container" title="Help for the page">
+											<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon_x-small" style="width: 23px;margin-top: 5px;margin-left: 10px;fill:#ff9900;">
+												<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3,'/assets/icons/utility-sprite/svg/symbols.svg#question_mark')}"></use>
+											</svg>
+										</span>
+									</div>
+								</div>
+								<div class="slds-col slds-no-flex slds-grid slds-align-bottom mobileVisible" ng-show="selectedProfileUpdateId != ''">
+									<div class="slds-button-group" role="group">
+										<a ng-show="!isNoChangeOnProfileUpdate" ng-click="saveUpdates()" class="slds-button slds-button_neutral">{!$Label.Save_Updates}</a>
+										<a ng-show="isNoChangeOnProfileUpdate" ng-click="saveUpdates()" class="slds-button slds-button_neutral">{!$Label.No_Updates}</a>
+										<div class="slds-dropdown-trigger slds-is-open slds-button_last">
+											<button class="slds-button slds-button_icon slds-button_icon-border-filled" aria-haspopup="true" title="Show More">
+												<svg class="slds-button__icon" aria-hidden="true">
+													<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+												</svg>
+												<span class="slds-assistive-text">Show More</span>
+											</button>
+											<div class="slds-dropdown slds-dropdown_right">
+												<a class="menu-item" ng-click="openAddNewContactModal()" role="menuitem" tabindex="0">
+													{!$Label.Add_Referenceable_Contact}
+												</a>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<ul class="slds-grid slds-page-header__detail-row">
+								<li class="slds-size_1-of-3 slds-medium-size_1-of-6 slds-large-size_1-of-6">
+									<p class="slds-text-title slds-truncate slds-m-bottom_xx-small">Profile Update Owner</p>
+									<a href="/{{selectedProfileUpdateRecord['ownerId']}}" target="_blank" style="text-decoration: none">
+										{{selectedProfileUpdateRecord['ownerName']}}
+									</a>
+								</li>
+								<li class="slds-size_1-of-3 slds-medium-size_1-of-6 slds-large-size_1-of-6" ng-show="selectedProfileUpdateRecord['refOwnerId'] != ''">
+									<p class="slds-text-title slds-truncate slds-m-bottom_xx-small">Reference Owner</p>
+									<a href="/{{selectedProfileUpdateRecord['refOwnerId']}}" target="_blank" style="text-decoration: none">
+										{{selectedProfileUpdateRecord['refOwnerName']}}
+									</a>
+								</li>
+								<li class="slds-size_1-of-3 slds-medium-size_1-of-6 slds-large-size_1-of-6" ng-show="selectedProfileUpdateRecord['accOwnerId'] != ''">
+									<p class="slds-text-title slds-truncate slds-m-bottom_xx-small">Account Owner</p>
+									<a href="/{{selectedProfileUpdateRecord['accOwnerId']}}" target="_blank" style="text-decoration: none">
+										{{selectedProfileUpdateRecord['accOwnerName']}}
+									</a>
+								</li>
+							</ul>
+						</div>
+						
+						<div class="slds-p-top_large">
+							<div class="slds-grid slds-wrap">
+								<div class="desktopVisible slds-size_1-of-4 slds-p-horizontal_large slds-p-bottom_medium" id="accToUpdate">
+									<nav class="slds-nav-vertical slds-p-vertical_x-small">
+										<div class="slds-nav-vertical__section">
+											<ul>
+												<li ng-repeat="profileUpdate in profileUpdateWrapperList" class="slds-nav-vertical__item" ng-class="{'slds-is-active' : (profileUpdate['isSelected'] || selectedAccountId == profileUpdate['accountId'])}">
+													<a class="slds-nav-vertical__action" href="#" ng-click="handleAccountSelect(profileUpdate)" style="text-decoration: none; color: #54698D">
+														{{profileUpdate['accountName']}}
+														<br />
+														Contacts:&nbsp;{{accountContactIdsMap[profileUpdate['accountId']].length}}
+													</a>
+												</li>
+											</ul>
+										</div>
+									</nav>
+									<a ng-show="showMoreAccounts" ng-click="showMoreRecords()" href="#" class="slds-nav-vertical__action" style="text-decoration: none">
+										{!$Label.Show_me_more_Accounts}
+									</a>
+									<div ng-show="!showMoreAccounts && showPagination">
+										<div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-grid_align-spread">
+											<a ng-disabled="!showPrevLink" ng-click="showPrevRecords()" ng-class="{disabledAnchor : !showPrevLink, 'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+												<svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
+													<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft')}"></use>
+												</svg>
+												{!$Label.Previous}
+											</a>
+											<!-- <div style="text-align: center" ng-show="profileUpdateWrapperList.length > 0">
+												{{profileUpdateWrapperList[0]['recordIndex'] + (currentPage * 10)}}&nbsp;-&nbsp;{{profileUpdateWrapperList[profileUpdateWrapperList.length - 1]['recordIndex'] + (currentPage * 10)}}&nbsp;of&nbsp;{{alreadyPresentProfileUpdates.length}}
+											</div> -->
+											<a ng-disabled="!showNextLink" ng-click="showNextRecords()" ng-class="{disabledAnchor : !showNextLink, 'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+												{!$Label.Next}
+												<svg class="slds-button__icon slds-button__icon_right" aria-hidden="true">
+													<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronright')}"></use>
+												</svg>
+											</a>
+										</div>
+									</div>
+								</div>
+								
+								<div class="slds-col custom-width horizontal-padding-large slds-p-bottom_medium" style="border-left: 1px solid #d8dde6; min-height: 100vh;" id="outerSection">
+									<div class="slds-tabs_default">
+										<ul class="slds-tabs_default__nav" role="tablist" id="accDetail">
+											<li class="slds-tabs_default__item slds-is-active" title="Item One" role="presentation">
+												<a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" aria-selected="true" aria-controls="tab-default-1" id="tab-default-1__item">{!$Label.Details}</a>
+											</li>
+										</ul>
+										<div id="tab-default-1" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="tab-default-1__item">
+											<div class="horizontal-padding-large">
+												<div class="slds-grid slds-grid_vertical-align-center">
+													<div class="slds-text-heading_medium">
+														{{selectedProfileUpdateRecord['accountName']}}
+													</div>
+													<div class="slds-col">
+														<div class="slds-grid slds-wrap slds-grid_align-end slds-grid_vertical-align-center">
+															<div class="slds-size_1-of-1">
+																<div id="status" style="float: right;">
+																	<span ng-show="selectedProfileUpdateRecord['accountRefStatus'] == 'Inactive'" class="slds-badge" style="float: right; color: WHITE; background-color: #54698d; font-weight: bold;">Inactive</span>
+																	<span ng-show="selectedProfileUpdateRecord['accountRefStatus'] == 'Caution'" class="slds-badge" style="float: right; color: WHITE; background-color: #ffb75d; font-weight: bold;">Caution</span>
+																	<span ng-show="selectedProfileUpdateRecord['accountRefStatus'] == 'Active'" class="slds-badge" style="float: right; color: WHITE; background-color: #04844b; font-weight: bold;">Active</span>
+																</div>
+															</div>
+															<div class="slds-size_1-of-1">
+																<a href="#" ng-show="selectedProfileUpdateRecord['accountRefStatus'] == 'Inactive'" ng-click="activateAccount()" class="activateLink">{!$Label.Activate}</a>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div ng-repeat="attWrapper in accountAttributeWrapperList">
+													<div ng-show="attWrapper['isFromMapping']">
+														<div class="slds-form-element slds-p-top_small">
+															<span class="slds-form-element__label">{{attWrapper['labelName']}}</span>
+															<div class="slds-form-element__control" ng-show="attWrapper['attributes'] != null && attWrapper['attributes'] != ''">
+																<span class="slds-form-element__static">{{attWrapper['attributes']}}</span>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="slds-form-element slds-p-top_small">
+													<div class="slds-form-element" id="refUpdatediv">
+														<span class="slds-form-element__label" style="min-width: 9rem;">{!$Label.Account}&nbsp;{!$Label.Referenceability}</span>
+														<a href="#" ng-click="updateAccReferenceability()" style="text-decoration: none;" class="updateLink" id="refUpdate">{!$Label.Update}</a>
+													</div>
+													<div class="slds-form-element__control" ng-show="accountReferenceability != ''">
+														<span class="slds-form-element__static">{{accountReferenceability}}</span>
+													</div>
+												</div>
+												<div class="slds-p-vertical_small">
+													<div class="slds-form-element" id="attUpdatediv">
+														<span class="slds-form-element__label" style="min-width: 9rem;">{!$Label.Account}&nbsp;{!$Label.Attributes}</span>
+														<a href="#" ng-click="updateAccAttributes()" style="text-decoration: none;" class="updateLink" id="attUpdate">{!$Label.Update}</a>
+													</div>
+													<div ng-repeat="attWrapper in accountAttributeWrapperList">
+														<div ng-show="!attWrapper['isFromMapping']" class="slds-p-top_x-small">
+															<div class="slds-grid slds-wrap">
+																<div class="slds-size_1-of-4 slds-medium-size_1-of-5 slds-large-size_1-of-5">
+																	{{attWrapper['labelName']}}
+																</div>
+																<div class="slds-size_3-of-4 slds-medium-size_4-of-5 slds-large-size_4-of-5">
+																	{{attWrapper['attributes']}}
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="slds-form-element slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3 remove-flex">
+													<div class="slds-grid slds-wrap">
+														<div style="display: inline-flex;" class="tooltip">
+															<div class="slds-form-element ">
+																<div class="slds-form-element__icon slds-align-middle">
+																<p aria-describedby="help">
+																	<svg class="slds-button__icon" aria-hidden="true">
+																		<use style="color:#747270" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+																	</svg>
+																</p>
+																</div>
+															</div>
+															<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip">
+																<div class="slds-popover__body">{!SUBSTITUTE($Label.Remove_Reference, '@@@', $Label.Account)}</div>
+															</div>
+														</div>
+														<a id="removediv" href="#" ng-click="openNotReferenceableModal()" 
+                                                           style="color:#DD0000;font-weight:BOLD;margin-top: 2px;text-decoration: unset;"
+                                                            ng-show="selectedProfileUpdateRecord['accountRefStatus'] != 'Inactive'" >{!$Label.Remove}
+														</a>
+                                                        <a  id="removediv1" href="javascript:void(0);" 
+                                                           style="color:#54698d;font-weight:BOLD;margin-top: 2px; text-decoration: unset;cursor:text;"
+                                                           ng-show="selectedProfileUpdateRecord['accountRefStatus'] == 'Inactive'">{!$Label.Remove}
+                                                        </a>
+													</div>
+												</div>
+												<hr style="margin: 0.6rem 0;" />
+												
+												<div ng-repeat="conWrapper in contactWrapperList" class="slds-p-top_large" id="contacts">
+													<div class="slds-grid slds-grid_vertical-align-center">
+														<div class="slds-text-heading_medium">
+															{{conWrapper['contactName']}}
+														</div>
+														<div class="slds-col">
+															<div class="slds-grid slds-wrap slds-grid_align-end slds-grid_vertical-align-center">
+																<div class="slds-size_1-of-1">
+																	<span ng-show="conWrapper['contactRefStatus'] == 'Inactive'" class="slds-badge" style="float: right; color: WHITE; background-color: #54698d; font-weight: bold;">Inactive</span>
+																	<span ng-show="conWrapper['contactRefStatus'] == 'Caution'" class="slds-badge" style="float: right; color: WHITE; background-color: #ffb75d; font-weight: bold;">Caution</span>
+																	<span ng-show="conWrapper['contactRefStatus'] == 'Active'" class="slds-badge" style="float: right; color: WHITE; background-color: #04844b; font-weight: bold;">Active</span>
+																</div>
+																<div class="slds-size_1-of-1">
+																	<a href="#" ng-show="conWrapper['contactRefStatus'] == 'Inactive'" ng-click="activateContact(conWrapper)" class="activateLink">{!$Label.Activate}</a>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div ng-repeat="attWrapper in conWrapper['attributes']">
+														<div ng-show="attWrapper['isFromMapping']">
+															<div class="slds-form-element slds-p-top_small">
+																<span class="slds-form-element__label">{{attWrapper['labelName']}}</span>
+																<div class="slds-form-element__control" ng-show="attWrapper['attributes'] != null && attWrapper['attributes'] != ''">
+																	<span class="slds-form-element__static">{{attWrapper['attributes']}}</span>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="slds-form-element slds-p-top_small">
+														<span class="slds-form-element__label" style="min-width: 9rem;">{!$Label.Contact}&nbsp;{!$Label.Referenceability}</span>
+														<a href="#" ng-click="updateConReferenceability(conWrapper)" style="text-decoration: none;" class="updateLink">{!$Label.Update}</a>
+														<div class="slds-form-element__control" ng-show="conWrapper['contactReferenceability'] != null && conWrapper['contactReferenceability'] != ''">
+															<span class="slds-form-element__static">{{conWrapper['contactReferenceability']}}</span>
+														</div>
+													</div>
+													<div class="slds-p-vertical_small">
+														<div class="slds-form-element">
+															<span class="slds-form-element__label" style="min-width: 9rem;">{!$Label.Contact}&nbsp;{!$Label.Attributes}</span>
+															<a href="#" ng-click="updateConAttributes(conWrapper)" style="text-decoration: none;" class="updateLink">{!$Label.Update}</a>
+														</div>
+														<div ng-repeat="attWrapper in conWrapper['attributes']">
+															<div ng-show="!attWrapper['isFromMapping']" class="slds-p-top_x-small">
+																<div class="slds-grid slds-wrap">
+																	<div class="slds-size_1-of-4 slds-medium-size_1-of-5 slds-large-size_1-of-5">
+																		{{attWrapper['labelName']}}
+																	</div>
+																	<div class="slds-size_3-of-4 slds-medium-size_4-of-5 slds-large-size_4-of-5">
+																		{{attWrapper['attributes']}}
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="slds-form-element slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3 remove-flex">
+														<div class="slds-grid slds-wrap">
+															<div style="display: inline-flex;" class="tooltip">
+																<div class="slds-form-element ">
+																	<div class="slds-form-element__icon slds-align-middle">
+																	<p aria-describedby="help">
+																		<svg class="slds-button__icon" aria-hidden="true">
+																			<use style="color:#747270" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+																		</svg>
+																	</p>
+																	</div>
+																</div>
+																<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip">
+																	<div class="slds-popover__body">{!SUBSTITUTE($Label.Remove_Reference, '@@@', $Label.Contact)}</div>
+																</div>
+															</div>
+															<a href="#" style="color:#DD0000;font-weight:BOLD;margin-top: 2px; text-decoration: unset;" 
+                                                               ng-click="openNotReferenceableModal(conWrapper)"
+                                                               ng-show="conWrapper['contactRefStatus'] != 'Inactive'">{!$Label.Remove}
+															</a>
+                                                            <a href="javascript:void(0);" 
+                                                               style="color:#54698d;font-weight:BOLD;margin-top: 2px; text-decoration: unset;cursor:text;"
+                                                               ng-show="conWrapper['contactRefStatus'] == 'Inactive'">{!$Label.Remove}
+															</a>
+														</div>
+													</div>
+													<div ng-show="conWrapper['isNotReferenceableClicked']" class="modal-container">
+														<div class="slds-modal__container" style="z-index: 9001">
+															<header class="slds-modal__header slds-modal__header_empty">
+																<a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="cancelNotReferenceableModal(conWrapper)" title="Close">
+																	<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+																	  <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+																	</svg>
+																	<span class="slds-assistive-text">Close</span>
+																</a>
+															</header>
+															<div class="slds-modal__content slds-p-vertical_medium slds-p-horizontal_large">
+																<div class="slds-form-element" ng-class="{'slds-has-error' : showNotReferenceableReasonError}">
+																	<label class="slds-form-element__label" style="font-weight: normal !important;">
+																		{!SUBSTITUTE($Label.Referenceable_help_msg, '@@@', $Label.Contact)}<span style="color: #c23934">*</span>
+																	</label>
+																	<div class="slds-form-element__control">
+																		<textarea class="slds-textarea" ng-model="conWrapper['contactNotReferenceableReason']"></textarea>
+																	</div>
+																	<div ng-show="showNotReferenceableReasonError" class="slds-form-element__help">
+																		{!SUBSTITUTE($Label.Select_the_reason, '@@@', $Label.Contact)}
+																	</div>
+																</div>
+															</div>
+															<footer class="slds-modal__footer">
+																<a ng-class="{'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}" ng-click="cancelNotReferenceableModal(conWrapper)">{!$Label.Cancel}</a>
+																<a ng-class="{'slds-button slds-button_brand' : isSLDS, 'btn' : !isSLDS}" ng-click="makeContactNotReferenceable(conWrapper)">{!$Label.Save}</a>
+															</footer>
+														</div>
+														<div class="slds-backdrop slds-backdrop_open"></div>
+													</div>
+													<hr style="margin: 0.6rem 0;" />
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div ng-show="showActivateConfirmation">
+					<section role="alertdialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_prompt">
+						<div class="slds-modal__container" style="z-index: 9001">
+							<header class="slds-modal__header slds-theme_success slds-theme_alert-texture">
+								<a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="showActivateConfirmation = false" title="Close">
+									<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+									  <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+									</svg>
+									<span class="slds-assistive-text">Close</span>
+								</a>
+								<h2 class="slds-text-heading_medium">{{activateModalHeader}}</h2>
+							</header>
+							<div class="slds-modal__content slds-p-vertical_medium slds-p-horizontal_large">
+								{{tempActivationMessage}}
+							</div>
+							<footer class="slds-modal__footer slds-theme_default">
+								<a ng-class="{'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}" ng-click="showActivateConfirmation = false">{!$Label.Ok}</a>
+							</footer>
+						</div>
+					</section>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+				</div>
+				<div ng-show="showNotReferenceableReasonModal" class="modal-container">
+					<div class="slds-modal__container" style="z-index: 9001">
+						<header class="slds-modal__header slds-modal__header_empty">
+							<a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="cancelNotReferenceableModal()" title="Close">
+								<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+								  <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+								</svg>
+								<span class="slds-assistive-text">Close</span>
+							</a>
+						</header>
+						<div class="slds-modal__content slds-p-vertical_medium slds-p-horizontal_large">
+							<div class="slds-form-element" ng-class="{'slds-has-error' : showNotReferenceableReasonError}">
+								<label class="slds-form-element__label" style="font-weight: normal !important;">
+									{!SUBSTITUTE($Label.Referenceable_help_msg, '@@@', $Label.Account)}<span style="color: #c23934">*</span>
+								</label>
+								<div class="slds-form-element__control">
+									<textarea class="slds-textarea" ng-model="accountNotReferenceableReason"></textarea>
+								</div>
+								<div ng-show="showNotReferenceableReasonError" class="slds-form-element__help">
+									{!SUBSTITUTE($Label.Select_the_reason, '@@@', $Label.Account)}
+								</div>
+							</div>
+						</div>
+						<footer class="slds-modal__footer">
+							<a ng-class="{'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}" ng-click="cancelNotReferenceableModal()">{!$Label.Cancel}</a>
+							<a ng-class="{'slds-button slds-button_brand' : isSLDS, 'btn' : !isSLDS}" ng-click="makeAccountNotReferenceable()">{!$Label.Save}</a>
+						</footer>
+					</div>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+				</div>
+				<div ng-show="showAddNewContactModal" class="modal-container">
+					<div class="slds-modal__container" style="z-index: 9999">
+						<header class="slds-modal__header slds-modal__header_empty">
+							<a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="showAddNewContactModal = false" title="Close">
+								<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+								  <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+								</svg>
+								<span class="slds-assistive-text">Close</span>
+							</a>
+						</header>
+						<div class="slds-modal__content slds-p-vertical_medium slds-p-horizontal_large">
+							<div class="slds-form-element" ng-class="{'slds-has-error' : showAddNewContactError}">
+								<label class="slds-form-element__label">
+									{!$Label.Add_Referenceable_Contact}<span style="color: #c23934">*</span>
+								</label>
+								<div class="slds-form-element__control">
+									<div class="slds-select_container">
+										<select class="slds-select" ng-model="selectedContactId" ng-change="showAddNewContactError = false">
+											<option ng-repeat="con in nonReferenceableContactsList" value="{{con.id}}">{{con.name}}</option>
+										</select>
+									</div>
+								</div>
+								<div class="slds-form-element__help" ng-show="showAddNewContactError">
+									{!$Label.Add_Referenceable_Contact_Message}
+								</div>
+							</div>
+						</div>
+						<footer class="slds-modal__footer">
+							<a ng-class="{'slds-button slds-button_neutral' : isSLDS, 'btn' : !isSLDS}" ng-click="cancelAddNewContact()">{!$Label.Cancel}</a>
+							<a ng-class="{'slds-button slds-button_brand' : isSLDS, 'btn' : !isSLDS}" ng-click="addNewContact()">{!$Label.Save}</a>
+						</footer>
+					</div>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+<c:HelpOverlays /> 
+</apex:page>

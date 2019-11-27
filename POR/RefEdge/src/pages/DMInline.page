@@ -1,0 +1,197 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ * 
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page standardController="Custom_Settings__c"
+           extensions="DataLoaderSettingController" lightningStylesheets="true"
+           sidebar="false" tabStyle="Custom_Settings__c" standardStylesheets="true" showHeader="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0">
+    <style>
+        div.tooltip {
+            float: right;
+            display:inline;
+            left:0;
+            opacity : 0.25;
+        }
+        div.tooltip:hover {
+            opacity : 1; 
+        }
+        div.tooltip span {
+            display: none;
+        }
+        div.tooltip:hover span {
+            display: inline;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            font-size: 109%;
+            padding: 2px 5px;
+            opacity : 1; 
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+            top: 20px;
+            right: 0;
+        }
+        .bPageBlock .detailList .dataCol {
+            width: 21%;
+        }
+        .left-select {
+            float: left; min-width: 150px; height: 80px;
+        }
+        .add-remove-container {
+            float: left; text-align: center;
+        }
+        .right-select {
+            float: left; min-width: 150px; height: 80px;
+        }
+    </style>           
+    <apex:outputPanel >
+        <apex:pageMessages id="pgmsgId" rendered="{!AND(IsPageAccessible,isFullLicenseAccessible)}"/>   
+        <apex:pageMessage summary="{!$Label.Insufficient_Privileges}" strength="3" severity="Info" rendered="{!IF(isFullLicenseAccessible,NOT(IsPageAccessible),isFullLicenseAccessible)}" />
+        <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+        <apex:form id="formId" rendered="{!AND(IsPageAccessible, isFullLicenseAccessible)}">
+            <apex:pageBlock id="outerBlock" mode="{!IF(isEdit,'edit','maindetail')}">
+                <apex:pageBlockButtons id="buttons" location="top" rendered="{!$ObjectType.Custom_Settings__c.updateable}">
+                    <apex:commandButton value="{!$Label.Edit}" action="{!editForm}" rendered="{!!isEdit}" reRender="pgmsgId,outerBlock,editBlock,nonEditBlock"/>
+                    <apex:commandButton value="{!$Label.Save}" action="{!saveForm}" reRender="pgmsgId,outerBlock,editBlock,nonEditBlock" rendered="{!isEdit}" />
+                    <apex:commandButton value="{!$Label.Cancel}" action="{!cancelForm}" reRender="pgmsgId,outerBlock,editBlock,nonEditBlock" rendered="{!isEdit}" />
+                </apex:pageBlockButtons>
+                <apex:pageBlockSection columns="1" rendered="{!!isEdit}" id="nonEditBlock">
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.Enable_Custom_Data_Loader__c}" />
+					</apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;','padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Export_Object__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered = "{!AND($ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputText value="{!exportObjectString}"/>
+					</apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;','padding-right: 0px;right: -10px!important;'))}">
+						<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Import_Object__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputText value="{!importObjectString}"/>
+					</apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection rendered="{!isEdit}" columns="1"  id="editBlock">
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Enable_Custom_Data_Loader__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField value="{!cs.Enable_Custom_Data_Loader__c}"/>
+					</apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;','padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Import_Object__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered = "{!AND($ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Import_Object__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+                        <apex:outputPanel id="multiselectDivImport">
+                            <apex:selectList value="{!currentAllObjImport}" multiselect="true" styleClass="left-select">  
+                                <apex:selectOptions value="{!allObjImport}" />
+                            </apex:selectList>
+                            <div class="add-remove-container">
+                                <apex:outputPanel layout="block" styleClass="text">{!$Label.Add}</apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!addToList}" id="btnRight" reRender="multiselectDivImport">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'right.gif')}"
+                                            alt="{!$Label.Add}" styleClass="rightArrowIcon" title="Add" />
+                                        <apex:param name="isImport" value="true" assignto="{!isImport}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!removeFromList}" id="btnLeft" reRender="multiselectDivImport">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'left.gif')}"
+                                            alt="{!$Label.Remove}" styleClass="leftArrowIcon"
+                                            title="Remove" />
+                                        <apex:param name="isImport" value="true" assignto="{!isImport}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="duelingText">{!$Label.Remove}</apex:outputPanel>
+                            </div>
+                            <apex:selectList value="{!currentSelectedImportObj}" multiselect="true" styleClass="right-select"> 
+                                <apex:selectOptions value="{!selectedImportObj}" />
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:outputPanel />
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;','padding-right: 0px;right: -10px!important;'))}">
+						<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Export_Object__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Export_Object__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+                        <apex:outputPanel id="multiselectDivExport">
+                            <apex:selectList value="{!currentAllObjExport}" multiselect="true" styleClass="left-select">  
+                                <apex:selectOptions value="{!allObjExport}" />
+                            </apex:selectList>
+                            <div class="add-remove-container" >
+                                <apex:outputPanel layout="block" styleClass="text">{!$Label.Add}</apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!addToList}" id="btnRight" reRender="multiselectDivExport">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'right.gif')}"
+                                            alt="{!$Label.Add}" styleClass="rightArrowIcon" title="Add" />
+                                    <apex:param name="isImport" value="false" assignto="{!isImport}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!removeFromList}" id="btnLeft" reRender="multiselectDivExport">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'left.gif')}"
+                                            alt="{!$Label.Remove}" styleClass="leftArrowIcon"
+                                            title="Remove" />
+                                        <apex:param name="isImport" value="false" assignto="{!isImport}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="duelingText">{!$Label.Remove}</apex:outputPanel>
+                            </div>
+                            <apex:selectList value="{!currentSelectedExportObj}" multiselect="true" styleClass="right-select"> 
+                                <apex:selectOptions value="{!selectedExportObj}" />
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </apex:pageBlock>   
+        </apex:form>
+    </apex:outputPanel>
+</apex:page>

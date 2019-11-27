@@ -1,0 +1,1748 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page controller="InvitationSLDSController" docType="html-5.0" showHeader="false" sidebar="false" standardStylesheets="false">  
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.TextAngular, 'textAngular.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+		<script src="{!URLFOR($Resource.TextAngular, 'textAngular-rangy.min.js')}"></script>
+		<script src="{!URLFOR($Resource.TextAngular, 'textAngular-sanitize.min.js')}"></script>
+		<script src="{!URLFOR($Resource.TextAngular, 'textAngular.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+
+        <style>
+            .container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: 0;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                overflow-scrolling: touch;
+                padding-bottom: 3rem;
+            }
+            .utilityBar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 0.2rem;
+                background-color: white;
+                box-shadow: 0 -2px 2px 0 rgba(0, 0, 0, 0.16);
+                z-index: 1010;
+            }
+            .titleBar {
+                background-color: #f5f7fa;
+            }
+            .customIconContainer {
+                height: 1.8rem !important;
+                width: 1.8rem !important;
+                border-radius: 0.9rem !important;
+                line-height: 1 !important;
+                padding: 0.5em 0 !important;
+            }
+            a {
+                text-decoration: none !important;
+            }
+            .custom-toast-width {
+                display: flex;
+                min-width: 0;
+            }
+            @media screen and (max-width: 767px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    margin-left: 0;
+                }
+            }
+            @media screen and (min-width: 768px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 50%;
+                    width: 50%;
+                    margin-left: -25%;
+                }
+            }
+            .slds-email-composer__combobox {
+                padding-left: 3.7rem !important;
+            }
+            .slds-combobox__input {
+                padding-left: 0.5rem !important;
+                padding-right: 0.75rem !important;
+            }
+            .slds-textarea {
+                border: none !important;
+                resize: none !important;
+                box-shadow: none !important;
+            }
+            .customTextarea {
+                height: -webkit-fill-available !important;
+            }
+            .previewEmailIcon {
+                position: absolute;
+                bottom: 0.5rem;
+                right: 0.3rem;
+            }
+            .customSelect {
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                width: 95% !important;
+                background-color: transparent !important;
+            }
+            .dropdownBackdrop {
+                background-color: transparent;
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                z-index: 110;
+            }
+            .customListBox {
+                width: 95%;
+                max-height: 40vh;
+                overflow-y: auto;
+                transition: all 0.2s ease-in-out !important;
+            }
+            #adp-time {
+                display: none !important;
+            }
+            .contentModal {
+                position: fixed;
+                top: 100%;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: white;
+                z-index: 999;
+                padding: 0.25rem;
+                transition: top .3s ease-in-out;
+                box-shadow: 0 -2px 2px 0 rgba(0, 0, 0, 0.16);
+            }
+            .contentModalOpen {
+                top: 0;
+            }
+        </style>
+
+        <script>
+            var sf1InvitationApp = angular.module('sf1InvitationApp', ['textAngular', 'angularjs-datetime-picker']);
+
+            var sf1InvitationCtrl = sf1InvitationApp.controller('sf1InvitationCtrl',
+                function($scope, $q, $filter) {
+                    $scope.isloading = false;
+                    $scope.refContentIds = '{!JSENCODE(selectedRefContents)}';
+                    $scope.isEmailSent = false;
+                    $scope.tags = [];
+                    $scope.isShowCcPanel = false;
+                    $scope.isShowEmailPanel = false;
+                    $scope.selectedMicrositeId = '';
+                    $scope.micrositeIdFromUrl = '{!JSENCODE(selectedMictosite)}';
+                    $scope.isShowComposeBtn = true;
+                    $scope.requestObject = [];
+                    $scope.contactIds = [];
+                    $scope.contactEmailIds='{!JSENCODE(contactEmailIds)}';
+                    $scope.EmailIds = {};
+                    $scope.EmailIds['toContacts'] = [];
+                    $scope.EmailIds['ccContacts'] = [];
+                    $scope.EmailIds['bccContacts'] = [];
+                    $scope.EmailIds['toUser'] = [];
+                    $scope.EmailIds['ccUser'] = [];
+                    $scope.EmailIds['bccUser'] = [];
+                    $scope.EmailIds['toOther'] = [];
+                    $scope.EmailIds['ccOther'] = [];
+                    $scope.EmailIds['bccOther'] = [];
+                    $scope.userIds = []; 
+                    $scope.userEmailIds = '{!JSENCODE(userEmailIds)}';
+                    $scope.recipientsIds = [];
+                    $scope.recipientsEmailIds = '{!JSENCODE(recipientsEmailIds)}';
+                    $scope.subject = '{!JSENCODE(emailSubject)}';
+                    $scope.emailContent = '{!JSENCODE(emailContent)}';
+                    $scope.invitaionName = '{!JSENCODE(invitaionName)}'; 
+                    $scope.listReferenceContent = []; 
+                    $scope.invitationExpire = '';
+                    $scope.notes = '{!JSENCODE(notes)}';
+                    $scope.opportunityName = '{!JSENCODE(opportunityName)}';
+                    $scope.opportunityId = '{!JSENCODE(opportunity)}';
+                    $scope.opportunityAccount = '{!JSENCODE(opportunityAccount)}';
+                    $scope.fromLead = '{!fromLead}';
+                    $scope.opportunityAccountId = '';
+                    $scope.messageBody = '';
+                    $scope.validationMessage = '';
+                    $scope.caseId = '{!JSENCODE(caseId)}';
+                    $scope.leadId = '{!JSENCODE(leadId)}';
+                    $scope.maxDate =''; 
+                    $scope.resource = '{!URLFOR($Resource.LightningCSS_2_3)}';
+                    $scope.doctypeMap = {"UNKNOWN": "/assets/icons/doctype/unknown_60.png",
+                                        "XML": "/assets/icons/doctype/xml_60.png",
+                                        "TEXT": "/assets/icons/doctype/txt_60.png",
+                                        "MP4": "/assets/icons/doctype/mp4_60.png",
+                                        "CSV": "/assets/icons/doctype/csv_60.png",
+                                        "EXCEL": "/assets/icons/doctype/excel_60.png",
+                                        "JPG": "/assets/icons/doctype/image_60.png",
+                                        "BMP": "/assets/icons/doctype/unknown_60.png",
+                                        "PNG": "/assets/icons/doctype/image_60.png",
+                                        "GIF": "/assets/icons/doctype/image_60.png",
+                                        "LINK": "/assets/icons/doctype/link_60.png",
+                                        "PDF": "/assets/icons/doctype/pdf_60.png",
+                                        "POWER_POINT": "/assets/icons/doctype/ppt_60.png",
+                                        "RTF": "/assets/icons/doctype/rtf_60.png",
+                                        "WAV": "/assets/icons/doctype/audio_60.png",
+                                        "MOV": "/assets/icons/doctype/video_60.png",
+                                        "WORD": "/assets/icons/doctype/word_60.png",
+                                        "WORD_X": "/assets/icons/doctype/word_60.png",
+                                        "EXCEL_X": "/assets/icons/doctype/excel_60.png",
+                                        "POWER_POINT_X": "/assets/icons/doctype/ppt_60.png",
+                                        "Reference Interview": "/assets/icons/doctype/video_60.png",
+                                        "ZIP": "/assets/icons/doctype/unknown_60.png"};
+                    $scope.selectedContentIds = ''; 
+                    $scope.refContentlist ='';
+                    $scope.showValidationMessage = false;
+                    $scope.showOpportunityDetails = false;
+                    $scope.isOpportunityAllowed = false;
+                    $scope.isRfSearchAllowed = false;
+                    $scope.isCaseAllowed = false;
+                    $scope.isLeadAllowed = false;
+                    $scope.forContent ='{!forContent}';
+                    $scope.forAccount = '{!forAccount}';
+                    $scope.isContentInterviewType = false;
+                    $scope.errMsg = '';
+                    $scope.isError = false;
+                    $scope.isContentUpdateable = {!isContentUpdateable};
+                    $scope.isShowPreview = false;
+                    $scope.emailTemplate = '';
+                    $scope.isReturned = '{!isReturned}';  
+                    $scope.isCcAllowed ='{!isCcAllowed}';
+                    $scope.emailToValues = '{!JSENCODE(emailTo)}';
+                    $scope.emailBccValues = '{!JSENCODE(emailBcc)}';
+                    $scope.emailCcValues = '{!JSENCODE(emailCc)}';
+                    $scope.expdate = '{!JSENCODE(expdate)}';
+                    $scope.emailTo = [];
+                    $scope.emailBcc = [];
+                    $scope.emailCc = [];
+                    $scope.dateFormat = 'yyyy-MM-dd';
+                    $scope.htmlEmailBody = '';
+                    $scope.showToDropdown = false;
+                    $scope.showCcDropdown = false;
+                    $scope.showBccDropdown = false;
+                    $scope.emailSearchTextTo = '';
+                    $scope.emailSearchTextCc = '';
+                    $scope.emailSearchTextBcc = '';
+                    $scope.dropdownLoading = false;
+                    $scope.searchedRecords = [];
+                    $scope.selectedToRecords = [];
+                    $scope.selectedCcRecords = [];
+                    $scope.selectedBccRecords = [];
+                    $scope.showIncludedContentModal = false;
+                    $scope.showEmailSentToast = false;
+
+                    $scope.load  = function() {
+                        $scope.isloading = true;
+
+                        $scope.getDateFormat().then(function(result) {
+
+                            if (result != null) {  
+                                $scope.dateFormat = result;
+                            }
+                            $scope.expdate = $filter('date')('{!JSENCODE(expdate)}', $scope.dateFormat);
+                            $scope.init();
+                        });
+                    }
+
+                    $scope.getDateFormat = function () {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.getDateFormat}', 
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.convertToDate = function(date) {
+                        date = (date == null) ? '' : date;
+                        var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+                        var tempDF;
+                        
+                        if (date == null || date == '') {
+                            return '';
+                        }
+                        
+                        if (date.match(regEx)) {
+                            tempDF = date.split('-');
+
+                            if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+                                return null;
+                            }
+                            return date;
+                        }
+
+                        try {
+                            var tempDF = $scope.dateFormat;
+                            var tempDate = date + '';
+                            tempDF = tempDF.split(/[./-]/g);
+                            tempDate = tempDate.split(/[./-]/g);
+                            var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+                            var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+                            var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+                            var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+                            
+                            if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+                                
+                                if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+                                    return null;
+                                }
+                                return dateString;
+                            } else {
+                                return null;
+                            }
+                        } catch (e) {
+                            return null;
+                        }
+                    }
+                    
+                    $scope.checkDate = function(day, month, year) {
+                        var returnval = true;
+                        
+                        if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == ''
+                                || parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+                            returnval = false;
+                        } else {
+                            day = parseInt(day);
+                            month = parseInt(month);
+                            year = parseInt(year);
+                        }
+                        returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+                        var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) : (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31;
+                        returnval = (day > days) ? false : returnval;
+                        return returnval;
+                    }
+
+                    $scope.init = function() {
+
+                        if ($scope.micrositeIdFromUrl != null && $scope.micrositeIdFromUrl != '') {
+                            $scope.selectedMicrositeId = $scope.micrositeIdFromUrl;
+                        }
+
+                        if ($scope.isReturned == 'false') {
+                            
+                            $scope.getPageInputs().then(function(result) {
+                                $scope.invitaionName = result[0].InvitaionName;
+                                $scope.expdate = $filter('date')(result[0].DefaultExpirationDays, $scope.dateFormat);
+                                $scope.maxDate = result[0].MaximumExpirationDays;
+                                $scope.notes = result[0].Notes;
+                                $scope.opportunityName = $scope.parseResult(result[0].OpportunityName);
+                                $scope.opportunityAccount = $scope.parseResult(result[0].OpportunityAccount);
+                                $scope.opportunityId = result[0].OpportunityId;
+
+                                if ($scope.opportunityId != '') {
+									$scope.isOpportunityAllowed = true;
+								} else if ($scope.leadId != '') {
+									$scope.isLeadAllowed = true;
+								} else if ($scope.caseId != '') {
+									$scope.isCaseAllowed = true;
+								} else {
+									$scope.isRfSearchAllowed = true;
+								}
+                                $scope.opportunityAccountId = result[0].OpportunityAccountId;
+								$scope.messageBody = result[0].EmailContent;
+
+                                if ($scope.emailContent == null || $scope.emailContent == '') {
+                                    $scope.emailContent = $scope.messageBody.replace('\n', '<p><br /></p>');
+                                    $scope.emailContent = $scope.emailContent.replace('\n', '<p><br /></p>');
+                                    $scope.emailContent = $scope.emailContent.replace('\n', '<p><br /></p>');
+                                    $scope.emailContent = $scope.emailContent.replace('\n', '<p><br /></p><p>');
+                                    $scope.emailContent = $scope.emailContent.replace(/\n/gi, '</p><p>');
+                                }
+
+                                if ($scope.opportunityName != '') {
+									$scope.showOpportunityDetails = true;
+                                }
+                            });
+                        } else {
+                            
+                            if ($scope.emailToValues != '') {
+                                $scope.emailTo = $scope.emailToValues.split(',');
+                            }
+                            
+                            if ($scope.emailBccValues != '') {
+                                $scope.emailBcc = $scope.emailBccValues.split(',');
+                            }
+                            
+                            if ($scope.emailCcValues != '') {
+                                $scope.emailCc = $scope.emailCcValues.split(',');
+                            }
+
+                            if ($scope.contactEmailIds != '' && $scope.contactEmailIds != null) {
+                                $scope.contactIds = $scope.contactEmailIds.split(',');
+                            }
+
+                            if ($scope.userEmailIds != '' && $scope.userEmailIds != null) {
+                                $scope.userIds = $scope.userEmailIds.split(',');
+                            }
+
+                            if ($scope.recipientsEmailIds != '' && $scope.recipientsEmailIds != null) {
+                                $scope.recipientsEmailIds = $scope.recipientsEmailIds.replace(/"/g, '');
+                                $scope.recipientsEmailIds = $scope.recipientsEmailIds.replace('[', '');
+                                $scope.recipientsEmailIds = $scope.recipientsEmailIds.replace(']', '');
+                                $scope.recipientsIds = $scope.recipientsEmailIds.split(',');
+                            }
+
+                            if ($scope.opportunityName != '')
+                                $scope.showOpportunityDetails = true;
+
+                            if ($scope.opportunityId != '') {
+                                $scope.isOpportunityAllowed = true;
+                            } else if ($scope.leadId != '') {
+                                $scope.isLeadAllowed = true;
+                            } else if ($scope.caseId != '') {
+                                $scope.isCaseAllowed = true;
+                            } else {
+                                $scope.isRfSearchAllowed = true;
+                            }
+                        }
+                        $scope.microSiteList = [];
+
+                        $scope.getMicrositesList().then(function(result) {
+                            
+                            if (result != null) {
+                                $scope.allMicroSiteList = result;
+                                $scope.selectedMicrositeId = $scope.allMicroSiteList[0].Id;
+                                
+                                angular.forEach(
+                                    $scope.allMicroSiteList,
+                                    function(microsite) {
+                                        
+                                        if (microsite.IsSelected) {
+                                            $scope.selectedMicrositeId = microsite.Id;
+                                        }
+                                    }
+                                );
+                            }
+                        });
+                        $scope.listReferenceContent = [];
+
+                        $scope.loadReferenceContent().then(function(result) {
+                            
+                            if (result != null) {
+                                $scope.listReferenceContent = result;
+                            }
+                            $scope.isloading = false;
+                            $scope.getSelectedRefContentId();
+                        });
+                    }
+
+                    $scope.getPageInputs = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.getPageInputs}',
+                            $scope.opportunityId, $scope.caseId,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getMicrositesList = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.getMicrositesList}',
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getEmailList = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.getEmailList}',
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.loadReferenceContent = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.loadReferenceContent}',
+                            $scope.refContentIds,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.saveDefaultTemplate = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.saveDefaultTemplate}',
+                            $scope.selectedMicrositeId,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.createInvitation = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.createInvitation}',
+                            $scope.contactIds.join(','), angular.toJson($scope.EmailIds),
+                            $scope.userIds.join(','), angular.toJson($scope.recipientsIds),
+                            $scope.subject, $scope.emailContent,
+                            $scope.invitaionName, $scope.opportunityId,
+                            ($scope.caseId != '' ? $scope.caseId : $scope.leadId),
+                            $scope.expdate, $scope.selectedMicrositeId,
+                            $scope.notes, $scope.refContentlist,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getEmailSearchList = function(searchText) {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.InvitationSLDSController.getEmailSearchList}',
+                            searchText,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+
+                    $scope.getSelectedRefContentId = function() {
+                        $scope.refContentlist = '';
+                        
+                        for (var i = 0; i < $scope.listReferenceContent.length; i++) {
+                            $scope.refContentlist += $scope.refContentlist == ''
+                                                        ? $scope.listReferenceContent[i].RefContentId
+                                                        : ',' + $scope.listReferenceContent[i].RefContentId;
+                        }
+                    }
+
+                    $scope.setDefaultTemplate = function() {
+                        $scope.isloading = true;
+                        // TODO: apply blank validation
+
+                        $scope.saveDefaultTemplate().then(function(result) {
+
+                            if (result != null) {
+                                $scope.isError = true;
+                                $scope.errMsg = result;
+                            }
+                            $scope.isloading = false;
+                        });
+                    }
+
+                    $scope.deleteRefContent = function(index) {
+
+                        if ($scope.listReferenceContent.length != 1) {
+
+                            if (index != -1) {
+                                $scope.listReferenceContent.splice(index, 1);
+                            }
+                            $scope.getSelectedRefContentId();
+                        } else {
+                            $scope.isError = true;
+                            $scope.errMsg = '{!$Label.You_cannot_delete_all_Contents}';
+                        }
+                    }
+
+                    $scope.validateRequiredFields = function() {
+
+                        if (($scope.contactIds == '' || $scope.contactIds == null)
+                                && ($scope.userIds == '' || $scope.userIds == null)
+                                && ($scope.recipientsIds == '' || $scope.recipientsIds == null)) {
+                            $scope.errMsg = '{!$Label.SELECT_RECIPIENT}';
+                            return false;
+                        }
+
+                        if ($scope.subject == '' || $scope.subject == null) {
+                            $scope.errMsg = '{!$Label.ENTER_SUBJECT}';
+                            return false;
+                        }
+
+                        if ($scope.selectedMicrositeId == '') {
+                            $scope.errMsg = '{!$Label.SELECT_MICROSITE}';
+                            return false;
+                        }
+
+                        if ($scope.expdate == '' || $scope.expdate == null) {
+                            $scope.errMsg = '{!$Label.ENTER_INVITATION_EXPIRATION}';
+                            return false;
+                        } else {
+                            var dateString = $scope.convertToDate($scope.expdate);
+
+                            if (dateString != null) {
+                                $scope.expdate = dateString;
+                            } else {
+                                $scope.isError = true;
+                                $scope.errMsg = '{!$Label.Date_Invalid}' + $scope.expdate;
+                            }
+                        }
+                        return true;
+                    }
+
+                    $scope.backToRefSearch = function() {
+                        var form = document.createElement("form");
+                        form.setAttribute("method", "POST");
+                        form.setAttribute("action", "{!URLFOR($Page.SF1_RfSearchPage)}");
+
+                        var hiddenField = document.createElement("input");
+                        hiddenField.setAttribute("type", "hidden");
+                        hiddenField.setAttribute("name", "refContentIds");
+                        hiddenField.setAttribute("value", []);
+                        form.appendChild(hiddenField);
+
+                        var hiddenFieldAcc = document.createElement("input");
+                        hiddenFieldAcc.setAttribute("type", "hidden");
+                        hiddenFieldAcc.setAttribute("name", "forAccount");
+                        hiddenFieldAcc.setAttribute("value", $scope.forAccount);
+                        form.appendChild(hiddenFieldAcc);
+
+                        var hiddenFieldCon = document.createElement("input");
+                        hiddenFieldCon.setAttribute("type", "hidden");
+                        hiddenFieldCon.setAttribute("name", "forContent");
+                        hiddenFieldCon.setAttribute("value", $scope.forContent);
+                        form.appendChild(hiddenFieldCon);
+
+                        var hiddenFieldOpp = document.createElement("input");
+                        hiddenFieldOpp.setAttribute("type", "hidden");
+                        hiddenFieldOpp.setAttribute("name", "opportunityId");
+                        hiddenFieldOpp.setAttribute("value", $scope.opportunityId);
+                        form.appendChild(hiddenFieldOpp);
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+
+                    $scope.shareRefContentIds = function() {
+                        $scope.getSelectedRefContentId();
+                        var refContentIds = $scope.refContentlist;
+
+                        if (refContentIds != '') {
+                            $scope.isReturned = true;
+                            var form = document.createElement("form");
+                            form.setAttribute("method", "POST");
+                            form.setAttribute("action", "{!URLFOR($Page.SF1_RfSearchPage)}");
+
+                            var hiddenField = document.createElement("input");
+                            hiddenField.setAttribute("type", "hidden");
+                            hiddenField.setAttribute("name", "refContentIds");
+                            hiddenField.setAttribute("value", refContentIds);
+                            form.appendChild(hiddenField);
+
+                            var hiddenFieldAcc = document.createElement("input");
+                            hiddenFieldAcc.setAttribute("type", "hidden");
+                            hiddenFieldAcc.setAttribute("name", "forAccount");
+                            hiddenFieldAcc.setAttribute("value", $scope.forAccount);
+                            form.appendChild(hiddenFieldAcc);
+
+                            var hiddenFieldCon = document.createElement("input");
+                            hiddenFieldCon.setAttribute("type", "hidden");
+                            hiddenFieldCon.setAttribute("name", "forContent");
+                            hiddenFieldCon.setAttribute("value", $scope.forContent);
+                            form.appendChild(hiddenFieldCon);
+
+                            var hiddenFieldOpp = document.createElement("input");
+                            hiddenFieldOpp.setAttribute("type", "hidden");
+                            hiddenFieldOpp.setAttribute("name", "opportunityId");
+                            hiddenFieldOpp.setAttribute("value", $scope.opportunityId);
+                            form.appendChild(hiddenFieldOpp);
+
+                            var hiddenField6 = document.createElement("input");
+                            hiddenField6.setAttribute("type", "hidden");
+                            hiddenField6.setAttribute("name", "isReturned");
+                            hiddenField6.setAttribute("value", $scope.isReturned);
+                            form.appendChild(hiddenField6);
+
+                            var hiddenField7 = document.createElement("input");
+                            hiddenField7.setAttribute("type", "hidden");
+                            hiddenField7.setAttribute("name", "contactIds");
+                            hiddenField7.setAttribute("value", $scope.contactIds.join(','));
+                            form.appendChild(hiddenField7);
+
+                            var hiddenField8 = document.createElement("input");
+                            hiddenField8.setAttribute("type", "hidden");
+                            hiddenField8.setAttribute("name", "userIds");
+                            hiddenField8.setAttribute("value", $scope.userIds.join(','));
+                            form.appendChild(hiddenField8);
+
+                            var hiddenField9 = document.createElement("input");
+                            hiddenField9.setAttribute("type", "hidden");
+                            hiddenField9.setAttribute("name", "recipientsIds");
+                            hiddenField9.setAttribute("value", angular.toJson($scope.recipientsIds));
+                            form.appendChild(hiddenField9);
+
+                            var hiddenField10 = document.createElement("input");
+                            hiddenField10.setAttribute("type", "hidden");
+                            hiddenField10.setAttribute("name", "emailSubject");
+                            hiddenField10.setAttribute("value", $scope.subject);
+                            form.appendChild(hiddenField10);
+
+                            var hiddenField11 = document.createElement("input");
+                            hiddenField11.setAttribute("type", "hidden");
+                            hiddenField11.setAttribute("name", "emailContent");
+                            hiddenField11.setAttribute("value", $scope.emailContent);
+                            form.appendChild(hiddenField11);
+
+                            var hiddenField12 = document.createElement("input");
+                            hiddenField12.setAttribute("type", "hidden");
+                            hiddenField12.setAttribute("name", "invitaionName");
+                            hiddenField12.setAttribute("value", $scope.invitaionName);
+                            form.appendChild(hiddenField12);
+
+                            var hiddenField13 = document.createElement("input");
+                            hiddenField13.setAttribute("type", "hidden");
+                            hiddenField13.setAttribute("name", "note");
+                            hiddenField13.setAttribute("value", $scope.notes);
+                            form.appendChild(hiddenField13);
+
+                            var hiddenField14 = document.createElement("input");
+                            hiddenField14.setAttribute("type", "hidden");
+                            hiddenField14.setAttribute("name", "selectedMictosite");
+                            hiddenField14.setAttribute("value", $scope.selectedMicrositeId);
+                            form.appendChild(hiddenField14);
+
+                            var hiddenField15 = document.createElement("input");
+                            hiddenField15.setAttribute("type", "hidden");
+                            hiddenField15.setAttribute("name", "expDate");
+                            hiddenField15.setAttribute("value", $scope.expdate);
+                            form.appendChild(hiddenField15);
+
+                            var hiddenField16 = document.createElement("input");
+                            hiddenField16.setAttribute("type", "hidden");
+                            hiddenField16.setAttribute("name", "isCcAllowed");
+                            hiddenField16.setAttribute("value", $scope.isCcAllowed);
+                            form.appendChild(hiddenField16);
+
+                            var hiddenField17 = document.createElement("input");
+                            hiddenField17.setAttribute("type", "hidden");
+                            hiddenField17.setAttribute("name", "emailTo");
+                            hiddenField17.setAttribute("value", $scope.emailTo.join(','));
+                            form.appendChild(hiddenField17);
+
+                            var hiddenField18 = document.createElement("input");
+                            hiddenField18.setAttribute("type", "hidden");
+                            hiddenField18.setAttribute("name", "emailBcc");
+                            hiddenField18.setAttribute("value", $scope.emailBcc.join(','));
+                            form.appendChild(hiddenField18);
+
+                            var hiddenField19 = document.createElement("input");
+                            hiddenField19.setAttribute("type", "hidden");
+                            hiddenField19.setAttribute("name", "emailCc");
+                            hiddenField19.setAttribute("value", $scope.emailCc.join(','));
+                            form.appendChild(hiddenField19);
+
+                            var hiddenField20 = document.createElement("input");
+                            hiddenField20.setAttribute("type", "hidden");
+                            hiddenField20.setAttribute("name", "opportunityName");
+                            hiddenField20.setAttribute("value", $scope.opportunityName);
+                            form.appendChild(hiddenField20);
+
+                            var hiddenField21 = document.createElement("input");
+                            hiddenField21.setAttribute("type", "hidden");
+                            hiddenField21.setAttribute("name", "opportunityAccount");
+                            hiddenField21.setAttribute("value", $scope.opportunityAccount);
+                            form.appendChild(hiddenField21);
+
+                            var hiddenField22 = document.createElement("input");
+                            hiddenField22.setAttribute("type", "hidden");
+                            hiddenField22.setAttribute("name", "fromLead");
+                            hiddenField22.setAttribute("value", $scope.fromLead);
+                            form.appendChild(hiddenField22);
+
+                            document.body.appendChild(form);
+                            form.submit();
+                        } else {
+                            alert('No Reference Content selected.');
+                        }
+                    }
+
+                    $scope.sendInvitation = function() {
+                        $scope.isloading = true;
+
+                        if ($scope.validateRequiredFields()) {
+                            $scope.isError = false;
+                            $scope.getSelectedRefContentId();
+
+                            $scope.createInvitation().then(function(result) {
+                                $scope.isloading = false;
+
+                                if (result != null) {
+
+                                    if (result.startsWith('Error') == false) {
+                                        $scope.isError = false;
+                                        $scope.isEdit = false;
+                                        $scope.isEmailSent = true;
+                                        $scope.showEmailSentToast = true;
+                                        showDisolvingAlert(result);
+                                    } else {
+                                        result = result.replace(/&#39/g, '\'');
+                                        $scope.errMsg = result.substring(5);
+                                        $scope.isError = true;
+                                    }
+                                }
+                            });
+                        } else {
+                            $scope.isError = true;
+                            $scope.isloading = false;
+                        }
+                    }
+
+                    $scope.openSourcePage = function(recordId) {
+                        sforce.one.navigateToSObject(recordId, 'detail');
+                    }
+
+                    $scope.PreviewSite = function() {
+
+                        if ($scope.selectedMicrositeId == '') {
+                            alert('{!$Label.SELECT_MICROSITE}');
+                        } else {
+                            window.open('{!$Page.PreviewMicrositeNew}?micrositeId=' + $scope.selectedMicrositeId + '&selectRefContent={!URLENCODE(selectedRefContents)}&internalPreview=true', '_blank');
+                        }
+                    }
+
+                    $scope.validateEmail = function(email) {
+                        
+                        if (email != null && email != '') {
+                            var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+
+                            if (!filter.test(email)) {
+                                $scope.errMsg = 'Invalid email Id';
+                                $scope.isError = true;
+                                return false;
+                            } else {
+                                $scope.isError = false;
+                                return true;
+                            }
+                        }
+                    }
+
+                    $scope.openToDropdown = function() {
+                        
+                        if (!$scope.showToDropdown) {
+                            $scope.showToDropdown = true;
+                            $scope.searchRecords($scope.emailSearchTextTo);
+                        }
+                    }
+
+                    $scope.openCcDropdown = function() {
+                        
+                        if (!$scope.showCcDropdown) {
+                            $scope.showCcDropdown = true;
+                            $scope.searchRecords($scope.emailSearchTextCc);
+                        }
+                    }
+
+                    $scope.openBccDropdown = function() {
+                        
+                        if (!$scope.showBccDropdown) {
+                            $scope.showBccDropdown = true;
+                            $scope.searchRecords($scope.emailSearchTextBcc);
+                        }
+                    }
+
+                    $scope.searchRecords = function(searchText) {
+                        $scope.dropdownLoading = true;
+                        $scope.searchedRecords = [];
+
+                        $scope.getEmailSearchList(searchText).then(function(result) {
+                            $scope.searchedRecords = result;
+                            $scope.dropdownLoading = false;
+                        });
+                    }
+
+                    $scope.closeDropdown = function() {
+                        $scope.showToDropdown = false;
+                        $scope.showCcDropdown = false;
+                        $scope.showBccDropdown = false;
+                    }
+
+                    $scope.prevent = function($event, type) {
+                        $event.stopPropagation();
+                        $event.preventDefault();
+
+                        if (type == 'to') {
+                            $scope.showCcDropdown = false;
+                            $scope.showBccDropdown = false;
+                        } else if (type == 'cc') {
+                            $scope.showToDropdown = false;
+                            $scope.showBccDropdown = false;
+                        } else if (type == 'bcc') {
+                            $scope.showCcDropdown = false;
+                            $scope.showToDropdown = false;
+                        }
+                    }
+
+                    $scope.selectItem = function(item, type) {
+
+                        if (type == 'to') {
+                            var isPresent = false;
+
+                            angular.forEach(
+                                $scope.selectedToRecords,
+                                function(rec) {
+
+                                    if (rec['Id'] == item['Id']) {
+                                        isPresent = true;
+                                    }
+                                }
+                            );
+
+                            if (item['Type'] == 'Contact') {
+
+                                if (!isPresent) {
+                                    $scope.selectedToRecords.push(item);
+                                    $scope.contactIds.push(item['Id']);
+                                    $scope.EmailIds['toContacts'].push(item['Email']);
+                                }
+                            } else if (item['Type'] == 'User') {
+
+                                if (!isPresent) {
+                                    $scope.selectedToRecords.push(item);
+                                    $scope.userIds.push(item['Id']);
+                                    $scope.EmailIds['toUser'].push(item['Email']);
+                                }
+                            } else if (item['Type'] == 'other') {
+
+                                if (!isPresent) {
+                                    $scope.selectedToRecords.push(item);
+                                    $scope.recipientsIds.push(item['Email']);
+                                    $scope.EmailIds['toOther'].push(item['Email']);
+                                }
+                            }
+                            $scope.emailSearchTextTo = '';
+                        } else if (type == 'cc') {
+                            var isPresent = false;
+
+                            angular.forEach(
+                                $scope.selectedCcRecords,
+                                function(rec) {
+
+                                    if (rec['Id'] == item['Id']) {
+                                        isPresent = true;
+                                    }
+                                }
+                            );
+
+                            if (item['Type'] == 'Contact') {
+
+                                if (!isPresent) {
+                                    $scope.selectedCcRecords.push(item);
+                                    $scope.contactIds.push(item['Id']);
+                                    $scope.EmailIds['ccContacts'].push(item['Email']);
+                                }
+                            } else if (item['Type'] == 'User') {
+
+                                if (!isPresent) {
+                                    $scope.selectedCcRecords.push(item);
+                                    $scope.userIds.push(item['Id']);
+                                    $scope.EmailIds['ccUser'].push(item['Email']);
+                                }
+                            } else if (item['Type'] == 'other') {
+
+                                if (!isPresent) {
+                                    $scope.selectedCcRecords.push(item);
+                                    $scope.recipientsIds.push(item['Email']);
+                                    $scope.EmailIds['ccOther'].push(item['Email']);
+                                }
+                            }
+                            $scope.emailSearchTextCc = '';
+                        } else if (type == 'bcc') {
+                            var isPresent = false;
+
+                            angular.forEach(
+                                $scope.selectedBccRecords,
+                                function(rec) {
+
+                                    if (rec['Id'] == item['Id']) {
+                                        isPresent = true;
+                                    }
+                                }
+                            );
+
+                            if (item['Type'] == 'Contact') {
+
+                                if (!isPresent) {
+                                    $scope.selectedBccRecords.push(item);
+                                    $scope.contactIds.push(item['Id']);
+                                    $scope.EmailIds['bccContacts'].push(item['Email']);
+                                }
+                            } else if (item['Type'] == 'User') {
+
+                                if (!isPresent) {
+                                    $scope.selectedBccRecords.push(item);
+                                    $scope.userIds.push(item['Id']);
+                                    $scope.EmailIds['bccUser'].push(item['Email']);
+                                }
+                            } else if (item['Type'] == 'other') {
+
+                                if (!isPresent) {
+                                    $scope.selectedBccRecords.push(item);
+                                    $scope.recipientsIds.push(item['Email']);
+                                    $scope.EmailIds['bccOther'].push(item['Email']);
+                                }
+                            }
+                            $scope.emailSearchTextBcc = '';
+                        }
+                        $scope.closeDropdown();
+                    }
+
+                    $scope.handleKeyPress = function(e, type) {
+                        var keyCode = e.which || e.keyCode;
+
+                        if (keyCode == 13 || keyCode == 32) {
+
+                            if ($scope.searchedRecords.length > 0) {
+                                $scope.selectItem($scope.searchedRecords[0], type);
+                            } else {
+                                
+                                if (type == 'to') {
+                                    var isEmailValid = $scope.validateEmail($scope.emailSearchTextTo);
+
+                                    if (isEmailValid) {
+                                        var tempItem = {};
+                                        tempItem['Id'] = '';
+                                        tempItem['Name'] = $scope.emailSearchTextTo;
+                                        tempItem['Email'] = $scope.emailSearchTextTo;
+                                        tempItem['Type'] = 'other';
+                                        tempItem['Imgurl'] = '';
+                                        $scope.selectItem(tempItem, 'to');
+                                    }
+                                } else if (type == 'cc') {
+                                    var isEmailValid = $scope.validateEmail($scope.emailSearchTextCc);
+
+                                    if (isEmailValid) {
+                                        var tempItem = {};
+                                        tempItem['Id'] = '';
+                                        tempItem['Name'] = $scope.emailSearchTextCc;
+                                        tempItem['Email'] = $scope.emailSearchTextCc;
+                                        tempItem['Type'] = 'other';
+                                        tempItem['Imgurl'] = '';
+                                        $scope.selectItem(tempItem, 'cc');
+                                    }
+                                } else if (type == 'bcc') {
+                                    var isEmailValid = $scope.validateEmail($scope.emailSearchTextBcc);
+
+                                    if (isEmailValid) {
+                                        var tempItem = {};
+                                        tempItem['Id'] = '';
+                                        tempItem['Name'] = $scope.emailSearchTextBcc;
+                                        tempItem['Email'] = $scope.emailSearchTextBcc;
+                                        tempItem['Type'] = 'other';
+                                        tempItem['Imgurl'] = '';
+                                        $scope.selectItem(tempItem, 'bcc');
+                                    }
+                                }
+                            }
+                        } else if (keyCode == 8 || keyCode == 46) {
+                            
+                            if (type == 'to' && $scope.emailSearchTextTo == '') {
+                                $scope.removeItem($scope.selectedToRecords[$scope.selectedToRecords.length - 1], 'to');
+                            } else if (type == 'cc' && $scope.emailSearchTextCc == '') {
+                                $scope.removeItem($scope.selectedCcRecords[$scope.selectedCcRecords.length - 1], 'cc');
+                            } else if (type == 'bcc' && $scope.emailSearchTextBcc == '') {
+                                $scope.removeItem($scope.selectedBccRecords[$scope.selectedBccRecords.length - 1], 'bcc');
+                            }
+                        }
+                    }
+
+                    $scope.removeItem = function(item, type) {
+
+                        if (type == 'to') {
+
+                            if (item['Type'] == 'Contact') {
+                                var index = $scope.contactIds.indexOf(item['Id']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedToRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedToRecords.splice(index1, 1);
+                                $scope.contactIds.splice(index, 1);
+                                $scope.EmailIds['toContacts'].splice(index, 1);
+                            } else if (item['Type'] == 'User') {
+                                var index = $scope.userIds.indexOf(item['Id']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedToRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedToRecords.splice(index1, 1);
+                                $scope.userIds.splice(index, 1);
+                                $scope.EmailIds['toUser'].splice(index, 1);
+                            } else if (item['Type'] == 'other') {
+                                var index = $scope.recipientsIds.indexOf(item['Email']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedToRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedToRecords.splice(index1, 1);
+                                $scope.recipientsIds.splice(index, 1);
+                                $scope.EmailIds['toOther'].splice(index, 1);
+                            }
+                        } else if (type == 'cc') {
+
+                            if (item['Type'] == 'Contact') {
+                                var index = $scope.contactIds.indexOf(item['Id']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedCcRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedCcRecords.splice(index1, 1);
+                                $scope.contactIds.splice(index, 1);
+                                $scope.EmailIds['ccContacts'].splice(index, 1);
+                            } else if (item['Type'] == 'User') {
+                                var index = $scope.userIds.indexOf(item['Id']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedCcRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedCcRecords.splice(index1, 1);
+                                $scope.userIds.splice(index, 1);
+                                $scope.EmailIds['ccUser'].splice(index, 1);
+                            } else if (item['Type'] == 'other') {
+                                var index = $scope.recipientsIds.indexOf(item['Email']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedCcRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedCcRecords.splice(index1, 1);
+                                $scope.recipientsIds.splice(index, 1);
+                                $scope.EmailIds['ccOther'].splice(index, 1);
+                            }
+                        } else if (type == 'bcc') {
+
+                            if (item['Type'] == 'Contact') {
+                                var index = $scope.contactIds.indexOf(item['Id']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedBccRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedBccRecords.splice(index1, 1);
+                                $scope.contactIds.splice(index, 1);
+                                $scope.EmailIds['bccContacts'].splice(index, 1);
+                            } else if (item['Type'] == 'User') {
+                                var index = $scope.userIds.indexOf(item['Id']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedBccRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedBccRecords.splice(index1, 1);
+                                $scope.userIds.splice(index, 1);
+                                $scope.EmailIds['bccUser'].splice(index, 1);
+                            } else if (item['Type'] == 'other') {
+                                var index = $scope.recipientsIds.indexOf(item['Email']);
+                                var index1 = -1;
+                                var counter = 0;
+
+                                angular.forEach(
+                                    $scope.selectedBccRecords,
+                                    function(tempItem) {
+                                        
+                                        if (tempItem['Id'] == item['Id']) {
+                                            index1 = counter;
+                                        }
+                                        counter++;
+                                    }
+                                );
+                                $scope.selectedBccRecords.splice(index1, 1);
+                                $scope.recipientsIds.splice(index, 1);
+                                $scope.EmailIds['bccOther'].splice(index, 1);
+                            }
+                        }
+                    }
+                }
+            );
+
+            function showDisolvingAlert(rewards) {
+
+                if (rewards != '') {
+                    var str_array = rewards.split(',');
+
+                    if (str_array.length == 2) {
+                        notification(str_array[1], str_array[0]);
+                    }
+                }
+            }
+        </script>
+
+    </head>
+
+    <body>
+        <div ng-app="sf1InvitationApp" ng-controller="sf1InvitationCtrl" class="container" ng-init="load()"
+                ng-click="closeDropdown()" ng-cloak="ng-cloak">
+            <c:RewardNotification />
+            <div role="status" ng-show="isloading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+            <div ng-show="!isloading">
+                <div ng-show="isEmailSent" style="text-align: center; padding-top: 5rem">
+                    <a ng-click="backToRefSearch()" ng-show="isRfSearchAllowed" class="slds-button slds-button_neutral">
+                        {!$Label.Back_to_RF_Search}
+                    </a>
+                    <a ng-click="openSourcePage(opportunityId)" ng-show="isOpportunityAllowed" class="slds-button slds-button_neutral">
+                        {!$Label.Back_to_Opportunity}
+                    </a>
+                    <a ng-click="openSourcePage(leadId)" ng-show="isLeadAllowed" class="slds-button slds-button_neutral">
+                        {!$Label.Back_to_SearchLead}
+                    </a>
+                    <a ng-click="openSourcePage(caseId)" ng-show="isCaseAllowed" class="slds-button slds-button_neutral">
+                        {!$Label.Back_to_Case}
+                    </a>
+                    <div class="custom-toast-container" ng-show="showEmailSentToast">
+                        <div class="slds-notify slds-notify_toast slds-theme_success custom-toast-width" role="alert">
+                            <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" ng-click="showEmailSentToast = false">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                            </a>
+                            <div class="slds-notify__content">
+                                <h2 class="slds-text-heading_small" style="font-size: 16px">
+                                    {!$Label.Invitation_sent}
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div ng-show="!isEmailSent">
+                    <div class="titleBar slds-p-horizontal_small slds-p-vertical_x-small slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                        <div><a class="slds-button slds-button_neutral" ng-click="backToRefSearch()">{!$Label.Cancel}</a></div>
+                        <div class="slds-text-heading_small">{!$Label.Share}&nbsp;{!$Label.Content}</div>
+                        <div><a class="slds-button slds-button_brand" ng-click="sendInvitation()">{!$Label.Send}</a></div>
+                    </div>
+                    <div class="slds-docked-composer__body">
+                        <div class="slds-email-composer">
+                            <div class="slds-form-element slds-email-composer__combobox">
+                                <label class="slds-form-element__label">To</label>
+                                <div class="slds-form-element__control" ng-click="prevent($event, 'to')">
+                                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-combobox_container slds-has-inline-listbox" style="border: none; box-shadow: none">
+                                        <div ng-show="selectedToRecords.length > 0" ng-repeat="selectedItem in selectedToRecords" style="padding-left: 0.125rem; padding-top: 0.125rem; display: inline-block">
+                                            <span class="slds-pill" role="option" tabindex="0" aria-selected="true">
+                                                <span class="slds-avatar slds-avatar_x-small slds-pill__icon_container">
+                                                    <span class="slds-icon_container slds-icon-standard-contact" ng-show="selectedItem['Type'] == 'Contact'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#contact')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="slds-icon_container slds-icon-standard-user" ng-show="selectedItem['Type'] == 'User'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="slds-icon_container slds-icon-standard-email" ng-show="selectedItem['Type'] != 'Contact' && selectedItem['Type'] != 'User'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#email')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                </span>
+                                                <span class="slds-pill__label">{{parseResult(selectedItem['Name'])}}</span>
+                                                <span class="slds-icon_container slds-pill__remove" ng-click="removeItem(selectedItem, 'to')">
+                                                    <svg class="slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                                    </svg>
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                                            <div class="slds-combobox__form-element">
+                                                <input ng-focus="openToDropdown()" ng-model="emailSearchTextTo" type="text"
+                                                        ng-change="searchRecords(emailSearchTextTo)" ng-keydown="handleKeyPress($event, 'to')"
+                                                        class="slds-input slds-combobox__input" role="textbox" />
+                                            </div>
+                                            <div role="listbox" ng-show="showToDropdown">
+                                                <ul class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid customListBox" ng-class="{'slds-p-vertical_large' : dropdownLoading}" role="presentation">
+                                                    <div ng-show="dropdownLoading" role="status" class="slds-spinner slds-spinner_small slds-spinner_brand">
+                                                        <span class="slds-assistive-text">Loading</span>
+                                                        <div class="slds-spinner__dot-a"></div>
+                                                        <div class="slds-spinner__dot-b"></div>
+                                                    </div>
+                                                    <li ng-show="!dropdownLoading && searchedRecords.length > 0" ng-repeat="item in searchedRecords"
+                                                            ng-click="selectItem(item, 'to')" role="presentation" class="slds-listbox__item">
+                                                        <span class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta" role="option">
+                                                            <span class="slds-media__figure">
+                                                                <span class="slds-icon_container slds-icon-standard-contact" ng-show="item['Type'] == 'Contact'">
+                                                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#contact')}"></use>
+                                                                    </svg>
+                                                                </span>
+                                                                <span class="slds-icon_container slds-icon-standard-user" ng-show="item['Type'] == 'User'">
+                                                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+                                                                    </svg>
+                                                                </span>
+                                                            </span>
+                                                            <span class="slds-media__body">
+                                                                <span class="slds-listbox__option-text slds-listbox__option-text_entity">{{parseResult(item['Name'])}}</span>
+                                                                <span class="slds-listbox__option-meta slds-listbox__option-meta_entity">{{parseResult(item['Email'])}}</span>
+                                                            </span>
+                                                        </span>
+                                                    </li>
+                                                    <li ng-show="!dropdownLoading && searchedRecords.length == 0" class="slds-listbox__item" style="padding: 0.5rem 0.75rem">
+                                                        {!$Label.No_Records_Found}
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form-element slds-email-composer__combobox">
+                                <label class="slds-form-element__label">Cc</label>
+                                <div class="slds-form-element__control" ng-click="prevent($event, 'cc')">
+                                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-combobox_container slds-has-inline-listbox" style="border: none; box-shadow: none">
+                                        <div ng-show="selectedCcRecords.length > 0" ng-repeat="selectedItem in selectedCcRecords" style="padding-left: 0.125rem; padding-top: 0.125rem; display: inline-block">
+                                            <span class="slds-pill" role="option" tabindex="0" aria-selected="true">
+                                                <span class="slds-avatar slds-avatar_x-small slds-pill__icon_container">
+                                                    <span class="slds-icon_container slds-icon-standard-contact" ng-show="selectedItem['Type'] == 'Contact'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#contact')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="slds-icon_container slds-icon-standard-user" ng-show="selectedItem['Type'] == 'User'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="slds-icon_container slds-icon-standard-email" ng-show="selectedItem['Type'] != 'Contact' && selectedItem['Type'] != 'User'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#email')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                </span>
+                                                <span class="slds-pill__label">{{parseResult(selectedItem['Name'])}}</span>
+                                                <span class="slds-icon_container slds-pill__remove" ng-click="removeItem(selectedItem, 'cc')">
+                                                    <svg class="slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                                    </svg>
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                                            <div class="slds-combobox__form-element">
+                                                <input ng-focus="openCcDropdown()" ng-model="emailSearchTextCc" type="text"
+                                                        ng-change="searchRecords(emailSearchTextCc)" ng-keydown="handleKeyPress($event, 'cc')"
+                                                        class="slds-input slds-combobox__input" role="textbox" />
+                                            </div>
+                                            <div role="listbox" ng-show="showCcDropdown">
+                                                <ul class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid customListBox" ng-class="{'slds-p-vertical_large' : dropdownLoading}" role="presentation">
+                                                    <div ng-show="dropdownLoading" role="status" class="slds-spinner slds-spinner_small slds-spinner_brand">
+                                                        <span class="slds-assistive-text">Loading</span>
+                                                        <div class="slds-spinner__dot-a"></div>
+                                                        <div class="slds-spinner__dot-b"></div>
+                                                    </div>
+                                                    <li ng-show="!dropdownLoading && searchedRecords.length > 0" ng-repeat="item in searchedRecords"
+                                                            ng-click="selectItem(item, 'cc')" role="presentation" class="slds-listbox__item">
+                                                        <span class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta" role="option">
+                                                            <span class="slds-media__figure">
+                                                                <span class="slds-icon_container slds-icon-standard-contact" ng-show="item['Type'] == 'Contact'">
+                                                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#contact')}"></use>
+                                                                    </svg>
+                                                                </span>
+                                                                <span class="slds-icon_container slds-icon-standard-user" ng-show="item['Type'] == 'User'">
+                                                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+                                                                    </svg>
+                                                                </span>
+                                                            </span>
+                                                            <span class="slds-media__body">
+                                                                <span class="slds-listbox__option-text slds-listbox__option-text_entity">{{parseResult(item['Name'])}}</span>
+                                                                <span class="slds-listbox__option-meta slds-listbox__option-meta_entity">{{parseResult(item['Email'])}}</span>
+                                                            </span>
+                                                        </span>
+                                                    </li>
+                                                    <li ng-show="!dropdownLoading && searchedRecords.length == 0" class="slds-listbox__item" style="padding: 0.5rem 0.75rem">
+                                                        {!$Label.No_Records_Found}
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form-element slds-email-composer__combobox">
+                                <label class="slds-form-element__label" for="recipients-bcc">Bcc</label>
+                                <div class="slds-form-element__control" ng-click="prevent($event, 'bcc')">
+                                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-combobox_container slds-has-inline-listbox" style="border: none; box-shadow: none">
+                                        <div ng-show="selectedBccRecords.length > 0" ng-repeat="selectedItem in selectedBccRecords" style="padding-left: 0.125rem; padding-top: 0.125rem; display: inline-block">
+                                            <span class="slds-pill" role="option" tabindex="0" aria-selected="true">
+                                                <span class="slds-avatar slds-avatar_x-small slds-pill__icon_container">
+                                                    <span class="slds-icon_container slds-icon-standard-contact" ng-show="selectedItem['Type'] == 'Contact'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#contact')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="slds-icon_container slds-icon-standard-user" ng-show="selectedItem['Type'] == 'User'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="slds-icon_container slds-icon-standard-email" ng-show="selectedItem['Type'] != 'Contact' && selectedItem['Type'] != 'User'">
+                                                        <svg class="slds-icon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#email')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                </span>
+                                                <span class="slds-pill__label">{{parseResult(selectedItem['Name'])}}</span>
+                                                <span class="slds-icon_container slds-pill__remove" ng-click="removeItem(selectedItem, 'bcc')">
+                                                    <svg class="slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                                    </svg>
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                                            <div class="slds-combobox__form-element">
+                                                <input ng-focus="openBccDropdown()" ng-model="emailSearchTextBcc" type="text"
+                                                        ng-change="searchRecords(emailSearchTextBcc)" ng-keydown="handleKeyPress($event, 'bcc')"
+                                                        class="slds-input slds-combobox__input" role="textbox" />
+                                            </div>
+                                            <div role="listbox" ng-show="showBccDropdown">
+                                                <ul class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid customListBox" ng-class="{'slds-p-vertical_large' : dropdownLoading}" role="presentation">
+                                                    <div ng-show="dropdownLoading" role="status" class="slds-spinner slds-spinner_small slds-spinner_brand">
+                                                        <span class="slds-assistive-text">Loading</span>
+                                                        <div class="slds-spinner__dot-a"></div>
+                                                        <div class="slds-spinner__dot-b"></div>
+                                                    </div>
+                                                    <li ng-show="!dropdownLoading && searchedRecords.length > 0" ng-repeat="item in searchedRecords"
+                                                            ng-click="selectItem(item, 'bcc')" role="presentation" class="slds-listbox__item">
+                                                        <span class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta" role="option">
+                                                            <span class="slds-media__figure">
+                                                                <span class="slds-icon_container slds-icon-standard-contact" ng-show="item['Type'] == 'Contact'">
+                                                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#contact')}"></use>
+                                                                    </svg>
+                                                                </span>
+                                                                <span class="slds-icon_container slds-icon-standard-user" ng-show="item['Type'] == 'User'">
+                                                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+                                                                    </svg>
+                                                                </span>
+                                                            </span>
+                                                            <span class="slds-media__body">
+                                                                <span class="slds-listbox__option-text slds-listbox__option-text_entity">{{parseResult(item['Name'])}}</span>
+                                                                <span class="slds-listbox__option-meta slds-listbox__option-meta_entity">{{parseResult(item['Email'])}}</span>
+                                                            </span>
+                                                        </span>
+                                                    </li>
+                                                    <li ng-show="!dropdownLoading && searchedRecords.length == 0" class="slds-listbox__item" style="padding: 0.5rem 0.75rem">
+                                                        {!$Label.No_Records_Found}
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form-element slds-email-composer__combobox">
+                                <label class="slds-form-element__label" for="input-subject-01">
+                                    {!$Label.Subject}<span style="color: #c23934">*</span>
+                                </label>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-combobox_container slds-has-inline-listbox">
+                                        <div class="slds-combobox" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                                            <div class="slds-combobox__form-element">
+                                                <input type="text" ng-model="subject" class="slds-input slds-combobox__input" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-rich-text-editor slds-form-element slds-grid slds-grid_vertical slds-nowrap" style="height: 35vh; border-top: none">
+                                <div class="slds-rich-text-editor__textarea slds-grid slds-wrap">
+                                    <text-angular style="width: 100%; height: -webkit-fill-available; overflow: auto"
+                                            ng-model="emailContent"
+                                            ta-toolbar="[['h1', 'h2', 'h3', 'p'],
+                                                        ['bold', 'italics', 'underline'],
+                                                        ['ul', 'ol']]"></text-angular>
+                                </div>
+                                <div class="previewEmailIcon">
+                                    <span class="slds-icon_container slds-icon-utility-preview" ng-click="isShowPreview = true">
+                                        <svg class="slds-icon slds-icon-text-default slds-icon_small" aria-hidden="true">
+                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#preview')}"></use>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="titleBar slds-p-around_small slds-grid slds-grid_vertical-align-center">
+                        <div class="slds-text-title_caps">{!$Label.Invitation_Settings}</div>
+                    </div>
+                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center">
+                        <div class="slds-form-element slds-size_1-of-1 slds-p-horizontal_small slds-p-vertical_xx-small" style="border-bottom: 1px solid #d8dde6">
+                            <label class="slds-form-element__label">{!$Label.Name}</label>
+                            <div class="slds-form-element__control">
+                                <input type="text" ng-model="invitaionName" class="slds-input slds-input_bare" style="padding: 0" />
+                            </div>
+                        </div>
+                        <div class="slds-form-element slds-size_1-of-1 slds-p-horizontal_small slds-p-vertical_xx-small" style="border-bottom: 1px solid #d8dde6">
+                            <label class="slds-form-element__label">{!$Label.Microsite_Template}</label>
+                            <div class="slds-form-element__control">
+                                <select class="slds-select customSelect" ng-model="selectedMicrositeId"
+                                        ng-options="option.Id as option.Name for option in allMicroSiteList"></select>
+                            </div>
+                            <div class="previewEmailIcon">
+                                <span class="slds-icon_container slds-icon-utility-preview" ng-click="PreviewSite()">
+                                    <svg class="slds-icon slds-icon-text-default slds-icon_small" aria-hidden="true">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#preview')}"></use>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="slds-form-element slds-size_1-of-1 slds-p-horizontal_small slds-p-vertical_xx-small" style="border-bottom: 1px solid #d8dde6">
+                            <label class="slds-form-element__label">{!$Label.Expires}</label>
+                            <div class="slds-form-element__control">
+                                <input type="text" ng-model="expdate" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}"
+                                        datetime-picker="datetime-picker" class="slds-input slds-input_bare" style="padding: 0" />
+                            </div>
+                        </div>
+                        <div class="slds-form-element slds-size_1-of-1 slds-p-horizontal_small slds-p-vertical_xx-small">
+                            <label class="slds-form-element__label">{!$Label.Notes}</label>
+                            <div class="slds-form-element__control">
+                                <textarea ng-model="notes" class="slds-textarea" rows="4" style="padding: 0"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="utilityBar slds-grid slds-grid_align-space">
+                        <div ng-show="!showIncludedContentModal" style="display: inline-block; text-align: center">
+                            <span class="slds-icon_container slds-icon_container_circle slds-icon-action-check customIconContainer" ng-click="backToRefSearch()">
+                                <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                            </span>
+                            <span style="display: block; font-size: 0.55rem">{!$Label.Cancel}</span>
+                        </div>
+                        <div ng-show="!showIncludedContentModal" style="display: inline-block; text-align: center">
+                            <span class="slds-icon_container slds-icon_container_circle slds-icon-action-share-post customIconContainer" ng-click="showIncludedContentModal = true">
+                                <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#add_file')}"></use>
+                                </svg>
+                            </span>
+                            <span style="display: block; font-size: 0.55rem">{!$Label.Included_Content}</span>
+                        </div>
+                        <div ng-show="!showIncludedContentModal" style="display: inline-block; text-align: center">
+                            <span class="slds-icon_container slds-icon_container_circle slds-icon-action-announcement customIconContainer" ng-click="sendInvitation()">
+                                <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#share')}"></use>
+                                </svg>
+                            </span>
+                            <span style="display: block; font-size: 0.55rem">{!$Label.Send}</span>
+                        </div>
+                        <div ng-show="showIncludedContentModal" style="display: inline-block; text-align: center">
+                            <span class="slds-icon_container slds-icon_container_circle slds-icon-action-add-file customIconContainer" ng-click="shareRefContentIds()">
+                                <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#add_file')}"></use>
+                                </svg>
+                            </span>
+                            <span style="display: block; font-size: 0.55rem">{!$Label.Add_Content}</span>
+                        </div>
+                    </div>
+                    <div class="contentModal" ng-class="{'contentModalOpen' : showIncludedContentModal}">
+                        <div class="slds-grid slds-grid_vertical-align-center slds-wrap slds-p-horizontal_medium slds-p-bottom_xx-small" style="border-bottom: 1px solid lightgray">
+                            <div class="slds-size_2-of-3 slds-text-heading_small">{!$Label.Included_Content}</div>
+                            <div class="slds-size_1-of-3" style="text-align: right">
+                                <a class="slds-button slds-button_neutral" ng-click="showIncludedContentModal = false">{!$Label.Done}</a>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-grid_vertical-align-start slds-wrap slds-p-top_small" style="height: 84vh; overflow-y: auto">
+                            <article ng-repeat="conWrap in listReferenceContent" style="width: 100%" class="slds-tile slds-media slds-p-bottom_small">
+                                <div class="slds-media__figure">
+                                    <img ng-show="conWrap.InterviewType != 'Reference Interview'" src="{{resource + doctypeMap[conWrap.FileType]}}" style="width: 2.5rem" />
+                                    <img ng-show="conWrap.InterviewType == 'Reference Interview'" src="{{resource + doctypeMap[conWrap.InterviewType]}}" style="width: 2.5rem" />
+                                </div>
+                                <div class="slds-media__body">
+                                    <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                        <h3>
+                                            <a>{{conWrap.Title}}</a>
+                                        </h3>
+                                        <div class="slds-shrink-none">
+                                            <a class="slds-button slds-button_icon slds-button_icon-x-small" ng-click="deleteRefContent($index)">
+                                                <svg class="slds-button__icon" aria-hidden="true">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="slds-tile__detail slds-text-body_small">
+                                        <dl class="slds-list_horizontal slds-wrap">
+                                            <dt ng-show="conWrap.Account != null && conWrap.Account != ''" class="slds-item_label slds-text-color_weak slds-truncate">{!$Label.Account}:</dt>
+                                            <dd ng-show="conWrap.Account != null && conWrap.Account != ''" class="slds-item_detail slds-truncate">{{conWrap.Account}}</dd>
+                                            <dt class="slds-item_label slds-text-color_weak slds-truncate">{!$Label.Type}:</dt>
+                                            <dd class="slds-item_detail slds-truncate">{{conWrap.RefContentTypeName}}</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+                    <section ng-class="{'slds-fade-in-open' : isShowPreview}" role="dialog" tabindex="-1" class="slds-modal slds-modal_large">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="isShowPreview = false">
+                                    <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                    </svg>
+                                    <span class="slds-assistive-text">Close</span>
+                                </a>
+                                <h2 class="slds-text-heading_small slds-hyphenate slds-text-color_weak">{!$Label.Preview_E_mail}</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" style="max-height: 65vh; overflow-y: auto">
+                                <div ng-bind-html="emailContent" class="slds-rich-text-editor__textarea"></div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <a class="slds-button slds-button_neutral" ng-click="isShowPreview = false">{!$Label.Close}</a>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop" ng-class="{'slds-backdrop_open' : isShowPreview}"></div>
+
+                    <div class="custom-toast-container" ng-show="isError">
+                        <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                            <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" ng-click="isError = false">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                            </a>
+                            <div class="slds-notify__content">
+                                <h2 class="slds-text-heading_small" style="font-size: 16px">
+                                    {{errMsg}}
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>

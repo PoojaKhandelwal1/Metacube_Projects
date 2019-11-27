@@ -1,0 +1,182 @@
+<!--
+* ReferenceEdge
+* 
+* Point of Reference, Inc. - Copyright 2014 All rights reserved.
+*
+* @company : Point of Reference, Inc.
+* @website : www.point-of-reference.com
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+* WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+* POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+* MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+* AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+* ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+* WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+* WRITTEN CONSENT FROM COMPANY.
+--> 
+<apex:page controller="DataCollectorPageController" id="pageId" tabStyle="Reference_Content__c" lightningStylesheets="true">
+    <apex:pageMessages id="pgmsgId"/>
+    
+    <style type="text/css">
+        .imagDiv {
+            float: left;
+            padding: 4px 12px 9px 0;
+        }
+        .contntDiv {
+            padding: 0.4%;
+        }
+		div.tooltip {
+			width: 20px;
+			float: right;
+			display:inline;
+			left:0;
+			opacity : 0.25;
+		}
+		div.tooltip:hover {
+			opacity : 1; 
+		}
+		div.tooltip span {
+			display: none;
+		}
+		.bPageBlock .detailList .dataCol {
+			width: 25%!important;
+		}
+		div.tooltip:hover span {
+			display: inline;
+			position: absolute;
+			width: 15em;
+			z-index: 12;
+			background-color: #fefdb9;
+			font-size: 109%;
+			padding: 2px 5px;
+			opacity : 1; 
+			border: 1px solid orange;
+			text-align: left;
+			white-space: normal;
+			font-weight: normal;
+			color: #000;
+			top: 20px;
+			right: 0;
+		}
+		#helpdiv .labelCol { 
+			right: -20px!important;
+		}
+		.bPageBlock .detailList .labelCol {
+			width: 25%;
+		}
+    </style>
+
+    <script type="text/javascript">
+        window.onload = function(e){ 
+           var elm = document.getElementById('AppBodyHeader');
+                
+            if (elm != null) {
+                reset(false);
+            } else {
+                reset(true);
+            }               
+        }
+
+        function backToHome() {
+           window.top.location = '/home/home.jsp';
+        }
+    </script>
+    <!-- Begin Form -->
+   <apex:form id="formId">
+   		<apex:actionFunction name="cancelNotificationPanel" action="{!cancelNotificationPanel}" reRender="formId,pgmsgId"/>
+        <apex:actionFunction name="reset" action="{!reset}" reRender="newPanelId">
+             <apex:param name="isSLDS" assignTo="{!isSLDS}" value="" />
+        </apex:actionFunction>
+    <apex:outputPanel id="newPanelId" rendered="{!!isGreetSec}">     
+        <apex:outputpanel rendered="{!!isError && checkLightnig}">
+        <div class="headerDiv">
+            <div class="imagDiv">
+                <apex:image url="{!URLFOR($Resource.RefEdge_Square_Icon,'icon-small.png')}" style="max-width: 50px; height: 40px;"/> 
+            </div>
+            <div class="contntDiv">
+                <span style="font-size: 18px;">{!formHeader}</span><br/>
+                <span>{!formSubHeader}</span>
+            </div>
+        </div>    
+        <!-- Page Header -->
+    <!--
+        <apex:sectionHeader title="{!formSubHeader}" subtitle="{!formName}"/>       
+                     -->
+            <apex:pageBlock id="pb">
+                <apex:pageBlockButtons >
+                    <apex:commandButton value="{! if(isSave,$Label.Save, $Label.Submit)}" action="{!updateContent}" 
+                    	rendered="{!!isPreview}" oncomplete="showDisolvingAlert();" reRender="pgmsgId,disolvingAlert"/>
+                    <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" rendered="{!!isPreview}" immediate="true"/>
+                    <apex:commandButton value="{!$Label.Back}" action="{!goBack}" rendered="{!isPreview}" immediate="true"/>
+                </apex:pageBlockButtons>
+                
+                <!--      REF-1895  (Section To Show Opportunity Information)      -->
+                <Apex:pageBlockSection title="{!$Label.Opportunity_Information}" columns="2">   
+                    <apex:pageBlockSectionItem>
+                        <apex:outputLabel value="{!$Label.Opportunity_Name}" for="{!$Label.Opportunity_Name}"/>
+                        <apex:outputLink value="/{!referenceRecord.Opportunity__c}" target="_blank">{!referenceRecord.Opportunity__r.Name}</apex:outputLink>    
+                    </apex:pageBlockSectionItem>  
+                    <apex:pageBlockSectionItem>
+                        <apex:outputLabel value="{!$Label.Opportunity} {!$Label.Owner}" for="{!$Label.Opportunity} {!$Label.Owner}"/>
+                        <apex:outputLink value="/{!referenceRecord.Opportunity__r.ownerId}" target="_blank">{!referenceRecord.Opportunity__r.owner.Name}</apex:outputLink>    
+                    </apex:pageBlockSectionItem>  
+                    <apex:pageBlockSectionItem>
+                        <apex:outputLabel value="{!$Label.Opportunity_Account}" for="{!$Label.Opportunity_Account}"/>
+                        <apex:outputLink value="/{!referenceRecord.Opportunity__r.AccountId}" target="_blank">{!referenceRecord.Opportunity__r.Account.Name}</apex:outputLink>    
+                    </apex:pageBlockSectionItem>  
+                </Apex:pageBlockSection>
+
+                <Apex:pageBlockSection title="{!$Label.Reference_Content_Section}" rendered="{!refContentSec}" columns="2">   
+                    
+                    <apex:outputText value="{!referenceRecord.Title__c}"/>
+                    <apex:inputfield value="{!referenceRecord.Content_Status__c}"/>   
+                    <apex:inputfield value="{!referenceRecord.Internal_Use__c}"/>          
+                </Apex:pageBlockSection>
+                
+                <apex:repeat value="{!secWrapList}" var="section">
+                    <apex:pageBlockSection columns="1" showHeader="true" title="{!section.Name}" id="helpdiv">
+                        <apex:repeat value="{!section.Field}" var="fld">    
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" labelStyle="right: -20px!important;">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[fld.fieldAPIName].fieldLabel}" style="{!if(OR(labelMap[fld.fieldAPIName].fieldId == null ,labelMap[fld.fieldAPIName].fieldId == ''),'padding-right: 20px;','padding-right: 0;')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[fld.fieldAPIName].fieldId != null ,labelMap[fld.fieldAPIName].fieldId != '')}">
+                                        <span>
+                                        {!labelMap[fld.fieldAPIName].fieldId}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:inputField value="{!refContent[fld.fieldAPIName]}"/>    
+                            </apex:pageBlockSectionItem>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                </apex:repeat>          
+            </apex:pageBlock>
+        
+		</apex:outputpanel>
+    </apex:outputPanel>
+    
+    <apex:outputPanel id="disolvingAlert">
+	    <c:RewardNotification /> 
+	    <script>
+			function showDisolvingAlert() {
+				var points = '{!rewardPoints}'; 
+	            var message = '{!actionMessage}'; 
+				if(typeof points !='undefined' && points!='' && points!='0')  {
+					notification(points,message); 
+				} else {
+					cancelNotificationPanel();
+				}
+			}
+			function redirectToBack() {
+				cancelNotificationPanel();
+			}
+		</script>
+	</apex:outputPanel> 
+	
+	<apex:outputPanel rendered="{!isGreetSec}">
+        <apex:commandButton value="{!$Label.Back_to_Home}" style="margin-left:21px; padding-right: 21px;" onclick="backToHome(); return false;"/>
+	</apex:outputPanel>
+    </apex:form>
+</apex:page>

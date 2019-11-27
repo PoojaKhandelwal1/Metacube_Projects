@@ -1,0 +1,755 @@
+<!--
+* ReferenceEdge
+* 
+* Point of Reference, Inc. - Copyright 2014 All rights reserved.
+*
+* @company : Point of Reference, Inc.
+* @website : www.point-of-reference.com
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+* WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+* POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+* MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+* AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+* ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+* WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+* WRITTEN CONSENT FROM COMPANY.
+-->
+<apex:page id="pageId" showheader="false" sidebar="false" doctype="html-5.0" controller="ReferenceUseFeedbackControllerSLDS">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+        <script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+
+        <style type="text/css">
+            .container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: 0;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                overflow-scrolling: touch;
+            }
+            a {
+                text-decoration: none !important;
+                cursor: pointer;
+            }
+            .custom-toast-width {
+                display: flex;
+                min-width: 0;
+            }
+            @media screen and (max-width: 767px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    margin-left: 0;
+                }
+                .mobileVisible {
+                    display: block;
+                }
+                .desktopVisible {
+                    display: none !important;
+                }
+                .desktopVisibleFlex {
+                    display: none !important;
+                }
+                .horizontal-padding-large {
+					padding-right: 0.5rem;
+    				padding-left: 0.5rem;
+				}
+                .buttonsBar {
+                    text-align: center;
+                }
+                .customBox {
+                    background: transparent !important;
+                    border: none !important;
+                    padding: 0 !important;
+                }
+            }
+            @media screen and (min-width: 768px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 50%;
+                    width: 50%;
+                    margin-left: -25%;
+                }
+                .mobileVisible {
+                    display: none !important;
+                }
+                .desktopVisible {
+                    display: block;
+                }
+                .desktopVisibleFlex {
+                    display: flex;
+                }
+                .horizontal-padding-large {
+					padding-right: 1.5rem;
+    				padding-left: 1.5rem;
+				}
+                .buttonsBar {
+                    text-align: right;
+                }
+                .slds-select_container {
+                    width: 20rem;
+                }
+                .responsiveInput {
+                    width: 20rem;
+                }
+            }
+            .modalErrorBlock {
+                background-color: #c23934;
+                border-radius: 0.25rem;
+            }
+            .titleBar {
+                background-color: #f7f9fb;
+            }
+        </style>
+
+        <script>
+            var myApp = angular.module('myApp', ['angularjs-datetime-picker']) 
+            .controller('tagsCtrl', function($scope, $q, $filter) {
+                $scope.refReqAccContactId = '{!JSENCODE(refReqAccContactId)}';
+                $scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+                $scope.accountName = '';
+                $scope.accountId = '';
+                $scope.contactId = '';
+                $scope.contactName = '';
+                $scope.opportunityAccount = '';
+                $scope.opportunityAccountId = '';
+                $scope.opportunityName = '';
+                $scope.opportunityId = '';
+                $scope.refType = '';
+                $scope.useDate = '';
+                $scope.creationDate = '';
+                $scope.requesterId = '';
+                $scope.ownerId = '';
+                $scope.oldDeadlineDateValue = '';
+                $scope.isAlreadyFeedback = '';
+                $scope.isRecordDeleted = false;
+                $scope.statusMassage = '';
+                $scope.selectedFeedback; 
+                $scope.feedbackStatus = ''; 
+                $scope.feedbakResponse = '';
+                $scope.isStatusShow = false;
+                $scope.isUseDateShow = false;
+                $scope.isFeedbackSent = false;
+                $scope.isShowpageOnload = false;
+                $scope.feedbackTitle = '{!$Label.Feedback_Title}';
+                $scope.isRequired = false;
+                $scope.isAlreadyProcessed = false;
+                $scope.dateFormat = 'yyyy-MM-dd';
+                
+                //initial function which is called on page load
+                $scope.load  = function() {
+                    $scope.getDateFormat().then(function(result) {
+                        
+                        if (result != null) {  
+                            $scope.dateFormat = result;
+                        }
+                        $scope.init();
+                        });
+                }
+                
+                //Cast date format according to locale
+                $scope.getDateFormat = function () {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.ReferenceUseFeedbackControllerSLDS.getDateFormat}', 
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                /*  Init method load all the required values on page load*/     		    
+                $scope.init = function () {  
+                    $scope.callLoading(true);
+                    $("#frmId").show();   
+                    
+                    /* Method used to get Page details on load */
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.ReferenceUseFeedbackControllerSLDS.getPageDetails}',$scope.refReqAccContactId,
+                        function(result, event) { 
+                            
+                            if (result != null) { 
+                                $scope.isRecordDeleted = result[0].isRecordDeleted;  
+                                $scope.isAlreadyFeedback = result[0].isAlreadyFeedback; 
+                                
+                                if ($scope.isRecordDeleted == false && $scope.isAlreadyFeedback == true) {
+                                    $scope.isError = false;
+                                    $scope.statusMsg = '{!$Label.Feedback_already_Processed}';
+                                    $scope.isAlreadyProcessed = true; 
+                                    $scope.isShowpageOnload = false; 
+                                } else if ($scope.isRecordDeleted == false) {
+                                    $scope.isShowpageOnload = true;   
+                                    $scope.accountName = $scope.parseResult(result[0].accountName);
+                                    $scope.accountId = result[0].accountId;
+                                    $scope.contactId = result[0].contactId;
+                                    $scope.contactName = $scope.parseResult(result[0].contactName);
+                                    $scope.opportunityAccount = $scope.parseResult(result[0].opportunityAccount);
+                                    $scope.opportunityAccountId = result[0].opportunityAccountId;
+                                    $scope.opportunityName = $scope.parseResult(result[0].opportunityName);
+                                    $scope.opportunityId = result[0].opportunityId;  
+                                    $scope.refType = result[0].refType;
+                                    $scope.useDate = $filter('date')(result[0].useDate, $scope.dateFormat); 
+                                    $scope.creationDate = $filter('date')(result[0].creationDate, $scope.dateFormat);
+                                    $scope.requesterId = result[0].requesterId;
+                                    $scope.ownerId = result[0].ownerId;
+                                    $scope.oldDeadlineDateValue = result[0].oldDeadlineDateValue;
+                                    $scope.isAlreadyFeedback = result[0].isAlreadyFeedback;
+                                    $scope.isRecordDeleted = result[0].isRecordDeleted;
+                                    $scope.feedbackTitle = $scope.feedbackTitle.replace('@@Type', $scope.refType).replace('@@Account', $scope.accountName);
+                                    $scope.$apply();
+                                } else {
+                                    $scope.errMsg = '{!$Label.Access_attemped_recordDeleted_Msg}'; 
+                                    $scope.isFeedbackSent = true;                                         
+                                    $scope.isError = true;  
+                                } 
+                            } else {  
+                                result = result.replace(/&#39/g, '\'');
+                                $scope.errMsg = result.substring(5);
+                                $scope.isError = true;
+                                $scope.isShowpageOnload = true;
+                            }
+                        },
+                        {escape: true}
+                    ); 
+                    
+                    //#1070 : convert date to yyyy-MM-dd format befor sending to controller
+                    $scope.convertToDate = function (date) {
+                            date = (date == null) ? '' : date;
+                            var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+                            
+                            if (date == null || date == '') {
+                                return '';
+                            }
+                            
+                            if (date.match(regEx))  { 
+                                tempDF = date.split('-');
+                                if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+                                    return null;
+                                }
+                                return date; 
+                        }
+                        
+                        try {
+                            var tempDF = $scope.dateFormat;
+                            var tempDate = date + '';
+                            tempDF = tempDF.split(/[./-]/g);
+                            tempDate = tempDate.split(/[./-]/g);
+                            var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+                            var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+                            var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+                            var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+                            
+                            if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+                                
+                                if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+                                    return null;
+                                }
+                                return dateString;
+                            } else {
+                                return null;
+                            }
+                        } catch (e) {
+                            return null;
+                        }
+                    }
+                    
+                    $scope.checkDate = function (day, month, year){
+                            var returnval = true;
+                            if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == '' ||
+                                parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+                                returnval = false;
+                            } else {
+                                day = parseInt(day);
+                                month = parseInt(month);
+                                year = parseInt(year);
+                            }
+                        returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+                        var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+                                        : (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+                        returnval = (day > days) ? false : returnval;
+                        return returnval;
+                    }
+                    
+                    /* Method used to get Feedback status list */ 
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.ReferenceUseFeedbackControllerSLDS.getFeedbackStatus}', 
+                        function(result, event) {  
+                            
+                            if (result != null) {  
+                                $scope.feedbackStatusList = result;
+                                $scope.selectedFeedback = $scope.feedbackStatusList[0];    
+                                $scope.$apply();  
+                            } else {  
+                                result = result.replace(/&#39/g, '\'');
+                                $scope.errMsg = result.substring(5);
+                                $scope.isError = true;
+                            }
+                        },
+                        {escape: true}
+                    );	          
+                    $scope.callLoading(false); 
+                    
+                }
+                
+                /* Method Update page record */ 
+                $scope.sendUpdate = function() { 
+                    $scope.callLoading(true);
+                    
+                    if($scope.validateRequiredFields()){
+                        $scope.isError=false; 
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseFeedbackControllerSLDS.sendUpdate}', $scope.refReqAccContactId,$scope.selectedFeedback.apiName, 
+                            $scope.feedbakResponse, $scope.useDate, $scope.requesterId, $scope.ownerId,
+                            function(result, event) {
+                                
+                                if (result != null) { 
+                                    $scope.$apply(function () {
+                                        
+                                        if (result.startsWith('Error') == false) {
+                                            $scope.isError = false;
+                                            $scope.statusMsg = '{!$Label.Feedback_Submitted}';
+                                            $scope.isFeedbackSent = true; 
+                                            $scope.isShowAfterfeedback = true;
+                                            showDisolvingAlert(result); 
+                                        } else {  
+                                            result = result.replace(/&#39/g, '\'');
+                                            result = $scope.parseResult(result);
+                                            $scope.errMsg = result.substring(5);
+                                            $scope.isError = true;
+                                        }
+                                        $scope.callLoading(false);	    
+                                    });
+                                } else {
+                                    $scope.callLoading(false);
+                                }
+                            },
+                            {escape: true}
+                        );  
+                    }  else {
+                        $scope.isError = true;
+                        $scope.callLoading(false);
+                    }
+                }
+                
+                /* Method used to Validate */
+                $scope.validateRequiredFields = function() { 
+                    $scope.errMsg = '';
+                    
+                    if ($scope.statusMassage == '' || $scope.statusMassage == 'None') {		        		 
+                        $scope.errMsg = '{!$Label.Feedback_Status}';
+                        $scope.isError = true;
+                        return false;
+                    } else if ($scope.feedbakResponse == '' && $scope.isRequired == true) {		         	
+                        $scope.errMsg = '{!$Label.reason_for_ref_use_unsuccess}';
+                        $scope.isError = true;
+                        return false;
+                    } else if ($scope.feedbackStatus == 'Use not yet completed') {
+                            if ($scope.useDate == null || $scope.useDate.trim() == '') {
+                                $scope.isError = true;
+                                $scope.errMsg = '{!$Label.update_when_ref_use_will_occur}';
+                                return false;
+                            } else { 
+                                //To check if date selected is correct : #1070
+                                var dateString = $scope.convertToDate($scope.useDate);
+                                    
+                            if (dateString != null) {
+                                $scope.useDate = dateString;
+                                return true;
+                            } else {
+                                $scope.isError = true;
+                                    $scope.errMsg = '{!$Label.Date_Invalid}' + $scope.useDate;
+                                    return false;
+                            } 
+                        }
+                    } else {
+                            $scope.useDate = '';
+                            return true;
+                    }
+                } 
+                
+                $scope.feedbackStatusChanged = function(selectedApi) {
+                    $scope.isError = false;
+                    
+                    if ($scope.selectedFeedback.apiName == 'Use will not occur' || $scope.selectedFeedback.apiName == 'Use completed - Unsuccessful') {
+                        $scope.statusMassage = '{!$Label.sorry_what_happened}';
+                        $scope.isStatusShow = true;
+                        $scope.isUseDateShow = false;
+                        
+                        if ($scope.selectedFeedback.apiName == 'Use completed - Unsuccessful') {
+                            $scope.isRequired = true;
+                        } else {
+                            $scope.isRequired = false;
+                        }
+                        
+                    } else if ($scope.selectedFeedback.apiName == 'Use not yet completed') {
+                        $scope.statusMassage = 'Oh, okay. What happened?'; 
+                        $scope.isUseDateShow = true;
+                        $scope.isStatusShow = true;
+                        $scope.isRequired = false;
+                    } else if ($scope.selectedFeedback.apiName == 'Use completed - Successful') {
+                        $scope.statusMassage = "That's great! Any highlights you want to share?";
+                        $scope.isStatusShow = true;
+                        $scope.isUseDateShow = false;
+                        $scope.isRequired = false;
+                    } else {
+                        $scope.statusMassage = 'None';
+                        $scope.isStatusShow = false;
+                        $scope.isUseDateShow = false;
+                        $scope.isRequired = false;
+                    }  
+                    
+                    $scope.feedbackStatus = $scope.selectedFeedback.label;
+                } 
+                
+                $scope.back = function(){
+                    redirectToBack();
+                }
+                
+                /* Method used to parse input value */        
+                $scope.parseResult = function(result) {	  
+                    
+                    if (result != null) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+                }
+                
+                $scope.openSourcePage = function(page,isSamePage,fileType) {  
+                    var newURL = window.location.protocol + "//" + window.location.host + "/" + page;
+                    
+                    if (fileType=='LINK') {
+                        newURL =page;
+                    }
+                    
+                    if(isSamePage==true) { 
+                        window.open(newURL, '_blank');  
+                    }    
+                    else {  
+                        window.open(newURL,'_top');  
+                    }           
+                } 
+                
+                $scope.callLoading = function(value) {
+                    $scope.isloading = value;
+                }
+                
+                $scope.backToChatter = function() { 	    	
+                    window.location = '/_ui/core/chatter/ui/ChatterPage';
+                }	 
+            });
+        
+        function backToChatter() { 
+            window.location = '/_ui/core/chatter/ui/ChatterPage';
+        }	 
+        
+        /*  re #119 This function will show Disolving Alert for sales reward */	    
+        function showDisolvingAlert(rewards) { 
+            
+            if (rewards!='') { 
+                var str_array = rewards.split(',');
+                
+                if(str_array.length==2) { 
+                    notificationForRefUse(str_array[1],str_array[0]); 
+                }else { 
+                    redirectToBack();
+                } 
+            } else {
+                redirectToBack();
+            }
+        }  
+        
+        function redirectToBack(){
+            backToChatter();
+        }
+        </script>
+    </head>
+
+    <body>
+        <div class="container" ng-app="myApp" ng-controller="tagsCtrl" ng-cloak="ng-cloak">
+            <c:RewardNotification />
+            <div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+	            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+					<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					</svg>
+				</span>
+	            {!$Label.User_License}
+	        </div>
+            <div ng-show="isFullLicenseAccessible">
+                <div role="status" ng-show="isloading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                    <span class="slds-assistive-text">Loading</span>
+                    <div class="slds-spinner__dot-a"></div>
+                    <div class="slds-spinner__dot-b"></div>
+                </div>
+
+                <div ng-init="load()" ng-show="isShowpageOnload">
+                    <div class="slds-page-header">
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-size_1-of-1 slds-medium-size_3-of-6 slds-large-size_3-of-6">
+                                <div class="slds-media slds-grid slds-wrap slds-grid_vertical-align-center" style="align-items: center; padding: 0 0.5rem">
+                                    <div class="slds-media__figure">
+                                        <span class="slds-icon_container slds-icon-standard-user" style="background-color: #2291F1">
+                                            <svg class="slds-icon slds-icon_large" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#live_chat')}"></use>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <p class="slds-text-title_caps slds-line-height_reset">{!$Label.Reference_Use_Feedback}</p>
+                                        <h1 class="slds-page-header__title slds-m-right_small slds-align-middle">{{accountName}}</h1>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="buttonsBar slds-size_1-of-1 slds-medium-size_3-of-6 slds-large-size_3-of-6 slds-p-top_small">
+                                <a ng-hide="isFeedbackSent" ng-click="backToChatter()" class="slds-button slds-button_neutral">{!$Label.Cancel}</a>
+                                <a ng-hide="isFeedbackSent" ng-click="sendUpdate()" class="slds-button slds-button_brand">{!$Label.Send}</a>
+                            </div>
+                        </div>
+                        <ul ng-hide="isFeedbackSent" class="slds-grid slds-wrap slds-page-header__detail-row desktopVisible" style="background-color: #f7f9fb; padding: 0; margin: 0.75rem 0 0 0">
+                            <li class="slds-page-header__detail-block" style="display: inline-block">
+                                <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Account}</p>
+                                <p class="slds-text-body_regular">
+                                    <a ng-click="openSourcePage(accountId)">
+                                        {{accountName}}
+                                    </a>
+                                </p>
+                            </li>
+                            <li class="slds-page-header__detail-block" style="display: inline-block">
+                                <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Contact}</p>
+                                <p class="slds-text-body_regular">
+                                    <a ng-click="openSourcePage(contactId)">
+                                        {{contactName}}
+                                    </a>
+                                </p>
+                            </li>
+                            <li class="slds-page-header__detail-block" style="display: inline-block" ng-show ="opportunityId != null">
+                                <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Opportunity_Account}</p>
+                                <p class="slds-text-body_regular">
+                                    <a ng-click="openSourcePage(opportunityAccountId)">
+                                        {{opportunityAccount}}
+                                    </a>
+                                </p>
+                            </li>
+                            <li class="slds-page-header__detail-block" style="display: inline-block" ng-show ="opportunityId != null">
+                                <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Opportunity_Name}</p>
+                                <p class="slds-text-body_regular">
+                                    <a ng-click="openSourcePage(opportunityId)">
+                                        {{opportunityName}}
+                                    </a>
+                                </p>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div ng-hide="isFeedbackSent" class="horizontal-padding-large slds-grid slds-wrap slds-p-top_small">
+                        <div class="slds-size_1-of-1 slds-medium-size_8-of-12 slds-large-size_8-of-12 slds-p-right_small">
+                            <div class="slds-tabs_default">
+                                <ul class="desktopVisibleFlex slds-tabs_default__nav" role="tablist">
+                                    <li class="slds-tabs_default__item slds-is-active" role="presentation">
+                                        <a class="slds-tabs_default__link slds-text-title_caps" style="line-height: 2.5rem" role="tab" tabindex="0">
+                                            {!$Label.Feedback}
+                                        </a>
+                                    </li>
+                                </ul>
+                                <div class="slds-tabs_default__content slds-p-left_small" role="tabpanel">
+                                    <label class="desktopVisible slds-form-element__label" style="margin: 0; padding: 0.7rem 0; width: 100%">
+                                        {{feedbackTitle}}
+                                    </label>
+                                    <div class="slds-box slds-theme_shade slds-m-top_x-small customBox">
+                                        <div class="slds-text-heading_small slds-text-color_weak">
+                                            {!$Label.Use_Feedback}&nbsp;<span style="color: #c23934">*</span>
+                                        </div>
+                                        <div class="slds-form-element">
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-select_container" style="margin-top: 0.5rem">
+                                                    <select ng-model="selectedFeedback" class="slds-select"
+                                                            ng-change="feedbackStatusChanged(option.apiName)"
+                                                            ng-options="option.label for option in feedbackStatusList track by option.apiName"> 
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div ng-show="isStatusShow">
+                                            <div class="slds-text-body_regular slds-p-vertical_small">
+                                                {{statusMassage}}&nbsp;<span ng-show="isRequired" style="color: #c23934">*</span>
+                                            </div>
+                                            <div class="slds-form-element">
+                                                <div class="slds-form-element__control">
+                                                    <textarea ng-model="feedbakResponse" rows="4" class="slds-textarea"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div ng-show="isUseDateShow">
+                                            <div class="slds-text-body_regular slds-p-vertical_small">
+                                                {!$Label.update_when_ref_use_will_occur}
+                                            </div>
+                                            <div class="slds-text-heading_small slds-p-bottom_small slds-text-color_weak">
+                                                {!$Label.Revised_Use_Date}&nbsp;<span style="color: #c23934">*</span>
+                                            </div>
+                                            <div class="slds-form-element">
+                                                <div class="slds-form-element__control">
+                                                    <input class="slds-input responsiveInput" ng-model="useDate" placeholder="{{dateFormat.toLowerCase()}}"
+                                                            date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="desktopVisible slds-size_1-of-1 slds-medium-size_4-of-12 slds-large-size_4-of-12 slds-p-left_small">
+                            <div class="slds-tabs_default">
+                                <ul class="slds-tabs_default__nav" role="tablist">
+                                    <li class="slds-tabs_default__item slds-is-active" role="presentation">
+                                        <a class="slds-tabs_default__link slds-text-title_caps" style="line-height: 2.5rem" role="tab" tabindex="0">
+                                            {!$Label.Details}
+                                        </a>
+                                    </li>
+                                </ul>
+                                <div class="slds-tabs_default__content slds-p-left_small" role="tabpanel">
+                                    <dl class="slds-list_horizontal slds-wrap">
+                                        <dt class="slds-item_label slds-text-color_weak">{!$Label.Type}:</dt>
+                                        <dd class="slds-item_detail">{{refType}}</dd>
+                                        <dt class="slds-item_label slds-text-color_weak slds-p-vertical_x-small">{!$Label.Use_Date}:</dt>
+                                        <dd class="slds-item_detail slds-p-vertical_x-small">{{useDate}}</dd>
+                                        <dt class="slds-item_label slds-text-color_weak">{!$Label.Creation_Date}:</dt>
+                                        <dd class="slds-item_detail">{{creationDate}}</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mobileVisible slds-size_1-of-1">
+                            <div class="titleBar slds-p-around_small slds-grid slds-grid_vertical-align-center">
+                                <div class="slds-text-title_caps">{!$Label.Reference_Use_Feedback}</div>
+                            </div>
+                            <div class="slds-p-horizontal_small">
+                                <div class="slds-form-element slds-p-bottom_x-small">
+                                    <label class="slds-form-element__label">{!$Label.Account}</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">
+                                            <a ng-click="openSourcePage(accountId)">
+                                                {{accountName}}
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-p-bottom_x-small">
+                                    <label class="slds-form-element__label">{!$Label.Contact}</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">
+                                            <a ng-click="openSourcePage(contactId)">
+                                                {{contactName}}
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-p-bottom_x-small">
+                                    <label class="slds-form-element__label">{!$Label.Reference_Type}</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">{{refType}}</span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-p-bottom_x-small">
+                                    <label class="slds-form-element__label">{!$Label.Use_Date}</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">{{useDate}}</span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-p-bottom_x-small" ng-show ="opportunityId != null">
+                                    <label class="slds-form-element__label">{!$Label.Opportunity_Account}</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">
+                                            <a ng-click="openSourcePage(opportunityAccountId)">
+                                                {{opportunityAccount}}
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-p-bottom_x-small" ng-show ="opportunityId != null">
+                                    <label class="slds-form-element__label">{!$Label.Opportunity_Name}</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">
+                                            <a ng-click="openSourcePage(opportunityId)">
+                                                {{opportunityName}}
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label">{!$Label.Creation_Date}</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">{{creationDate}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <section ng-class="{'slds-fade-in-open' : isAlreadyProcessed}" role="dialog" tabindex="-1" class="slds-modal">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 class="slds-text-heading_small slds-hyphenate slds-text-color_weak">{!$Label.Reference_Use_Feedback}</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium">
+                            {{statusMsg}}
+                        </div>
+                        <footer class="slds-modal__footer" style="text-align: center">
+                            <a class="slds-button slds-button_neutral" ng-click="backToChatter()">{!$Label.Ok}</a>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop" ng-class="{'slds-backdrop_open' : isAlreadyProcessed}"></div>
+
+                <div class="custom-toast-container" ng-show="isError">
+                    <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                        <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" ng-click="isError = false">
+                            <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                            </svg>
+                        </a>
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading_small" style="font-size: 14px">{{errMsg}}</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="custom-toast-container" ng-show="isShowAfterfeedback">
+                    <div class="slds-notify slds-notify_toast slds-theme_success custom-toast-width" role="alert">
+                        <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" ng-click="isShowAfterfeedback = false">
+                            <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                            </svg>
+                        </a>
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading_small" style="font-size: 14px">{{statusMsg}}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>    
+</apex:page>

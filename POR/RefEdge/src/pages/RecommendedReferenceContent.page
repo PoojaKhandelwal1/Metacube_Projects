@@ -1,0 +1,248 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page standardController="Opportunity" extensions="RecommendedReferenceContent" id="pgId" standardStylesheets="true" showHeader="false" action="{!deleteDataMappingRecord}">
+    <apex:includeScript value="/support/console/44.0/integration.js" />
+    <apex:pageMessages id="pageMsgId"/>
+    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}"/>
+    <script>     
+        //REF - 1302
+        window.onload = function () {
+        
+            if ({!isConfirmation}) {
+                var stringvalue='{!JSENCODE(stageChangeValue)}';     
+                var conMessage = '{!JSENCODE(cs.Prompt_Message__c)}';
+                //Redirect to Ref search
+                if ('{!isAccountAlert}' == 'true' && '{!isContentAlert}' == 'true') {
+                    var r = confirm("\nYou just changed the stage from "+stringvalue+"\n\n"+conMessage);
+                    
+                    if (r == true) {
+                       jsRedirectRefSearch();
+                    } 
+                    //Redirect Account search
+                } else if ('{!isAccountAlert}' == 'true') {
+                    var r = confirm("\nYou just changed the stage from "+stringvalue+"\n\n"+conMessage);
+                    
+                    if (r == true) {                
+                       jsRedirectAccountRefSearch('Adoption');
+                    } 
+                    //Redirect Content search
+                } else if ('{!isContentAlert}' == 'true') {
+                    var r = confirm("\nYou just changed the stage from "+stringvalue+"\n\n"+conMessage);
+                    
+                    if (r == true) {                
+                       jsRedirectContentRefSearch();
+                    } 
+                }             
+            }                 
+        }
+
+        function openRefSearchSubtabForAcc(result) {
+            var primaryTabId = result.id;
+            sforce.console.openSubtab(primaryTabId, '{!$Page.RfSearchLightning}?opportunityId={!opp.Id}&forAccount=true&forContent=false&PreFilter=false&SF1=false', true, 'Ref Search', null, null, 'Ref Search');
+        }
+
+        function openRefSearchSubtabForCon(result) {
+            var primaryTabId = result.id;
+            sforce.console.openSubtab(primaryTabId, '{!$Page.RfSearchLightning}?opportunityId={!opp.Id}&forAccount=false&forContent=true&PreFilter=false&SF1=false', true, 'Ref Search', null, null, 'Ref Search');
+        }
+
+        function openRefSearchSubtab(result) {
+            var primaryTabId = result.id;
+            sforce.console.openSubtab(primaryTabId, '{!$Page.RfSearchLightning}?opportunityId={!opp.Id}&forAccount=false&forContent=false&PreFilter=false&SF1=false', true, 'Ref Search', null, null, 'Ref Search');
+        }
+        
+        //Redirect Account search
+        function jsRedirectAccountRefSearch(calledFrom) {
+			
+            //  REF-1883
+            if (('{!JSENCODE(minimumStageError)}' == '' && calledFrom == 'RecommendedPart') || calledFrom == 'Adoption') {
+                
+                if ('{!isSF1}' == 'true') {
+                    sforce.one.navigateToURL('{!$Page.SF1_RfSearchPage}?opportunityId={!opp.Id}&forAccount=true&forContent=false&SF1=true')
+                }
+                
+                if ('{!isSLDS}' == 'true') {
+                    sforce.one.navigateToURL('{!$Page.RfSearchLightning}?opportunityId={!opp.Id}&forAccount=true&forContent=false&PreFilter=false&SF1=false');
+                }
+
+                if ('{!isConsole}' == 'true') {
+                    sforce.console.getEnclosingPrimaryTabId(openRefSearchSubtabForAcc);
+                }
+
+                if ('{!isConsole}' == 'false' && '{!isSLDS}' == 'false' && '{!isSF1}' == 'false') {
+                    window.open('{!$Page.RfSearchPage}?opportunityId={!opp.Id}&forAccount=true&forContent=false&PreFilter=true&SF1=false','_parent');
+                }
+			} else if (calledFrom == 'RecommendedPart') {
+				alert('{!JSENCODE(minimumStageError)}');
+			    
+				if ((typeof sforce != 'undefined')  && (sforce != null) && ('{!isSF1}' == 'true' || '{!isSLDS}' == 'true')) {
+					sforce.one.navigateToSObject('{!JSENCODE(opp.Id)}')
+				} else if ('{!isConsole}' == 'false') {
+					window.open('/{!JSENCODE(opp.Id)}', '_parent');
+				}
+			}
+        }
+        
+        //Redirect Content search
+        function jsRedirectContentRefSearch() {
+                
+            if ('{!isConsole}' == 'true') {
+                sforce.console.getEnclosingPrimaryTabId(openRefSearchSubtabForCon);
+            }
+
+            if ('{!isSF1}' == 'true') {
+                sforce.one.navigateToURL('{!$Page.SF1_RfSearchPage}?opportunityId={!opp.Id}&forAccount=false&forContent=true&SF1=true');
+            }
+            
+            if ('{!isSLDS}' == 'true') {
+                sforce.one.navigateToURL('{!$Page.RfSearchLightning}?opportunityId={!opp.Id}&forAccount=false&forContent=true&PreFilter=false&SF1=false');
+            }
+
+            if ('{!isConsole}' == 'false' && '{!isSLDS}' == 'false' && '{!isSF1}' == 'false') {
+                window.open('{!$Page.RfSearchPage}?opportunityId={!opp.Id}&forAccount=false&forContent=true&PreFilter=true&SF1=false','_parent');
+            }
+        }
+        
+        //Redirect to Ref search
+        function jsRedirectRefSearch() {
+            
+            if ('{!isConsole}' == 'true') {
+                sforce.console.getEnclosingPrimaryTabId(openRefSearchSubtab);
+            }
+
+            if ('{!isSF1}' == 'true') {
+                sforce.one.navigateToURL('{!$Page.SF1_RfSearchPage}?opportunityId={!opp.Id}&forAccount=false&forContent=false&SF1=true')
+            }
+
+            if ('{!isSLDS}' == 'true') {
+                sforce.one.navigateToURL('{!$Page.RfSearchLightning}?opportunityId={!opp.Id}&forAccount=false&forContent=false&PreFilter=false&SF1=false');
+            }
+
+            if ('{!isConsole}' == 'false' && '{!isSLDS}' == 'false' && '{!isSF1}' == 'false') {
+                window.open('{!$Page.RfSearchPage}?opportunityId={!opp.Id}&forAccount=false&forContent=false&PreFilter=true&SF1=false','_parent');
+            }
+        }
+    </script> 
+    <style>
+        .bPageBlock{
+            background-color: #595959 !important;
+            border-color: #595959 !important;
+        }
+        .tertiaryPalette{
+            background-color: #595959 !important;
+            padding-right: 2% !important;
+        }
+        .pbSubsection{
+            width: 100% !important;
+            margin-left: 1% !important;            
+        }
+        .labelCol{
+            color: white !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+        .pbBody a{
+            color: white !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+        th,td{
+            border-bottom : none !important;
+            font-size: 13px !important;
+        }
+
+        @media screen and (max-width: 767px) {
+            .responsiveFontSize {
+                font-size: 15px;
+            }
+            .mobileVisible {
+                display: block;
+            }
+            .desktopVisible {
+                display: none;
+            }
+            .pbSubheader h3{
+                color: rgb(146, 205, 220) !important;
+                font-size: 12px !important;            
+            }
+            /*
+             * changes for #517 - adjusted the width of recommended resources links
+             */
+            body .bPageBlock .pbBody .dataCol {
+                width: auto;
+                float: left;
+                margin: 0 !important;
+                padding: 2px 0 !important;
+            }
+        }
+        @media screen and (min-width: 768px) {
+            .responsiveFontSize {
+                font-size: 13px;
+            }
+            .mobileVisible {
+                display: none;
+            }
+            .desktopVisible {
+                display: block;
+            }
+            .pbSubheader h3{
+                color: rgb(146, 205, 220) !important;
+                font-size: 15px !important;            
+            }
+            /*
+             * changes for #517 - adjusted the width of recommended resources links
+             */
+            body .bPageBlock .pbBody .dataCol {
+                width: auto;
+                float: left;
+                margin-right: 20px;
+            }
+        }
+    </style>
+    <apex:form id="formId" style="background-color: #595959;" rendered="{!isFullLicenseAccessible}">
+    
+        <apex:pageBlock id="pbId" >
+            <div class="desktopVisible"><apex:image url="{!$Resource.RefEdgeLogo}" style="width:auto;height:25px;float: right;"/></div>
+            <div class="mobileVisible"><apex:image url="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" style="width:auto;height:25px;float: right;"/></div>
+            
+            <apex:pageBlockSection id="pbsId" collapsible="false" title="{!IF(AND(NOT(showAccountLink),NOT(showContentLink)),$Label.Refedge_Opportunity_options_not_enabled,$Label.RecommendedResourcesHeader)}" rendered="{!OR(noOfContents > 0, noOfAccounts > 0)}">
+                <apex:outputPanel id="pbsiOpId21" layout="block" styleClass="responsiveFontSize" style="color: white; float: left;" rendered="{!showContentLink}">
+                    <div style="cursor: pointer;float: left;" onclick="jsRedirectContentRefSearch();return false;">
+                        <apex:outputText value="{!$Label.Matching_Reference_Content}" />
+                    </div>
+                    <apex:commandLink value="{!IF(noOfContents > 2000,TEXT(2000)+'+',noOfContents)}" onclick="jsRedirectContentRefSearch();return false;" style="float: left;margin-left: 5px;border: 1px solid white;padding: 1px 3px 1px 3px;color: white;text-decoration: none !important;"/>
+                </apex:outputPanel>
+                <apex:outputPanel id="pbsiOpId11" layout="block" styleClass="responsiveFontSize" style="color: white; float: left;" rendered="{!showAccountLink}">
+                    <div style="cursor: pointer;float: left;" onclick="jsRedirectAccountRefSearch('RecommendedPart');return false;" >
+                        <apex:outputText value="{!$Label.Matching_Reference_Accounts}" />
+                    </div>
+                    <apex:commandLink value="{!IF(noOfAccounts > 2000,TEXT(2000)+'+',noOfAccounts)}" onclick="jsRedirectAccountRefSearch('RecommendedPart');return false;" style="float: left;margin-left: 5px;border: 1px solid white;padding: 1px 3px 1px 3px;color: white;text-decoration: none !important;"/>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection rendered="{!AND(noOfContents == 0, noOfAccounts == 0)}" columns="1">
+                <apex:outputPanel id="pbsiOpId" layout="block" style="color: white;font-size: 14px;">
+                    {!$Label.No_Reference_Resource}<br/><br/>
+                    Go to <apex:commandLink value="Ref Search" onclick="jsRedirectRefSearch();return false;" style="text-decoration: none !important; color: #0CA4DB !important; font-size: 14px !important;"/> and remove some criteria to expand search results.
+                   <!--  <apex:commandLink value=">>Ref Search" onclick="jsRedirectRefSearch();return false;" style="color: #0CA4DB !important;"/> -->
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

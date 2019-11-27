@@ -1,0 +1,161 @@
+<!--
+* ReferenceEdge
+* 
+* Point of Reference, Inc. - Copyright 2014 All rights reserved.
+*
+* @company : Point of Reference, Inc.
+* @website : www.point-of-reference.com
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+* WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+* POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+* MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+* AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+* ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+* WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+* WRITTEN CONSENT FROM COMPANY.
+-->
+<apex:page controller="ReferenceUseFeedbackController" sidebar="false" showheader="true" id="pageId">
+<script>
+    jQuery(document).ready(function() {
+        var elm = document.getElementById('AppBodyHeader');
+
+        if (elm != null) {
+            reset(false);
+        } else {
+            reset(true);
+        }
+    });
+</script>
+<apex:outputPanel id="newPanelId">
+    <apex:outputPanel rendered="{!NOT(isSLDS)}">
+        <!-- Override CSS for Page Block div for title  -->
+        <style>
+            .homeTab .tertiaryPalette, .individualPalette .homeBlock .tertiaryPalette, .layoutEdit .individualPalette .homeBlock .tertiaryPalette {
+            background-color: #1796BE !important;
+            border-color: #1796BE !important;
+            }
+        </style>
+        
+        <!-- Add JavaScript & Jquery-->
+        <c:POR_ModalLoader id="PORLoader"/>
+        <apex:outputPanel id="jsPanel">
+            <script> 
+            
+                /* re #119 This function will show Disolving Alert for sales reward */ 
+                function showDisolvingAlert() { 
+                    var points = jQuery("input[id*='rewardPoints']").val();
+                    var message = jQuery("input[id*='actionMessage']").val();
+                    
+                    if ('{!isSubmitted}' != false && '{!isSubmitted}' != 'false') {
+                        
+                        if (typeof points !='undefined' && points != '' && points != '0') {  
+                            notification(points, message);
+                        } else { // #1105 - Added Else part to handel exception case.
+                            PORHideLoading();
+                            redirect();
+                        }     
+                    } else {
+                        PORHideLoading(); 
+                    }
+                }
+                
+                /* Method used to redirect back to home page */ 
+                function redirectToBack() {
+                    redirect();
+                }
+            </script>
+        </apex:outputPanel>
+        <!-- Message -->
+        <apex:pageMessages id="pgmsgId"/>
+        <!-- Sction Header-->
+        <apex:sectionHeader title="{!$Label.Reference_Use_Feedback}" rendered="{!isSLDSSet}"/> 
+        <!-- Form -->
+        <apex:form id="formId">
+            <apex:actionFunction name="reset" action="{!reset}" reRender="newPanelId, pgmsgId">
+               <apex:param name="isSLDS" assignTo="{!isSLDS}" value="" />
+            </apex:actionFunction>
+            <c:RewardNotification />           
+            <!-- Action Fuctions -->     
+            <apex:actionFunction name="changeOption" reRender="howDidPbsId,pgmsgId" immediate="true" action="{!changeFeedbakOptions}" oncomplete="PORHideLoading();">
+                <apex:param name="feedback" value="" assignTo="{!refReqAccountContact.Feedback_Status__c}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="redirect" action="{!returnHomePage}" reRender="pgmsgId"/>
+            <!-- Page  Block for Record Deleted-->
+            <apex:pageBlock id="deletedId"  rendered="{!isRecordDeleted}">
+                <apex:pageMessage severity="INFO" strength="3" summary="{!$Label.Access_attemped_recordDeleted_Msg}"/> 
+                <apex:commandButton value="{!$Label.Back_to_Home}" action="{!returnHomePage}" />   
+            </apex:pageBlock>
+            
+            <!-- Page  Block for Already Feedback-->
+            <apex:pageBlock id="submittedId"  rendered="{!AND(isAlreadyFeedback, NOT(isRecordDeleted))}">
+                <apex:pageMessage severity="INFO" strength="3" summary="{!$Label.Feedback_already_Processed}"/> 
+                <apex:commandButton value="{!$Label.Back_to_Home}" action="{!returnHomePage}" />   
+            </apex:pageBlock>
+            <apex:outputPanel id="points">
+                <apex:inputHidden value="{!rewardPoints}" id="rewardPoints"/>
+                <apex:inputHidden value="{!actionMessage}" id="actionMessage"/>
+            </apex:outputPanel>
+            <!-- Pageblock for Reference Use Feedback Details -->
+            <apex:pageBlock title="{!$Label.Reference_Use_Feedback}" id="refUseFbId" rendered="{!AND(NOT(isAlreadyFeedback), NOT(isRecordDeleted), (isSLDSSet))}">
+                <!-- PageblockSection for display Reference Use Details -->
+                <apex:pageBlockSection title="{!$Label.Reference_Use_Details}" id="refUseId">
+                    <apex:outputField value="{!refReqAccountContact.Reference_Request_Account__r.Account__r.Name}"/>    
+                    <apex:outputField label="{!$ObjectType.Reference_Request_Account_Contact__c.Fields.Contact__c.Label}" value="{!refReqAccountContact.Contact__r.Name}"/>
+                    <apex:outputField value="{!refReqAccountContact.Reference_Request_Account__r.Reference_Type_Needed__r.Name}" label="{!$Label.Reference_Type}"/>
+                    
+                    <apex:outputText value="{0,date,EEE, MMMM d, yyyy}" label="{!$Label.Creation_Date}">
+                        <apex:param value="{!refReqAccountContact.Reference_Request_Account__r.CreatedDate}" /> 
+                    </apex:outputText>
+                    
+                    <apex:outputText value="{0,date,EEE, MMMM d, yyyy}" label="{!$Label.Use_Date}">
+                        <apex:param value="{!refReqAccountContact.Reference_Request_Account__r.Deadline__c}" /> 
+                    </apex:outputText>
+                    
+                    <apex:outputField value="{!referenceRequest.Opportunity__r.AccountId}" label="{!$Label.Opportunity_Account}" rendered="{!NOT(ISBLANK(referenceRequest.Opportunity__r.AccountId))}"/>
+                    <apex:outputField value="{!referenceRequest.Opportunity__c}" label="{!$Label.Opportunity_Name}" rendered="{!NOT(ISBLANK(referenceRequest.Opportunity__c))}"/>
+                </apex:pageBlockSection>
+                
+                <!-- PageblockSection for get Feedback -->
+                <apex:pageBlockSection title="{!$Label.How_did_it_go}"  columns="1" id="howDidPbsId">
+                    <apex:inputField value="{!refReqAccountContact.Feedback_Status__c}" id="StatusValue" onchange="PORShowLoading();changeOption(this.value);return false;" required="true"/>
+                    <apex:outputPanel id="unsuccessfulPanel" style="padding-left:18%;" rendered="{!refReqAccountContact.Feedback_Status__c != null}">
+                        <apex:outputPanel rendered="{!OR(refReqAccountContact.Feedback_Status__c == 'Use completed - Unsuccessful',refReqAccountContact.Feedback_Status__c == 'Use will not occur')}"><h3>{!$Label.sorry_what_happened}</h3><br/></apex:outputPanel>
+                        <apex:outputPanel rendered="{!refReqAccountContact.Feedback_Status__c == 'Use not yet completed'}"><h3>Oh, okay. What happened?</h3><br/></apex:outputPanel>
+                        <apex:outputPanel rendered="{!refReqAccountContact.Feedback_Status__c == 'Use completed - Successful'}"><h3>That's great! Any highlights you want to share?</h3><br/></apex:outputPanel>
+                        <div style="padding-left:18%;">
+                            <apex:pageBlockSectionItem id="whatHappenPbsmsgId" dataStyleClass="padding-left:18%;">
+                                <apex:outputPanel styleClass="requiredInput" layout="block">
+                                    <div id="requiredId" class="requiredBlock"></div>
+                                    <script>
+                                    document.getElementById('requiredId').style.display = ({!diplayUnsuccessfulPanel} ? 'block' : 'none');
+                                    </script>
+                                    <apex:inputTextarea cols="50" rows="5" value="{!feedbakResponse}" />    
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </div>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel id="notcompletedPanel" style="padding-left:18%;" rendered="{!diplayNotcompletedPanel}">
+                        <h3>{!$Label.update_when_ref_use_will_occur}</h3><br/><br/>
+                        <div style="padding-left:18%;">
+                            <apex:pageBlockSectionItem id="deadlinePbsId" dataStyleClass="padding-left:18%;">
+                                <apex:outputPanel styleClass="requiredInput" layout="block" >
+                                    <div class="requiredBlock"></div>
+                                    <apex:inputField value="{!refReqAccountContact.Reference_Request_Account__r.Deadline__c}" id="deadlineId"/>    
+                                </apex:outputPanel>
+                            </apex:pageBlockSectionItem>
+                        </div>
+                    </apex:outputPanel>
+                    
+                    <apex:commandButton onclick="PORShowLoading();" value="{!$Label.Send_Update}" action="{!sendUpdate}" style="margin-left:250px;" immediate="false" reRender="pgmsgId,points,jsPanel" oncomplete="showDisolvingAlert();"/>
+                </apex:pageBlockSection>
+            </apex:pageBlock>          
+        </apex:form>
+    </apex:outputPanel>
+
+    <apex:include pageName="ReferenceUseFeedbackSLDS" rendered="{!isSLDS}"/>
+</apex:outputPanel>
+</apex:page>

@@ -1,0 +1,660 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page controller="RefProspectorSettingsController" standardStylesheets="false" tabStyle="Custom_Settings__c"
+			sidebar="false" docType="html-5.0">
+<apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+<script>
+	var isSLDS = false;
+
+	jQuery(document).ready(function() {
+		var elm = document.getElementById('AppBodyHeader');
+
+		if (elm != null) {
+			isSLDS = false;
+		} else {
+			isSLDS = true;
+		}
+	});
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+        
+		<style>
+			#lightningDiv * {
+                font-family: "Salesforce Sans",Arial,sans-serif !important;
+            }
+            .container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                overflow-x: hidden;
+                overflow-y: scroll;
+            }
+            .classicSpinner {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-left: -30px;
+            }
+            .classicSpinnerBackground {
+                top: 0;
+                height: 100vh;
+                left: 0;
+                right: 0;
+                background-color: WHITE;
+                opacity: 0.7;
+                z-index: 9999;
+            }
+	        .errorPageMsgDiv {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+            }
+            .pageHeader {
+            	background-color: #F4F6F9;
+            	border-bottom: 1px solid #d8dde6;
+            }
+            .custom-toast-width {
+            	min-width: 0;
+            }
+            @media screen and (max-width: 767px) {
+		        .horizontal-padding-large {
+                    padding-right: 0.5rem;
+                    padding-left: 0.5rem;
+                }
+	            .custom-toast-container {
+	            	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 0;
+				    width: 100%;
+				    margin-left: 0;
+	            }
+            }
+            @media screen and (min-width: 768px) {
+		        .horizontal-padding-large {
+                    padding-right: 1.5rem;
+                    padding-left: 1.5rem;
+                }
+	            .custom-toast-container {
+	            	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 50%;
+				    width: 50%;
+				    margin-left: -25%;
+	            }
+            }
+            .slds-checkbox [type=checkbox][disabled]+.slds-checkbox__label .slds-checkbox_faux { 
+                background-color: white !important;
+                border-radius: 20%;
+            }
+            .slds-checkbox [type=checkbox][disabled]+.slds-checkbox__label .slds-checkbox_faux:after {
+            	border-color: gray !important;
+            }
+		</style>
+		
+		<script>
+			var refProspectSettingApp = angular.module('refProspectSettingApp', []);
+            var refProspectSettingCtrl = refProspectSettingApp.controller('refProspectSettingCtrl',
+            	function($scope, $q) {
+            		$scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+                    $scope.isSLDS = isSLDS;
+                    $scope.isLoading = false;
+                    $scope.isEdit = false;
+                    
+                    $scope.customSettingWrapper = {};
+                    $scope.tempCustomSettingWrapper = {};
+                    $scope.fieldsList = [];
+                    $scope.fieldsMap = {};
+                    $scope.isError = false;
+                    $scope.errorMessage = '';
+                    
+                    $scope.init = function() {
+                    	$scope.isLoading = true;
+                    	
+                    	$scope.getPermissionsMessage().then(function(result) {
+	                    	
+	                    	if (result != '') {
+	                    		$scope.isError = true;
+                    			$scope.errorMessage = result;
+	                    	}
+	                    	
+	                    	$scope.getCustomSettings().then(function(result) {
+	                    		$scope.customSettingWrapper = result;
+	                    		
+	                    		$scope.getRefLeadOwnerOptions().then(function(result) {
+	                    			$scope.fieldsList = result;
+	                    			$scope.isLoading = false;
+	                    		});
+	                    	});
+                    	});
+                    }
+                    
+                    $scope.getPermissionsMessage = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorSettingsController.getPermissionsMessage}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getCustomSettings = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorSettingsController.getRefProspectData}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getRefLeadOwnerOptions = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorSettingsController.getRefLeadOwnerOptions}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+                    
+                    $scope.editForm = function() {
+                    	$scope.tempCustomSettingWrapper = angular.copy($scope.customSettingWrapper);
+                    	$scope.isEdit = true;
+                    }
+                    
+                    $scope.cancelForm = function() {
+                    	$scope.customSettingWrapper = angular.copy($scope.tempCustomSettingWrapper);
+                    	$scope.isError = false;
+                    	$scope.errorMessage = '';
+                    	$scope.isEdit = false;
+                    }
+                    
+                    $scope.saveForm = function() {
+                    	$scope.isLoading = true;
+                    	
+                    	$scope.getPermissionsMessage().then(function(result) {
+                    		
+                    		if (result == '') {
+		                    	
+		                    	$scope.saveCustomSettings().then(function(result) {
+			                    	console.log('result----' + result);
+			                    	
+			                    	if (result != 'success') {
+			                    		$scope.isError = true;
+			                    		$scope.errorMessage = result;
+			                    		$scope.isLoading = false;
+			                    	} else {
+			                    		$scope.isEdit = false;
+				                    	$scope.isLoading = false;
+			                    	}
+		                    	});
+                    		} else {
+                    			$scope.isError = true;
+	                    		$scope.errorMessage = result;
+	                    		$scope.isLoading = false;
+                    		}
+                    	});
+                    }
+                    
+                    $scope.hideError = function() {
+                    	$scope.isError = false;
+                    }
+                    
+                    $scope.saveCustomSettings = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorSettingsController.saveCustomSettings}',
+                            angular.toJson($scope.customSettingWrapper),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.goToLaunchPage = function() {
+                    	var url = '{!URLFOR($Page.LaunchRefProspectorCampaignPage)}'
+                    				+ '&isFromCustomSettings=true';
+                    	
+                    	if ((typeof sforce != 'undefined') && (sforce != null)) {
+							sforce.one.navigateToURL(url, true);
+						} else {
+							window.location.href = '/apex/LaunchRefProspectorCampaignPage?isFromCustomSettings=true';
+						}
+                    }
+                    
+                    $scope.goToCreateListPage = function() {
+                    	
+						if ((typeof sforce != 'undefined') && (sforce != null)) {
+							var url = '{!URLFOR($Page.SelectAccountsAsRefLeads)}'
+												+ '&isFromCustomSettings=true';
+							sforce.one.navigateToURL(url, true);
+						} else {
+							window.location.href = '/apex/SelectAccountsAsRefLeads?isFromCustomSettings=true';
+						}
+                    }
+                    
+                    $scope.backToCS = function() {
+                    	
+                    	if ((typeof sforce != 'undefined') && (sforce != null)) {
+	                    	sforce.one.navigateToSObject($scope.customSettingWrapper['csId'], 'detail');
+                    	} else {
+                    		window.location.href = '/' + $scope.customSettingWrapper['csId'];
+                    	}
+                    }
+            	}
+            );
+		</script>
+	</head>
+	
+	<body>
+		<div ng-app="refProspectSettingApp" ng-controller="refProspectSettingCtrl" ng-cloak="ng-cloak">
+			
+            <div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+                <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                    </svg>
+                </span>
+                {!$Label.User_License}
+            </div>
+            
+			<div ng-show="isFullLicenseAccessible" ng-init="init()">
+				
+				<div ng-if="!isSLDS" id="classicDiv">
+					<div class="classicSpinnerBackground" ng-show="isLoading">
+						<apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60"/>
+					</div>
+					<div ng-show="!isLoading">
+						
+						<div class="errorPageMsgDiv" style="border-color: #cc0000;" ng-show="isError">
+							<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+								<svg class="slds-icon" aria-hidden="true" style="fill: #cc0000;">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+								</svg>
+							</span>
+							<div style="float: left;">
+								<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+								<div ng-repeat="msg in errorMessage.split('\n')">
+									{{msg}}
+								</div>
+							</div>
+						</div>
+						
+						<a ng-click="backToCS()" ng-show="!isEdit" style="text-decoration: underline;">{!$Label.Back_to_the_Custom_Setting_Page}</a>
+						<apex:pageBlock mode="Edit">
+							<apex:pageBlockButtons >
+								<a ng-show="!isEdit" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;" ng-click="editForm()">{!$Label.Edit}</a>
+                                <a ng-show="isEdit" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;" ng-click="saveForm()">{!$Label.Save}</a>
+                                <a ng-show="isEdit" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;" ng-click="cancelForm()">{!$Label.Cancel}</a>
+							</apex:pageBlockButtons>
+							
+							<div class="pbSubsection">
+								<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+									<tbody>
+										<tr>
+                                           	<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Enable__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<input type="checkbox" id="enableRP-c" name="enableRP-c" ng-model="customSettingWrapper['enableRefProspector']" ng-disabled="!isEdit" />
+                                           	</td>
+                                           	<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prosepector_Lead_Owner__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<span ng-show="!isEdit && customSettingWrapper['refLeadOwner'] != ''">
+													{{customSettingWrapper['refLeadOwner']}}
+												</span>
+												<select ng-show="isEdit" ng-model="customSettingWrapper['refLeadOwner']" ng-options="f['value'] as f['label'] for f in fieldsList">
+												</select>
+                                           	</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							
+							<div class="pbSubsection">
+								<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+									<tbody>
+										<tr>
+											<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Lead_Count__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<span>{{customSettingWrapper['leadCount']}}</span>
+                                           	</td>
+                                           	<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Hdr_Txt__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<span ng-show="!isEdit">
+													{{customSettingWrapper['headerText']}}
+												</span>
+												<input ng-show="isEdit" type="text" ng-model="customSettingWrapper['headerText']" />
+                                           	</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							
+							<div class="pbSubsection">
+								<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+									<tbody>
+										<tr>
+											<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Campaign_Lead_Count__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<span>{{customSettingWrapper['campaignLeadCount']}}</span>
+                                           	</td>
+                                           	<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_SubHdr_Txt__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<span ng-show="!isEdit">
+													{{customSettingWrapper['subHeaderText']}}
+												</span>
+												<input ng-show="isEdit" type="text" ng-model="customSettingWrapper['subHeaderText']" />
+                                           	</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							
+							<div class="pbSubsection">
+								<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+									<tbody>
+										<tr>
+											<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$Label.Create_Reference_Prospector_List}
+											</th>
+											<td class="dataCol  first  last ">
+												<a ng-click="goToCreateListPage()">Manage</a>
+                                           	</td>
+                                           	<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Subject__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<span ng-show="!isEdit">
+													{{customSettingWrapper['subject']}}
+												</span>
+												<input ng-show="isEdit" type="text" ng-model="customSettingWrapper['subject']" />
+                                           	</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							
+							<div class="pbSubsection">
+								<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+									<tbody>
+										<tr>
+											<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$Label.Launch_Reference_Prospector_Campaign}
+											</th>
+											<td class="dataCol  first  last ">
+												<a ng-click="goToLaunchPage()">Manage</a>
+                                           	</td>
+                                           	<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+												{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Body__c.Label}
+											</th>
+											<td class="dataCol  first  last ">
+												<span ng-show="!isEdit">
+													{{customSettingWrapper['body']}}
+												</span>
+												<textarea rows="4" style="width: 70%" ng-show="isEdit" ng-model="customSettingWrapper['body']"></textarea>
+                                           	</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</apex:pageBlock>
+					</div>
+				</div>
+				
+				<div ng-if="isSLDS" id="lightningDiv" class="container">
+					
+					<div role="status" ng-show="isLoading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+					
+					<div ng-show="!isLoading">
+						
+                        <!-- Page header -->
+                        <div class="pageHeader slds-grid slds-wrap slds-grid_vertical-align-center slds-p-horizontal_x-large slds-p-vertical_small">
+                            <div class="slds-size_1-of-1 slds-medium-size_9-of-12 slds-large-size_9-of-12">
+                                <div class="slds-grid slds-grid_vertical-align-center">
+                                    <div>
+                                        <img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" style="margin-right: 10px" />
+                                    </div>
+                                    <div>
+                                        <div class="slds-text-heading_medium">
+                                            {!$ObjectType.Custom_Settings__c.fields.Reference_Prospector_Settings__c.Label}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-size_1-of-1 slds-medium-size_3-of-12 slds-large-size_3-of-12" style="z-index: 100 !important;">
+                                <div class="slds-grid slds-grid_align-end">
+                                    <a ng-show="isEdit" class="slds-button slds-button_neutral" ng-click="cancelForm()">{!$Label.Cancel}</a>
+                                    <a ng-show="isEdit" class="slds-button slds-button_brand" ng-click="saveForm()">{!$Label.Save}</a>
+                                    <a ng-show="!isEdit" class="slds-button slds-button_neutral" ng-click="editForm()">{!$Label.Edit}</a>
+                                    <a ng-show="!isEdit" class="slds-button slds-button_neutral" ng-click="backToCS()">{!$Label.Back_to_the_Custom_Setting_Page}</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+						<div class="slds-grid slds-wrap horizontal-padding-large">
+							
+							<!-- Left side fields -->
+							<div class="slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-horizontal_x-small">
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Enable__c.Label}
+									</label>
+									<div class="slds-form-element__control" ng-class="{'slds-border_bottom' : !isEdit}">
+										<span class="slds-checkbox slds-form-element__static">
+											<input type="checkbox" id="enableRP" name="enableRP" ng-model="customSettingWrapper['enableRefProspector']" ng-disabled="!isEdit" />
+											<label class="slds-checkbox__label" for="enableRP">
+												<span class="slds-checkbox_faux"></span>
+											</label>
+										</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Lead_Count__c.Label}
+									</label>
+									<div class="slds-form-element__control slds-border_bottom">
+										<span class="slds-form-element__static">{{customSettingWrapper['leadCount']}}</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Campaign_Lead_Count__c.Label}
+									</label>
+									<div class="slds-form-element__control slds-border_bottom">
+										<span class="slds-form-element__static">{{customSettingWrapper['campaignLeadCount']}}</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$Label.Create_Reference_Prospector_List}
+									</label>
+									<div class="slds-form-element__control slds-border_bottom">
+										<span class="slds-form-element__static">
+											<a ng-click="goToCreateListPage()">Manage</a>
+										</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$Label.Launch_Reference_Prospector_Campaign}
+									</label>
+									<div class="slds-form-element__control slds-border_bottom">
+										<span class="slds-form-element__static">
+											<a ng-click="goToLaunchPage()">Manage</a>
+										</span>
+									</div>
+								</div>
+							</div>
+							
+							<!-- Right side fields -->
+							<div class="slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-horizontal_x-small">
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prosepector_Lead_Owner__c.Label}
+									</label>
+									<div class="slds-form-element__control" ng-show="isEdit">
+										<div class="slds-select_container">
+											<select class="slds-select" ng-show="isEdit" ng-model="customSettingWrapper['refLeadOwner']" ng-options="f['value'] as f['label'] for f in fieldsList">
+											</select>
+										</div>
+									</div>
+									<div class="slds-form-element__control slds-border_bottom" ng-show="!isEdit && customSettingWrapper['refLeadOwner'] != ''">
+										<span class="slds-form-element__static">{{customSettingWrapper['refLeadOwner']}}</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Hdr_Txt__c.Label}
+									</label>
+									<div class="slds-form-element__control" ng-show="isEdit">
+										<input type="text" ng-model="customSettingWrapper['headerText']" class="slds-input" />
+									</div>
+									<div class="slds-form-element__control slds-border_bottom" ng-show="!isEdit">
+										<span class="slds-form-element__static">{{customSettingWrapper['headerText']}}</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_SubHdr_Txt__c.Label}
+									</label>
+									<div class="slds-form-element__control" ng-show="isEdit">
+										<input type="text" ng-model="customSettingWrapper['subHeaderText']" class="slds-input" />
+									</div>
+									<div class="slds-form-element__control slds-border_bottom" ng-show="!isEdit">
+										<span class="slds-form-element__static">{{customSettingWrapper['subHeaderText']}}</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Subject__c.Label}
+									</label>
+									<div class="slds-form-element__control" ng-show="isEdit">
+										<input type="text" ng-model="customSettingWrapper['subject']" class="slds-input" />
+									</div>
+									<div class="slds-form-element__control slds-border_bottom" ng-show="!isEdit">
+										<span class="slds-form-element__static">{{customSettingWrapper['subject']}}</span>
+									</div>
+								</div>
+								
+								<div class="slds-form-element slds-p-vertical_medium">
+									<label class="slds-form-element__label">
+										{!$ObjectType.Custom_Settings__c.fields.Ref_Prospector_Body__c.Label}
+									</label>
+									<div class="slds-form-element__control" ng-show="isEdit">
+										<textarea rows="4" ng-model="customSettingWrapper['body']" class="slds-textarea"></textarea>
+									</div>
+									<div class="slds-form-element__control slds-border_bottom" ng-show="!isEdit">
+										<span class="slds-form-element__static">{{customSettingWrapper['body']}}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<!-- Modals and toasts -->
+						<div class="custom-toast-container" ng-show="isError">
+                        	<div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+								<span class="slds-assistive-text">Info</span>
+								<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+									<svg class="slds-icon slds-icon_small" aria-hidden="true">
+										<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+									</svg>
+								</span>
+								<a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideError()">
+									<svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+										<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+									</svg>
+									<span class="slds-assistive-text">Close</span>
+								</a>
+								<div class="slds-notify__content">
+									<h2 class="slds-text-heading_small" style="font-size: 16px;">
+										<p ng-repeat="msg in errorMessage.split('\n')">
+	                                        {{msg}}
+	                                    </p>
+									</h2>
+								</div>
+							</div>
+                        </div>
+						
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+</apex:page>

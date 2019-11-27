@@ -1,0 +1,551 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page id="pageId" controller="RefedgeSetupHomeController" sidebar="false" docType="html-5.0" tabStyle="RefEdge_Setup__tab" lightningStylesheets="true">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    
+    <apex:pageMessages id="pageMsgId"/>
+    <c:POR_ModalLoader id="PORLoader"/>
+    
+    <style>
+        .row{
+            width:45%;
+            float:left;
+            margin-left: 25px;
+        }
+        
+        .col{ 
+            border: 1px solid #CCC;
+            border-radius: 5px;
+            background:white;
+            margin-top: 15px;
+            padding: 25px;
+        }
+        
+        .clear{
+            clear :both;
+        }
+         
+        .section-title {
+            font-weight: bold;
+            font-size: 17px;
+            margin-bottom: 10px;
+        }
+        
+        .section-content{
+            color: #78787d;
+            font-size: 120%;
+            margin-bottom: 10px;
+        }
+        
+        .anchor-button {
+            padding: 10px 20px;
+            min-width: 60px;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 5px;
+            vertical-align: middle;
+            font-family: 'ProximaNovaSoft-Semibold';
+            font-size: 15px;
+            border: 0;
+            background: #2a94d6;
+            color: #ffffff;
+            display: block;
+            text-decoration: none !important;
+        }
+        
+        .anchor-link-active{
+            color: #006eb3;
+        }
+        
+        .anchor-link-disable{
+            color: #78787d;
+            pointer-events: none;
+        }
+        
+        .done-text{
+            float: right;
+            font-weight: bold;
+            color: GREEN;
+        }
+        
+        .in-progress-text{
+            float: right;
+            font-weight: bold;
+            color: ORANGE;
+        }
+        
+        .to-be-done-text{
+            float: right;
+            font-weight: bold;
+            color: RED;
+        }
+        .view-link{
+            float: right;
+            font-weight: bold;
+            color: GREEN;
+        }
+    </style>
+    
+    <script type="text/javascript">var __sfdcSessionId = '{!GETSESSIONID()}';</script>
+    <script src="/soap/ajax/32.0/connection.js" type="text/javascript"></script>
+    <script>
+        function jsCreateGroup(publicOrPrivate) {
+            var chatterGroupName  = prompt("{!$Label.Create_a_Group_Message}");
+            if (chatterGroupName != null) {
+                if(publicOrPrivate == 'Public')
+                    createPublicGroup(chatterGroupName);
+                PORShowLoading();
+            }
+        }
+        
+        function jsAlertProfile(proName){
+            var message = '{!$Label.Profile_alert_message}';
+            alert(message.replace('@@@', proName));
+        }
+        
+        // added for #498 - method to create remote site setting
+        function jsCreateRemoteSiteSetting() {
+        	sforce.connection.remoteFunction({
+                url: 'https://' + window.location.host + '/services/Soap/m/32.0',
+                onSuccess: function(response, xhr) {
+                    window.location.reload(true);
+                },
+                onFailure: function(response, xhr) {
+                    alert(response);
+                },
+                method: 'POST',
+                async: false,
+                requestHeaders: {
+                    'Content-Type': 'text/xml',
+                    'SOAPAction': '""'
+                },
+                requestData: '{!JSENCODE(DeployXml)}',
+                cache: false,
+                timeout: 10000
+            });
+        }
+    </script>
+    <apex:form id="formId">
+        <!-- Action Functions -->        
+        <apex:actionFunction name="jsUpdateReferenceabilityTypes" action="{!updateReferenceabilityTypes}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsUpdateReferenceProfiles" action="{!updateReferenceProfiles}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsUpdateReferenceContents" action="{!updateReferenceContents}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsUpdateReferenceRequestsInvitations" action="{!updateReferenceRequestsInvitations}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsDeleteRewards" action="{!deleteRewards}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsUpdateRequests" action="{!updateAccountContactRequests}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsUpdateFilters" action="{!updateFilters}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsUpdateFilterNumbers" action="{!updateFilterNumbers}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsUpdateAttributes" action="{!updateAttributes}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateProfileUpdates" action="{!updateProfileUpdates}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateInfluitiveData" action="{!updateRewardsOnInfluitiveIntegration}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateContactsPoints" action="{!updateContactAvailablePoints}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateRBIPoints" action="{!updateRBIPoint}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsScheduleJobs" action="{!scheduleJobs}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+       	<apex:actionFunction name="jsupdateAccConRelatedAttributeMappings" action="{!updateAccConRelatedAttributeMappings}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateUpdateFilterIdInRootAttributeForProduct" action="{!updateUpdateFilterIdInRootAttributeForProduct}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsCreateReferenceActivities" action="{!createReferenceActivities}" oncomplete="PORHideLoading();" rerender="pageMsgId,panelOpId"/>
+
+		<apex:actionFunction name="jsUpdateAttributeInRefContent" action="{!updateAttributeInRefContent}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsResetColumnSelector" action="{!resetColumnSelector}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsresetOpportunityProductAM" action="{!resetOpportunityProductAM}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsRestrictOpportunityAM" action="{!restrictOppAttributeCreation}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+<!--        <apex:actionFunction name="createChatterGroup" action="{!createChatterGroup}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId">-->
+<!--            <apex:param name="paramName" assignTo="{!groupName}" value="" />-->
+<!--        </apex:actionFunction>-->
+		<apex:actionFunction name="jsUpdateRefLeads" action="{!updateRefLeads}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId" />
+        
+        <apex:actionFunction name="createPublicGroup" action="{!createPublicGroup}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId">
+            <apex:param name="paramName" assignTo="{!groupName}" value="" />
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="jsCreatePermissionSet" action="{!createPermissionSet}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId">
+            <apex:param name="paramName" assignTo="{!psName}" value="" />
+        </apex:actionFunction>
+        
+        <apex:actionFunction name="jsUpdateCustomSetting" action="{!upgradeCustomSetting}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateContactAttributes" action="{!updateContactAttributes}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateCreateSalesRefTypes" action="{!updateCreateSalesRefTypes}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionFunction name="jsupdateInheritableAtts" action="{!updateInheritableAttributes}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <apex:actionPoller action="{!refresh}" interval="180" oncomplete="PORShowLoading();PORHideLoading();" reRender="pageMsgId, panelOpId" />
+        <apex:actionFunction name="jsRemoveDuplicateRBIs" action="{!removeDuplicateRBIs}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+        <!-- REF-2289 -->
+        <apex:actionFunction name="jsUpdateContentURL" action="{!updateContentURL}" oncomplete="PORHideLoading();" rerender="pageMsgId, panelOpId"/>
+                
+        <apex:outputPanel id="headerOpId" layout="block" style="width:100%;background:#F0F1F2;" >
+            <apex:outputPanel layout="block" style="width:100%;background:#283d52;" id="innerHeaderId">
+                <center>
+                    <apex:outputPanel layout="block" style="padding-top: 20px;padding-bottom: 20px;" id="innerCenterHeaderId">
+                        <apex:image url="{!$Resource.ReferenceEdge_E_icon}" style="background-color: white;border-radius: 5px;"/>
+                        <br/>
+                        <br/>
+                        <apex:outputText style="font-size: 22px;color: white;" value="{!$Label.ReferenceEdge_Setup_Header}"/>
+                        <br/>
+                        <br/>
+                        <apex:outputText style="font-size: 120%;color: white;" value="{!$Label.ReferenceEdge_Setup_Subheader}"/>
+                    </apex:outputPanel>             
+                </center>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="panelOpId" layout="block" style="padding-top: 20px;">
+                <div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="section-title">{!$Label.Quick_Start_Wizard}</div>
+                            <div class="section-content">{!$Label.Quick_Start_Wizard_Subheader}</div>
+                            <div>
+                                <ul>
+                                    <li>
+                                        <apex:outputLink value="/setup/ui/listCustomSettingsData.apexp?id={!porAppConfigurationKeyPerfix}" styleClass="anchor-link-active" target="_blank" rendered="{!NOT(isEditionKey)}">{!$Label.Install_PRO_Key}</apex:outputLink>
+                                        <apex:commandLink value="{!$Label.Install_PRO_Key}" rendered="{!isEditionKey}" styleClass="anchor-link-disable"/>
+                                        <apex:outputLink value="/setup/ui/listCustomSettingsData.apexp?id={!porAppConfigurationKeyPerfix}" styleClass="view-link" target="_blank" rendered="{!isEditionKey}">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Create_Public_Group_Title}" styleClass="anchor-link-active"  onclick="jsCreateGroup('Public');return false;" rendered="{!publicGroupId = ''}"/>
+                                        <apex:commandLink value="{!$Label.Create_Public_Group_Title}" rendered="{!publicGroupId != ''}" styleClass="anchor-link-disable"/>
+                                        <apex:outputLink value="/setup/own/groupdetail.jsp?id={!publicGroupId}" styleClass="view-link" target="_blank" rendered="{!publicGroupId != ''}">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:outputLink value="/{!micrositePrefix}" styleClass="anchor-link-active" target="_blank" rendered="{!listMicrosite.size = 0}">{!$Label.Create_Microsite_Invitation}</apex:outputLink>
+                                        <apex:commandLink value="{!$Label.Create_Microsite_Invitation}" rendered="{!listMicrosite.size > 0}" styleClass="anchor-link-disable"/>
+                                        <apex:outputText value="{!$Label.Complete}" rendered="{!listMicrosite.size > 0}" styleClass="done-text" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:outputLink value="/setup/ui/listCustomSettingsData.apexp?id={!porAppConfigurationKeyPerfix}" styleClass="anchor-link-active" target="_blank" rendered="{!NOT(isSiteSetNativeCustomSetting)}">{!$Label.Set_Site_in_Native_Custom_Settings}</apex:outputLink>
+                                        <apex:commandLink value="{!$Label.Set_Site_in_Native_Custom_Settings}" rendered="{!isSiteSetNativeCustomSetting}" styleClass="anchor-link-disable"/>
+                                        <apex:outputText value="{!$Label.Complete}" rendered="{!isSiteSetNativeCustomSetting}" styleClass="done-text" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Refedge_Custom_Setting}" styleClass="anchor-link-active"  onclick="PORShowLoading();jsUpdateCustomSetting();return false;" rendered="{!NOT(isUpdateRefedgeCustomSetting)}"/>
+                                        <apex:commandLink value="{!$Label.Update_Refedge_Custom_Setting}" rendered="{!isUpdateRefedgeCustomSetting}" styleClass="anchor-link-disable"/>
+                                        <apex:outputText value="{!$Label.Complete}" rendered="{!isUpdateRefedgeCustomSetting}" styleClass="done-text" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="Create Remote Site Setting" onclick="PORShowLoading();jsCreateRemoteSiteSetting();return false;" styleClass="anchor-link-active" rendered="{!NOT(isRssPresent)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isRssPresent)}" />
+                                        <apex:commandLink value="Create Remote Site Setting" styleClass="anchor-link-disable" rendered="{!isRssPresent}" />
+                                        <!-- <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isRssPresent}" /> -->
+                                        <apex:outputLink value="/0rp" styleClass="view-link" target="_blank" rendered="{!isRssPresent}">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <div class="section-title">{!$Label.Security_and_Access_Settings_Header}</div>
+                            <div class="section-content">{!$Label.Security_and_Access_Settings_Subheader}</div>
+                            <div>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Create_RE_Salesperson_Profile}" rendered="{!salespersonProfile.size == 0}" styleClass="anchor-link-active"  onclick="jsAlertProfile('RE Salesperson');return false;"/>
+                                        <apex:commandLink value="{!$Label.Create_RE_Salesperson_Profile}" rendered="{!salespersonProfile.size > 0}" styleClass="anchor-link-disable"/>
+                                        <apex:outputLink value="/{!salespersonProfile[0].id}" styleClass="view-link" rendered="{!salespersonProfile.size > 0}" target="_blank">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>
+                                
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Create_Reference_Manager_Profile}" rendered="{!reManagerProfile.size == 0}" styleClass="anchor-link-active"  onclick="jsAlertProfile('Reference Manager');return false;"/>
+                                        <apex:commandLink value="{!$Label.Create_Reference_Manager_Profile}" rendered="{!reManagerProfile.size > 0}" styleClass="anchor-link-disable"/>
+                                        <apex:outputLink value="/{!reManagerProfile[0].id}" styleClass="view-link" rendered="{!reManagerProfile.size > 0}" target="_blank">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>
+                                
+                                <!-- <ul>     
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Create_RE_Salesperson_Permission_Set}" rendered="{!salespersonPS.size == 0}" styleClass="anchor-link-active"  onclick="PORShowLoading();jsCreatePermissionSet('RE Salesperson');return false;"/>
+                                        <apex:commandLink value="{!$Label.Create_RE_Salesperson_Permission_Set}" rendered="{!salespersonPS.size > 0}" styleClass="anchor-link-disable"/>
+                                        <apex:outputLink value="/{!salespersonPS[0].id}" styleClass="view-link" rendered="{!salespersonPS.size > 0}" target="_blank">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>
+                                
+                                <ul>    
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Create_Reference_Manager_Permission_Set}" rendered="{!reManagerPS.size == 0}" styleClass="anchor-link-active"  onclick="PORShowLoading();jsCreatePermissionSet('Reference Manager');return false;"/>
+                                        <apex:commandLink value="{!$Label.Create_Reference_Manager_Permission_Set}" rendered="{!reManagerPS.size > 0}" styleClass="anchor-link-disable"/>
+                                        <apex:outputLink value="/{!reManagerPS[0].id}" styleClass="view-link" rendered="{!reManagerPS.size > 0}" target="_blank">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>  -->
+                            </div>
+                        </div>
+                        
+                        <div class="col">
+                            <div class="section-title">{!$Label.Post_install_Processes_Header}</div>
+                            <div class="section-content">{!$Label.Post_install_Processes_Subheader2}</div>
+                            <div>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Referenceability_Types}" onclick="PORShowLoading();jsUpdateReferenceabilityTypes();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateReferenceabilityTypes)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateReferenceabilityTypes)}" />
+                                        <apex:commandLink value="{!$Label.Update_Referenceability_Types}" styleClass="anchor-link-disable" rendered="{!isUpdateReferenceabilityTypes}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressReferenceabilityTypes}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressReferenceabilityTypes), isUpdateReferenceabilityTypes)}" />
+                                    </li>
+                                </ul> 
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Filter_Numbers}" onclick="PORShowLoading();jsUpdateFilterNumbers();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateFilterNumbers)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateFilterNumbers)}" />
+                                        <apex:commandLink value="{!$Label.Update_Filter_Numbers}" styleClass="anchor-link-disable" rendered="{!isUpdateFilterNumbers}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressFilterNumbers}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressFilterNumbers), isUpdateFilterNumbers)}" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+	                                    <apex:commandLink value="{!$Label.Update_Inheritable_value_in_Attributes}" onclick="PORShowLoading();jsupdateInheritableAtts();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateInheritableAttributes)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateInheritableAttributes)}" />
+                                        <apex:commandLink value="{!$Label.Update_Inheritable_value_in_Attributes}" styleClass="anchor-link-disable" rendered="{!isUpdateInheritableAttributes}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isUpdateInheritableAttributes}" />
+                                    </li>
+                                </ul> 
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Filters}" onclick="PORShowLoading();jsUpdateFilters();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateFilters)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateFilters)}" />
+                                        <apex:commandLink value="{!$Label.Update_Filters}" styleClass="anchor-link-disable" rendered="{!isUpdateFilters}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isUpdateFilters}" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Attributes}" onclick="PORShowLoading();jsUpdateAttributes();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateAttributes)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateAttributes)}" />
+                                        <apex:commandLink value="{!$Label.Update_Attributes}" styleClass="anchor-link-disable" rendered="{!isUpdateAttributes}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isUpdateAttributes}" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Reference_Profiles}" onclick="PORShowLoading();jsUpdateReferenceProfiles();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateReferenceProfiles)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateReferenceProfiles)}" />
+                                        <apex:commandLink value="{!$Label.Update_Reference_Profiles}" styleClass="anchor-link-disable" rendered="{!isUpdateReferenceProfiles}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressReferenceProfiles}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressReferenceProfiles), isUpdateReferenceProfiles)}" />
+                                    </li>
+                                </ul> 
+                                
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Reference_Content}" onclick="PORShowLoading();jsUpdateReferenceContents();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateReferenceContent)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateReferenceContent)}" />
+                                        <apex:commandLink value="{!$Label.Update_Reference_Content}" styleClass="anchor-link-disable" rendered="{!isUpdateReferenceContent}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressReferenceContent}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressReferenceContent), isUpdateReferenceContent)}" />
+                                    </li>
+                                </ul> 
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Account_and_Contact_Request_No_Longer_Needed}" onclick="PORShowLoading();jsUpdateRequests();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateAccountContactRequests)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateAccountContactRequests)}" />
+                                        <apex:commandLink value="{!$Label.Update_Account_and_Contact_Request_No_Longer_Needed}" styleClass="anchor-link-disable" rendered="{!isUpdateAccountContactRequests}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressAccountContactRequests}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressAccountContactRequests), isUpdateAccountContactRequests)}" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Reward_Declined_Request_Records}" onclick="PORShowLoading();jsDeleteRewards();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateRewardDeclinedRequestRecord)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateRewardDeclinedRequestRecord)}" />
+                                        <apex:commandLink value="{!$Label.Update_Reward_Declined_Request_Records}" styleClass="anchor-link-disable" rendered="{!isUpdateRewardDeclinedRequestRecord}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressRewardDeclinedRequestRecord}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressRewardDeclinedRequestRecord), isUpdateRewardDeclinedRequestRecord)}" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+	                                    <apex:commandLink value="{!$Label.Update_Contact_Available_Points}" onclick="PORShowLoading();jsupdateContactsPoints();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateContactAvailablePoints)}"/>
+	                                    <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateContactAvailablePoints)}" />
+	                                    <apex:commandLink value="{!$Label.Update_Contact_Available_Points}" styleClass="anchor-link-disable" rendered="{!isUpdateContactAvailablePoints}" />
+	                                    <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressContactAvailablePoints}" />
+	                                    <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressContactAvailablePoints), isUpdateContactAvailablePoints)}" />
+                                    </li>
+                                </ul> 
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Create_Request_Invitation_Records}" onclick="PORShowLoading();jsUpdateReferenceRequestsInvitations();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isCreateRequestInvitationRecords)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isCreateRequestInvitationRecords)}" />
+                                        <apex:commandLink value="{!$Label.Create_Request_Invitation_Records}" styleClass="anchor-link-disable" rendered="{!isCreateRequestInvitationRecords}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressRequestInvitationRecords}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressRequestInvitationRecords), isCreateRequestInvitationRecords)}" />
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Profile_Updates}" onclick="PORShowLoading();jsupdateProfileUpdates();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateProfileUpdates)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateProfileUpdates)}" />
+                                        <apex:commandLink value="{!$Label.Update_Profile_Updates}" styleClass="anchor-link-disable" rendered="{!isUpdateProfileUpdates}" />
+                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressProfileUpdates}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressProfileUpdates), isUpdateProfileUpdates)}" />
+                                    </li>
+                                </ul> 
+                                <apex:outputPanel rendered="{!isInfluitiveEnabled}">
+	                                <ul>
+	                                    <li>
+		                                    <apex:commandLink value="{!$Label.Sync_Reward_to_Influitive}" onclick="PORShowLoading();jsupdateInfluitiveData();return false;" styleClass="anchor-link-active"  rendered="{!AND(NOT(isUpdateInfluitiveDataSync), NOT(isProgressInfluitiveDataSync))}" />
+		                                    <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!AND(NOT(isUpdateInfluitiveDataSync), NOT(isProgressInfluitiveDataSync))}" />
+		                                    <apex:commandLink value="{!$Label.Sync_Reward_to_Influitive}" styleClass="anchor-link-disable" rendered="{!OR(isUpdateInfluitiveDataSync,isProgressInfluitiveDataSync)}" />
+		                                    <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressInfluitiveDataSync}" />
+		                                    <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressInfluitiveDataSync), isUpdateInfluitiveDataSync)}" />
+	                                    </li>
+	                                </ul> 
+                                </apex:outputPanel>
+                                <ul>
+                                    <li>
+	                                    <apex:commandLink value="{!$Label.Update_Account_in_Contact_Attributes}" onclick="PORShowLoading();jsupdateContactAttributes();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateContactAttributes)}"/>
+	                                    <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateContactAttributes)}" />
+	                                    <apex:commandLink value="{!$Label.Update_Account_in_Contact_Attributes}" styleClass="anchor-link-disable" rendered="{!isUpdateContactAttributes}" />
+	                                    <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressContactAttributes}" />
+	                                    <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressContactAttributes), isUpdateContactAttributes)}" />
+                                    </li>
+                                </ul> 
+                                <apex:outputPanel rendered="{!isAllowSalesReward}"> 
+	                                <ul>
+                                    	<li>
+	                                        <apex:commandLink value="{!$Label.Create_Sales_Reward_RefTypes}" onclick="PORShowLoading();jsupdateCreateSalesRefTypes();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isCreateSalesReward)}"/>
+	                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isCreateSalesReward)}" />
+	                                        <apex:commandLink value="{!$Label.Create_Sales_Reward_RefTypes}" styleClass="anchor-link-disable" rendered="{!isCreateSalesReward}" />
+	                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isCreateSalesReward}" />
+	                                    </li>
+                               		</ul>
+
+	                                <ul>
+                                    	<li>
+	                                    	<apex:commandLink value="{!$Label.Update_Current_Available_Points_for_RBI}" onclick="PORShowLoading();jsupdateRBIPoints();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateRBIPoints)}"/>
+	                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateRBIPoints)}" />
+	                                        <apex:commandLink value="{!$Label.Update_Current_Available_Points_for_RBI}" styleClass="anchor-link-disable" rendered="{!isUpdateRBIPoints}" />
+	                                        <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressRBIPointsUpdates}" />
+	                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressRBIPointsUpdates), isUpdateRBIPoints)}" /> 	                                    
+	                                    </li>
+                               		</ul>
+                            	</apex:outputPanel>
+                            	<ul>
+                                    <li>
+	                                    <apex:commandLink value="{!$ObjectType.POR_App_Configuration__c.fields.Update_Related_Attribute_Mapping_for_A_C__c.Label}" onclick="PORShowLoading();jsupdateAccConRelatedAttributeMappings();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateRelatedAttributeMapping)}"/>
+	                                    <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateRelatedAttributeMapping)}" />
+	                                    <apex:commandLink value="{!$ObjectType.POR_App_Configuration__c.fields.Update_Related_Attribute_Mapping_for_A_C__c.Label}" styleClass="anchor-link-disable" rendered="{!isUpdateRelatedAttributeMapping}" />
+	                                    <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isUpdateRelatedAttributeMapping}"/>
+                                    </li>
+                                </ul> 
+                                <ul>
+                                    <li>
+	                                    <apex:commandLink value="Update Product Attribute" onclick="PORShowLoading();jsupdateUpdateFilterIdInRootAttributeForProduct();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateProductAttribute)}"/>
+	                                    <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateProductAttribute)}" />
+	                                    <apex:commandLink value="Update Product Attribute" styleClass="anchor-link-disable" rendered="{!isUpdateProductAttribute}" />
+	                                    <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isUpdateProductAttribute}"/>
+                                    </li>
+                                </ul> 
+                                <ul> 
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Create_Scheduled_Job_title}" styleClass="anchor-link-active"  onclick="PORShowLoading();jsScheduleJobs();return false;"/>
+                                        <apex:outputLink value="/08e" styleClass="view-link" target="_blank">{!$Label.View}</apex:outputLink>
+                                    </li>
+                                </ul>
+                                <!-- new link added #1127 -->
+                                <ul>
+                                    <li>
+	                                    <apex:commandLink value="{!$Label.Create_Reference_Activities_For_Nomination}" onclick="PORShowLoading();jsCreateReferenceActivities();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isReferenceActivitiesCreated)}"/>
+	                                    <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isReferenceActivitiesCreated)}" />
+	                                    <apex:commandLink value="{!$Label.Create_Reference_Activities_For_Nomination}" styleClass="anchor-link-disable" rendered="{!isReferenceActivitiesCreated}" />
+	                                    <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isReferenceActivitiesCreated}"/>
+                                    </li>
+                                </ul> 
+                                <!-- added for #1166 - Gaurav Saini (28 Nov, 2017) -->
+                                <ul>
+									<li>
+										<apex:commandLink value="{!$Label.Update_Reference_Leads}" onclick="PORShowLoading(); jsUpdateRefLeads(); return false;" styleClass="anchor-link-active" rendered="{!NOT(isReferenceLeadUpdated)}" />
+										<apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isReferenceLeadUpdated)}" />
+										<apex:commandLink value="{!$Label.Update_Reference_Leads}" styleClass="anchor-link-disable" rendered="{!isReferenceLeadUpdated}" />
+										<apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isReferenceLeadInProgress}" />
+										<apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isReferenceLeadInProgress), isReferenceLeadUpdated)}" />
+									</li>
+								</ul>
+								<!-- added for #1184 - Rajneesh Raj (Dec 08, 2017) -->
+								<ul>
+                                    <li>
+	                                    <apex:commandLink value="{!$Label.Update_Attribute_in_Reference_Content}" onclick="PORShowLoading();jsUpdateAttributeInRefContent();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isUpdateAttributeInRefContent)}"/>
+	                                    <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isUpdateAttributeInRefContent)}" />
+	                                    <apex:commandLink value="{!$Label.Update_Attribute_in_Reference_Content}" styleClass="anchor-link-disable" rendered="{!isUpdateAttributeInRefContent}" />
+	                                    <apex:outputText value="{!$Label.In_Progress}" styleClass="in-progress-text" rendered="{!isProgressUpdateAttributeInRefContent}" />
+	                                    <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!AND(NOT(isProgressUpdateAttributeInRefContent), isUpdateAttributeInRefContent)}" />
+                                    </li>
+                                </ul> 
+                                <!--    Added this section to Update column selector for Rfsearch Lightning page 
+                                        REF-1448 - Rajneesh Raj (April 2,2018)            -->
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Reset_Column_Selector_for_RfSearch_Lightning_Page}" onclick="PORShowLoading();jsResetColumnSelector();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isResetColumnSelector)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isResetColumnSelector)}" />
+                                        <apex:commandLink value="{!$Label.Reset_Column_Selector_for_RfSearch_Lightning_Page}" styleClass="anchor-link-disable" rendered="{!isResetColumnSelector}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isResetColumnSelector}" />
+                                    </li>
+                                </ul>
+                                <!--   REF-2079 -->
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Update_Opportunity_Product_Attribute_Mapping}" onclick="PORShowLoading();jsresetOpportunityProductAM();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isOpporProductAMUpdated)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isOpporProductAMUpdated)}" />
+                                        <apex:commandLink value="{!$Label.Update_Opportunity_Product_Attribute_Mapping}" styleClass="anchor-link-disable" rendered="{!isOpporProductAMUpdated}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isOpporProductAMUpdated}" />
+                                    </li>
+                                </ul>
+                                <!-- REF-1259 -->
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Text_Merge_Duplicate_Profiles}" onclick="PORShowLoading();jsRemoveDuplicateRBIs();return false;" styleClass="anchor-link-active"  rendered="{!NOT(isRemoveDuplicateReferenceProfiles)}"/>
+                                        <apex:outputText value="{!$Label.To_Be_Done}" styleClass="to-be-done-text" rendered="{!NOT(isRemoveDuplicateReferenceProfiles)}" />
+                                        <apex:commandLink value="{!$Label.Text_Merge_Duplicate_Profiles}" styleClass="anchor-link-disable" rendered="{!isRemoveDuplicateReferenceProfiles}" />
+                                        <apex:outputText value="{!$Label.Complete}" styleClass="done-text" rendered="{!isRemoveDuplicateReferenceProfiles}" />
+                                    </li>
+                                </ul> 
+                                <!--        REF-2224        -->
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="{!$Label.Opportunity_Attribute_Mapping_Functionality}" onclick="PORShowLoading();jsRestrictOpportunityAM();return false;" styleClass="anchor-link-active"/>
+                                        <apex:outputText value="{!$Label.Disable}" styleClass="to-be-done-text" rendered="{!isEnableOppAttribute}"/>
+                                        <apex:outputText value="{!$Label.Enable}" styleClass="done-text" rendered="{!NOT(isEnableOppAttribute)}" />
+                                    </li>
+                                </ul>   
+                                <!-- REF-2289 -->
+                                <ul>
+                                    <li>
+                                        <apex:commandLink value="Remove 'null' string from content url" onclick="PORShowLoading();jsUpdateContentURL();return false;" styleClass="anchor-link-active"/>
+                                    </li>
+                                </ul>                           
+                            </div>
+                        </div>
+                    </div>
+                    <div class="clear"></div> 
+                </div>
+            </apex:outputPanel>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

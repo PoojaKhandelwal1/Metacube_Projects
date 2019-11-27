@@ -1,0 +1,557 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reference_Lead__c" extensions="ReferenceByLeadControllerSLDS"
+			doctype="html-5.0" showheader="true" standardStylesheets="false">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+		
+		<!-- Files for lookup field -->
+		<c:LookupPicklistSLDS id="picklistId"/>
+		<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+		
+		<!-- Lightning CSS File -->
+		<apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/custom-slds.css')}" />
+		
+		<style>
+			.pageHeader {
+				background-color: #F4F6F9;
+				border-bottom: 1px solid lightgray;
+			}
+			.slds-pill {
+			    padding-top: 4px !important;
+			    padding-right: 8px !important;
+			    padding-bottom: 4px !important;
+			    padding-left: 8px !important;
+			    text-decoration: none;
+			}
+			.slds-pill:HOVER {
+			    text-decoration: none;
+			}
+			.slds-pill__remove {
+			    width: auto !important;
+			    height: auto !important;
+		    }
+		    .slds-lookup__item {
+		    	margin-left: 0;
+		    }
+		    .slds-lookup__menu {
+		    	margin-top: 4px;
+		    	padding: 4px 0;
+		    }
+		     .slds-radio .slds-radio_faux, .slds-radio .slds-radio--faux {
+		    	cursor: pointer;
+		    }
+		</style>
+		
+		<script>
+			var refByLeadApp = angular.module('refByLeadApp', ['lookupPicklistApp']);
+			var refByLeadCtrl = refByLeadApp.controller('refByLeadCtrl',
+				function($scope, $q, $window) {
+					$scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+					$scope.refLeadId = '{!JSENCODE(refLeadId)}';
+					$scope.followUpDaysList = '{!JSENCODE(followUpDaysListJSON)}';
+					$scope.accountReferenceableMessage = '{!$Label.Considered_a_reference_account}';
+					$scope.postponeRequestMessage = '{!$Label.Time_to_referenceable}';
+					$scope.forwardRequestMessage = '{!$Label.Provide_the_name_of_responsible_person}';
+					$scope.isLoading = false;
+					$scope.refLead = {};
+					$scope.selectedOption = '';
+					$scope.isRefLeadDispositioned = true;
+					$scope.isAccountReferenceable = false;
+					$scope.selectedUserId = '';
+					$scope.selectedUserName = '';
+					$scope.selectedTimeFrame = '';
+					$scope.showCompletionToast = false;
+					$scope.showCompletionToast1 = false;
+					$scope.isAnyOptionSelected = false;
+					$scope.isSuccess = false;
+					$scope.showSelectUserMessage = false;
+					
+					$scope.initialFunction = function() {
+						$scope.isLoading = true;
+						$scope.followUpDaysList = JSON.parse($scope.followUpDaysList);
+						$scope.selectedTimeFrame = $scope.followUpDaysList[0];
+						
+						$scope.getRefLead().then(
+							function(result) {
+								
+								if (result != 'lead object not found') {
+									console.log('ref lead result-->');
+									console.log(result);
+									$scope.refLead = result[0];
+									
+									if ($scope.refLead['refProfileId'] == null
+											&& $scope.refLead['nominationId'] == null
+											&& $scope.refLead['status'] != null
+											&& $scope.refLead['status'] != 'No Updates') {
+										$scope.isRefLeadDispositioned = false;
+									} else {
+										$scope.isRefLeadDispositioned = true;
+									}
+									$scope.accountReferenceableMessage
+											= $scope.accountReferenceableMessage.replace('@@@', $scope.refLead['accountName']);
+									$scope.postponeRequestMessage
+											= $scope.postponeRequestMessage.replace('@@@', $scope.refLead['accountName']);
+									$scope.forwardRequestMessage
+											= $scope.forwardRequestMessage.replace('@@@', $scope.refLead['accountName']);
+									$scope.getAccountRefStatus();
+								}
+							}
+						);
+					}
+					
+					$scope.getRefLead = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceByLeadControllerSLDS.getRefLead}',
+							$scope.refLeadId,
+							function(result, event) {
+								
+								if (result == '') {
+									deferred.resolve('lead object not found');
+									$scope.isLoading = false;
+								} else {
+									result = $scope.parseResult(result);
+									deferred.resolve(JSON.parse(result));
+								}
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getAccountRefStatus = function() {
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceByLeadControllerSLDS.isAccountReferenceable}',
+							$scope.refLead['accountId'],
+							function(result, event) {
+								$scope.$apply(function() {
+									console.log('is account ref result-->' + result);
+									$scope.isAccountReferenceable = result;
+									
+									if ($scope.isAccountReferenceable) {
+										$scope.accountReferenceableMessage = '{!$Label.Referenceable_Contacts_Check}';
+									}
+									$scope.isLoading = false;
+								});
+							}
+						);
+					}
+					
+					$scope.parseResult = function(result) {
+						result = result.replace(/&quot/gi, '"');
+						result = result.replace(/&amp/g, '&');
+						result = result.replace(/&lt/g, '<');
+						result = result.replace(/&gt/g, '>');
+						result = result.replace(/;/g, '');
+						result = result.replace(/&#39/g, '\'');
+						return result;
+					}
+					
+					$scope.submit = function() {
+						
+						if ($scope.selectedOption == 'createAccountProfile') {
+							$scope.refLead['followUpTimeFrame'] = '';
+							$scope.refLead['refLeadOwnerId'] = '';
+							
+							if ($scope.refLead['createNomination']) {
+								window.location = '{!URLFOR($Page.NominationFormSLDS)}' + '?refLeadId=' + $scope.refLeadId;
+							} else {
+								window.location = '{!URLFOR($Page.ReferenceLeadFormSLDS)}' + '?Id=' + $scope.refLeadId;
+							}
+						} else if ($scope.selectedOption == 'postponeRequest') {
+							$scope.isLoading = true;
+							$scope.refLead['followUpTimeFrame'] = $scope.selectedTimeFrame;
+							$scope.refLead['refLeadOwnerId'] = '';
+							
+							Visualforce.remoting.Manager.invokeAction(
+								'{!$RemoteAction.ReferenceByLeadControllerSLDS.saveRefLead}',
+								angular.toJson($scope.refLead),
+								false,
+								function(result, event) {
+									console.log(result);
+									
+									if (result.startsWith('success')) {
+										$scope.showCompletionToast1 = true;
+										$scope.isSuccess = true;
+									}
+									$scope.isLoading = false;
+									$scope.$apply();
+								}
+							);
+						} else if ($scope.selectedOption == 'forwardRequest') {
+							
+							if ($scope.selectedUserId != '') {
+								$scope.isLoading = true;
+								$scope.refLead['refLeadOwnerId'] = $scope.selectedUserId;
+								$scope.refLead['followUpTimeFrame'] = '';
+								
+								Visualforce.remoting.Manager.invokeAction(
+									'{!$RemoteAction.ReferenceByLeadControllerSLDS.saveRefLead}',
+									angular.toJson($scope.refLead),
+									false,
+									function(result, event) {
+										console.log(result);
+										$scope.isLoading = false;
+										
+										if (result.startsWith('success')) {
+											$scope.showCompletionToast1 = true;
+											$scope.isSuccess = true;
+											showDisolvingAlert(result);
+										}
+										$scope.$apply();
+									}
+								);
+							} else {
+								$scope.showSelectUserMessage = true;
+							}
+						} else if ($scope.selectedOption == 'addContacts') {
+							
+							if ($scope.refLead['createNomination']) {
+								window.location = '{!URLFOR($Page.NominationFormSLDS)}' + '?refLeadId=' + $scope.refLeadId;
+							} else {
+								window.location = '{!URLFOR($Page.ReferenceLeadFormSLDS)}' + '?Id=' + $scope.refLeadId;
+							}
+						} else if ($scope.selectedOption == 'dismissRequest') {
+							$scope.isLoading = true;
+							$scope.refLead['refLeadOwnerId'] = '';
+							$scope.refLead['followUpTimeFrame'] = '';
+							
+							Visualforce.remoting.Manager.invokeAction(
+								'{!$RemoteAction.ReferenceByLeadControllerSLDS.saveRefLead}',
+								angular.toJson($scope.refLead),
+								false,
+								function(result, event) {
+									console.log(result);
+									$scope.isLoading = false;
+									
+									if (result.startsWith('success')) {
+										$scope.showCompletionToast = true;
+										$scope.isSuccess = true;
+									}
+									$scope.$apply();
+								}
+							);
+						} else {
+							$scope.isAnyOptionSelected = true;
+						}
+					}
+					
+					$scope.cancel = function() {
+						window.location = '/_ui/core/chatter/ui/ChatterPage';
+					}
+					
+					$scope.redirectToHome = function() {
+						$scope.showCompletionToast = false;
+						window.location = '/_ui/core/chatter/ui/ChatterPage';
+					}
+				}
+			);
+			
+			function showDisolvingAlert(rewards) {
+				//	REF-2008 
+				if({!isScreenNotification} == true) {
+
+					if (rewards != '') {
+						var str_array = rewards.split('***');
+						
+						if (str_array.length == 3) {
+							notification(str_array[1], str_array[2]);
+						}
+					}
+				}
+			}
+		</script>
+	</head>
+	<body class="slds" style="padding-bottom: 20px">
+		<div ng-app="refByLeadApp" ng-controller="refByLeadCtrl" ng-cloak="ng-cloak">
+			<c:RewardNotification />
+			
+			<!-- Shown if user doesn't have Reference Edge License -->
+			<div ng-show="!isFullLicenseAccessible && !isLoading" class="slds-m-around_large">
+	            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+					<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					</svg>
+				</span>
+	            {!$Label.User_License}
+	        </div>
+	        
+	        <!-- Shown if user doesn't have Reference Edge License -->
+			<div ng-show="isFullLicenseAccessible" ng-init="initialFunction()">
+		        <div role="status" ng-show="isLoading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+					<span class="slds-assistive-text">Loading</span>
+					<div class="slds-spinner__dot-a"></div>
+					<div class="slds-spinner__dot-b"></div>
+				</div>
+				<div ng-show="!isLoading">
+					
+					<!-- Shown if user selected Postpone request or Forward request option -->
+					<div ng-show="isSuccess && !isRefLeadDispositioned">
+						<div class="pageHeader slds-grid slds-wrap slds-grid_vertical-align-center slds-p-horizontal_x-large slds-p-vertical_small">
+							<div class="slds-col slds-size_12-of-12">
+								<div class="slds-grid slds-grid_align-end">
+									<button class="slds-button slds-button_neutral" ng-click="cancel()">{!$Label.Back_to_Home}</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Shown if a response has already been recieved for the request -->
+					<div ng-show="!isSuccess && isRefLeadDispositioned">
+						<div class="pageHeader slds-grid slds-wrap slds-grid_vertical-align-center slds-p-horizontal_x-large slds-p-vertical_small">
+							<div class="slds-col slds-size_12-of-12">
+								<div class="slds-grid slds-grid_align-end">
+									<button class="slds-button slds-button_neutral" ng-click="cancel()">{!$Label.Back_to_Home}</button>
+								</div>
+							</div>
+						</div>
+						<div style="margin: 2%">
+							<span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+								<svg class="slds-icon slds-icon_small" aria-hidden="true">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+								</svg>
+							</span>
+				            {!$Label.Response_Notification_msg}
+						</div>
+					</div>
+					
+					<div ng-show="!isSuccess && !isRefLeadDispositioned">
+						<div class="pageHeader slds-grid slds-wrap slds-p-horizontal_x-large slds-p-vertical_large">
+							<div class="slds-col slds-size_1-of-1">
+								<div class="slds-grid slds-wrap slds-grid_vertical-align-center">
+									<div class="slds-col slds-size_1-of-12">
+										<img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" style="float: right; margin-right: 10px" />
+									</div>
+									<div class="slds-col slds-size_11-of-12">
+										<div class="slds-text-heading_medium" style="float: left">
+											{!$Label.Possible_Reference_Account}
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="slds-col slds-size_1-of-1">
+								<div class="slds-grid slds-wrap slds-grid_vertical-align-center">
+									<div class="slds-col slds-size_1-of-12"></div>
+									<div class="slds-col slds-size_3-of-12">
+										<h3 class="slds-text-title_caps">{!$Label.Opportunity_Account}</h3>
+										<a href="/{{refLead['accountId']}}" target="_blank" style="text-decoration: none">
+											<div class="slds-text-body_regular">{{refLead['accountName']}}</div>
+										</a>
+									</div>
+									<div class="slds-col slds-size_3-of-12">
+										<h3 class="slds-text-title_caps">{!$Label.Opportunity_Name}</h3>
+										<a href="/{{refLead['oppId']}}" target="_blank" style="text-decoration: none">
+											<div class="slds-text-body_regular">{{refLead['oppName']}}</div>
+										</a>
+									</div>
+									<div class="slds-col slds-size_5-of-12">
+										<div class="slds-grid slds-grid_align-end">
+											<button class="slds-button slds-button_neutral" ng-click="cancel()">{!$Label.Cancel}</button>
+					                        <button class="slds-button slds-button_brand" ng-click="submit()">{!$Label.Submit}</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div style="margin: 2%">
+							<div class="demo-only">
+								<div class="slds-tabs_default" style="width: 70%">
+									<ul class="slds-tabs_default__nav" role="tablist">
+										<li class="slds-tabs_default__item slds-is-active" title="Item One" role="presentation" style="margin: 0; padding: 0 3%">
+											<a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" aria-selected="true" aria-controls="tab-default-1" id="tab-default-1__item">{!$Label.Details}</a>
+										</li>
+									</ul>
+									<div id="tab-default-1" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="tab-default-1__item">
+										
+										<!-- Shown if account is not referenceable -->
+										<div ng-show="!isAccountReferenceable">
+											<div class="slds-text-body--regular" style="margin-top: 10px; margin-bottom: 10px">
+												{{accountReferenceableMessage}}
+											</div>
+											<div class="slds-form-element__control slds-box slds-theme_shade">
+												<label class="slds-radio" style="margin-bottom: 10px">
+													<input type="radio" name="options" value="createAccountProfile" ng-model="selectedOption" />
+													<span class="slds-radio--faux"></span>
+													<span class="slds-form-element__label">{!$Label.RefLeadOption1}</span>
+												</label>
+												<label class="slds-radio" style="margin-bottom: 10px">
+													<input type="radio" name="options" value="postponeRequest" ng-model="selectedOption" />
+													<span class="slds-radio--faux"></span>
+													<span class="slds-form-element__label">{!$Label.RefLeadOption2}</span>
+												</label>
+												<label class="slds-radio" style="margin-bottom: 10px">
+													<input type="radio" name="options" value="forwardRequest" ng-model="selectedOption" />
+													<span class="slds-radio--faux"></span>
+													<span class="slds-form-element__label">{!$Label.RefLeadOption4}</span>
+												</label>
+												<div ng-show="selectedOption == 'postponeRequest'">
+													<div class="slds-text-body--regular" style="margin-top: 10px; margin-bottom: 10px">
+														{{postponeRequestMessage}}
+													</div>
+													<div class="slds-form-element" style="width: 50%">
+														<label class="slds-form-element__label" for="select-01">
+															{!$Label.Check_back_with_me_in}
+														</label>
+														<div class="slds-form-element__control">
+															<div class="slds-select_container">
+																<select ng-model="selectedTimeFrame" class="slds-select">
+																	<option ng-repeat="x in followUpDaysList">{{x}}</option>
+																</select>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div ng-show="selectedOption == 'forwardRequest'">
+													<div class="slds-text-body--regular" style="margin-top: 10px; margin-bottom: 10px">
+														{{forwardRequestMessage}}
+													</div>
+													<label class="slds-form-element__label">
+														{!$ObjectType.Reference_Lead__c.fields.Reference_Lead_Owner__c.Label}
+													</label>
+													<div style="width: 50%">
+														<lookup-picklist object-Name="'Users'" object-Api-Name="'Active_Non_Community_Users'"
+																			selected-Id="selectedUserId" selected-Name="selectedUserName">
+														</lookup-picklist>
+													</div>
+												</div>
+											</div>
+										</div>
+										
+										<!-- Shown if account is referenceable -->
+										<div ng-show="isAccountReferenceable" class="slds-box slds-theme_shade">
+											<div class="slds-text-body--regular">
+												{{accountReferenceableMessage}}
+											</div>
+											<div class="slds-form-element__control">
+												<label class="slds-radio" style="margin-bottom: 10px">
+													<input type="radio" name="options" value="addContacts" ng-model="selectedOption" />
+													<span class="slds-radio--faux"></span>
+													<span class="slds-form-element__label">{!$Label.Yes}</span>
+												</label>
+												<label class="slds-radio" style="margin-bottom: 10px">
+													<input type="radio" name="options" value="dismissRequest" ng-model="selectedOption" />
+													<span class="slds-radio--faux"></span>
+													<span class="slds-form-element__label">{!$Label.No}</span>
+												</label>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Modals and toasts -->
+				
+				<!-- Shown if account is already a program member and user doesn't want to add new contacts -->
+				<div ng-show="showCompletionToast" class="slds-notify_container slds-is-fixed">
+					<div class="slds-notify slds-notify_toast slds-theme_success" role="alert">
+						<span class="slds-assistive-text">success</span>
+						<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+							<svg class="slds-icon slds-icon_small" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+							</svg>
+						</span>
+						<div class="slds-notify__content">
+							{!$Label.Thanks_for_letting_us_know}
+						</div>
+						<button ng-click="showCompletionToast = false" class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close">
+							<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+							</svg>
+							<span class="slds-assistive-text">Close</span>
+						</button>
+					</div>
+				</div>
+				
+				<!-- Shown if account is not referenceable and user choses either to postpone the request
+						or to forward to another person -->
+				<div ng-show="showCompletionToast1" class="slds-notify_container slds-is-fixed">
+					<div class="slds-notify slds-notify_toast slds-theme_success" role="alert">
+						<span class="slds-assistive-text">success</span>
+						<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+							<svg class="slds-icon slds-icon_small" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+							</svg>
+						</span>
+						<div class="slds-notify__content">
+							{!$Label.Thank_Note_for_Lead}
+						</div>
+						<button ng-click="showCompletionToast1 = false" class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close">
+							<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+							</svg>
+							<span class="slds-assistive-text">Close</span>
+						</button>
+					</div>
+				</div>
+				
+				<!-- Shown if user click submit without selecting any option -->
+				<div ng-show="isAnyOptionSelected" class="slds-notify_container slds-is-fixed">
+					<div class="slds-notify slds-notify_toast slds-theme_error" role="alert">
+						<span class="slds-assistive-text">success</span>
+						<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+							<svg class="slds-icon slds-icon_small" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+							</svg>
+						</span>
+						<div class="slds-notify__content">
+							{!$Label.Select_Response}
+						</div>
+						<button ng-click="isAnyOptionSelected = false" class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close">
+							<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+							</svg>
+							<span class="slds-assistive-text">Close</span>
+						</button>
+					</div>
+				</div>
+				
+				<!-- Shown if user clicks submit without selecting any user in lookup field -->
+				<div ng-show="showSelectUserMessage" class="slds-notify_container slds-is-fixed">
+					<div class="slds-notify slds-notify_toast slds-theme_error" role="alert">
+						<span class="slds-assistive-text">success</span>
+						<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+							<svg class="slds-icon slds-icon_small" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+							</svg>
+						</span>
+						<div class="slds-notify__content">
+							{!$Label.Select_reference_lead_owner}
+						</div>
+						<button ng-click="showSelectUserMessage = false" class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close">
+							<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+							</svg>
+							<span class="slds-assistive-text">Close</span>
+						</button>
+					</div>
+				</div>
+				
+				<!-------------------->
+			</div>
+		</div>
+	</body>
+</html>
+</apex:page>

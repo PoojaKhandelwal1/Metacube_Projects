@@ -1,0 +1,402 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Nomination__c" standardStylesheets="false" extensions="CopyNominationDetailsController" lightningStylesheets="True" sideBar="false" id="pageId" tabStyle="Nomination__c">
+    <!-- Add JavaScript & Jquery--> 
+    <c:POR_ModalLoader id="PORLoader"/>
+    <apex:stylesheet value="{!URLFOR($Resource.JqueryFiles, 'jquery-ui-1.9.2.custom.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />       
+    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+    <style type="text/css">
+        table.gridtable {
+            font-family: verdana,arial,sans-serif;
+            font-size:11px;
+            color:#333333;
+            border-collapse: collapse;
+            width: 100%;
+            border-spacing: 0px;
+        }
+        table.gridtable th {
+            padding: 8px;
+            background-color: #F2F3F3;
+        }
+        table.gridtable td {
+            padding: 4px;
+            background-color: #ffffff;
+        }
+        .col0 {
+            width: 20%;
+            text-align:right;
+            font-weight:bold;
+            padding-right: 10px !important;
+            background-color: #F8F8F8 !important;
+        }
+        .col1 {
+            width: 55%;
+            padding-left: 10px !important;
+            border-left: 1px solid #CFCCCC;
+            border-bottom: 1px solid #CFCCCC;
+        }
+        .col2 {
+            width: 25%;
+            text-align:center;
+            border-right: 1px solid #CFCCCC;
+            border-bottom: 1px solid #CFCCCC;
+        }
+        .ui-widget-content{
+            min-height: 45px !important;
+        }
+        .ui-widget-header{
+            display : none !important;
+        }
+        .dialogButtonClass{
+            margin-left: 3px !important;
+            margin-right: 3px !important;
+            color: #333 !important;
+            border: 1px solid #b5b5b5 !important;
+            border-bottom-color: #7f7f7f !important;
+            background: #e8e8e9 url('/img/alohaSkin/btn_sprite.png') repeat-x right top !important;
+            font-weight: bold !important;
+            font-size: .9em !important;
+            -moz-border-radius: 3px !important;
+            -webkit-border-radius: 3px !important;
+            border-radius: 3px !important;
+         }
+         
+        .ui-button-text-only .ui-button-text {
+           padding: .2em 1em !important;
+        }
+        
+        /* Css override for make font consistent over  Request Detail modal - Re REF-1191   */
+         .dialogButtonClass{
+            margin-left: 3px !important;
+            margin-right: 3px !important;
+            color: #333 !important;
+            border: 1px solid #b5b5b5 !important;
+            border-bottom-color: #7f7f7f !important;
+            background: #e8e8e9 url('/img/alohaSkin/btn_sprite.png') repeat-x right top !important;
+            font-weight: bold !important;
+            font-size: .9em !important;
+            -moz-border-radius: 3px !important;
+            -webkit-border-radius: 3px !important;
+            border-radius: 3px !important;
+            font-family : arial !important;
+            }
+            
+            .ui-dialog .ui-dialog-buttonpane {
+			    text-align: left;
+			    border-width: 1px 0 0 0;
+			    /* background-image: none; */
+			    margin: .5em 0 0 0;
+			    padding: 0em 1em 0em .4em;
+			    background: #eeeeee;
+			}
+
+			.ui-widget {
+			    font-family: Arial;
+			    font-size: 1.1em;
+			}
+
+			.ui-dialog .ui-dialog-content {
+			    position: relative;
+			    border: 0;
+			    padding: .5em 1em;
+			    background: #f8f8f8;
+			    overflow: auto;
+			    zoom: 1;
+			}
+			.ui-widget-content {
+			    border: 1px solid #ddd0; 
+			    background: #eee url(images/ui-bg_highlight-soft_100_eeeeee_1x100.png) 50% top repeat-x;
+			    color: #333;
+			}
+			.ui-dialog {
+			    position: absolute;
+			    top: 0;
+			    left: 0;
+			    padding: 0em;
+			    width: 300px;
+			    overflow: hidden;
+			}
+
+			.ui-dialog .ui-dialog-buttonpane {
+			    text-align: left;
+			    border-width: 1px 0 0 0;
+			    /* background-image: none; */
+			    margin: .5em 0 0 0;
+			    padding: 0em 1em 0em .4em;
+			    background: #eeeeee;
+			    border-top: 1px solid #DDDDDD;
+			    margin-top: 0;
+			} 
+			.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+			    float: right;
+			    margin-right: 3px;
+			    margin-top: 5px;
+			}
+    </style>
+    <script>
+        PORShowLoading();
+        jQuery(window).load(function() {
+            PORHideLoading();
+        });
+        jQuery(document).ready(function() {
+            jQuery('.col2').each(function() {
+                jQuery(this).children().css({"width":"100%","border-spacing" : "0"});
+            });
+        });
+    </script>
+    <apex:outputPanel id="savePanel">
+	    <script>
+            var makeMemberVar = false;
+	        function saveFunction(){
+	        	if (!{!isAccountReferenceProgramMember}) {
+                    if (!{!isSLDS}) {
+                        jQuery( "#dialogBoxDiv1" ).dialog({
+                            width: '400px',
+                            modal: true,
+                            resizable: false,
+                            draggable: false,
+                            buttons: [{
+                                text: "{!$Label.Yes}",
+                                "class": "dialogButtonClass",
+                                click: function() {
+                                    jQuery( this ).dialog( "close" );
+                                    checkforContactAtt(true);
+                                }
+                            },
+                            {
+                                text: "{!$Label.No}",
+                                "class": "dialogButtonClass",
+                                click: function() {
+                                    jQuery( this ).dialog( "close" );
+                                    checkforContactAtt(false);
+                                }
+                            }]
+                        });
+                        jQuery(".ui-dialog-titlebar").hide();
+	                    jQuery(".ui-dialog-content ui-widget-content").css("height", "auto");
+	                    return false;
+                    } else {
+                        jQuery( "#dialogBoxDiv1Lightning" ).css('display', 'block');
+                    }
+	            } else {
+	            	checkforContactAtt(false);
+	            }
+	        }
+	        function checkforContactAtt(makeMember){
+                makeMemberVar = makeMember;
+                console.log('makeMemberVar :' + makeMemberVar);
+                if (!{!isSLDS}) {
+                    jQuery( "#dialogBoxDiv2" ).dialog({
+                        width: '400px',
+                        modal: true,
+                        resizable: false,
+                        draggable: false,
+                        buttons: [{
+                            text: "{!$Label.Yes}",
+                            "class": "dialogButtonClass",
+                            click: function() {
+                                jQuery( this ).dialog( "close" );
+                                alert('{!$Label.This_process_may_take_some_time_to_complete}');
+                                copy(makeMember,true);
+                            }
+                        },
+                        {
+                            text: "{!$Label.No}",
+                            "class": "dialogButtonClass",
+                            click: function() {
+                                jQuery( this ).dialog( "close" );
+                                alert('{!$Label.This_process_may_take_some_time_to_complete}');
+                                copy(makeMember,false);
+                            }
+                        }]
+                    });
+                    jQuery(".ui-dialog-titlebar").hide();
+                    jQuery(".ui-dialog-content ui-widget-content").css("height", "auto");
+                    return false;
+                } else {
+                    jQuery( "#dialogBoxDiv1Lightning" ).css('display', 'none');
+                    jQuery( "#dialogBoxDiv2Lightning" ).css('display', 'block');
+                }
+	        }
+            function checkforContactAttLightning(copyOption) {
+                jQuery( "#dialogBoxDiv2Lightning" ).css('display', 'none');
+                jQuery(".ui-dialog-titlebar").hide();
+                jQuery(".ui-dialog-content ui-widget-content").css("height", "auto");
+                PORHideLoading();
+                alert('{!$Label.This_process_may_take_some_time_to_complete}');
+                copy(makeMemberVar,copyOption);
+            }
+            
+        </script>
+    </apex:outputPanel>
+    <apex:pageMessages id="pgMsgId"/>
+    <apex:form id="FormId" rendered="{!isFullLicenseAccessible}">
+        <apex:sectionHeader title="{!$Label.Copy_Nomination}" subTitle="{!$Label.Copy_Nomination_Details}"/>
+        <apex:actionFunction name="getAccountReferenceStatus" action="{!getAccountReferenceStatus}" reRender="savePanel,pgMsgId" oncomplete="saveFunction();return false;"/>
+        <apex:actionFunction name="copy" action="{!copyDetails}" reRender="pgMsgId"  onComplete="PORHideLoading();">
+        	<apex:param name="one" value="" assignTo="{!isMakeAccountMember}" />
+        	<apex:param name="two" value="" assignTo="{!copyExistingAtt}" />
+        </apex:actionFunction>
+        <apex:pageBlock id="pbId">
+            <apex:pageBlockButtons >
+                <apex:commandButton style="margin-left:20%;" value="{!$Label.Copy}"  action="{!copyDetails}" reRender="pgMsgId" onClick="alert('{!$Label.This_process_may_take_some_time_to_complete}');" rendered="{!nominationObj.Contact__c == null}">
+                </apex:commandButton>
+                <apex:commandButton value="{!$Label.Copy}" onclick="PORShowLoading();getAccountReferenceStatus();return false;" rendered="{!nominationObj.Contact__c != null}">
+                </apex:commandButton>
+                <apex:commandButton value="{!$Label.Cancel}" immediate="true" action="{!cancelNomination}">
+                </apex:commandButton>
+            </apex:pageBlockButtons>
+            <apex:outputpanel id="dataId" layout="block">
+                <table  style="width:100%">
+                    <tr>
+                        <td class="col0">{!$Label.Account}</td>
+                        <td class="col1" style="border: none;"><apex:outputField value="{!nominationObj.Account__c}" rendered="{!OR(nominationObj.Contact__c == null,NOT(isSharedContact),OR(AND(accounts.size<=1,selectedAccounts.size == 0),AND(accounts.size==0,selectedAccounts.size <= 1)))}"/>
+			                <apex:outputpanel id="pbsiId2" rendered="{!AND(isSharedContact, nominationObj.Contact__c != null,OR(AND(accounts.size >= 1,selectedAccounts.size >= 1),AND(accounts.size==0,selectedAccounts.size >1),AND(accounts.size>1,selectedAccounts.size == 0)))}">
+			                    <c:POR_MultiSelectPicklist leftLabel="Available Accounts" leftSelOptions="{!accounts}" rightLabel="Selected Accounts" rightSelOptions="{!selectedAccounts}" size="10" width="150px">
+			                    </c:POR_MultiSelectPicklist>
+			                </apex:outputpanel>
+		                </td>
+                        <td class="col2" style="border: none;"></td>
+                    </tr>
+                    <tr>
+                        <td class="col0">{!$Label.Contact}</td>
+                       	<td class="col1" style="border: none;"><apex:outputField value="{!nominationObj.Contact__c}" /></td>
+                        <td class="col2" style="border: none;"></td>
+                    </tr>
+                </table>
+<!--                 <apex:outputLabel style="font-weight:bold;" styleClass="col0" value="{!$Label.Account}"/>&nbsp;&nbsp;&nbsp;<apex:outputField value="{!nominationObj.Account__c}" rendered="{!OR(nominationObj.Contact__c == null,NOT(isSharedContact),OR(AND(accounts.size<=1,selectedAccounts.size == 0),AND(accounts.size==0,selectedAccounts.size <= 1)))}"/> -->
+<!--                 <apex:outputpanel id="pbsiId2" rendered="{!AND(isSharedContact, nominationObj.Contact__c != null,OR(AND(accounts.size >= 1,selectedAccounts.size >= 1),AND(accounts.size==0,selectedAccounts.size >1),AND(accounts.size>1,selectedAccounts.size == 0)))}"> -->
+<!--                     <c:POR_MultiSelectPicklist leftLabel="Available Accounts" leftSelOptions="{!accounts}" rightLabel="Selected Accounts" rightSelOptions="{!selectedAccounts}" size="10" width="150px"> -->
+<!--                     </c:POR_MultiSelectPicklist> -->
+<!--                 </apex:outputpanel> -->
+<!--                 <br/><br/> -->
+<!--                 <apex:outputLabel style="font-weight:bold;" value="{!$Label.Contact}"/>&nbsp;&nbsp;&nbsp;<apex:outputField value="{!nominationObj.Contact__c}" /><br/><br/> -->
+                <apex:outputText value="{!$Label.Additional_Information_and_Comments}"/><br/>
+            </apex:outputpanel>
+            <apex:outputpanel id="tableId">
+                <script>
+                    jQuery(document).ready(function() {
+                        jQuery('.checkBoxCls').each(function() {
+                            jQuery(this).css({"width":"100%","border-spacing" : "0"});
+                        });
+                    });
+                </script>
+                <table class="gridtable">
+                    <tr>
+                        <td class="col0"></td>
+                        <th class="col1" style="border-top: 1px solid #CFCCCC;"></th>
+                        <th class="col2" style="border-top: 1px solid #CFCCCC;">{!$Label.Copy}[<apex:commandLink value="{!$Label.Select_All}" action="{!selectAll}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="tableId"/>]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{!$Label.Do_Not_Copy}[<apex:commandLink value="{!$Label.Select_All}" action="{!deSelectAll}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="tableId"/>]</th>
+                    </tr>
+                    <apex:repeat value="{!rowValues}" var="row">
+                        <tr>
+                            <td class="col0"><apex:outputText style="color:red;" value="{!$Label.Note_Mapped_Attributes_will_NOT_be_copied}" rendered="{!row == 'Attributes'}"/></td>
+                            <th class="col1"><apex:outputText value="{!rowValuesMap[row]}"/></th>
+                            <th class="col2"></th>
+                        </tr>
+                        <apex:repeat value="{!tableMap[row]}" var="wrapperObj">
+                            <tr>
+                                <td class="col0">{!wrapperObj.label}</td>
+                                <td class="col1">{!wrapperObj.valueName}</td>
+                                <td class="col2">
+                                    <apex:outputPanel rendered="{!OR(wrapperObj.isCopy != null,wrapperObj.isDisable)}">
+                                        <apex:selectRadio styleClass="checkBoxCls" value="{!wrapperObj.isCopy}" Disabled="{!wrapperObj.isDisable}">
+                                            <apex:selectOptions value="{!Options}"/>
+                                        </apex:selectRadio>
+                                    </apex:outputPanel>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </apex:repeat>
+                </table><br/>
+            </apex:outputpanel>
+            <apex:outputPanel style="{!IF(isReferenceableStatus, 'color : lightgray;', '')}" layout="block" id="detailId">
+                <apex:outputText value="{!$Label.Mapped_Attributes_created}"/><br/>
+                <table class="gridtable">
+                    <apex:repeat value="{!labelAttributes}" var="wrapperObj">
+                        <tr>
+                            <td class="col0" style="{!IF(isReferenceableStatus, 'color : lightgray;', '')}">{!wrapperObj}</td>
+                            <td class="col1" style="{!IF(isReferenceableStatus, 'color : lightgray;', '')}border-top: 1px solid #CFCCCC;border-right: 1px solid #CFCCCC; width:80% !important;">{!labelAttributes[wrapperObj]}</td>
+                        </tr>
+                    </apex:repeat>
+                </table>
+            </apex:outputPanel>
+            <apex:pageBlockSection id="ContactAttrib1" rendered="{!AND(isSharedContact, nominationObj.Contact__c != null,contactAttributes.size > 0)}" title="{!$Label.T_Associated_Attributes}" columns="1">
+                <apex:pageBlockTable value="{!contactAttributes}" var="attrib">
+                    <apex:column headerValue="{!$Label.T_Attribute_Name}">
+                        <apex:outputLabel value="{!attrib.Attribute__r.Name}"></apex:outputLabel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.Account}">
+                        <apex:outputLabel value="{!attrib.Account__r.Name}"></apex:outputLabel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.T_Attribute_parent_Name}">
+                        <apex:outputLabel value="{!attrib.Attribute__r.Parent__r.Name}"></apex:outputLabel>
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection> 
+        </apex:pageBlock>
+        <div id="dialogBoxDiv1" style="display:none;height: 50px; !important;">
+            <apex:outPutText value="{!JSENCODE(alertMsgToMakeMember)}" escape="false"/>
+        </div>
+        <div id="dialogBoxDiv2" style="display:none;height: 50px; !important;">
+            <apex:outPutText value="{!$Label.Copy_Existing_Att_Ref}" escape="false"/>
+        </div>
+        <div id="dialogBoxDiv1Lightning" style="display:none;">
+            <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <div class="slds-form-element">
+                                <div class="slds-col top-padding">
+                                    <apex:outPutText value="{!JSENCODE(alertMsgToMakeMember)}" escape="false"/>
+                                </div>
+                            </div>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button--brand" onclick="checkforContactAtt(true);return false;">{!$Label.Yes}</button>
+                            <button class="slds-button slds-button--neutral" onclick="checkforContactAtt(false);return false;">{!$Label.No}</button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop--open"></div>
+            </div>
+        </div>
+        <div id="dialogBoxDiv2Lightning" style="display:none;">
+            <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <div class="slds-form-element">
+                                <div class="slds-col top-padding">
+                                    <apex:outPutText value="{!$Label.Copy_Existing_Att_Ref}" escape="false"/>
+                                </div>
+                            </div>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button--brand" onclick="checkforContactAttLightning(true);return false;">{!$Label.Yes}</button>
+                            <button class="slds-button slds-button--neutral" onclick="checkforContactAttLightning(false);return false;">{!$Label.No}</button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop--open"></div>
+            </div>
+        </div>
+    </apex:form>
+</apex:page>

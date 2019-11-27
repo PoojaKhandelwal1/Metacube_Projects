@@ -1,0 +1,452 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:component controller="RefedgeCommunityHome">
+    <html>
+
+        <style>
+        #error-block {
+            position: fixed;
+            background-color: #C60000;
+            color: WHITE;
+            font-size: 15px;
+            border-radius: 5px;
+            z-index: 999;
+            width: 96%;
+        }
+        .marginTopClass {
+            padding-top: 70px;
+        }
+        .slds-refedge-checkbox {
+            display: inline-block;
+            vertical-align: top;
+        }
+        .slds-refedge-form-element__label {
+            width: 85%;
+            font-size: 14px !important;
+            font-weight: bold;
+        }
+        <!-- Css for mod #594 -->
+        .leftFields {
+        	height:40px;
+        	margin-bottom: 14px; 
+        }
+        .removeheight{
+        	height:0px !important;
+        	margin-bottom: 0px !important;
+        }
+        .rightFields {
+        	height:40px;
+        	margin-bottom: 14px;
+        }
+        .rightFields .slds-form-element__control {
+		    height: 30px;
+		}
+		.leftFields .slds-form-element__control {
+		    height: 30px;
+		}
+		.edit-block .leftFields-container{
+			overflow: hidden;
+    		display: table;
+		}
+		.edit-block .rightFields-container{
+			overflow: hidden;
+    		display: table;
+		}
+		.edit-block .leftFields-container .slds-m-vertical--small, .edit-block .rightFields-container .slds-m-vertical--small{
+			margin-top:3px !important;
+		}
+        </style>
+        
+        <script>
+        refEdgeCommunity.controller('editContactCtrl', function ($scope, $window, $q) {
+            $scope.isEdit = false;
+            $scope.isError = false;
+            $scope.contact;
+            $scope.birthday = '';
+            $scope.leftFields = [];
+            $scope.rightFields = [];
+            $scope.leftFieldsForView = [];
+            $scope.refTypeWrapperList = [];
+            $scope.contactId = '';
+            $scope.parseResult = function(result) {
+                if (result != null) {
+                    result = result.replace(/&quot/gi, '"');
+                    result = result.replace(/&amp/g, '&').replace(/&lt/g, '<').replace(/&gt/g, '>');
+                    result = result.replace(/;/g, '');
+                    return result;
+                }
+            }
+            $scope.getContactId = function(){
+                var deferred = $q.defer();
+                Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.RefedgeCommunityHome.getContactId}',
+                function(result, event) {
+                    deferred.resolve(result);
+                });
+                return deferred.promise;
+            }
+            $scope.callGetContact = function() {
+                var deferred = $q.defer();
+                Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.RefedgeCommunityHome.getContact}',
+                $scope.contactId,
+                function(result, event) {
+                    deferred.resolve(result);
+                });
+                return deferred.promise;
+            }
+            $scope.init = function () {
+                console.log('in profile component');
+                $scope.getContactId().then(function(result){
+                    if(result != '')
+                        $scope.contactId = result;
+                    $scope.callGetContact().then(
+                        function(result) {
+                            if (result != null) {
+                                result = $scope.parseResult(result);
+                                $scope.contact = JSON.parse(result);
+                                $scope.getBirthday();
+                                $scope.getLeftFields();
+                                $scope.getRightFields();
+                                $scope.getRefTypeWrapperList();
+                            }
+                        }
+                    );
+                });
+            }
+            $scope.getBirthday = function() {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.RefedgeCommunityHome.getBirthday}',
+                    angular.toJson($scope.contact),
+                    function(result, event) {
+                        if (result != null) {
+                            $scope.$apply(function () {
+                                $scope.birthday = result;
+                            });
+                        }
+                    },
+                    {escape: true}
+                );
+            }
+            $scope.getLeftFields = function() {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.RefedgeCommunityHome.getLeftFields}',
+                    angular.toJson($scope.contact),
+                    function(result, event) {
+                        result = $scope.parseResult(result);
+                        if (result != null) {
+                            $scope.$apply(function () {
+                                $scope.leftFields = JSON.parse(result); 
+                                // Filter records for View mode model 
+                                $scope.setViewModeField();
+                            });
+                        }
+                    },
+                    {escape: true}
+                );
+            }
+			
+            $scope.getRightFields = function() {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.RefedgeCommunityHome.getRightFields}',
+                    function(result, event) {
+                        result = $scope.parseResult(result);
+                        if (result != null) {
+                            $scope.$apply(function () {
+                                $scope.rightFields = JSON.parse(result);
+                            });
+                        }
+                    },
+                    {escape: true}
+                );
+            }
+            $scope.getRefTypeWrapperList = function() {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.RefedgeCommunityHome.getRefTypeWrapperList}',
+                    angular.toJson($scope.contact),
+                    function(result, event) {
+                        result = $scope.parseResult(result);
+                        if (result != null) {
+                            $scope.$apply(function () {
+                                $scope.refTypeWrapperList = JSON.parse(result);
+                                
+                                $scope.mod = $scope.refTypeWrapperList.length %3;
+                                if($scope.mod == 1){
+                                    $scope.refTypeWrapperList.push([]);
+                                    $scope.refTypeWrapperList.push([]);
+                                }
+                                else if($scope.mod == 2){
+                                    $scope.refTypeWrapperList.push([]);
+                                }
+                                
+                            });
+                        }
+                    },
+                    {escape: true}
+                );
+            }
+            
+            $scope.$on('editEvent', function (event, args) {
+                $scope.isEdit = true;
+            });
+            $scope.$on('cancelEvent', function (event, args) {
+                $scope.isEdit = false;
+                $scope.isError = false;
+                $scope.init();
+            });
+            $scope.$on('saveEvent', function (event, args) {
+                $scope.saveContact();
+            });
+            
+            $scope.saveContact = function() {
+                if ($scope.contact['Birthdate'] == '') {
+                    $scope.contact['Birthdate'] = null;
+                }
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.RefedgeCommunityHome.saveContact}',
+                    angular.toJson($scope.contact), JSON.stringify($scope.refTypeWrapperList),
+                    function(result, event) {
+                        if (result != null) {
+                            result = $scope.parseResult(result);
+                            if (result.startsWith('Error') == false) {
+                                $scope.isError = false;
+                                //$scope.$emit('successEvent', {});
+                                $scope.isEdit = false;
+                                $scope.contact = JSON.parse(result);
+                                $scope.$emit('stopLoadingEvent', {isErrorProfile: $scope.isError});
+                                $scope.init();
+                            } else {
+                                result = result.replace(/&#39/g, '\'');
+                                $scope.errMsg = result;
+                                $scope.isError = true;
+                                //$scope.$emit('errorEvent', {});
+                                $scope.$emit('stopLoadingEvent', {isErrorProfile: $scope.isError});
+                            }
+                        }
+                    },
+                    {escape: true}
+                );
+            }
+            
+            // #594 R18.45 - MOD – Remove fields 
+            $scope.setViewModeField = function() {
+				$scope.leftFieldsForView = angular.copy($scope.leftFields);
+                $scope.restrictedId = [];
+				
+				for (i = 0; i < $scope.leftFieldsForView.length; i++) {
+					
+					if ($scope.leftFieldsForView[i].apiName == 'FirstName'
+								|| $scope.leftFieldsForView[i].apiName == 'LastName') {
+						$scope.restrictedId.push(i);
+					}
+				}
+				
+				// removing both the records for View model
+				if ($scope.restrictedId.length > 0) {
+					
+					for (j = $scope.restrictedId.length; j > 0; j--) {
+						 $scope.leftFieldsForView.splice(j, 1);
+					}
+				}
+				console.log('left fields');
+				console.log($scope.leftFields);
+				console.log('left fields view');
+				console.log($scope.leftFieldsForView);
+			}
+        });
+        </script>
+        
+        <div ng-app="refEdgeCommunity" class="slds">
+            <div>
+                <div class="slds-m-horizontal--xx-small">
+                    <form id="frmId">
+                        <div ng-controller="editContactCtrl" ng-init="init();">
+                            <div id="error-block" ng-show="isError" class="slds-p-around--small">
+                                <strong>
+                                    Please review the following errors!
+                                </strong>
+                                <p>
+                                    {{errMsg}}
+                                </p>
+                            </div>
+                            <div id="outer-block" ng-class="{marginTopClass: isError}" class="slds-p-horizontal--medium">
+                                <div id="detailBlock" ng-show="!isEdit">
+                                    <div class="slds-grid slds-wrap">
+                                        <div id="left-block" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+                                            <div class="slds-grid slds-wrap"> 
+                                                <div ng-repeat="field in leftFieldsForView" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 leftFields">
+                                                    <div class="slds-form-element " ng-if="!(field.apiName == 'FirstName' || field.apiName == 'LastName')">
+                                                        <label class="slds-form-element__label">
+                                                            {{field.label}}
+                                                        </label>
+                                                        <div class="slds-form-element__control" ng-show="field.apiName != 'Birthdate' && field.apiName != 'AccountId'">
+                                                            <span class="slds-form-element__static">{{contact[field.apiName]}}</span>
+                                                        </div>
+                                                        <div class="slds-form-element__control" ng-show="field.apiName == 'AccountId'">
+                                                            <span class="slds-form-element__static">{{field.referenceValue}}</span>
+                                                        </div>
+                                                        <div class="slds-form-element__control" ng-show="field.apiName == 'Birthdate'">
+                                                            <span class="slds-form-element__static">{{birthday}}</span>
+                                                        </div>
+                                                        <hr width="97%" style="margin-top:0;"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="right-block" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in rightFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 rightFields">
+                                                    <div class="slds-form-element">
+                                                        <label class="slds-form-element__label">
+                                                            {{field.label}}
+                                                        </label>
+                                                        <div class="slds-form-element__control">
+                                                            <span class="slds-form-element__static">{{contact[field.apiName]}}</span>
+                                                        </div>
+                                                        <hr width="97%" style="margin-top:0;"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- <hr width="100%" style="margin-top: 40px; margin-bottom: 40px;"/> -->
+                                        <div class="slds-section-title slds-p-around--xx-small">
+                                            {!$Label.I_m_willing_and_able_to_participate}
+                                        </div>
+                                        <div id="bottom-block" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="ref in refTypeWrapperList" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-3 slds-large-size--1-of-3">
+                                                    <div class="slds-form-element">
+                                                        <div class="slds-form-element__control">
+                                                            <div class="slds-refedge-checkbox">
+                                                                <label class="slds-checkbox" ng-show="ref != null && ref.refType != null">
+                                                                    <input type="checkbox" ng-model="ref.isSelected" disabled="disabled" />
+                                                                    <span class="slds-checkbox--faux"></span>
+                                                                </label>
+                                                            </div>
+                                                            <div class="slds-form-element__label slds-refedge-form-element__label">
+                                                                <span>{{ref.refType.Name}}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="editBlock" ng-show="isEdit" class="edit-block">
+                                    <div class="slds-grid slds-wrap">
+                                        <div id="left-block" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 leftFields-container">
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in leftFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 ">
+                                                    <div class="slds-form-element slds-m-vertical--small" ng-if="field.apiName != 'Name'">
+                                                        <label class="slds-form-element__label">
+                                                            {{field.label}}
+                                                        </label>
+                                                        <div class="slds-form-element__control" ng-if="field.isUpdateable == 'false'">
+                                                            <div class="slds-form-element__control" ng-show="field.apiName != 'Birthdate' && field.apiName != 'AccountId'">
+                                                                <span class="slds-form-element__static">{{contact[field.apiName]}}</span>
+                                                            </div>
+                                                            <div class="slds-form-element__control" ng-show="field.apiName == 'AccountId'">
+                                                                <span class="slds-form-element__static">{{field.referenceValue}}</span>
+                                                            </div>
+                                                            <div class="slds-form-element__control" ng-show="field.apiName == 'Birthdate'">
+                                                                <span class="slds-form-element__static">{{birthday}}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="slds-form-element__control" ng-if="field.isUpdateable == 'true'">
+                                                            <div class="slds-form-element__control" ng-if="field.fieldType == 'STRING'">
+                                                                <input style="width:97%" type="text" class="slds-input" ng-model="contact[field.apiName]" />
+                                                            </div>
+                                                            <div class="slds-form-element__control" ng-if="field.fieldType == 'EMAIL'">
+                                                                <input style="width:97%" type="email" class="slds-input" ng-model="contact[field.apiName]" />
+                                                            </div>
+                                                            <div class="slds-form-element__control" ng-if="field.fieldType == 'PHONE'">
+                                                                <input style="width:97%" type="text" class="slds-input" ng-model="contact[field.apiName]" />
+                                                            </div>
+                                                            <div class="slds-form-element__control" ng-if="field.fieldType == 'DATE'">
+                                                                <input datetime-picker="datetime-picker" date-format="yyyy-MM-dd" class="slds-input" ng-model="contact[field.apiName]" style="width:97%" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="right-block" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 rightFields-container">
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in rightFields" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 ">
+                                                    <div class="slds-form-element slds-m-vertical--small">
+                                                        <label class="slds-form-element__label">
+                                                            {{field.label}}
+                                                        </label>
+                                                        <div class="slds-form-element__control" ng-if="field.fieldType == 'STRING' || field.fieldType == 'TEXTAREA'">
+                                                            <input style="width:97%" type="text" class="slds-input" ng-model="contact[field.apiName]" />
+                                                        </div>
+                                                         <div class="slds-form-element__control" ng-show="field.apiName == 'Birthdate'">
+                                                                <span class="slds-form-element__static">{{birthday}}</span>
+                                                            </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <hr width="100%" style="margin-top: 0px; margin-bottom: 10px;"/>
+                                        <div class="slds-section-title slds-p-around--xx-small">
+                                            {!$Label.I_m_willing_and_able_to_participate}
+                                        </div>
+                                        <div id="bottom-block" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="ref in refTypeWrapperList" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+                                                    <div class="slds-form-element">
+                                                        <div class="slds-form-element__control">
+                                                            <div class="slds-refedge-checkbox">
+                                                                <label class="slds-checkbox" ng-show="ref != null && ref.refType != null">
+                                                                    <input type="checkbox" ng-model="ref.isSelected" />
+                                                                    <span class="slds-checkbox--faux"></span>
+                                                                </label>
+                                                            </div>
+                                                            <div class="slds-form-element__label slds-refedge-form-element__label">
+                                                                <span>{{ref.refType.Name}}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <!--
+                                                    <div class="slds-form-element__control">
+                                                        <span class="slds-form-element__static">
+                                                            <label class="slds-checkbox" ng-show="ref != null && ref.refType != null">
+                                                                <input type="checkbox" ng-model="ref.isSelected" />
+                                                                <span class="slds-checkbox--faux"></span>
+                                                                <span class="slds-form-element__label">{{ref.refType.Name}}</span>
+                                                            </label>
+                                                        </span>
+                                                    </div>
+                                                    -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </html>
+</apex:component>

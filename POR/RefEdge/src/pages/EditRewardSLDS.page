@@ -1,0 +1,563 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reward__c" extensions="EditRewardControllerSLDS"
+            showHeader="false"
+            sidebar="false"
+            standardstylesheets="false"
+            applyHtmlTag="false"
+            applyBodyTag="false"
+            docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+            
+            <style>
+            	.top-padding {
+            		padding-top: 1.75rem;
+            	}
+                .required{
+                	color:red;
+                	display: inline;
+                	font-weight:bold;
+                }
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.7;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.7;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .remove-flex{
+                    flex:none !important;
+                    webkit-flex:none !important;
+                }
+                .slds {
+                	background: white !important;
+                }
+                @media only screen and (max-width: 500px) {
+				    .toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    //width: 90%;
+	                    max-width: 380px;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	width: 141px;
+    					margin: 10px auto 0 auto;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 42%;
+	                   width:15%;
+	                }
+				}
+				@media only screen and (min-width: 501px) {
+				    .toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    width: 50%;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	float: right;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 47%;
+	                   width:4%;
+	                }
+				}
+				.slds-notify--toast {
+                	min-width: auto !important;
+                	padding: 15px 12px;
+                }
+                .container {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+                var editRewardApp = angular.module('editRewardApp', ['angularjs-datetime-picker']);
+                var editRewardCon = editRewardApp.controller('editRewardCon', function($scope, $location, $q, $filter) {
+                    $scope.info;
+                    $scope.rewardId = '{!JSENCODE(rewardId)}';
+                    $scope.retUrl = '{!JSENCODE(retUrl)}';
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+					$scope.IsPageAccessible = {!IsPageAccessible};
+                    $scope.isloading = true;
+                    $scope.isallDataFetched = false;
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.showModal = false;
+                    $scope.status = '';
+                    $scope.isSuccess = false;
+                    $scope.successMsg = 'The Reward has been successfully edited.';
+                    $scope.isWarning = false;
+                    $scope.availableBalance = 0;
+                    $scope.amountDisabled = false;
+                    $scope.expDate = '{!JSENCODE(dateString)}';
+                    $scope.todayDate = '{!JSENCODE(dateString)}';
+                    $scope.dateFormat = 'yyyy-MM-dd';
+                    
+                    //initial function which is called on page load
+					$scope.load  = function() {
+						$scope.getDateFormat().then(function(result) {
+							
+							if (result != null) {  
+		                   	   $scope.dateFormat = result;
+		                   	}
+		                 	$scope.todayDate = $filter('date')($scope.todayDate, $scope.dateFormat); 
+  		                 	$scope.expDate = $filter('date')($scope.expDate, $scope.dateFormat); 
+  		                 	$scope.intialFunction();
+                         });
+					}
+                    
+                    $scope.intialFunction = function() {
+                    	
+                        if (($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') && ($scope.IsPageAccessible || $scope.IsPageAccessible == 'true')) {
+                            $scope.fetchInfo().then(function(result) {
+                                $scope.info = result;
+                                console.log($scope.info);
+                                if ($scope.info.updatedExpiredDate != null && $scope.info.updatedExpiredDate != '') {
+	                                $scope.info.updatedExpiredDate = $scope.parseResult($scope.info.updatedExpiredDate);
+	                                $scope.info.updatedExpiredDate = JSON.parse($scope.info.updatedExpiredDate);
+                                }
+                                
+                                if ($scope.info.expiredDate != null && $scope.info.expiredDate != '') {
+	                                $scope.info.expiredDate = $scope.parseResult($scope.info.expiredDate);
+	                                $scope.info.expiredDate = $filter('date')($scope.info.expiredDate, $scope.dateFormat);
+	                                $scope.info.oldExpiredDate = $scope.info.expiredDate;
+	                                $scope.info.oldExpiredDate = $filter('date')($scope.info.oldExpiredDate, $scope.dateFormat);
+	                                $scope.expDate = $scope.info.expiredDate;
+	                                $scope.expDate = 	$filter('date')($scope.expDate, $scope.dateFormat);
+                                }
+                            	$scope.isallDataFetched = true;
+                            	$scope.isloading = false;
+                            });
+                            //check for CRUD and FLS permissions
+                            $scope.checkPermission().then(function(result) {
+		                        	
+                        		if (result != '') {
+	                            	$scope.isError = true;
+	                        		$scope.errorMsg = result;
+	                            } else {
+	                            	$scope.isError = false;
+	                            }
+	                      	});
+                        } else {
+							$scope.isloading = false;
+						}
+                    }
+                    
+                    //Cast date format according to locale
+					$scope.getDateFormat = function () {
+						var deferred = $q.defer();
+                       	Visualforce.remoting.Manager.invokeAction(
+			               '{!$RemoteAction.EditRewardControllerSLDS.getDateFormat}', 
+			               function(result, event) {
+			                   deferred.resolve(result);
+			               },
+			               {escape: true}
+			            );
+                        return deferred.promise;
+					}
+                    
+                    //#1070 : convert date to yyyy-MM-dd format befor sending to controller
+	                $scope.convertToDate = function (date) {
+	                		date = (date == null) ? '' : date;
+	                		var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+	                		
+	                		if (date == null || date == '') {
+	                			return '';
+	                		}
+	                		
+	                		if (date.match(regEx))  { 
+	                			tempDF = date.split('-');
+	                			if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+	                				return null;
+	                			}
+	                			return date; 
+						} 
+	               		try {
+	               			var tempDF = $scope.dateFormat;
+	               			var tempDate = date + '';
+	               			tempDF = tempDF.split(/[./-]/g);
+	               			tempDate = tempDate.split(/[./-]/g);
+	               			var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+	               			var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+	               			var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+	               			var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+		              	 	
+	              	 		if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+	              	 			
+	              	 			if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+		              	 			return null;
+		              	 		}
+	     				 		return dateString;
+	     				 	} else {
+	     				 		return null;
+	     				 	}
+	     				} catch (e) {
+	     					return null;
+	     				}
+	                }
+	                
+	                $scope.checkDate = function (day, month, year){
+	                		var returnval = true;
+	                		if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == '' ||
+	                			parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+	                			returnval = false;
+	            			} else {
+	            				day = parseInt(day);
+	            				month = parseInt(month);
+	            				year = parseInt(year);
+	            			}
+					    returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+					    var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+					    				: (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+					    returnval = (day > days) ? false : returnval;
+				        return returnval;
+	                }
+                    
+                    //to parse any string
+                    $scope.parseResult = function(result) {
+                    
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                            return result;
+                        }
+                    }
+                    //to change the expired date
+                    $scope.changeExpiredDate = function() {
+                    	
+                    	if ($scope.info.isExpired) {
+                    		$scope.amountDisabled = true;
+                    		$scope.expDate = angular.copy($scope.todayDate);
+                    	} else {
+                    		$scope.amountDisabled = false;
+                    		$scope.expDate = angular.copy($scope.info.updatedExpiredDate);
+                    	}
+                    }
+                    
+                    //to change the expired checkbox
+                    $scope.changeExpired = function() {
+                    	console.log($scope.info.oldExpiredDate);
+                    	if ($scope.info.oldExpiredDate != $scope.expDate) {
+                    		$scope.amountDisabled = false;
+                    		$scope.info.isExpired = false;
+                    	}
+                    }
+                    
+                    //to save the reward
+                    $scope.save = function() {
+                    		$scope.showModal = false;
+                    		$scope.isError = false;
+                   		$scope.isloading = true;
+                   			var dateString = $scope.convertToDate($scope.info.expiredDate);
+	                   		
+		                 	if (dateString != null) {
+	                 			$scope.info.expiredDate = dateString;
+	                 		} else {
+	                 			$scope.isError = true;
+	                 			$scope.isloading = false;
+	        						$scope.errorMsg = '{!$Label.Date_Invalid}' + $scope.info.expiredDate; 
+	                 		}
+	                 		var dateString = $scope.convertToDate($scope.expDate);
+	                   		
+		                 	if (dateString != null) {
+	                 			$scope.expDate = dateString;
+	                 		} else {
+	                 			$scope.isError = true;
+	                 			$scope.isloading = false;
+	        						$scope.errorMsg = '{!$Label.Date_Invalid}' + $scope.expDate; 
+	                 		}
+		                   	
+		                    if (!$scope.isError)	{
+		                   		if ($scope.info.isIssue) {                   		
+			                   		$scope.info.expiredDateNew = $scope.expDate;
+		                   		}
+		                   		
+		                   		$scope.submit().then(function(result) {
+		                           	$scope.isloading = false;
+		                           	
+		                           	if (result != '') {
+		                           		$scope.isError = true;
+		                  				$scope.errorMsg = $scope.parseResult(result);
+		                           	} else {
+		                           		$scope.isSuccess = true;
+		                           		setTimeout(function(){ 
+								       		redirectToBack();
+							         	}, 2000);
+		                           	}
+		                        });
+		                		
+                   		}
+                    }
+                    
+                    // method to save reward
+                    $scope.submit = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.EditRewardControllerSLDS.submit}',
+                            angular.toJson($scope.info), 
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.fetchInfo = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.EditRewardControllerSLDS.fetchInfo}', $scope.rewardId,
+                            function(result, event) {
+                              	deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    // method to check permission to perform DML
+                    $scope.checkPermission = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.EditRewardControllerSLDS.getPermissionsMessage}',
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.back = function() {
+                    	redirectToBack();
+                    }
+                });
+                
+                function redirectToBack() {
+                    sforce.one.back(true);
+                }
+            </script>
+        </head>
+        
+        <body ng-app="editRewardApp" class="slds">
+        	<div class="container">
+	            <form id="frmId" ng-controller="editRewardCon" ng-cloak="ng-cloak" >
+	                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info" style="text-align: center;background-color: #706e6b !important;" role="alert" ng-show="isFullLicenseAccessible && !IsPageAccessible" ng-cloak="true">
+						<span class="slds-icon_container slds-icon-utility-user slds-m-right_x-small">
+							<svg class="slds-icon slds-icon_x-small" aria-hidden="true" style="width: 1rem;margin-right: .75rem !important;">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+							</svg>
+						</span>
+						<h2 style="display: inline;font-size: 0.8125rem !important;">{!$Label.Insufficient_Privileges}</h2>
+					</div>
+					<div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info" style="text-align: center;background-color: #706e6b !important;" role="alert" ng-show="!isFullLicenseAccessible" ng-cloak="true">
+						<span class="slds-icon_container slds-icon-utility-user slds-m-right_x-small" >
+							<svg class="slds-icon slds-icon_x-small" aria-hidden="true" style="width: 1rem;margin-right: .75rem !important;">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+							</svg>
+						</span>
+						<h2 style="display: inline;font-size: 0.8125rem !important;">{!$Label.User_License}</h2>
+					</div>
+	                <div ng-init="load();" ng-show="isFullLicenseAccessible == 'true' && isallDataFetched && IsPageAccessible">
+	                	<!-- header -->
+	                    <div class="slds-page-header" role="banner">
+						    <div class="slds-grid slds-wrap">
+						        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-media">
+						                <div class="slds-media__figure">
+						                    <svg aria-hidden="true" class="slds-icon slds-icon--large" style="background-color: #2291F1;">
+	                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/action-sprite/svg/symbols.svg#new_custom48')}"></use>
+	                                        </svg>
+						                </div>
+						                <div style="margin-top: 1%;">
+	                                    	<div ng-show="info.isIssue">
+	                                            <h1 class="slds-text-heading--medium" title="{!$Label.Issue_Reward}">{!$Label.Issue_Reward}</h1>
+	                                        </div>
+	                                        <div ng-show="!info.isIssue">
+	                                            <h1 class="slds-text-heading--medium" title="{!$Label.Redeem_Reward}">{!$Label.Redeem_Reward}</h1>
+	                                        </div>
+	                                    </div>
+						            </div>
+						        </div>
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-button-group buttonStyle" role="group">
+	                                    <button class="slds-button slds-button--neutral" ng-click="back();">{!$Label.Cancel}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="save();">{!$Label.Save}</button>
+						            </div>
+						        </div>
+						    </div>
+	                        <ul class="slds-grid slds-wrap slds-page-header__detail-row" style="margin-bottom:0px !important;">
+	                        	<li class="slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-4 remove-flex" ng-show="info.selectedAccount.id != null && info.selectedAccount.id != '' && info.user.id == null">
+	                                <p class="slds-text-heading--label slds-truncate" title="{!$ObjectType.Reward__c.fields.Account__c.Label}">{!$ObjectType.Reward__c.fields.Account__c.Label}</p>
+	                                <div class="slds-form-element__control">
+	                                    <a style="cursor: pointer;" href="/{{info.selectedAccount.id}}" target="_blank">{{parseResult(info.selectedAccount.name)}}</a>
+	                                </div>
+	                            </li>
+	                            <li class="slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-4 remove-flex" ng-show="info.selectedContact.id != '' && info.selectedContact.id != null && info.user.id == null">
+	                                <p class="slds-text-heading--label slds-truncate" title="{!$ObjectType.Reward__c.fields.Contact__c.Label}">{!$ObjectType.Reward__c.fields.Contact__c.Label}</p>
+	                                <div class="slds-form-element__control">
+	                                    <a style="cursor: pointer;" href="/{{info.selectedContact.id}}" target="_blank">{{parseResult(info.selectedContact.name)}}</a>
+	                                </div>
+	                            </li>
+	                            <li class="slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-4 remove-flex" ng-show="info.user.id != '' && info.user.id != null">
+	                                <p class="slds-text-heading--label slds-truncate" title="{!$ObjectType.Reward__c.fields.User__c.Label}">{!$ObjectType.Reward__c.fields.User__c.Label}</p>
+	                                <div class="slds-form-element__control">
+	                                    <a style="cursor: pointer;" href="/{{info.user.id}}" target="_blank">{{parseResult(info.user.name)}}</a>
+	                                </div>
+	                            </li>
+	                            <li class="slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-4 remove-flex" ng-show="info.isIssue">
+	                                <p class="slds-text-heading--label slds-truncate" title="{!$ObjectType.Reward__c.fields.Referenceability_Type__c.Label}">{!$ObjectType.Reward__c.fields.Referenceability_Type__c.Label}</p>
+	                                <div class="slds-form-element__control">
+	                                    <a style="cursor: pointer;" href="/{{info.refType.id}}" target="_blank">{{parseResult(info.refType.name)}}</a>
+	                                </div>
+	                            </li>
+	                        </ul>
+						</div>
+	                    <!-- toast msg block -->
+	                    <div ng-show="isError" class="slds-notify_container toast-msg">
+	                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+	                            <span class="slds-assistive-text">{!$Label.Error}</span>
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{parseResult(errorMsg)}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div ng-show="isSuccess" class="slds-notify_container toast-msg">
+	                        <div class="slds-notify slds-notify--toast slds-theme--success" role="alert">
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isSuccess = false;" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{successMsg}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <!-- main block -->
+	                    <div class="slds-grid slds-wrap" style="padding: 12px;">
+	                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label">{!$ObjectType.Reward__c.fields.Amount__c.Label} <div style="display: inline;" ng-show="!info.isIssue">{!$Label.Cannot_Exceed}</div><div class="required">*</div></label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                <input  type="text" ng-model="info.amount" class="slds-input" ng-show="!amountDisabled"></input>
+		                                <input  type="text" ng-model="info.amount" class="slds-input" disabled="disabled" ng-show="amountDisabled"></input>
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    	<div ng-show="!info.isIssue" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label">{!$Label.Available_Balance}</label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                {{info.availableBalance}}
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label">{!$ObjectType.Reward__c.fields.Comments__c.Label}</label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                <textarea  type="text" ng-model="info.comments" class="slds-textarea"></textarea>
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    	<div ng-show="info.isIssue" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label">{!$ObjectType.Reward__c.fields.Expired__c.Label}</label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                <span class="slds-form-element__static">
+			                                <label class="slds-checkbox">
+			                                    <input  type="checkbox" ng-model="info.isExpired" ng-change="changeExpiredDate();"/>
+			                                    <span class="slds-checkbox--faux"></span>
+			                                </label>
+		                                </span>
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    	<div ng-show="info.isIssue" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label">{!$ObjectType.Reward__c.fields.Expiration_Date__c.Label}</label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+		                                <input  type="text" ng-model="expDate" class="slds-input" placeholder="{{dateFormat.toLowerCase()}}" id="txtexpirationDate" date-format="{{dateFormat}}" datetime-picker="datetime-picker"></input>
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    </div>
+	                </div>
+	                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+	                	<img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

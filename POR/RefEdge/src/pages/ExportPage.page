@@ -1,0 +1,720 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+-->
+<apex:page controller="ExportPageController" sidebar="false">
+    <script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+    <script>
+        $(document).ready(function() {
+            $('#phHeader td.left div').css({"width": "19vw", "height": "auto"});
+        });
+    </script>
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+            <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular-sanitize.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngCsvJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+            
+            <style>
+                #lightningDiv * {
+                    font-family: "Salesforce Sans",Arial,sans-serif !important;
+                }
+                .custom-toast-width {
+                    min-width: 0;
+                    width: 96%;
+                }
+                .container {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    overflow-x: hidden;
+                    overflow-y: auto;
+                }
+                @media screen and (max-width: 767px) {
+                    .horizontal-padding-large {
+                        padding-right: 0.5rem;
+                        padding-left: 0.5rem;
+                    }
+                    .custom-toast-container {
+                        position: fixed;
+                        z-index: 10000;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        margin-left: 0;
+                    }
+                    .responsiveInput {
+                        width: 100%;
+                    }
+                }
+                @media screen and (min-width: 768px) {
+                    .horizontal-padding-large {
+                    padding-right: 1.5rem;
+                    padding-left: 1.5rem;
+                    }
+                    .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 50%;
+                    width: 60%;
+                    margin-left: -30%;
+                    }
+                    .responsiveInput {
+                    width: 30%;
+                    }
+                }
+            </style>
+            
+            <script>
+                var exportPageApp = angular.module('exportPageApp', ['ngSanitize', 'ngCsv']);
+                var exportPageCtrl = exportPageApp.controller('exportPageCtrl',
+                    function($scope, $q, $timeout) {
+                        $scope.isLoading = false;
+                        $scope.exportDetails = '{!JSENCODE(exportDetailsCSV)}';
+                        $scope.accountIds = '{!JSENCODE(accountIdsCSV)}';
+                        $scope.contactIds = '{!JSENCODE(contactIdsCSV)}';
+                        $scope.contentIds = '{!JSENCODE(contentIdsCSV)}';
+                        $scope.rulPeriodLength = '{!JSENCODE(rulPeriodLength)}';
+                        $scope.apiNameForLabel1 = '{!JSENCODE(namespace)}' + 'Label_Ids1__c';
+                        $scope.apiNameForLabel2 = '{!JSENCODE(namespace)}' + 'Label_Ids2__c';
+                        $scope.apiNameForRefer1 = '{!JSENCODE(namespace)}' + 'ReferenceabilityType_Ids1__c';
+                        $scope.apiNameForRefer2 = '{!JSENCODE(namespace)}' + 'ReferenceabilityType_Ids2__c'; 
+                        $scope.exportFileName = '';
+                        $scope.recordsList = [];
+                        $scope.headersList = [];
+                        $scope.tempHeadersList = [];
+                        $scope.query = '';
+                        $scope.recordIdChunks = [];
+                        $scope.chunkIndex = 0;
+                        $scope.alreadyFetchedRecordIds = [];
+                        $scope.tempQueryLimit = '';
+                        $scope.attributeWrapperMap = {};
+                        $scope.filterCodeMap = {};
+                        $scope.refTypeCodeMap = {};
+                        $scope.isDownloadClicked = false; 
+                        $scope.namespace = '{!JSENCODE(namespace)}';
+
+                        $scope.objectNamesMap = {
+                            'Account_with_Attributes__c' : 'Accounts with Attributes',
+                            'Contact_with_Attributes__c' : 'Contacts with Attributes',
+                            'Content_with_Attributes__c' : 'Content with Attributes',
+                            'SearchedAccounts' : 'Filtered Accounts',
+                            'SearchedContacts' : 'Filtered Contacts',
+                            'SearchedContent' : 'Filtered Content'
+                        };
+
+                        $scope.templateValuesMap = {
+                            'Id' : 'a0annnnnnnnnnnnnnn',
+                            'Library_ID__c' : '058nnnnnnnnnnnnnnn',
+                            'Reference_Content_Type__c' : 'Case Study',
+                            'Title__c' : 'ReferenceEdge E icon',
+                            'Content_URL__c' : 'www.google.com',
+                            'Content_Status__c' : 'FALSE',
+                            'Publish_date__c' : '21/04/2018',
+                            'OwnerId' : '005nnnnnnnnnnnnnnn',
+                            'Allow_Social_Sharing__c' : 'TRUE',
+                            'Article_publication_date__c' : '21/04/2018',
+                            'Author__c' : 'John Smith',
+                            'Custom_Reference_Content__c' : 'FALSE',
+                            'Expiration_Date__c' : '21/04/2019',
+                            'External_Summary__c' : 'External Summary text',
+                            'Featured_Content__c' : 'FALSE',
+                            'Internal_Use__c' : 'FALSE',
+                            'Language__c' : 'English',
+                            'Publication_name__c' : 'Wall Street Journal',
+                            'Review_Date__c' : '21/04/2019',
+                            'Search_Terms_keywords__c' : 'astronaut',
+                            'Substitute_Account_Name__c' : 'Global Search Engine Provider',
+                            'Summary__c' : 'Summary text',
+                            'Attribute_Ids__c' : 'a04nnnnnnnnnnnnnnn',
+                            'Associated_Accounts__c' : '001nnnnnnnnnnnnnnn',
+                            'Account__c' : '001nnnnnnnnnnnnnnn',
+                            'Contact__c' : '003nnnnnnnnnnnnnnn',
+                            'Referenceability_Status__c' : 'Active',
+                            'Profile_Update_Owner__c' : '005nnnnnnnnnnnnnnn',
+                            'RUL_Activities_will_do__c' : '1',
+                            'RUL_Period__c' : '30',
+                            'Reference_Owner__c' : '005nnnnnnnnnnnnnnn',
+                            'Inactive_Reason__c' : 'Contact left company.',
+                            'Is_Referenceable__c' : 'TRUE',
+                            'Joined_Reference_Program__c' : '21/04/2018',
+                            'Managed_Reference_Account__c' : 'FALSE'
+                        };
+                        $scope.exportObjectName = '{!JSENCODE(exportObjectName)}';
+                        $scope.opportunityId = '{!JSENCODE(opportunityId)}';
+                        $scope.leadId = '{!JSENCODE(leadId)}';
+                        $scope.forAccount = '{!JSENCODE(forAccount)}';
+                        $scope.forContent = '{!JSENCODE(forContent)}';
+                        $scope.fromLead = '{!JSENCODE(fromLead)}';
+                        $scope.baseUrl = '{!JSENCODE(baseUrl)}';
+                        $scope.isSLDS = {!isSLDS};
+                        
+                        $scope.init = function() {
+                            $scope.isLoading = true;
+                            if ($scope.exportDetails != '') {
+                                $scope.exportDetails = $scope.exportDetails.split(',');
+                                
+                                if ($scope.exportDetails[0] == 'Reference_Content__c') {
+                                    
+                                    $scope.getHeadersList($scope.exportDetails[0], $scope.exportDetails[1]).then(function(result) {
+                                        $scope.alreadyFetchedRecordIds = [];
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.prepareDataLoaderExportData($scope.exportDetails[0]); 
+                                    }); 
+                                } else if ($scope.exportDetails[0] == 'Template') {
+                                      
+                                    $scope.getHeadersList($scope.exportDetails[0], $scope.exportDetails[1]).then(function(result) {
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.recordsList = [];
+
+                                        /*Here Added template sample records REF-1619 */
+                                        var tempRecord = {}; 
+                                        
+	                                    angular.forEach(
+	                                        $scope.headersList,
+	                                        function(header) {    
+	                                            // re REF-1770 : just remove the namespace when we getting value from Map.
+	                                            if ($scope.templateValuesMap.hasOwnProperty(header['apiName'].replace($scope.namespace,'').trim())) { 
+													tempRecord[header['apiName']] = $scope.templateValuesMap[header['apiName'].replace($scope.namespace,'').trim()];
+												} else {
+													tempRecord[header['apiName']] = '';
+												}
+	                                        } 
+	                                    );
+	                                    
+									 	$scope.recordsList.push(tempRecord);
+                                        $scope.isLoading = false;
+                                    });
+                                } else if ($scope.exportDetails[0] == 'Attribute__c'
+                                        || $scope.exportDetails[0] == 'Library__c'
+                                        || $scope.exportDetails[0] == 'Label__c'
+                                        || $scope.exportDetails[0] == 'Account'
+                                        || $scope.exportDetails[0] == 'Contact'
+                                        || $scope.exportDetails[0] == 'Referenceability_Type__c'
+                                        || $scope.exportDetails[0] == 'Reference_Content_Type__c') {
+                                    $scope.exportDetails[2] = '50000';
+                                    
+                                    $scope.getHeadersList($scope.exportDetails[0], '').then(function(result) {
+                                        $scope.alreadyFetchedRecordIds = [];
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.prepareDataLoaderExportData($scope.exportDetails[0]);
+                                    });
+                                } else if ($scope.exportDetails[0] == 'Unspecified_Request__c' || $scope.exportDetails[0] == 'Reference_Request_Account__c') {
+                                    $scope.getHeadersList($scope.exportDetails[0], $scope.exportDetails[1]).then(function(result) {
+                                        $scope.alreadyFetchedRecordIds = [];
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.prepareDataLoaderExportData($scope.exportDetails[0]);
+                                    });
+                                } else if ($scope.exportDetails[0] == 'Reference_Basic_Information__c') {
+                                    $scope.getFiltersMapForRBIExport();
+                                    $scope.getRefTypesMapForRBIExport();
+                                    
+                                    $scope.getHeadersList($scope.exportDetails[0], $scope.exportDetails[1]).then(function(result) {
+                                        $scope.alreadyFetchedRecordIds = [];
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.prepareDataLoaderExportData($scope.exportDetails[0]);
+                                    });
+                                } else if ($scope.exportDetails[0] == 'Account_with_Attributes__c'
+                                        || $scope.exportDetails[0] == 'Contact_with_Attributes__c'
+                                        || $scope.exportDetails[0] == 'Content_with_Attributes__c') {
+                                    
+                                    $scope.getAttributesMapForGapAnalysis().then(function(result) {
+                                        $scope.attributeWrapperMap = result;
+                                        
+                                        $scope.getHeadersList($scope.exportDetails[0], $scope.exportDetails[1]).then(function(result) {
+                                            $scope.alreadyFetchedRecordIds = [];
+                                            $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                            $scope.query = result.split('--------')[1];
+                                            
+                                            angular.forEach(
+                                                $scope.headersList,
+                                                function(header) {
+                                                    
+                                                    if (header['isMappingOrField']) {
+                                                        $scope.tempHeadersList.push(header);
+                                                    }
+                                                }
+                                            );
+                                            $scope.prepareDataLoaderExportData($scope.exportDetails[0]);
+                                        });
+                                    });
+                                }
+                            } else {
+                                
+                                if ($scope.accountIds != '') {
+                                    $scope.accountIds = $scope.accountIds.split(',');
+                                    $scope.recordIdChunks = $scope.createArrayChunks($scope.accountIds, 10000);
+                                    
+                                    $scope.getHeadersList('SearchedAccounts', '').then(function(result) {
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.recordsList = [];
+                                        $scope.chunkIndex = 0;
+                                        $scope.prepareRefSearchExportData('SearchedAccounts', $scope.recordIdChunks[0]);
+                                    });
+                                } else if ($scope.contactIds != '') {
+                                    $scope.contactIds = $scope.contactIds.split(',');
+                                    $scope.recordIdChunks = $scope.createArrayChunks($scope.contactIds, 10000);
+                                    
+                                    $scope.getHeadersList('SearchedContacts', '').then(function(result) {
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.recordsList = [];
+                                        $scope.chunkIndex = 0;
+                                        $scope.prepareRefSearchExportData('SearchedContacts', $scope.recordIdChunks[0]);
+                                    });
+                                } else if ($scope.contentIds != '') {
+                                    $scope.contentIds = $scope.contentIds.split(',');
+                                    $scope.recordIdChunks = $scope.createArrayChunks($scope.contentIds, 10000);
+                                    
+                                    $scope.getHeadersList('SearchedContent', '').then(function(result) {
+                                        $scope.headersList = JSON.parse(result.split('--------')[0]);
+                                        $scope.query = result.split('--------')[1];
+                                        $scope.recordsList = [];
+                                        $scope.chunkIndex = 0;
+                                        $scope.prepareRefSearchExportData('SearchedContent', $scope.recordIdChunks[0]);
+                                    });
+                                }
+                            }
+                        }
+                        
+                        $scope.getFooterData = function() {
+                            var deferred = $q.defer();
+                            
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.ExportPageController.getFooterData}',
+                                function(result, event) {
+                                    result = $scope.parseResult(result);
+                                    deferred.resolve(JSON.parse(result));
+                                }
+                            );
+                            return deferred.promise;
+                        }
+                        
+                        $scope.getAttributesMapForGapAnalysis = function() {
+                            var deferred = $q.defer();
+                            
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.ExportPageController.getAttributesMapForGapAnalysis}',
+                                function(result, event) {
+                                    result = $scope.parseResult(result);
+                                    deferred.resolve(JSON.parse(result));
+                                }
+                            );
+                            return deferred.promise;
+                        }
+                        
+                        $scope.getFiltersMapForRBIExport = function() {
+                            
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.ExportPageController.getFiltersMapForRBIExport}',
+                                function(result, event) {
+                                    
+                                    $scope.$apply(function() {
+                                        result = $scope.parseResult(result);
+                                        $scope.filterCodeMap = JSON.parse(result);
+                                    });
+                                }
+                            );
+                        }
+                        
+                        $scope.getRefTypesMapForRBIExport = function() {
+                            
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.ExportPageController.getRefTypesMapForRBIExport}',
+                                function(result, event) {
+                                    
+                                    $scope.$apply(function() {
+                                        result = $scope.parseResult(result);
+                                        $scope.refTypeCodeMap = JSON.parse(result);
+                                    });
+                                }
+                            );
+                        }
+                        
+                        $scope.getHeadersList = function(objectName, sortBy) {
+                            var deferred = $q.defer();
+                            
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.ExportPageController.getHeadersList}',
+                                objectName,
+                                sortBy,
+                                $scope.rulPeriodLength,
+                                function(result, event) {
+                                    result = $scope.parseResult(result);
+                                    deferred.resolve(result);
+                                }
+                            );
+                            return deferred.promise;
+                        }
+                        
+                        $scope.getRecordsToExport = function(objectName, recordIdsJson, tempHeadersList) {
+                            var deferred = $q.defer();
+                            console.log($scope.query);
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.ExportPageController.getRecordsToExport}',
+                                objectName,
+                                $scope.query + $scope.tempQueryLimit,
+                                angular.toJson(tempHeadersList),
+                                recordIdsJson,
+                                angular.toJson($scope.alreadyFetchedRecordIds),
+                                function(result, event) {
+                                    result = $scope.parseResult(result);
+                                    deferred.resolve(JSON.parse(result));
+                                }
+                            );
+                            return deferred.promise;
+                        }
+                        
+                        $scope.prepareRefSearchExportData = function(objName, chunk) {
+                            
+                            if ($scope.chunkIndex == $scope.recordIdChunks.length) {
+                                $scope.prepareFileFooter(objName);
+                                $scope.isLoading = false;
+                            } else {
+                                
+                                $scope.getRecordsToExport(objName, angular.toJson(chunk), $scope.headersList).then(function(result) {
+                                    $scope.reorderExportRecordsFields(result, '');
+                                    $scope.chunkIndex = $scope.chunkIndex + 1;
+                                    $scope.prepareRefSearchExportData(objName, $scope.recordIdChunks[$scope.chunkIndex]);
+                                });
+                            }
+                        }
+                        
+                        $scope.prepareDataLoaderExportData = function(objName) {
+                            
+                            if (parseInt($scope.exportDetails[2]) > 0) {
+                                
+                                if (parseInt($scope.exportDetails[2]) < 10000) {
+                                    $scope.tempQueryLimit = angular.copy($scope.exportDetails[2]);
+                                } else {
+                                    $scope.tempQueryLimit = '10000';
+                                }
+                                
+                                if (objName == 'Account_with_Attributes__c'
+                                        || objName == 'Contact_with_Attributes__c'
+                                        || objName == 'Content_with_Attributes__c') {
+                                    
+                                    $scope.getRecordsToExport(objName, '', $scope.tempHeadersList).then(function(result) {
+                                        $scope.reorderExportRecordsFields(result, objName);
+                                        
+                                        if (result.length < 10000) {
+                                            $scope.exportDetails[2] = '0';
+                                        } else {
+                                            $scope.exportDetails[2] = (parseInt($scope.exportDetails[2]) - 10000).toString();
+                                        }
+                                        $scope.prepareDataLoaderExportData(objName);
+                                    });
+                                } else {
+                                    
+                                    $scope.getRecordsToExport(objName, '', $scope.headersList).then(function(result) {
+                                        $scope.reorderExportRecordsFields(result, objName);
+                                        
+                                        if (result.length < 10000) {
+                                            $scope.exportDetails[2] = '0';
+                                        } else {
+                                            $scope.exportDetails[2] = (parseInt($scope.exportDetails[2]) - 10000).toString();
+                                        }
+                                        $scope.prepareDataLoaderExportData(objName);
+                                    });
+                                }
+                            } else {
+                                $scope.prepareFileFooter(objName);
+                                $scope.isLoading = false;
+                            }
+                        }
+                        
+                        $scope.getFilterIds = function(filterCodes) {
+                            var filterIds = '';
+                            
+                            angular.forEach(
+                                filterCodes.split(','),
+                                function(code) {
+                                    
+                                    if (code.replace(/F/gi, '') in $scope.filterCodeMap) {
+                                        filterIds = filterIds == ''
+                                            ? $scope.filterCodeMap[code.replace(/F/gi, '')]
+                                            : filterIds + ',' + $scope.filterCodeMap[code.replace(/F/gi, '')]
+                                    }
+                                }
+                            );
+                            return filterIds;
+                        }
+                        
+                        $scope.getRefTypeIds = function(refTypeCodes) {
+                            var refTypeIds = '';
+                            
+                            angular.forEach(
+                                refTypeCodes.split(','),
+                                function(code) {
+                                    
+                                    if (code.replace(/R/gi, '') in $scope.refTypeCodeMap) {
+                                        refTypeIds = refTypeIds == ''
+                                            ? $scope.refTypeCodeMap[code.replace(/R/gi, '')]
+                                            : refTypeIds + ',' + $scope.refTypeCodeMap[code.replace(/R/gi, '')]
+                                    }
+                                }
+                            );
+                            return refTypeIds;
+                        }
+                        
+                        $scope.createArrayChunks = function(arr, chunkSize) {
+                            var chunkArray = [];
+                            var index;
+                            
+                            for (index = 0; index < arr.length; index += chunkSize) {
+                                chunkArray.push(arr.slice(index, index + chunkSize));
+                            }
+                            return chunkArray;
+                        }
+                        
+                        $scope.prepareFileFooter = function(objName) {
+                            
+                            if (objName in $scope.objectNamesMap) {
+                                
+                                $scope.getFooterData().then(function(result) {
+                                    var tempObj = {};
+                                    tempObj[$scope.headersList[0]['apiName']] = '';
+                                    $scope.recordsList.push(tempObj);
+                                    tempObj = {};
+                                    tempObj[$scope.headersList[0]['apiName']] = 'Report Title: ' + $scope.objectNamesMap[objName];
+                                    $scope.recordsList.push(tempObj);
+                                    tempObj = {};
+                                    
+                                    angular.forEach(
+                                        result,
+                                        function(value) {
+                                            tempObj[$scope.headersList[0]['apiName']] = value;
+                                            $scope.recordsList.push(tempObj);
+                                            tempObj = {};
+                                        }
+                                    );
+                                });
+                            }
+                        }
+                        
+                        $scope.reorderExportRecordsFields = function(tempRecordsList, objName) {
+                            
+                            angular.forEach(
+                                tempRecordsList,
+                                function(record) {
+                                    var tempRecord = {};
+                                    
+                                    angular.forEach(
+                                        $scope.headersList,
+                                        function(header) {
+                                            tempRecord[header['apiName']] = record[header['apiName']];
+                                            
+                                            if (header['apiName'] == 'Id') {
+                                                $scope.alreadyFetchedRecordIds.push(tempRecord[header['apiName']]);
+                                            }
+                                            
+                                            if ((header['apiName'] == $scope.apiNameForLabel1
+                                                        || header['apiName'] == $scope.apiNameForLabel2)
+                                                    && record[header['apiName']] != null
+                                                    && record[header['apiName']] != '') {
+                                                tempRecord[header['apiName']] = $scope.getFilterIds(record[header['apiName']]);
+                                            }
+                                            
+                                            if ((header['apiName'] == $scope.apiNameForRefer1
+                                                        || header['apiName'] == $scope.apiNameForRefer2)
+                                                    && record[header['apiName']] != null
+                                                    && record[header['apiName']] != '') {
+                                                tempRecord[header['apiName']] = $scope.getRefTypeIds(record[header['apiName']]);
+                                            }
+                                        }
+                                    );
+                                    
+                                    if ((objName == 'Account_with_Attributes__c'
+                                                || objName == 'Contact_with_Attributes__c'
+                                                || objName == 'Content_with_Attributes__c')
+                                            && record['attributeIdsCSV'] != '') {
+                                        var tempAttMap = $scope.getRecordAttributesForGapAnalysis(record['attributeIdsCSV']);
+                                        
+                                        angular.forEach(
+                                            Object.keys(tempAttMap),
+                                            function(attId) {
+                                                tempRecord[attId] = tempAttMap[attId];
+                                            }
+                                        );
+                                    }
+                                    $scope.recordsList.push(tempRecord);
+                                }
+                            );
+                        }
+                        
+                        $scope.getRecordAttributesForGapAnalysis = function(attributeIdsCSV) {
+                            var tempMap = {};
+                            
+                            angular.forEach(
+                                attributeIdsCSV.split(','),
+                                function(attId) {
+                                    
+                                    if (attId in $scope.attributeWrapperMap) {
+                                        var commaIndex = $scope.attributeWrapperMap[attId]['parentIds'].indexOf(',');
+                                        var rootAttId = commaIndex == -1
+                                            ? $scope.attributeWrapperMap[attId]['parentIds']
+                                            : $scope.attributeWrapperMap[attId]['parentIds'].substring(0, commaIndex);
+                                        
+                                        if (rootAttId in tempMap) {
+                                            var prevAtts = tempMap[rootAttId];
+                                            tempMap[rootAttId] = prevAtts + ',' + $scope.attributeWrapperMap[attId]['name'];
+                                        } else {
+                                            tempMap[rootAttId] = $scope.attributeWrapperMap[attId]['name'];
+                                        }
+                                    }
+                                }
+                            );
+                            return tempMap;
+                        }
+                        
+                        $scope.getHeadersForFile = function() {
+                            var fileHeaderList = [];
+                            
+                            angular.forEach(
+                                $scope.headersList,
+                                function(header) {
+                                    fileHeaderList.push(header.label);
+                                }
+                            );
+                            $scope.closeTab();
+                            return fileHeaderList;
+                        }
+                        
+                        $scope.closeTab = function() {
+                            $scope.isDownloadClicked = true;
+                            
+                            if ($scope.exportObjectName == 'SearchedAccounts'
+                                    || $scope.exportObjectName == 'SearchedContacts'
+                                    || $scope.exportObjectName == 'SearchedContent') {
+
+                                $timeout(function() {
+                                    
+                                    if ($scope.isSLDS) {
+                                        var url = $scope.baseUrl + '{!$Page.RfSearchLightning}' + '?helpoverlay=false';
+
+                                        if ($scope.opportunityId != '') {
+                                            url = url + '&opportunityId=' + $scope.opportunityId
+                                                    + '&preFilter=true'
+                                                    + '&forAccount=' + $scope.forAccount
+                                                    + '&forContent=' + $scope.forContent;
+                                        }
+                                        
+                                        if ($scope.leadId != '') {
+                                            url = url + '&leadId=' + $scope.leadId
+                                                    + '&preFilter=true'
+                                                    + '&forAccount=' + $scope.forAccount
+                                                    + '&forContent=' + $scope.forContent
+                                                    + '&fromLead=' + $scope.fromLead;
+                                        }
+                                        
+                                        if ((typeof sforce != 'undefined') && (sforce != null)) {
+                                            sforce.one.navigateToURL(url, true);
+                                        } else {
+                                            window.location = url;
+                                        }
+                                    } else {
+                                        var url = $scope.baseUrl + '{!$Page.RfSearchPage}' + '?helpoverlay=false';
+                                        
+                                        if ($scope.opportunityId != '') {
+                                            url = url + '&opportunityId=' + $scope.opportunityId
+                                                    + '&preFilter=true'
+                                                    + '&forAccount=' + $scope.forAccount
+                                                    + '&forContent=' + $scope.forContent;
+                                        }
+                                        
+                                        if ($scope.leadId != '') {
+                                            url = url + '&leadId=' + $scope.leadId
+                                                    + '&preFilter=true'
+                                                    + '&forAccount=' + $scope.forAccount
+                                                    + '&forContent=' + $scope.forContent
+                                                    + '&fromLead=' + $scope.fromLead;
+                                        }
+                                        
+                                        if ((typeof sforce != 'undefined') && (sforce != null)) {
+                                            sforce.one.navigateToURL(url, true);
+                                        } else {
+                                            window.location = url;
+                                        }
+                                    }
+                                }, 5000);
+                            } else {
+
+                                $timeout(function() {
+                                    window.close();
+                                }, 5000);
+                            }
+                        }
+                        
+                        $scope.parseResult = function(result) {
+                            
+                            if (result != null) {
+                                result = result.replace(/&quot/gi, '"');
+                                result = result.replace(/&amp/g, '&');
+                                result = result.replace(/&lt/g, '<');
+                                result = result.replace(/&gt/g, '>');
+                                result = result.replace(/;/g, '');
+                                result = result.replace(/&#39/g, '\'');
+                                return result;
+                            }
+                        }
+                    }
+                );
+            </script>
+        </head>
+        
+        <body>
+            <div ng-app="exportPageApp" ng-controller="exportPageCtrl" ng-cloak="ng-cloak" style="height: 70vh">
+                <div ng-init="init()">
+                    <div role="status" ng-show="isLoading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                    
+                    <div ng-show="!isLoading">
+                        
+                        <div class="slds-m-around_medium slds-form slds-form_horizontal">
+                            <div ng-show="!isDownloadClicked" class="slds-form-element" style="width: 80%; float: left">
+                                <span class="slds-form-element__label">
+                                    {!$Label.Export_File_Name}
+                                </span>
+                                <div class="slds-form-element__control">
+                                    <input type="text" class="slds-input" ng-model="exportFileName" style="font-size: 0.75rem;"/>
+                                </div>
+                            </div>
+                            <a ng-show="!isDownloadClicked" style="float: left; margin-left: 1rem" ng-csv="recordsList" csv-header="getHeadersForFile()" filename="{{exportFileName + '.csv'}}" class="slds-button slds-button_brand">Download</a>
+                            <div ng-show="isDownloadClicked" style="text-align: left;font-size: 0.75rem;">{!$Label.File_Download_Msg}</div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </body>
+        
+    </html>
+</apex:page>

@@ -1,0 +1,1949 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page controller="SelectRefUseContactsControllerSLDS" docType="html-5.0" sidebar="false" standardStylesheets="false">
+<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+<script>
+	var isSLDS = false;
+
+    jQuery(document).ready(function() {
+		$('#phHeader td.left div').css({"width": "22vw", "height": "auto"});
+        var elm = document.getElementById('AppBodyHeader');
+		
+		if (elm != null) {
+			isSLDS = false;
+		} else {
+			isSLDS = true;
+		}
+	});
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+        <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+
+        <style>
+            .container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: 0;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                overflow-scrolling: touch;
+            }
+            a {
+                text-decoration: none !important;
+            }
+            .custom-toast-width {
+                display: flex;
+                min-width: 0;
+            }
+            @media screen and (max-width: 767px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    margin-left: 0;
+                }
+                .mobileVisible {
+                    display: block;
+                }
+                .mobileVisibleInline {
+                    display: inline-block;
+                }
+                .desktopVisible {
+                    display: none !important;
+                }
+                .desktopVisibleInline {
+                    display: none !important;
+                }
+                .horizontal-padding-large {
+					padding-right: 0.75rem;
+    				padding-left: 0.75rem;
+				}
+                .buttonsBar {
+                    text-align: center;
+                }
+                .slds-page-header__detail-block {
+                    padding: 0 0 0.5rem 0;
+                    width: 100%;
+                    max-width: 100%;
+                }
+            }
+            @media screen and (min-width: 768px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 50%;
+                    width: 50%;
+                    margin-left: -25%;
+                }
+                .mobileVisible {
+                    display: none !important;
+                }
+                .mobileVisibleInline {
+                    display: none !important;
+                }
+                .desktopVisibleInline {
+                    display: inline-block;
+                }
+                .desktopVisible {
+                    display: block;
+                }
+                .horizontal-padding-large {
+					padding-right: 1.5rem;
+    				padding-left: 1.5rem;
+				}
+                .buttonsBar {
+                    text-align: right;
+                }
+                .tableContainer {
+                    max-height: 20rem;
+                    overflow-y: auto;
+                }
+            }
+            .editIcon {
+                fill: #e0e5ee;
+            }
+            .editIcon:HOVER {
+                fill: #005fb2 !important;
+            }
+            .editableFormElement:HOVER .editIcon {
+                fill: #444444;
+            }
+            .editableFormElement .slds-form-element__static {
+                max-width: 94%;
+            }
+            .slds-checkbox [type=checkbox][disabled]:checked+.slds-checkbox__label .slds-checkbox_faux {
+                background-color: #0070d2;
+                border-color: #0070d2;
+            }
+            .modalErrorBlock {
+                background-color: #c23934;
+                border-radius: 0.25rem;
+            }
+            .errorPageMsgDiv {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+            }
+            .errorImg {
+				background-image: url(/img/msg_icons/error24.png);
+				background-position: 0 0;
+				width: 32px;
+				height: 32px;
+				background-size: 32px;
+			}
+			.modalErrorMsg {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+			}
+            #classicDiv .pbbody {
+				margin: 0;
+			}
+			.classicSpinner {
+            	position: absolute;
+			    top: 50%;
+			    left: 50%;
+			    margin-left: -30px;
+            }
+            .classicSpinnerbackground {
+            	height: 80vh;
+			    background-color: WHITE;
+			    opacity: 0.7;
+			    z-index: 9999;
+            }
+			.classicTable {
+				border: 1px solid #e0e3e5;
+			    background-color: #fff;
+			}
+			.classicTable tr:HOVER {
+				background-color: #e3f3ff;
+			}
+			.classicTableHeaderCell {
+				background: #f2f3f3;
+				border-width: 0 0 1px 1px;
+				border-color: #e0e3e5;
+				color: #333;
+				font-size: .9em;
+				font-weight: bold;
+				padding: 5px 2px 4px 5px;
+				border: 1px solid #ededed;
+			}
+			.classicTablebodyCell {
+				border-width: 0 0 1px 0;
+				border-color: #ededed;
+				border-style: solid;
+				padding: 4px 2px 4px 5px;
+			}
+            .classicModal {
+	            background-color: #f8f8f8;
+	            box-shadow: 0 0 20px #6D6D6D;
+				position: fixed;
+				left: 50%;
+				z-index: 999;
+			}
+			.classicModalHeader {
+				background-color: #03a7e5;
+				border-radius: 3px;
+				margin: 2px;
+				padding: 0.3rem 0.3rem 0.3rem 1.2rem;
+			}
+			.classicModalHeader a {
+				float: right;
+				line-height: 1.5em;
+				color: #f8f8f8;
+				border-radius: 3px;
+				padding: 0 0.28rem;
+				cursor: pointer;
+			}
+			.classicModalHeader a:HOVER {
+				background-color: #f8f8f8;
+				color: #ff6a00;
+			}
+			.classicModalHeader span {
+				color: #f8f8f8;
+				font-weight: bold;
+				line-height: 150%;
+			}
+			.classicModalContent {
+				padding: 0.5rem 1rem;
+				max-height: 20rem;
+				overflow-y: auto;
+			}
+			.classicModalFooter {
+				padding: 0.6rem 1.6rem;
+				text-align: right;
+				background-color: #eeeeee;
+				border-top: 1px solid lightgray;
+			}
+			.classicModalFooter a {
+				line-height: 220%;
+				text-decoration: none !important;
+				color: black;
+				padding: 4px 3px;
+			}
+			.classicModalbackdrop {
+				background-color: black;
+	            opacity: 0.20;
+	            filter: alpha(opacity = 20);
+	            position: absolute;
+	            width: 100%;
+	            height: 100%;
+	            top: 0;
+	            left: 0;
+	            z-index: 99;
+			}
+            .mainTitle {
+                font-size: 0.85rem;
+                font-weight: bold;
+            }
+            .pbTitle {
+            	font-size: 0.8em !important;
+			    font-weight: bold !important;
+			    padding: 12px !important;
+            }
+            #classicDiv .tertiaryPalette {
+            	background: #79b4cd;
+            	border-color: #79b4cd;
+            	color: white !important;
+				margin-bottom: 0.5rem;
+                padding-top: 0.15rem;
+                padding-bottom: 0.15rem;
+            }
+            #classicDiv .tertiaryPalette h3 {
+            	font-size: 1.1em !important;
+            }
+            .classicRequiredDiv {
+				background-color: #C00;
+				display: inline-block;
+				position: absolute;
+				left: -5px;
+				height: 95%;
+			}
+            .editableCell:HOVER {
+                background: url(/img/func_icons/util/pencil12.gif) no-repeat right center;
+            }
+            .editedCell {
+                font-weight: bold;
+                color: #ff6a00;
+            }
+        
+        /* REF-2320 */
+        .contact-Tags-panel {
+            position: absolute !important;
+            min-width: 350px;
+            left: 0;
+            top: 0px;
+        }
+        .contact-Tags-panel .slds-text-heading--medium {
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+            height: 30px;
+            display: block;
+            font-size: 17px;
+            max-width: 94%;
+        }
+        
+        .tagReferencibilityCon, .tagAttributeCon { 
+            width: 310px;
+            max-height: 70px;
+            word-wrap: break-word;
+            overflow: auto !important;
+        }
+        
+        .popoverContactBackdrop {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 999;
+        }
+        .slds-truncate {
+        	white-space: normal;
+        }
+        
+        </style>
+
+        <script>
+            var approveDecline = angular.module('approveDecline',[]);
+            var approveDeclineCon = approveDecline.controller('approveDeclineCon', function($scope, $q) {
+                $scope.cs = '';
+                $scope.info;
+                $scope.isDetailOn = true;
+                $scope.contacts = [];
+                $scope.contactMap = {};
+                $scope.refReqAccId = '{!JSENCODE(refReqAccId)}';
+                $scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+                $scope.isRequestSubmitted = false;
+                $scope.contact;
+                $scope.tempContact;
+                $scope.showEmailEditIcon = false;
+                $scope.showPhoneEditIcon = false;
+                $scope.showTitleEditIcon = false;
+                $scope.isloading = true;
+                $scope.isallDataFetched = false;
+                $scope.isError = false;
+                $scope.errorMsg = '';
+                $scope.emailVerificationError = '';
+                $scope.item = {};
+                $scope.item.selectedContactId = '';
+                $scope.emailChanged = false;
+                $scope.confirm = false;
+                $scope.confirmDecline = false;
+                $scope.showConfirmBox = false;
+                $scope.confirmMsg = '';
+                $scope.selectedContact;
+                $scope.isUpdateContact = false;
+                $scope.currentUser = '{!JSENCODE(currentUser)}';
+                $scope.isModalError = false;
+                $scope.isCreateContact = false;
+                $scope.modalErrorMessage = '';
+                $scope.isBasic = {!isBasic};
+                $scope.isAdvRouting = {!isAdvRouting};
+                $scope.contactObj = {id : '', name : '', email : '', phone : '', title : ''};
+                $scope.showRequestDetails = false;
+                $scope.isSLDS = isSLDS;
+                
+                // REF-2320 variables for showing data in the Tags popup panel.
+                $scope.contactAboutName = '';
+                $scope.showTagsPopup = false;
+                $scope.tagAttributes = '';
+                $scope.tagReferencability = '';
+                $scope.showBackContactDrop = false;
+
+                $scope.intialFunction = function() {
+
+                    if ($scope.isFullLicenseAccessible) {
+
+                        $scope.fetchCS().then(function(reqcount) {
+                            $scope.cs = JSON.parse($scope.parseResult(angular.toJson(reqcount)));
+                        });
+
+                        $scope.fetchInfo().then(function(result) {
+                            $scope.info = result;
+
+                            $scope.fetchContacts($scope.info.rraAccountId).then(function(result) {
+                                $scope.isloading = false;
+                                $scope.isallDataFetched = true;
+
+                                if (result != null && result != '') {
+                                    $scope.contacts = result;
+
+                                    if ($scope.contacts.length > 0) {
+                                        $scope.contact = $scope.contacts[0];
+                                    }
+
+                                    for (var i = 0; i < $scope.contacts.length; i++) {
+                                        $scope.contactMap[$scope.contacts[i].id] = angular.copy($scope.contacts[i]);
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+
+                $scope.parseResult = function(result) {
+                    result = result.replace(/&quot/gi, '"');
+                    result = result.replace(/&amp/g, '&');
+                    result = result.replace(/&lt/g, '<');
+                    result = result.replace(/&gt/g, '>');
+                    result = result.replace(/;/g, '');
+                    result = result.replace(/&#39/g, '\'');
+                    return result;
+                }
+                
+                $scope.validate = function() {
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    var isChanged = false;
+                    var isAnyActiveContact = false;
+                    var re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+
+                    if ($scope.contact.email != null && $scope.contact.email != '' && !re.test($scope.contact.email)) {
+                        $scope.isError = true;
+                        $scope.errorMsg = '{!$Label.Invalid_Email_Address}';
+                    }
+
+                    for (var i = 0; i < $scope.contacts.length; i++) {
+
+                        if ($scope.contacts[i].active) {
+                            isAnyActiveContact = true;
+                        }
+
+                        if ($scope.contacts[i].email != $scope.contactMap[$scope.contacts[i].id].email
+                                || $scope.contacts[i].phone != $scope.contactMap[$scope.contacts[i].id].phone) {
+                            isChanged = true;
+                        }
+
+                        if ($scope.item.selectedContactId != '' && $scope.contacts[i].id == $scope.item.selectedContactId) {
+                            $scope.selectedContact = $scope.contacts[i];
+                        }
+                    }
+
+                    if (!isAnyActiveContact && !$scope.cs.approveWithoutContact) {
+                        $scope.isError = true;
+                        $scope.errorMsg = '{!$Label.select_Referenceable_Contact}';
+                    } else if ($scope.item.selectedContactId != '' || $scope.cs.approveWithoutContact) {
+
+                        if ($scope.selectedContact != null && ($scope.selectedContact.email == null || $scope.selectedContact.email == '')) {
+                            $scope.isError = true;
+                            $scope.errorMsg = '{!$Label.EmailFilledValidation}';
+                        } else if ($scope.selectedContact != null && ($scope.selectedContact.phone == null || $scope.selectedContact.phone == '')) {
+                            $scope.isError = true;
+                            $scope.errorMsg = '{!$Label.PhoneFilledValidation}';
+                        } else if ($scope.info.notes == '') {
+                            $scope.isError = true;
+                            $scope.errorMsg = '{!$Label.Approval_Decline_Notes_must_fill}';
+                        } else if (!$scope.isError) {
+
+                            if (isChanged) {
+                                $scope.showConfirmBox = true;
+                                $scope.emailChanged = true;
+                                $scope.confirmMsg = '{!$Label.Temporary_changes_contact_Details}';
+                            } else if (!$scope.cs.approveWithoutContact) {
+                                $scope.showConfirmBox = true;
+                                $scope.confirm = true;
+                                $scope.confirmMsg = '{!$Label.Approval_Confirmation}';
+                            } else {
+                                $scope.approve();
+                            }
+                        }
+                    } else if (!$scope.cs.approveWithoutContact) {
+                        $scope.isError = true;
+                        $scope.errorMsg = '{!$Label.Select_One_Contact}';
+                    }
+                }
+
+                $scope.validate2 = function(isUpdateContact) {
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.isUpdateContact = isUpdateContact;
+                    $scope.emailChanged = false;
+
+                    if (!$scope.cs.approveWithoutContact) {
+                        $scope.confirm = true;
+                        $scope.showConfirmBox = true;
+                        $scope.confirmMsg = '{!$Label.Approval_Confirmation}';
+                    } else {
+                        $scope.approve();
+                    }
+                }
+
+                $scope.approve = function() {
+                    $scope.confirm = false;
+                    $scope.showConfirmBox = false;
+                    $scope.isloading = true;
+
+                    $scope.approveContact().then(function(result) {
+
+                        if (result.indexOf('success') >= 0) {
+                            $scope.isloading = false;
+                            var points = result.split(':');
+
+                            if (points.length > 1 && parseInt(points[1]) > 0) {
+                                showDisolvingAlert(parseInt(points[1]),$scope.info.rraRefTypeName);
+                            } else {
+                                $scope.back();
+                            }
+                        } else if (result != null && result != '' && result.indexOf('success') < 0) {
+                            $scope.isError = true;
+                            $scope.errorMsg = result;
+                            $scope.isloading = false;
+                        } else {
+                            $scope.back();
+                        }
+                    });
+                }
+
+                $scope.exit = function() {
+
+                    if ($scope.errorMsg == '{!$Label.REQUEST_EXPIRED_NO_NEED_TO_RESPOND}') {
+                        $scope.back();
+                    } else {
+                        $scope.isError = false;
+                        $scope.errorMsg = '';
+                    }
+                }
+
+                $scope.validateDecline = function() {
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+
+                    if ($scope.info.notes == '') {
+                        $scope.isError = true;
+                        $scope.errorMsg = '{!$Label.Approval_Decline_Notes_must_fill}';
+                    } else {
+                        $scope.confirmMsg = '{!$Label.Decline_Confirmation}'; 
+                        $scope.showConfirmBox = true;
+                        $scope.confirmDecline = true;
+                    }
+                }
+
+                $scope.decline = function() {
+                    $scope.confirmDecline = false;
+                    $scope.showConfirmBox = false;
+
+                    $scope.declineContact().then(function(result) {
+
+                        if (result != null && result != '') {
+                            $scope.isError = true;
+                            $scope.errorMsg = result;
+                        } else {
+                            $scope.back();
+                        }
+                    });
+                }
+
+                $scope.emailVerification = function(conWrap) {
+                    var re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+
+                    if (conWrap.email != null && conWrap.email != '' && !re.test(conWrap.email)) {
+                        $scope.emailVerificationError = '{!$Label.Invalid_Email_Address}';
+                    } else {
+                        $scope.emailVerificationError = '';
+                        conWrap.isEmailEdit = false;
+                    }
+                }
+
+                $scope.back = function() {
+
+                    if ((typeof sforce != 'undefined') && (sforce != null)) {
+                        sforce.one.back(true);
+                    } else {
+                        window.location.href = '/_ui/core/chatter/ui/ChatterPage';
+                    }
+                }
+
+                $scope.activateContactRA = function(index) {
+                    var deferred = $q.defer();
+
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.activateContact}',
+                        $scope.contacts[index].id,
+                        $scope.cs.checkProfileCreatedEmail,
+                        $scope.cs.checkProfileCreatedChatter,
+                        $scope.cs.checkProfileCreatedSlack,
+                        $scope.cs.slackTeamIds,
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            deferred.resolve(JSON.parse(result));
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.activateContact = function(index) {
+                    $scope.isloading = true;
+                    $scope.activateContactRA(index).then(function(result) {
+                        
+                        if (result != null && result != '') {
+                            var temp = angular.copy($scope.contacts[index]);
+                            $scope.contacts[index] = result;
+                            $scope.contact = $scope.contacts[index];
+                            $scope.contact.email = temp.email;
+                            $scope.contact.phone = temp.phone;
+                            $scope.contact.title = temp.title;
+                        }
+                        $scope.isloading = false;
+                    });
+                }
+
+                $scope.showContact = function(index) {
+                    $scope.contact = $scope.contacts[index];
+                    $scope.item.selectedContactId = $scope.contact.id;
+                    $scope.tempContact = angular.copy($scope.contact);
+                    $scope.isDetailOn = false;
+                    $scope.contact.isPhoneEdit = false;
+                    $scope.contact.isEmailEdit = false;
+                    $scope.contact.isTitleEdit = false;
+                    $scope.emailVerificationError = '';
+                    $scope.showContactDetails = true;
+                    $scope.isModalError = false;
+                    $scope.modalErrorMessage = '';
+                }
+
+                $scope.checkPermission = function() {
+                    var deferred = $q.defer();
+
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.getPermissionsMessage}',
+                        function(result, event) {
+                            deferred.resolve(result);
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.approveContact = function() {
+                    var deferred = $q.defer();
+
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.approve}',
+                        $scope.refReqAccId,
+                        $scope.info.oppAccName,
+                        $scope.info.notes,
+                        angular.toJson($scope.contacts),
+                        $scope.cs,
+                        $scope.item.selectedContactId,
+                        $scope.isUpdateContact,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.declineContact = function() {
+                    var deferred = $q.defer();
+
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.decline}',
+                        $scope.refReqAccId,
+                        $scope.cs,
+                        $scope.info.notes,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.fetchContacts = function(accId) {
+                    var deferred = $q.defer();
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.fetchContacts}',
+                        accId,
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            deferred.resolve(JSON.parse(result));
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.fetchCS = function() {
+                    var deferred = $q.defer();
+
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.fetchCS}',
+                        function(result, event) {
+
+                            if (result != null && result != '') {
+                                deferred.resolve(result);
+                            }
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.fetchInfo = function() {
+                    var deferred = $q.defer();
+
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.fetchInfo}',
+                        $scope.refReqAccId,
+                        function(result, event) {
+
+                            if (result != null && result != '') {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.createContact = function() {
+                    var deferred = $q.defer();
+
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.createContact}',
+                        angular.toJson($scope.contactObj),
+                        $scope.info.rraAccountId,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        }
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.openNewContact = function() {
+
+                    $scope.checkPermission().then(function(result) {
+                        $scope.isCreateContact = true;
+
+                        if (result != '') {
+                            $scope.isModalError = true;
+                            $scope.modalErrorMessage = result;
+                        } else {
+                            $scope.isModalError = false;
+                        }
+                    });
+                }
+
+                $scope.enableInlineEdit = function(conWrap, fieldName) {
+                    
+                    if (fieldName == 'email') {
+                        conWrap.isEmailEdit = true;
+                        conWrap.isEmailEdited = true;
+                        conWrap.isPhoneEdit = false;
+                        conWrap.isTitleEdit = false;
+                    } else if (fieldName == 'phone') {
+                        conWrap.isEmailEdit = false;
+                        conWrap.isPhoneEdit = true;
+                        conWrap.isPhoneEdited = true;
+                        conWrap.isTitleEdit = false;
+                    } else if (fieldName == 'title') {
+                        conWrap.isEmailEdit = false;
+                        conWrap.isPhoneEdit = false;
+                        conWrap.isTitleEdit = true;
+                        conWrap.isTitleEdited = true;
+                    }
+                }
+
+                $scope.disableInlineEdit = function(conWrap, fieldName) {
+                    
+                    if (fieldName == 'email') {
+                        conWrap.isEmailEdit = false;
+                    } else if (fieldName == 'phone') {
+                        conWrap.isPhoneEdit = false;
+                    } else if (fieldName == 'title') {
+                        conWrap.isTitleEdit = false;
+                    }
+                }
+
+                $scope.saveContactDetails = function() {
+                    $scope.isModalError = false;
+                    $scope.modalErrorMessage = '';
+                    var re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+
+                    if (!re.test($scope.contact.email)) {
+                        $scope.modalErrorMessage = '{!$Label.Invalid_Email_Address}';
+                        $scope.isModalError = true;
+                    }
+
+                    if ($scope.contact.phone.trim() == '' || $scope.contact.email.trim() == ''
+                            || $scope.contact.phone.trim() == null || $scope.contact.email.trim() == null) {
+                        $scope.modalErrorMessage = '{!$Label.Please_complete_all_required_fields}';
+                        $scope.isModalError = true;
+                    }
+
+                    if (!$scope.isModalError) {
+                        $scope.showContactDetails = false;
+                    }
+                }
+
+                $scope.cancelContactDetails = function() {
+                    $scope.isModalError = false;
+                    $scope.modalErrorMessage = '';
+                    $scope.showContactDetails = false;
+                    $scope.contact.email = $scope.tempContact.email;
+                    $scope.contact.phone = $scope.tempContact.phone;
+                    $scope.contact.title = $scope.tempContact.title;
+                }
+
+                $scope.saveContact = function() {
+
+                    $scope.checkPermission().then(function(result) {
+
+                        if (result != '') {
+                            $scope.isModalError = true;
+                            $scope.modalErrorMessage = result;
+                        } else {
+                            $scope.isModalError = false;
+                        }
+
+                        if (!$scope.isModalError) {
+
+                            if ($scope.contactObj.id == null || $scope.contactObj.id == '') {
+                                $scope.modalErrorMessage = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+                                $scope.isModalError = true;
+                            } else {
+                                $scope.isloading = true;
+
+                                $scope.createContact().then(function(result1) {
+
+                                    if (result1 == '') {
+                                        
+                                        $scope.fetchContacts($scope.info.rraAccountId).then(function(result) {
+                                            $scope.contacts = JSON.parse($scope.parseResult(angular.toJson(result)));
+
+                                            if ($scope.contacts.length > 0) {
+                                                $scope.contact = $scope.contacts[0];
+                                            }
+
+                                            for (var i = 0; i < $scope.contacts.length; i++) {
+                                                $scope.contactMap[$scope.contacts[i].id] = angular.copy($scope.contacts[i]);
+                                            }
+                                        });
+                                        $scope.isCreateContact = false;
+                                        $scope.isModalError = false;
+                                        $scope.isloading = false;
+                                    } else {
+                                        $scope.modalErrorMessage = result1;
+                                        $scope.isModalError = true;
+                                        $scope.isloading = false;
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+                
+                //REF-2320
+                $scope.openTagsPopup = function(conWrap, $event) {
+                    $scope.contactAboutName = conWrap.name;
+                    $scope.tagReferencability = conWrap.referenceabilities;
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.SelectRefUseContactsControllerSLDS.rollUpAttribute}',
+                        conWrap.id,
+                        false,
+                        conWrap.accountId,
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            if(typeof(conWrap.attributes) != "undefined" && result != '') {
+                                $scope.tagAttributes = conWrap.attributes + ', ' + result;
+                            } else if(typeof(conWrap.attributes) == "undefined" && result != '') {
+                                $scope.tagAttributes = result;
+                            } else if(typeof(conWrap.attributes) != "undefined" && result == '') {
+                                $scope.tagAttributes = conWrap.attributes;
+                            }
+                            $scope.showTagsPopup = true;
+                            $scope.showBackContactDrop = true;
+                            
+                            if (isSLDS) {
+                            	$(".contact-Tags-panel").css("top", $($event.target).offset().top - 23);
+                            	$(".contact-Tags-panel").css("left", $($event.target).offset().left - 368);
+                            } else {
+                            	$(".contact-Tags-panel").css("top", $($event.target).offset().top - 143);
+                            	$(".contact-Tags-panel").css("left", $($event.target).offset().left - 378);
+                            }
+                            $scope.$apply();
+                        }
+                    );
+                } 
+                
+                $scope.showBackContactDropPopover = function() { 
+                    $scope.showAboutPopup = false;
+                    $scope.showTagsPopup = false;
+                    $scope.showBackContactDrop = false;                                       
+                }   
+            });
+
+            function showDisolvingAlert(points, message) {
+
+                if (typeof points != 'undefined' && points != '' && points != '0') {
+                    notification(points, message);
+                }
+            }
+
+            function redirectToBack() {
+                window.location = '/_ui/core/chatter/ui/ChatterPage';
+            }
+        </script>
+    </head>
+
+    <body>
+        <div ng-app="approveDecline" ng-controller="approveDeclineCon" ng-init="intialFunction()" ng-cloak="ng-cloak">
+            <c:RewardNotification />
+            <div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+	            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+					<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					</svg>
+				</span>
+	            {!$Label.User_License}
+	        </div>
+            <div role="status" ng-show="isloading && isSLDS" class="slds-spinner slds-spinner_medium slds-spinner_brand" style="z-index: 1;">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+            <div class="classicSpinnerbackground" ng-show="isloading && !isSLDS">
+                <apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60"/>
+            </div>
+            <div ng-show="isFullLicenseAccessible && isallDataFetched">
+                <!-- REF-2134 -->
+                <div id="classicDiv" ng-show="!isSLDS && !isloading">
+                    <div ng-show="info.isAnyError">
+                        <section role="dialog" tabindex="-1" class="classicModal" style="margin-left: -25%; width: 50%; top: 25vh;">
+                            <div>
+                                <header class="classicModalHeader">
+                                    <span>{!$Label.Request_Approval_Decline}</span>
+                                </header>
+                                <div class="classicModalContent">
+                                    {{info.info}}
+                                </div>
+                                <footer class="classicModalFooter">
+                                    <a class="btn" ng-click="back()">{!$Label.Ok}</a>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="classicModalbackdrop"></div>
+                    </div>
+                    
+                    <div ng-show="!info.isAnyError">
+                        <div class="errorPageMsgDiv" style="border-color: #c00 !important; position: relative" ng-show="emailVerificationError != ''">
+							<img class="errorImg" src="/s.gif" />
+							<span style="position: absolute; padding-left: 0.4rem">
+								<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+								<span>{{emailVerificationError}}</span>
+							</span>
+						</div>
+                        <div class="errorPageMsgDiv" style="border-color: #c00 !important; position: relative" ng-show="isError">
+							<img class="errorImg" src="/s.gif" />
+							<span style="position: absolute; padding-left: 0.4rem">
+								<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+								<span>{{errorMsg}}</span>
+							</span>
+						</div>
+                        <div ng-show="showConfirmBox">
+                            <section role="dialog" tabindex="-1" class="classicModal" style="margin-left: -25%; width: 50%; top: 25vh;">
+                                <div>
+                                    <header class="classicModalHeader">
+                                        <span>{!$Label.Request_Approval_Decline}</span>
+                                    </header>
+                                    <div class="classicModalContent">
+                                        {{confirmMsg}}
+                                    </div>
+                                    <footer class="classicModalFooter">
+                                        <a class="btn" ng-show="emailChanged" ng-click="validate2(true)">{!$Label.Yes}</a>
+                                        <a class="btn" ng-show="emailChanged" ng-click="validate2(false)">{!$Label.No}</a>
+                                        <a class="btn" ng-show="confirm" ng-click="approve()">{!$Label.Yes}</a>
+                                        <a class="btn" ng-show="confirm" ng-click="confirm = false; showConfirmBox = false;">{!$Label.No}</a>
+                                        <a class="btn" ng-show="confirmDecline" ng-click="decline()">{!$Label.Yes}</a>
+                                        <a class="btn" ng-show="confirmDecline" ng-click="confirmDecline = false; showConfirmBox = false;">{!$Label.No}</a>
+                                    </footer>
+                                </div>
+                            </section>
+                            <div class="classicModalbackdrop"></div>
+                        </div>
+                        <div ng-show="isCreateContact">
+                            <section role="dialog" tabindex="-1" class="classicModal" style="margin-left: -35%; width: 70%; top: 25vh;">
+                                <div>
+                                    <header class="classicModalHeader">
+                                        <a ng-click="isCreateContact = false; isModalError = false;" title="Close">
+                                            <i class="fa fa-times" aria-hidden="true"></i>
+                                        </a>
+                                        <span>Add New Contact</span>
+                                    </header>
+                                    <div class="classicModalContent">
+                                        <div class="errorPageMsgDiv" style="border-color: #c00 !important; position: relative" ng-show="isModalError">
+                                            <img class="errorImg" src="/s.gif" />
+                                            <span style="position: absolute; padding-left: 0.4rem">
+                                                <span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+                                                <span>{{modalErrorMessage}}</span>
+                                            </span>
+                                        </div>
+                                        <apex:pageblock mode="Edit">
+                                            <div class="pbSubsection" style="font-size: 0.75rem; padding-bottom: 1rem">
+                                                <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                {!$ObjectType.Contact.fields.OwnerId.Label}
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                {{currentUser}}
+                                                            </td>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                <label>{!$Label.Account}</label>
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                <a href="/{{info.rraAccountId}}" target="_blank" style="cursor: pointer; text-decoration: underline !important;">
+                                                                    {{info.rraAccountName}}
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                {!$ObjectType.Contact.fields.FirstName.Label}
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                <input type="text" ng-model="contactObj.name" />
+                                                            </td>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                {!$ObjectType.Contact.fields.Email.Label}
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                <div style="position: relative">
+                                                                    <div class="classicRequiredDiv">&nbsp;</div>
+                                                                    <input type="text" ng-model="contactObj.email" />
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                {!$ObjectType.Contact.fields.LastName.Label}
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                <div style="position: relative">
+                                                                    <div class="classicRequiredDiv">&nbsp;</div>
+                                                                    <input type="text" ng-model="contactObj.id" />
+                                                                </div>
+                                                            </td>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                {!$Label.Phone}
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                <input type="text" ng-model="contactObj.phone" />
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                {!$ObjectType.Contact.fields.Title.Label}
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                <input type="text" ng-model="contactObj.title" />
+                                                            </td>
+                                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                                &nbsp;
+                                                            </th>
+                                                            <td class="dataCol  first  last ">
+                                                                &nbsp;
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </apex:pageblock>
+                                    </div>
+                                    <footer class="classicModalFooter">
+                                        <a class="btn" ng-click="saveContact()">{!$Label.Save}</a>
+                                        <a class="btn" ng-click="isCreateContact = false; isModalError = false;">{!$Label.Cancel}</a>
+                                    </footer>
+                                </div>
+                            </section>
+                            <div class="classicModalbackdrop"></div>
+                        </div>
+                        
+                        <apex:pageblock title="{!$Label.Request_Approval_Decline}" mode="Edit">
+                            <div class="pbSubheader brandTertiaryBgr first tertiaryPalette">
+                                <span class="pbSubExtra" style="float: left">
+                                    <h3>{!$Label.Request_Details}</h3>
+                                </span>
+                            </div>
+                            <div class="pbSubsection" style="font-size: 0.75rem; padding-bottom: 1rem">
+                                <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                    <tbody>
+                                        <tr>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                {!$Label.Request_Creation_Date}
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.requestCreationDate}}
+                                            </td>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <label>{!$Label.Account}</label>
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                <a href="/{{info.rraAccountId}}" target="_blank" style="cursor: pointer; text-decoration: underline !important;">
+                                                    {{info.rraAccountName}}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                {!$Label.Requester}
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                <a href="/{{info.rraRequester}}" target="_blank" style="cursor: pointer; text-decoration: underline !important;">
+                                                    {{info.rraRequesterName}}
+                                                </a>
+                                            </td>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <label>{!$Label.Reference_Type}</label>
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                <a href="/{{info.rraRefType}}" target="_blank" style="cursor: pointer; text-decoration: underline !important;">
+                                                    {{info.rraRefTypeName}}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="info.opportunityId != ''">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                {!$Label.Opportunity_Account}
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.oppAccName}}
+                                            </td>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <label>{!$Label.Opportunity_Name}</label>
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.oppName}}
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="info.caseId != ''">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                {!$Label.Case_Account}
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.caseAccName}}
+                                            </td>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <label>{!$ObjectType.Case.fields.CaseNumber.Label}</label>
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.caseName}}
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="info.leadId != ''">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                {!$ObjectType.Lead.fields.Company.Label}
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.leadCompany}}
+                                            </td>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <label>{!$Label.Lead_Name}</label>
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.leadName}}
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="!isBasic && isAdvRouting">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                {!$Label.Criteria}
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                {{info.routingCriteria}}
+                                            </td>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <label>&nbsp;</label>
+                                            </th>
+                                            <td class="dataCol  first  last ">
+                                                &nbsp;
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pbSubheader brandTertiaryBgr first tertiaryPalette">
+                                <span class="pbSubExtra" style="float: left">
+                                    <h3>{!$Label.Request_Response}</h3>
+                                </span>
+                            </div>
+                            <div class="pbSubsection" style="font-size: 0.75rem; padding-bottom: 0.75rem">
+                                <div class="slds-grid slds-grid_align-center slds-grid_vertical-align-start" style="width: 95%; padding: 0 0 0.25rem 0;">
+                                    <a class="btn" ng-click="validate()" style="text-decoration: none; color: #333; padding: 4px 3px; line-height: 1.2">{!$Label.Approve}</a>
+                                    <a class="btn" ng-click="validateDecline()" style="text-decoration: none; color: #333; padding: 4px 3px; line-height: 1.2">{!$Label.Decline}</a>
+                                    <a class="btn" ng-click="back()" style="text-decoration: none; color: #333; padding: 4px 3px; line-height: 1.2">{!$Label.Cancel}</a>
+                                </div>
+                                <div ng-show="contacts.length > 0" style=" font-weight: bold">
+                                    {!$Label.select_appropriate_contact}
+                                </div>
+                                <div ng-show="contacts.length == 0" style=" font-weight: bold">
+                                    {!$Label.add_contacts_to_account_for_request}
+                                    <h3 style="display: inline">
+                                        <a style="cursor: pointer; text-decoration: underline !important;" ng-click="openNewContact()">{!$Label.add_the_contact}</a>
+                                    </h3>
+                                    {!$Label.Add_contacts_to_account_for_request2}
+                                </div>
+                                <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                    <tbody>
+                                        <tr>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row" style="float: left">
+                                                {!$Label.Approval_Decline_Notes}
+                                            </th>
+                                            <td class="dataCol  first  last " style="float: left; width: 70%">
+                                                <div style="position: relative">
+                                                    <div class="classicRequiredDiv">&nbsp;</div>
+                                                    <textarea style="width: 100%" ng-model="info.notes" rows="4"></textarea>
+                                                </div>
+                                            </td>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row"><label>&nbsp;</label></th>
+                                            <td class="dataCol  first  last ">&nbsp;</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <table class="classicTable" ng-show="contacts.length > 0">
+                                    <thead>
+										<tr>
+											<th scope="col" class="classicTableHeaderCell" style="width: 6rem">
+												{!$Label.Select_Activate}
+											</th>
+											<th scope="col" class="classicTableHeaderCell" style="width: 15rem">
+												{!$Label.Name}
+											</th>
+											<th scope="col" class="classicTableHeaderCell" style="width: 15rem">
+												{!$Label.Title}
+											</th>
+											<th scope="col" class="classicTableHeaderCell" style="width: 15rem">
+												<div style="background-color: #c00; line-height: 1.2; display: inline-block">&nbsp;</div>
+                                                {!$Label.Email}
+											</th>
+											<th scope="col" class="classicTableHeaderCell" style="width: 15rem">
+												<div style="background-color: #c00; line-height: 1.2; display: inline-block">&nbsp;</div>
+                                                {!$Label.Phone}
+											</th>
+                                            <!-- REF-2320 -->
+											<th scope="col" class="classicTableHeaderCell" style="width: 5rem">
+                                                {!$Label.Tags}
+											</th>
+											<th scope="col" class="classicTableHeaderCell" style="width: 10rem">
+                                                {!$Label.Reference_Program_Member}
+											</th>
+											<th scope="col" class="classicTableHeaderCell" style="width: 6rem">
+												{!$Label.T_Last_Used}
+											</th>
+											<th scope="col" class="classicTableHeaderCell" style="width: 6.5rem">
+												{!$ObjectType.Reference_Basic_Information__c.fields.Referenceability_Status__c.Label}
+											</th>
+										</tr>
+									</thead>
+                                    <tbody>
+                                        <tr ng-repeat="contact in contacts">
+                                            <td class="classicTablebodyCell">
+                                                <input type="radio" id="{{'contactClassic' + $index}}" name="contactRadioClassic"
+                                                        ng-hide="!contact.active && !cs.isShowInactive" ng-change="showContact($index)"
+                                                        ng-model="item.selectedContactId" ng-value="contact.id" />
+                                                <a class="btn" style="text-decoration: none; color: #333; padding: 4px 3px; line-height: 1.2; font-size: 0.9em" ng-show="!contact.active && !cs.isShowInactive" ng-click="activateContact($index)">
+                                                    {!$Label.Activate}
+                                                </a>
+                                            </td>
+                                            <td class="classicTablebodyCell">
+                                                <a style="cursor: pointer" href="/{{contact.id}}" target="_blank">
+                                                    {{contact.name}}
+                                                </a>
+                                            </td>
+                                            <td class="classicTablebodyCell editableCell">
+                                                <div ng-dblclick="enableInlineEdit(contact, 'title')" ng-show="!contact.isTitleEdit" ng-class="{'editedCell' : contact.isTitleEdited}">
+                                                    {{contact.title}}&nbsp;
+                                                </div>
+                                                <div ng-show="contact.isTitleEdit">
+                                                    <input type="text" ng-model="contact.title" ng-blur="disableInlineEdit(contact, 'title')" />
+                                                </div>
+                                            </td>
+                                            <td class="classicTablebodyCell editableCell">
+                                                <div ng-dblclick="enableInlineEdit(contact, 'email')" ng-show="!contact.isEmailEdit" ng-class="{'editedCell' : contact.isEmailEdited}">
+                                                    {{contact.email}}&nbsp;
+                                                </div>
+                                                <div ng-show="contact.isEmailEdit">
+                                                    <input type="text" ng-model="contact.email" ng-blur="emailVerification(contact)" />
+                                                </div>
+                                            </td>
+                                            <td class="classicTablebodyCell editableCell">
+                                                <div ng-dblclick="enableInlineEdit(contact, 'phone')" ng-show="!contact.isPhoneEdit" ng-class="{'editedCell' : contact.isPhoneEdited}">
+                                                    {{contact.phone}}&nbsp;
+                                                </div>
+                                                <div ng-show="contact.isPhoneEdit">
+                                                    <input type="text" ng-model="contact.phone" ng-blur="disableInlineEdit(contact, 'phone')" />
+                                                </div>
+                                            </td>
+                                            <!-- REF-2320 -->
+                                            <td class="classicTablebodyCell">
+                                                <img class="type-Tag" ng-click="openTagsPopup(contact, $event)" ng-show="contact.status == 'Active'" 
+                                                     src="{!URLFOR($Resource.RFSearch_Icons,'Tags.svg')}" style="max-width: 29px; cursor: pointer;"/>
+                                            </td>
+                                            <td class="classicTablebodyCell" style="text-align: center">
+                                                <img src="{!$Resource.GreenCheck}" ng-show="contact.isMember" style="height: 0.75rem" />
+                                            </td>
+                                            <td class="classicTablebodyCell">{{contact.lastUsedDate}}</td>
+                                            <td class="classicTablebodyCell">{{contact.status}}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </apex:pageblock>
+                    </div>
+                </div>
+                
+                <!-- REF-2134 -->
+                <div id="lightningDiv" ng-show="isSLDS && !isloading" class="container">
+                    <div ng-show="!info.isAnyError">
+                        <div class="slds-page-header">
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-size_1-of-1 slds-medium-size_3-of-6 slds-large-size_3-of-6">
+                                    <div class="slds-media slds-grid slds-wrap slds-grid_vertical-align-center" style="align-items: center">
+                                        <div class="slds-media__figure">
+                                            <span class="slds-icon_container slds-icon-standard-user" style="background-color: #2291F1">
+                                                <svg class="slds-icon slds-icon_large" aria-hidden="true">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/standard-sprite/svg/symbols.svg#live_chat')}"></use>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="slds-media__body">
+                                            <p class="slds-text-title_caps slds-line-height_reset">{!$Label.Reference_Use_Request}</p>
+                                            <h1 class="slds-page-header__title slds-m-right_small slds-align-middle">{!$Label.Approve_Decline}</h1>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="buttonsBar slds-size_1-of-1 slds-medium-size_3-of-6 slds-large-size_3-of-6 slds-p-top_small">
+                                    <a class="slds-button slds-button_brand" ng-click="validate()">{!$Label.Approve}</a>
+                                    <a class="slds-button slds-button_neutral" ng-click="validateDecline()">{!$Label.Decline}</a>
+                                    <a class="slds-button slds-button_neutral" ng-click="back()">{!$Label.Cancel}</a>
+                                </div>
+                            </div>
+                            <ul class="slds-grid slds-wrap slds-page-header__detail-row" style="background-color: #f7f9fb; padding: 0; margin: 0.75rem 0 0 0">
+                                <li class="slds-page-header__detail-block">
+                                    <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Requested_Account}</p>
+                                    <p class="slds-text-body_regular">
+                                        <a style="cursor: pointer" href="/{{info.rraAccountId}}" target="_blank">
+                                            {{info.rraAccountName}}
+                                        </a>
+                                    </p>
+                                </li>
+                                <li class="slds-page-header__detail-block">
+                                    <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Reference_Type}</p>
+                                    <p class="slds-text-body_regular">
+                                        <a style="cursor: pointer" href="/{{info.rraRefType}}" target="_blank">
+                                            {{info.rraRefTypeName}}
+                                        </a>
+                                    </p>
+                                </li>
+                                <li class="slds-page-header__detail-block">
+                                    <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Requester}</p>
+                                    <p class="slds-text-body_regular">
+                                        <a style="cursor: pointer" href="/{{info.rraRequester}}" target="_blank">
+                                            {{info.rraRequesterName}}
+                                        </a>
+                                    </p>
+                                </li>
+                                <li class="slds-page-header__detail-block" ng-show="!isBasic && isAdvRouting">
+                                    <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Criteria}</p>
+                                    <p class="slds-text-body_regular">
+                                        <a style="cursor: pointer" href="/{{info.rraAccountId}}" target="_blank">
+                                            {{info.routingCriteria}}
+                                        </a>
+                                    </p>
+                                </li>
+                                <li class="slds-page-header__detail-block mobileVisible">
+                                    <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Request_Details}</p>
+                                    <p class="slds-text-body_regular">
+                                        <a style="cursor: pointer" ng-click="showRequestDetails = true">
+                                            {!$Label.Details}
+                                        </a>
+                                    </p>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="horizontal-padding-large slds-grid slds-wrap slds-p-top_small">
+                            <div class="slds-size_1-of-1 slds-medium-size_8-of-12 slds-large-size_8-of-12 slds-p-right_small">
+                                <label class="slds-form-element__label" style="margin: 0; padding: 0.7rem 0; border-bottom: 1px solid #d8dde6; width: 100%">
+                                    {!$Label.select_appropriate_contact}
+                                </label>
+                                <div class="slds-form-element slds-p-top_medium">
+                                    <label class="slds-form-element__label">
+                                        {!$Label.Approval_Decline_Notes}<span style="color: #c23934">*</span>
+                                    </label>
+                                    <div class="slds-form-element__control">
+                                        <textarea class="slds-textarea" ng-model="info.notes" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div ng-hide="contacts.length > 0" class="slds-p-top_small">
+                                    <label class="slds-form-element__label">
+                                        {!$Label.add_contacts_to_account_for_request}
+                                        <h3 style="display: inline">
+                                            <a style="cursor: pointer" ng-click="openNewContact()">{!$Label.add_the_contact}</a>
+                                        </h3>
+                                        {!$Label.Add_contacts_to_account_for_request2}
+                                    </label>
+                                </div>
+                                <div ng-show="contacts.length > 0" class="tableContainer slds-p-top_small">
+                                    <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                                        <tbody>
+                                            <tr ng-repeat="contact in contacts" ng-click="showContact($index)">
+                                                <td ng-click="$event.stopPropagation()" role="gridcell" class="slds-text-align_right" style="width: 2rem" scope="row">
+                                                    <span class="slds-radio">
+                                                        <input type="radio" id="{{'contact' + $index}}" name="contactRadio"
+                                                                ng-disabled="!contact.active && !cs.isShowInactive"
+                                                                ng-model="item.selectedContactId" ng-value="contact.id" 
+                                                                ng-change="showContact($index)"/>
+                                                        <label class="slds-radio__label" for="{{'contact' + $index}}">
+                                                            <span class="slds-radio_faux"></span>
+                                                            <span class="slds-form-element__label">&nbsp;</span>
+                                                        </label>
+                                                    </span>
+                                                </td>
+                                                <td role="gridcell" style="width: 70%">
+                                                    <a style="cursor: pointer" href="/{{contact.id}}" target="_blank">
+                                                        {{contact.name}}
+                                                    </a>
+                                                    <div class="slds-text-color_weak">{{contact.title}}</div>
+                                                    <div class="slds-text-color_weak mobileVisible">{{contact.email}}</div>
+                                                    <div class="slds-text-color_weak mobileVisible">{{contact.phone}}</div>
+                                                    <div class="slds-text-color_weak mobileVisible">{{contact.lastUsedDate}}</div>
+                                                </td>
+                                                <td role="gridcell" style="text-align: right">
+                                                    <span class="slds-badge slds-theme_success mobileVisibleInline" ng-show="contact.status == 'Active'">Active</span>
+                                                    <span class="slds-badge slds-theme_warning mobileVisibleInline" style="color: white" ng-show="contact.status == 'Caution'">Caution</span>
+                                                    <span class="slds-badge slds-theme_error mobileVisibleInline" ng-show="!contact.active && contact.status == 'Inactive' && cs.isShowInactive">Inactive</span>
+                                                    <!-- REF-2320 -->
+                                                    <span class="desktopVisibleInline" ng-show="contact.status == 'Active'" style="max-width: 29px;margin-right: 20px;">
+                                                        <img class="type-Tag" ng-click="openTagsPopup(contact, $event)"
+                                                             src="{!URLFOR($Resource.RFSearch_Icons,'Tags.svg')}"  style="cursor: pointer;"/>
+                                                    </span>
+                                                    <span class="slds-badge slds-theme_success desktopVisibleInline" ng-show="contact.status == 'Active'">{!$Label.Active_Reference}</span>
+                                                    <span class="slds-badge slds-theme_warning desktopVisibleInline" style="color: white" ng-show="contact.status == 'Caution'">{!$Label.Caution_Reference}</span>
+                                                    <span class="slds-badge slds-theme_error desktopVisibleInline" ng-show="!contact.active && contact.status == 'Inactive' && cs.isShowInactive">{!$Label.Inactive_Reference}</span>
+                                                    <a class="slds-button slds-button_neutral" ng-show="!contact.active && !cs.isShowInactive" ng-click="activateContact($index)">{!$Label.Activate}</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="desktopVisible slds-size_1-of-1 slds-medium-size_4-of-12 slds-large-size_4-of-12 slds-p-left_small">
+                                <div class="slds-tabs_default">
+                                    <ul class="slds-tabs_default__nav" role="tablist">
+                                        <li class="slds-tabs_default__item" ng-class="{'slds-is-active' : isDetailOn}" role="presentation">
+                                            <a class="slds-tabs_default__link slds-text-title_caps" ng-click="isDetailOn = true" style="line-height: 2.5rem" role="tab" tabindex="0">
+                                                {!$Label.Request_Details}
+                                            </a>
+                                        </li>
+                                        <li class="slds-tabs_default__item" ng-class="{'slds-is-active' : !isDetailOn}" role="presentation">
+                                            <a class="slds-tabs_default__link slds-text-title_caps" ng-click="isDetailOn = false" style="line-height: 2.5rem" role="tab" tabindex="-1">
+                                                {!$Label.Contact_Details}
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    <div class="slds-tabs_default__content slds-p-left_small" ng-show="isDetailOn" role="tabpanel">
+                                        <div class="slds-form-element slds-p-bottom_small" ng-show="info.opportunityId != ''">
+                                            <span class="slds-form-element__label">{!$Label.Opportunity_Name}</span>
+                                            <div class="slds-form-element__control">
+                                                <span class="slds-form-element__static">{{info.oppName}}</span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element slds-p-bottom_small" ng-show="info.opportunityId != ''">
+                                            <span class="slds-form-element__label">{!$Label.Opportunity_Account}</span>
+                                            <div class="slds-form-element__control">
+                                                <span class="slds-form-element__static">{{info.oppAccName}}</span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element slds-p-bottom_small" ng-show="info.caseId != ''">
+                                            <span class="slds-form-element__label">{!$ObjectType.Case.fields.CaseNumber.Label}</span>
+                                            <div class="slds-form-element__control">
+                                                <span class="slds-form-element__static">{{info.caseName}}</span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element slds-p-bottom_small" ng-show="info.caseId != ''">
+                                            <span class="slds-form-element__label">{!$Label.Case_Account}</span>
+                                            <div class="slds-form-element__control">
+                                                <span class="slds-form-element__static">{{info.caseAccName}}</span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element slds-p-bottom_small" ng-show="info.leadId != ''">
+                                            <span class="slds-form-element__label">{!$Label.Lead_Name}</span>
+                                            <div class="slds-form-element__control">
+                                                <span class="slds-form-element__static">{{info.leadName}}</span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element slds-p-bottom_small" ng-show="info.leadId != ''">
+                                            <span class="slds-form-element__label">{!$ObjectType.Lead.fields.Company.Label}</span>
+                                            <div class="slds-form-element__control">
+                                                <span class="slds-form-element__static">{{info.leadCompany}}</span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element slds-p-bottom_small">
+                                            <span class="slds-form-element__label">{!$Label.Requester_Notes}</span>
+                                            <div class="slds-form-element__control">
+                                                <span class="slds-form-element__static">{{info.requesterNotes}}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-tabs_default__content slds-p-left_small" ng-show="!isDetailOn" role="tabpanel">
+                                        <div class="slds-text-heading_small" ng-show="contacts.length == 0" style="text-align: center">No Contact selected.</div>
+                                        <div ng-show="contacts.length > 0">
+                                            <div class="slds-form-element slds-p-bottom_small editableFormElement" ng-class="{'slds-has-error' : emailVerificationError != ''}">
+                                                <span class="slds-form-element__label">
+                                                    {!$Label.Email}<span style="color: #c23934">*</span>
+                                                </span>
+                                                <div class="slds-form-element__control" ng-dblclick="enableInlineEdit(contact, 'email')" ng-show="!contact.isEmailEdit">
+                                                    <span class="slds-form-element__static" ng-show="contact.email != ''">{{contact.email}}</span>
+                                                    <span class="slds-form-element__static" ng-show="contact.email == ''">&nbsp;</span>
+                                                    <span class="slds-icon_container slds-icon-utility-edit" ng-click="enableInlineEdit(contact, 'email')" style="float: right; cursor: pointer">
+                                                        <svg class="slds-icon slds-icon_xx-small editIcon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#edit')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                </div>
+                                                <div class="slds-form-element__control" ng-show="contact.isEmailEdit">
+                                                    <input type="text" ng-model="contact.email" class="slds-input" ng-blur="emailVerification(contact)" />
+                                                </div>
+                                                <div class="slds-form-element__help" ng-show="contact.isEmailEdit && emailVerificationError != ''">{{emailVerificationError}}</div>
+                                            </div>
+                                            <div class="slds-form-element slds-p-bottom_small editableFormElement">
+                                                <span class="slds-form-element__label">
+                                                    {!$Label.Phone}<span style="color: #c23934">*</span>
+                                                </span>
+                                                <div class="slds-form-element__control" ng-dblclick="enableInlineEdit(contact, 'phone')" ng-show="!contact.isPhoneEdit">
+                                                    <span class="slds-form-element__static" ng-show="contact.phone != ''">{{contact.phone}}</span>
+                                                    <span class="slds-form-element__static" ng-show="contact.phone == ''">&nbsp;</span>
+                                                    <span class="slds-icon_container slds-icon-utility-edit" ng-click="enableInlineEdit(contact, 'phone')" style="float: right; cursor: pointer">
+                                                        <svg class="slds-icon slds-icon_xx-small editIcon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#edit')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                </div>
+                                                <div class="slds-form-element__control" ng-show="contact.isPhoneEdit">
+                                                    <input type="text" ng-model="contact.phone" class="slds-input" ng-blur="disableInlineEdit(contact, 'phone')" />
+                                                </div>
+                                            </div>
+                                            <div class="slds-form-element slds-p-bottom_small editableFormElement">
+                                                <span class="slds-form-element__label">
+                                                    {!$Label.Title}
+                                                </span>
+                                                <div class="slds-form-element__control" ng-dblclick="enableInlineEdit(contact, 'title')" ng-show="!contact.isTitleEdit">
+                                                    <span class="slds-form-element__static" ng-show="contact.title != ''">{{contact.title}}</span>
+                                                    <span class="slds-form-element__static" ng-show="contact.title == ''">&nbsp;</span>
+                                                    <span class="slds-icon_container slds-icon-utility-edit" ng-click="enableInlineEdit(contact, 'title')" style="float: right; cursor: pointer">
+                                                        <svg class="slds-icon slds-icon_xx-small editIcon" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#edit')}"></use>
+                                                        </svg>
+                                                    </span>
+                                                </div>
+                                                <div class="slds-form-element__control" ng-show="contact.isTitleEdit">
+                                                    <input type="text" ng-model="contact.title" class="slds-input" ng-blur="disableInlineEdit(contact, 'title')" />
+                                                </div>
+                                            </div>
+                                            <div class="slds-form-element slds-p-bottom_small">
+                                                <span class="slds-form-element__label">
+                                                    {!$Label.Reference_Program_Member}
+                                                </span>
+                                                <div class="slds-form-element__control">
+                                                    <span class="slds-checkbox">
+                                                        <input type="checkbox" ng-model="contact.isMember" disabled="true" />
+                                                        <label class="slds-checkbox__label">
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label">&nbsp;</span>
+                                                        </label>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="slds-form-element slds-p-bottom_small">
+                                                <span class="slds-form-element__label">
+                                                    {!$Label.Status}
+                                                </span>
+                                                <div class="slds-form-element__control">
+                                                    <span class="slds-form-element__static" ng-show="contact.status != ''">{{contact.status}}</span>
+                                                    <span class="slds-form-element__static" ng-show="contact.status == ''">&nbsp;</span>
+                                                </div>
+                                            </div>
+                                            <div class="slds-form-element slds-p-bottom_small">
+                                                <span class="slds-form-element__label">
+                                                    {!$Label.T_Last_Used}
+                                                </span>
+                                                <div class="slds-form-element__control">
+                                                    <span class="slds-form-element__static" ng-show="contact.lastUsedDate != ''">{{contact.lastUsedDate}}</span>
+                                                    <span class="slds-form-element__static" ng-show="contact.lastUsedDate == ''">&nbsp;</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="custom-toast-container" ng-show="isError">
+                        <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                            <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" ng-click="exit()">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                            </a>
+                            <div class="slds-notify__content">
+                                <h2 class="slds-text-heading_small" style="font-size: 14px">{{errorMsg}}</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    <section ng-class="{'slds-fade-in-open' : info.isAnyError}" role="dialog" tabindex="-1" class="slds-modal">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 class="slds-text-heading_small slds-hyphenate slds-text-color_weak">{!$Label.Request_Approval_Decline}</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium">
+                                {{info.info}}
+                            </div>
+                            <footer class="slds-modal__footer" style="text-align: center">
+                                <a class="slds-button slds-button_neutral" ng-click="back()">{!$Label.Ok}</a>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop" ng-class="{'slds-backdrop_open' : info.isAnyError}"></div>
+
+                    <section ng-class="{'slds-fade-in-open' : showConfirmBox}" role="dialog" tabindex="-1" class="slds-modal">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 class="slds-text-heading_small slds-hyphenate slds-text-color_weak">{!$Label.Request_Approval_Decline}</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium">
+                                {{confirmMsg}}
+                            </div>
+                            <footer class="slds-modal__footer" style="text-align: center">
+                                <a class="slds-button slds-button_neutral" ng-show="emailChanged" ng-click="validate2(true)">{!$Label.Yes}</a>
+                                <a class="slds-button slds-button_neutral" ng-show="emailChanged" ng-click="validate2(false)">{!$Label.No}</a>
+                                <a class="slds-button slds-button_neutral" ng-show="confirm" ng-click="approve()">{!$Label.Yes}</a>
+                                <a class="slds-button slds-button_neutral" ng-show="confirm" ng-click="confirm = false; showConfirmBox = false;">{!$Label.No}</a>
+                                <a class="slds-button slds-button_neutral" ng-show="confirmDecline" ng-click="decline()">{!$Label.Yes}</a>
+                                <a class="slds-button slds-button_neutral" ng-show="confirmDecline" ng-click="confirmDecline = false; showConfirmBox = false;">{!$Label.No}</a>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop" ng-class="{'slds-backdrop_open' : showConfirmBox}"></div>
+
+                    <section ng-class="{'slds-fade-in-open' : isCreateContact}" role="dialog" tabindex="-1" class="slds-modal slds-modal_large">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="isCreateContact = false; isModalError = false;">
+                                    <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                    </svg>
+                                </a>
+                                <h2 class="slds-text-heading_small slds-hyphenate slds-text-color_weak">Add New Contact</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium">
+                                <div ng-show="isModalError" class="modalErrorBlock slds-text-color_inverse slds-p-around_small">
+                                    <strong>
+                                        {!$Label.Please_review_the_following_errors}
+                                    </strong>
+                                    <p style="display: block">
+                                        {{modalErrorMessage}}
+                                    </p>
+                                </div>
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-form-element slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-around_x-small">
+                                        <span class="slds-form-element__label">
+                                            {!$ObjectType.Contact.fields.OwnerId.Label}
+                                        </span>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <span class="slds-form-element__static">{{currentUser}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-around_x-small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.Account}
+                                        </span>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <span class="slds-form-element__static">{{info.rraAccountName}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-around_x-small">
+                                        <span class="slds-form-element__label">
+                                            {!$ObjectType.Contact.fields.FirstName.Label}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contactObj.name" class="slds-input" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-around_x-small">
+                                        <span class="slds-form-element__label">
+                                            {!$ObjectType.Contact.fields.Email.Label}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contactObj.email" class="slds-input" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-around_x-small">
+                                        <span class="slds-form-element__label">
+                                            {!$ObjectType.Contact.fields.LastName.Label}<span style="color: #c23934">*</span>
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contactObj.id" class="slds-input" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-around_x-small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.Phone}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contactObj.phone" class="slds-input" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2 slds-p-around_x-small">
+                                        <span class="slds-form-element__label">
+                                            {!$ObjectType.Contact.fields.Title.Label}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contactObj.title" class="slds-input" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <a class="slds-button slds-button_brand" ng-click="saveContact()">{!$Label.Save}</a>
+                                <a class="slds-button slds-button_neutral" ng-click="isCreateContact = false; isModalError = false;">{!$Label.Cancel}</a>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop" ng-class="{'slds-backdrop_open' : isCreateContact}"></div>
+                    
+                    <section ng-class="{'slds-fade-in-open' : showContactDetails}" role="dialog" tabindex="-1" class="slds-modal slds-modal_large mobileVisible">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="cancelContactDetails()">
+                                    <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                    </svg>
+                                </a>
+                                <h2 class="slds-text-heading_small slds-hyphenate slds-text-color_weak">{!$Label.Contact_Details}</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium">
+                                <div ng-show="isModalError" class="modalErrorBlock slds-text-color_inverse slds-p-around_small">
+                                    <strong>
+                                        {!$Label.Please_review_the_following_errors}
+                                    </strong>
+                                    <p style="display: block">
+                                        {{modalErrorMessage}}
+                                    </p>
+                                </div>
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-form-element slds-size_1-of-1 slds-p-bottom_small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.Email}<span style="color: #c23934">*</span>
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contact.email" class="slds-input" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-p-bottom_small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.Phone}<span style="color: #c23934">*</span>
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contact.phone" class="slds-input" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-p-bottom_small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.Title}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <input type="text" ng-model="contact.title" class="slds-input" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-p-bottom_small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.Reference_Program_Member}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-checkbox">
+                                                <input type="checkbox" ng-model="contact.isMember" disabled="true" />
+                                                <label class="slds-checkbox__label">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">&nbsp;</span>
+                                                </label>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-p-bottom_small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.Status}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static" ng-show="contact.status != ''">{{contact.status}}</span>
+                                            <span class="slds-form-element__static" ng-show="contact.status == ''">&nbsp;</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-1 slds-p-bottom_small">
+                                        <span class="slds-form-element__label">
+                                            {!$Label.T_Last_Used}
+                                        </span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static" ng-show="contact.lastUsedDate != ''">{{contact.lastUsedDate}}</span>
+                                            <span class="slds-form-element__static" ng-show="contact.lastUsedDate == ''">&nbsp;</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <a class="slds-button slds-button_brand" ng-click="saveContactDetails()">{!$Label.Save}</a>
+                                <a class="slds-button slds-button_neutral" ng-click="cancelContactDetails()">{!$Label.Cancel}</a>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop mobileVisible" ng-class="{'slds-backdrop_open' : showContactDetails}"></div>
+
+                    <section ng-class="{'slds-fade-in-open' : showRequestDetails}" role="dialog" tabindex="-1" class="slds-modal slds-modal_large mobileVisible">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="showRequestDetails = false">
+                                    <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                    </svg>
+                                </a>
+                                <h2 class="slds-text-heading_small slds-hyphenate slds-text-color_weak">{!$Label.Request_Details}</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-form-element slds-p-bottom_small slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2" ng-show="info.opportunityId != ''">
+                                        <span class="slds-form-element__label">{!$Label.Opportunity_Name}</span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static">{{info.oppName}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-p-bottom_small slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2" ng-show="info.opportunityId != ''">
+                                        <span class="slds-form-element__label">{!$Label.Opportunity_Account}</span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static">{{info.oppAccName}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-p-bottom_small slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2" ng-show="info.caseId != ''">
+                                        <span class="slds-form-element__label">{!$ObjectType.Case.fields.CaseNumber.Label}</span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static">{{info.caseName}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-p-bottom_small slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2" ng-show="info.caseId != ''">
+                                        <span class="slds-form-element__label">{!$Label.Case_Account}</span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static">{{info.caseAccName}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-p-bottom_small slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2" ng-show="info.leadId != ''">
+                                        <span class="slds-form-element__label">{!$Label.Lead_Name}</span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static">{{info.leadName}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-p-bottom_small slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2" ng-show="info.leadId != ''">
+                                        <span class="slds-form-element__label">{!$ObjectType.Lead.fields.Company.Label}</span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static">{{info.leadCompany}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element slds-p-bottom_small slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-2">
+                                        <span class="slds-form-element__label">{!$Label.Requester_Notes}</span>
+                                        <div class="slds-form-element__control">
+                                            <span class="slds-form-element__static">{{info.requesterNotes}}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <a class="slds-button slds-button_neutral" ng-click="showRequestDetails = false">{!$Label.Close}</a>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop mobileVisible" ng-class="{'slds-backdrop_open' : showRequestDetails}"></div>
+                </div>
+                
+                <!-- REF-2320 Tags Section -->
+                <div ng-show="showTagsPopup" class="slds-popover slds-popover--panel slds-nubbin--right-top contact-Tags-panel not-hide" role="dialog">
+                    <button class="slds-button slds-button--icon-container" ng-click="showBackContactDropPopover()" style="cursor: pointer;position: absolute;right: 0;z-index: 9999;">
+                        <svg aria-hidden="true" class="slds-button__icon">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                    </button>
+                    <div class="slds-popover__header not-hide">
+                        <div class="slds-media slds-media--center slds-m-bottom--small not-hide">
+                            <div class="slds-media__body not-hide" style="font-size: 17px; margin-left: -10px;">
+                                {{contactAboutName}}
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-wrap not-hide">
+                            <footer class="slds-grid slds-wrap slds-grid_pull-padded">
+                                <div class="slds-col slds-size--1-of-1 slds-p-bottom--x-small not-hide">
+                                    <dl>
+                                        <dt>
+                                            <p class="slds-text-title_caps slds-truncate" title="{!$Label.Referenceability}" style="text-transform:uppercase; color: #556886;">{!$Label.Referenceability}</p>
+                                        </dt>
+                                        <dd>
+                                            <p class="slds-truncate tagReferencibilityCon" title="{!$Label.Referenceability}">{{tagReferencability}}</p>                                                
+                                        </dd>
+                                    </dl>
+                                </div>   
+                                
+                                <div class="slds-col slds-size--1-of-1 slds-p-bottom--x-small not-hide">
+                                    <dl>
+                                        <dt>
+                                            <p class="slds-text-title_caps slds-truncate" title="{!$Label.Attributes}" style="text-transform:uppercase; color: #556886;">{!$Label.Attributes}</p>
+                                        </dt>
+                                        <dd>
+                                            <p class="slds-truncate tagAttributeCon" title="{!$Label.Attributes}">{{tagAttributes}}</p>                                                
+                                        </dd>
+                                    </dl>
+                                </div>                                  
+                            </footer>
+                        </div>
+                    </div>  
+                </div> 
+                <!--    End of Tags Section    -->
+                <div class=" ng-scope popoverContactBackdrop" ng-click="showBackContactDropPopover()" ng-show="showBackContactDrop"></div>
+
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>

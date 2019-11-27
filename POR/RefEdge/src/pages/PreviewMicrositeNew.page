@@ -1,0 +1,1252 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ * 
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->   
+<apex:page showHeader="false" controller="PreviewMicrositeNewController" docType="html-5.0">
+<html>
+    <head>
+        <!-- Angular Material Design Files -->
+        <apex:stylesheet value="{!URLFOR($Resource.AngularMaterialRepo, 'angular-material.min.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.AngularMaterialRepo, 'angular-material-icons.css')}"/>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular-animate.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular-aria.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular-messages.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular-material.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular-material-icons.min.js')}"></script>
+        <script src="{!URLFOR($Resource.SVGMorpheusJS)}"></script>
+        <script src="{!URLFOR($Resource.PolyfillJS)}"></script>
+        
+        <!-- CSS animations file -->
+        <apex:stylesheet value="{!URLFOR($Resource.AnimateCSS)}"/>
+        
+        <!-- Video Player Files -->
+        <!-- <script src="{!URLFOR($Resource.NGVideoJS)}"></script> -->
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <script src="{!URLFOR($Resource.ngYoutubeEmbedJS)}"></script>
+        
+        <!-- Angular Rating Files -->
+        <apex:stylesheet value="{!URLFOR($Resource.ngRating, 'ng-rateit.css')}"/>
+        <script src="{!URLFOR($Resource.ngRating, 'ng-rateit.js')}"></script>
+        
+        <script>
+            if (!String.prototype.startsWith) {
+                String.prototype.startsWith = function(searchString, position) {
+                    position = position || 0;
+                    return this.substr(position, searchString.length) === searchString;
+                };
+            }
+            var previewMicrositeApp = angular.module('previewMicrositeApp',
+                                                    ['ngMaterial', 'ngMdIcons', 'ngRateIt', 'youtube-embed']);
+
+            previewMicrositeApp.directive('imageOrientation', function() {
+
+                return {
+                    scope : true,
+                    restrict : 'A',
+                    link : function(scope, element, attrs) {
+
+                        element.bind('load', function() {
+
+                            scope.$apply(function() {
+                                scope.contentWrap.width = element[0].naturalWidth;
+                                scope.contentWrap.height = element[0].naturalHeight;
+                            });
+                        });
+                    }
+                };
+            });
+
+            var previewMicrositeCtrl = previewMicrositeApp.controller('previewMicrositeCtrl',
+            function($scope, $q, $mdDialog, $window, $mdToast, $timeout) {
+                // ApexPage standard parameters
+                $scope.isLicense = {!isLicense};
+                $scope.internalPreview = {!internalPreview};
+                $scope.siteURLFromAppCfg = '{!URLENCODE(siteURLFromAppCfg)}';
+                $scope.micrositeId = '{!JSENCODE(micrositeId)}';
+                $scope.selectedRefContents = '{!JSENCODE(selectedRefContents)}';
+                $scope.encryptedKey = '{!JSENCODE(encryptedKey)}';
+                $scope.isSamplePreview = {!isSamplePreview};
+                
+                $scope.showTestToast = false;
+                $scope.isLoading = false;
+                $scope.isPageLoad = true;
+                $scope.isInvitationExpired = false;
+                $scope.showDownloadError = false;
+                $scope.isInvalidURL = false;
+                
+                $scope.uniqueKey = '';
+                $scope.invitationId = '';
+                $scope.micrositeIdFromInvitation = '';
+                $scope.contentId = '';
+                $scope.inviteeId = '';
+                $scope.userId = '';
+                $scope.otherRecepient = '';
+                
+                $scope.refContentIds = [];
+                $scope.refContentWrapperList = [];
+                $scope.refContentRatingMap = {};
+                $scope.oldRefContentRatingMap = {};
+                $scope.micrositeObj = {};
+                $scope.bannerStyle = {};
+                $scope.headerStyle = {};
+                $scope.subheaderStyle = {};
+                $scope.footerStyle = {};
+                $scope.thumbnailMap = {};
+                $scope.customContentSymbol = '{!URLFOR($Resource.refEdgeCutomContent)}';
+                $scope.customContentSymbol120 = '{!URLFOR($Resource.refEdgeCutomContent120)}';
+                $scope.resource = '{!URLFOR($Resource.LightningCSS)}';
+                $scope.doctypeMap = {"UNKNOWN": "/assets/icons/doctype/unknown_120.png",
+                                            "XML": "/assets/icons/doctype/xml_120.png",
+                                            "TEXT": "/assets/icons/doctype/txt_120.png",
+                                            "MP4": "/assets/icons/doctype/mp4_120.png",
+                                            "CSV": "/assets/icons/doctype/csv_120.png",
+                                            "EXCEL": "/assets/icons/doctype/excel_120.png",
+                                            "JPG": "/assets/icons/doctype/image_120.png",
+                                            "BMP": "/assets/icons/doctype/image_120.png",
+                                            "PNG": "/assets/icons/doctype/image_120.png",
+                                            "GIF": "/assets/icons/doctype/image_120.png",
+                                            "LINK": "/assets/icons/doctype/link_120.png",
+                                            "PDF": "/assets/icons/doctype/pdf_120.png",
+                                            "POWER_POINT": "/assets/icons/doctype/ppt_120.png",
+                                            "RTF": "/assets/icons/doctype/rtf_120.png",
+                                            "WAV": "/assets/icons/doctype/audio_120.png",
+                                            "MOV": "/assets/icons/doctype/video_120.png",
+                                            "WORD": "/assets/icons/doctype/word_120.png",
+                                            "WORD_X": "/assets/icons/doctype/word_120.png",
+                                            "EXCEL_X": "/assets/icons/doctype/excel_120.png",
+                                            "POWER_POINT_X": "/assets/icons/doctype/ppt_120.png",
+                                            "VIDEO": "/assets/icons/doctype/video_120.png",
+                                            "ZIP": "/assets/icons/doctype/zip_120.png"};
+                
+                $scope.sampleContentRating = 0.0;
+                $scope.isSampleSummaryExpanded = false;
+                
+                // function called on page load
+                $scope.init = function() {
+                    $scope.isLoading = true;
+                    $scope.siteURLFromAppCfg = decodeURIComponent($scope.siteURLFromAppCfg);
+                    
+                    if (!$scope.isSamplePreview) {
+                        
+                        if ($scope.encryptedKey != null && $scope.encryptedKey != '') {
+                            var splittedKey = $scope.encryptedKey.split(' ');
+                            $scope.encryptedKey = '';
+                            var length = splittedKey.length;
+                            angular.forEach(
+                                splittedKey,
+                                function(item) {
+                                    if (length > 1) {
+                                        $scope.encryptedKey = $scope.encryptedKey + item + '+';
+                                    } else {
+                                        $scope.encryptedKey = $scope.encryptedKey + item;
+                                    }
+                                    length = length - 1;
+                                }
+                            );
+                            $scope.getRecepientId().then(
+                                function(result) {
+                                    if (Object.keys(result).length > 0) {
+                                        $scope.invitationId = result['invitationId'];
+                                        if ('contentId' in result) {
+                                            $scope.contentId = result['contentId'];
+                                        }
+                                        if ('inviteeId' in result) {
+                                            $scope.inviteeId = result['inviteeId'];
+                                        }
+                                        if ('userId' in result) {
+                                            $scope.userId = result['userId'];
+                                        }
+                                        if ('otherRecepient' in result) {
+                                            $scope.otherRecepient = result['otherRecepient'];
+                                        } 
+                                    }
+                                    if ($scope.invitationId != '') {
+                                        $scope.getInvitationDetails().then(
+                                            function(result) {
+                                                $scope.micrositeIdFromInvitation = result[0].micrositeId;
+                                                $scope.isInvitationExpired = result[0].isExpired;
+                                                Visualforce.remoting.Manager.invokeAction(
+                                                    '{!$RemoteAction.PreviewMicrositeNewController.getMicrositeDetails}',
+                                                    $scope.micrositeIdFromInvitation,
+                                                    function(result, event) {
+                                                        result = $scope.parseResult(result);
+                                                        result = $scope.parseResult(result);
+                                                        $scope.micrositeObj = JSON.parse(result)[0];
+                                                        if ($scope.micrositeObj.bannerImage != null && $scope.micrositeObj.bannerImage != '') {
+                                                            $scope.micrositeObj.bannerImage =
+                                                                        $scope.micrositeObj.bannerImage.split('src="').pop().split('"').shift();
+                                                        } else {
+                                                            $scope.micrositeObj.bannerImage = '';
+                                                        }
+                                                        
+                                                        /* Setting the styles according to the saved details in the microsite record */
+                                                        $scope.bannerStyle['background-image'] = 'url(' + $scope.micrositeObj.bannerImage + ')';
+                                                        $scope.bannerStyle['background-repeat'] = 'no-repeat';
+                                                        $scope.bannerStyle['background-size'] = 'contain';
+                                                        $scope.bannerStyle['background-position'] = $scope.micrositeObj.imageAlignment;
+                                                        $scope.headerStyle['text-align'] = $scope.micrositeObj.headerAlignment;
+                                                        $scope.headerStyle['color'] = $scope.micrositeObj.headerColor;
+                                                        $scope.headerStyle['font-size'] = $scope.micrositeObj.headerSize;
+                                                        $scope.subheaderStyle['text-align'] = $scope.micrositeObj.subHeaderAlignment;
+                                                        $scope.subheaderStyle['color'] = $scope.micrositeObj.subHeaderColor;
+                                                        $scope.subheaderStyle['font-size'] = $scope.micrositeObj.subHeaderSize;
+                                                        $scope.footerStyle['text-align'] = $scope.micrositeObj.footerAlignment;
+                                                        $scope.footerStyle['color'] = $scope.micrositeObj.footerColor;
+                                                        $scope.footerStyle['font-size'] = $scope.micrositeObj.footerSize;
+                                                        /******************************************************************************/
+                                                    }
+                                                );
+                                                $scope.getContentDetails().then(
+                                                    function(result) {
+                                                        angular.forEach(
+                                                            result,
+                                                            function(item) {
+                                                                $scope.refContentIds.push(item.refContentId);
+                                                                if (item.rating > 0) {
+                                                                    $scope.refContentRatingMap[item.refContentId] = item.rating;
+                                                                } else {
+                                                                    $scope.refContentRatingMap[item.refContentId] = 0;
+                                                                }
+                                                            }
+                                                        );
+                                                        Visualforce.remoting.Manager.invokeAction(
+                                                            '{!$RemoteAction.PreviewMicrositeNewController.getRefContentThumbnailMap}',
+                                                            $scope.refContentIds,
+                                                            function(result, event) {
+                                                                if (result != '') {
+                                                                    result = $scope.parseResult(result);
+                                                                    $scope.thumbnailMap = JSON.parse(result);
+                                                                }
+                                                            }
+                                                        );
+                                                        $scope.oldRefContentRatingMap = angular.copy($scope.refContentRatingMap);
+                                                        $scope.showRefContents();
+                                                    }
+                                                );
+                                            }
+                                        );
+                                    }
+                                    Visualforce.remoting.Manager.invokeAction(
+                                        '{!$RemoteAction.PreviewMicrositeNewController.updateInvitee}',
+                                        $scope.invitationId,
+                                        $scope.inviteeId,
+                                        $scope.userId,
+                                        $scope.otherRecepient,
+                                        function(result, event) {
+                                            console.log(result);
+                                        }
+                                    );
+                                }
+                            );
+                        } else {
+                            if ($scope.selectedRefContents != '') {
+                                angular.forEach(
+                                    $scope.selectedRefContents.split(','),
+                                    function(refContentId) {
+                                        $scope.refContentIds.push(refContentId);
+                                    }
+                                );
+                            }
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.PreviewMicrositeNewController.getRefContentThumbnailMap}',
+                                $scope.refContentIds,
+                                function(result, event) {
+                                    if (result != '') {
+                                        result = $scope.parseResult(result);
+                                        $scope.thumbnailMap = JSON.parse(result);
+                                    }
+                                }
+                            );
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.PreviewMicrositeNewController.getMicrositeDetails}',
+                                $scope.micrositeId,
+                                function(result, event) {
+                                    result = $scope.parseResult(result);
+                                    result = $scope.parseResult(result);
+                                    $scope.micrositeObj = JSON.parse(result)[0];
+                                    if ($scope.micrositeObj.bannerImage != null && $scope.micrositeObj.bannerImage != '') {
+                                        $scope.micrositeObj.bannerImage =
+                                                $scope.micrositeObj.bannerImage.split('src="').pop().split('"').shift();
+                                    } else {
+                                        $scope.micrositeObj.bannerImage = '';
+                                    }
+                                    
+                                    /* Setting the styles according to the saved details in the microsite record */
+                                    $scope.bannerStyle['background-image'] = 'url(' + $scope.micrositeObj.bannerImage + ')';
+                                    $scope.bannerStyle['background-repeat'] = 'no-repeat';
+                                    $scope.bannerStyle['background-size'] = 'contain';
+                                    $scope.bannerStyle['background-position'] = $scope.micrositeObj.imageAlignment;
+                                    $scope.headerStyle['text-align'] = $scope.micrositeObj.headerAlignment;
+                                    $scope.headerStyle['color'] = $scope.micrositeObj.headerColor;
+                                    $scope.headerStyle['font-size'] = $scope.micrositeObj.headerSize;
+                                    $scope.subheaderStyle['text-align'] = $scope.micrositeObj.subHeaderAlignment;
+                                    $scope.subheaderStyle['color'] = $scope.micrositeObj.subHeaderColor;
+                                    $scope.subheaderStyle['font-size'] = $scope.micrositeObj.subHeaderSize;
+                                    $scope.footerStyle['text-align'] = $scope.micrositeObj.footerAlignment;
+                                    $scope.footerStyle['color'] = $scope.micrositeObj.footerColor;
+                                    $scope.footerStyle['font-size'] = $scope.micrositeObj.footerSize;
+                                    /******************************************************************************/
+                                    $scope.showRefContents();
+                                }
+                            );
+                        }
+                    } else {
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.PreviewMicrositeNewController.getMicrositeDetails}',
+                            $scope.micrositeId,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                result = $scope.parseResult(result);
+                                $scope.micrositeObj = JSON.parse(result)[0];
+                                if ($scope.micrositeObj.bannerImage != null && $scope.micrositeObj.bannerImage != '') {
+                                    $scope.micrositeObj.bannerImage =
+                                                $scope.micrositeObj.bannerImage.split('src="').pop().split('"').shift();
+                                } else {
+                                    $scope.micrositeObj.bannerImage = '';
+                                }
+                                
+                                /* Setting the styles according to the saved details in the microsite record */
+                                $scope.bannerStyle['background-image'] = 'url(' + $scope.micrositeObj.bannerImage + ')';
+                                $scope.bannerStyle['background-repeat'] = 'no-repeat';
+                                $scope.bannerStyle['background-size'] = 'contain';
+                                $scope.bannerStyle['background-position'] = $scope.micrositeObj.imageAlignment;
+                                $scope.headerStyle['text-align'] = $scope.micrositeObj.headerAlignment;
+                                $scope.headerStyle['color'] = $scope.micrositeObj.headerColor;
+                                $scope.headerStyle['font-size'] = $scope.micrositeObj.headerSize;
+                                $scope.subheaderStyle['text-align'] = $scope.micrositeObj.subHeaderAlignment;
+                                $scope.subheaderStyle['color'] = $scope.micrositeObj.subHeaderColor;
+                                $scope.subheaderStyle['font-size'] = $scope.micrositeObj.subHeaderSize;
+                                $scope.footerStyle['text-align'] = $scope.micrositeObj.footerAlignment;
+                                $scope.footerStyle['color'] = $scope.micrositeObj.footerColor;
+                                $scope.footerStyle['font-size'] = $scope.micrositeObj.footerSize;
+                                /******************************************************************************/
+                                $scope.$apply(function() {
+                                    $scope.isLoading = false;
+                                });
+                            }
+                        );
+                    }
+                }
+                $scope.getRecepientId = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.PreviewMicrositeNewController.getRecepientId}',
+                        $scope.encryptedKey,
+                        function(result, event) {
+                            if (result == 'Error! Invalid Microsite URL.') {
+                                deferred.resolve(result);
+                                $scope.isInvalidURL = true;
+                                $scope.isLoading = false;
+                            } else {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        }
+                    );
+                    return deferred.promise;
+                }
+                $scope.getInvitationDetails = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.PreviewMicrositeNewController.getInvitationDetails}',
+                        $scope.invitationId,
+                        function(result, event) {
+                            if (result == 'Error! Invalid Microsite URL.') {
+                                deferred.resolve(result);
+                                $scope.isInvalidURL = true;
+                                $scope.isLoading = false;
+                            } else {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        }
+                    );
+                    return deferred.promise;
+                }
+                
+                $scope.showRefContents = function() {
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.PreviewMicrositeNewController.showRefContents}',
+                        $scope.refContentIds,
+                        $scope.invitationId,
+                        $scope.contentId,
+                        $scope.inviteeId,
+                        $scope.userId,
+                        $scope.otherRecepient,
+                        $scope.siteURLFromAppCfg,
+                        function(result, event) {
+                            $scope.$apply(function() {
+                                result = $scope.parseResult(result);
+                                //result = $scope.parseResult(result);  - remove duplicate code ref #REF-1615
+                                $scope.refContentWrapperList = JSON.parse(result);
+                                angular.forEach(
+                                    $scope.refContentWrapperList,
+                                    function(item) {
+                                        
+                                        if (!(item.fileType in $scope.doctypeMap)) {
+                                            item.fileType = 'UNKNOWN';
+                                        }
+                                        
+                                        if (item.thumbnailStyle != null) {
+                                            item.thumbnailStyle['background-size'] = 'contain';
+                                            item.thumbnailStyle['height'] = '48%';
+                                            item.thumbnailStyle['width'] = 'auto';
+                                            item.thumbnailStyle['margin'] = '14px';
+                                            item.thumbnailStyle['padding'] = '0';
+                                            item.thumbnailStyle['background'] = 'url('
+                                                                        + window.location.protocol
+                                                                        + "//" + window.location.host.replace('visual', 'content') + "/"
+                                                                        + 'sfc/servlet.shepherd/version/renditionDownload?rendition=THUMB720BY480&versionId='
+                                                                        + item.contentVersion.Id + ') no-repeat center';
+                                        }
+                                    }
+                                );
+                                $scope.isLoading = false;
+                            });
+                        }
+                    );
+                }
+                $scope.getContentDetails = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.PreviewMicrositeNewController.getContentDetails}',
+                        $scope.invitationId,
+                        $scope.contentId,
+                        $scope.userId,
+                        $scope.inviteeId,
+                        $scope.otherRecepient,
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            deferred.resolve(JSON.parse(result));
+                        }
+                    );
+                    return deferred.promise;
+                }
+                $scope.parseResult = function(result){
+                    if (result != null) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+                }
+                $scope.openCloseSummary = function(contentWrapper) {
+                    contentWrapper.isSummaryExpanded = !contentWrapper.isSummaryExpanded;
+                    if (contentWrapper.expandIcon == 'expand_less') {
+                        contentWrapper.expandIcon = 'expand_more';
+                    } else {
+                        contentWrapper.expandIcon = 'expand_less';
+                    }
+                }
+                $scope.showInterviewDetails = function($event, contentWrap) {
+                    var parentEl = angular.element(document.body);
+                    var interviewList = angular.copy(contentWrap.videoWrapList);
+                    var tempObj = {};
+                    tempObj['isPanelOpen'] = false;
+                    tempObj['questionTitle'] = '{!$Label.Info}';
+                    tempObj['transcript'] = '';
+                    tempObj['videoURL'] = 'speaker info panel';
+                    if (interviewList.indexOf(tempObj) == -1) {
+                        interviewList.unshift(tempObj);
+                    }
+                    var speakerImageStyle = {};
+                    if (contentWrap.photo != null && contentWrap.photo != '') {
+                        speakerImageStyle['background-image']
+                                            = 'url(' + contentWrap.photo.split('src="').pop().split('"').shift() + ')';
+                    }
+                    speakerImageStyle['background-repeat'] = 'no-repeat';
+                    speakerImageStyle['background-size'] = 'contain';
+                    speakerImageStyle['background-position'] = 'center';
+                    $mdDialog.show({
+                        parent: parentEl,
+                        targetEvent: $event,
+                        clickOutsideToClose: true,
+                        template:
+                            '<md-dialog flex="75" aria-label="List dialog">' +
+                            '   <md-dialog-content layout="column" layout-align="center none">' +
+                            '       <div layout="row" layout-align="end center">' +
+                            '           <md-button class="md-fab md-mini closeButton" ng-click="closeDialog()">' +
+                            '               <ng-md-icon aria-label="Facebook" icon="close"></ng-md-icon>' +
+                            '           </md-button>' +
+                            '       </div>' +
+                            '       <div layout="row" layout-align="center none">' +
+                            '           <div ng-style="speakerImageStyle" flex="20"></div>' +
+                            '           <div flex="60" style="margin: 30px 0" layout="column" layout-align="none">' +
+                            '               <span class="md-subhead" style="margin: 10px 0">' +
+                            '                   {{contentWrap.title}}' +
+                            '               </span>' +
+                            '               <span class="md-subhead" style="color: rgba(0, 0, 0, 0.56)">' +
+                            '                   {{contentWrap.accountName}}' +
+                            '               </span>' +
+                            '           </div>' +
+                            '       </div>' +
+                            '       <div style="margin: 12px 0" layout="column" layout-align="center center">' +
+                            '           <div ng-repeat="panel in interviewList" class="panelContainer" ng-class="{panelContainerOpen: panel.isPanelOpen}">' +
+                            '               <div class="panelHeading md-body-2" ng-if="panel.videoURL == \'speaker info panel\'" ng-click="openPanel(panel)" flex="100" ng-class="{panelHeadingOpen: panel.isPanelOpen}">' +
+                            '                   {{panel.questionTitle}}</div>' +
+                            '               <div class="panelContent md-body-1" ng-if="panel.videoURL == \'speaker info panel\'" flex="100" ng-class="{panelContentOpen: panel.isPanelOpen}">' +
+                            '                   <p class="md-body-2" style="font-weight: bold">{!$Label.Speaker_Info}</p>' +
+                            '                   <p class="md-body-1">{{contentWrap.speakerInfo}}</p>' +
+                            '                   <p class="md-body-2" style="font-weight: bold">{!$Label.Org_Website}</p>' +
+                            '                   <p class="md-body-1">{{contentWrap.orgWebsite}}</p>' +
+                            '                   <p class="md-body-2" style="font-weight: bold">{!$Label.Org_Description}</p>' +
+                            '                   <p class="md-body-1">{{contentWrap.orgDescription}}</p>' +
+                            '               </div>' +
+                            '               <div class="panelHeading md-body-2" ng-if="panel.videoURL != \'speaker info panel\'" ng-click="openPanel(panel)" flex="100" ng-class="{panelHeadingOpen: panel.isPanelOpen}">' +
+                            '                   {{panel.questionTitle}}</div>' +
+                            '               <div class="panelContent md-body-1" ng-if="panel.videoURL != \'speaker info panel\'" flex="100" ng-class="{panelContentOpen: panel.isPanelOpen}">' +
+                            '                   <div layout="row" layout-align="center start" style="height: 250px">' +
+                            '                       <youtube-video video-url="panel.videoURL" style="height: 100%; width: 50%"></youtube-video>' +
+                            '                   </div>' +
+                            '                   <p style="max-height: 120px; overflow: auto">{{panel.transcript}}</p>' +
+                            '               </div>' +
+                            '           </div>' +
+                            '       </div>' +
+                            '   </md-dialog-content>' +
+                            '   <md-dialog-actions>' +
+                            '       <md-button ng-click="closeDialog()" class="md-primary md-raised">' +
+                            '           Close' +
+                            '       </md-button>' +
+                            '   </md-dialog-actions>' +
+                            '</md-dialog>',
+                        locals: {
+                            interviewList: interviewList,
+                            contentWrap: contentWrap,
+                            speakerImageStyle: speakerImageStyle
+                        },
+                        controller: DialogController
+                    });
+                    function DialogController($scope, $mdDialog, interviewList, contentWrap, speakerImageStyle) {
+                        $scope.interviewList = interviewList;
+                        $scope.contentWrap = contentWrap;
+                        $scope.speakerImageStyle = speakerImageStyle;
+                        $scope.openPanel = function(panel) {
+                            panel.isPanelOpen = !panel.isPanelOpen;
+                            angular.forEach(
+                                $scope.interviewList,
+                                function(item) {
+                                    if (item.$$hashKey != panel.$$hashKey) {
+                                        item.isPanelOpen = false;
+                                    }
+                                }
+                            );
+                        }
+                        $scope.closeDialog = function() {
+                            $mdDialog.hide();
+                        }
+                    }
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.PreviewMicrositeNewController.updateInvitationContent}',
+                        contentWrap.refContentId,
+                        $scope.invitationId,
+                        $scope.inviteeId,
+                        $scope.userId,
+                        $scope.otherRecepient,
+                        function(result, event) {
+                            console.log(result);
+                        }
+                    );
+                }
+
+                $scope.showcustomContentDetails = function($event, contentWrap) {
+                    var parentEl = angular.element(document.body);
+                    var fieldsList = angular.copy(contentWrap.customContentFieldsList);
+                    $mdDialog.show({
+                        parent: parentEl,
+                        targetEvent: $event,
+                        clickOutsideToClose: true,
+                        template:
+                            '<md-dialog class="customDetail" max-height="80vh" aria-label="List dialog" style="background-color: rgba(0, 0, 0, 0)!important; box-shadow: none;!important">' +
+                            '<div style="overflow: hidden;">' +
+                            '   <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-describedby="modal-content-id-1" style="background-color: rgba(0, 0, 0, 0)!important; box-shadow: none;!important">' +
+                            '       <div style="overflow: hidden;">' +
+                            '           <div style="text-align: right;">' +
+                            '               <md-button class="md-fab md-mini closeButton" ng-click="closeDialog()" style="margin: 0;opacity: 1;color: white!important;">' +
+                            '                   <ng-md-icon aria-label="Facebook" icon="close"></ng-md-icon>' +
+                            '               </md-button>' +
+                            '           </div>' +
+                            '           <div style="background-color: white!important;">' +
+                            '           <div style="position: relative;border-top-right-radius: 0.25rem;border-top-left-radius: 0.25rem;border-bottom: 2px solid #d8dde6;padding: 0.80rem;text-align: center;color: #54698d;font-weight: 300;font-size: 1.25rem;line-height: 1.25;"> ' +
+                            '               {{contentWrap.title}}' +
+                            '           </div>' + 
+                            '           <div style="line-height: 1.5;margin: 15px;margin-bottom: 0;max-height: 55vh;overflow-y: auto;">' +
+                            '               <div style="hyphens: auto;overflow: hidden;overflow-y: auto;">' +
+                            '                   <div ng-repeat="item in fieldsList" style="margin-bottom: 5px;">' +
+                            '                       <label style="font-weight:BOLD;">' +
+                            '                           {{item.label}}'+
+                            '                       </label>' +
+                            '                       <div style="margin-left: 1px;">' +
+                            '                           <span  ng-if="item.type == \'BOOLEAN\'" >' +
+                            '                               <input type="checkbox" name="options" value="on" ng-checked="item.value == \'true\' || item.value == \'TRUE\'" ng-disabled="true"/>' +
+                            '                           </span>' +
+                            '                           <div ng-if="item.type != \'BOOLEAN\'" ng-bind="item.value">' + 
+                            '                           </div>' + 
+                            '                       </div>' + 
+                            '                   </div>' +
+                            '               </div>' +
+                            '           </div>' +
+                            '           <div style="border-top: 2px solid #d8dde6;position: relative;border-bottom-right-radius: 0.25rem;border-bottom-left-radius: 0.25rem;padding: 0.45rem 1rem;background-color: #f4f6f9!important;text-align: right;box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);">' +
+                            '               <button style="padding-left: 1rem;padding-top:0.25rem;padding-bottom:0.25rem;padding-right: 1rem;text-align: center;vertical-align: middle;border: 1px solid #d8dde6;background: white!important;color: #0070d2;" ng-click="closeDialog()">Close</button>' +
+                            '           </div>' +
+                            '           </div>' +
+                            '       </div>' + 
+                            '   </section>' +
+                            '</div>' + 
+                            '</md-dialog>',
+                        locals: {
+                            fieldsList: fieldsList,
+                            contentWrap: contentWrap
+                        },
+                        controller: DialogController
+                    });
+                    function DialogController($scope, $mdDialog, fieldsList, contentWrap) {
+                        $scope.fieldsList = fieldsList;
+                        $scope.contentWrap = contentWrap;
+                        $scope.openPanel = function(panel) {
+                            panel.isPanelOpen = !panel.isPanelOpen;
+                            angular.forEach(
+                                $scope.fieldsList,
+                                function(item) {
+                                    if (item.$$hashKey != panel.$$hashKey) {
+                                        item.isPanelOpen = false;
+                                    }
+                                }
+                            );
+                        }
+                        $scope.closeDialog = function() {
+                            $mdDialog.hide();
+                        }
+                    }
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.PreviewMicrositeNewController.updateInvitationContent}',
+                        contentWrap.refContentId,
+                        $scope.invitationId,
+                        $scope.inviteeId,
+                        $scope.userId,
+                        $scope.otherRecepient,
+                        function(result, event) {
+                            console.log(result);
+                        }
+                    );
+                }
+
+                $scope.saveRating = function() {
+                    //$scope.isLoading = true;
+                    var refContentId = '';
+                    if (!angular.equals($scope.refContentRatingMap, $scope.oldRefContentRatingMap)) {
+                        angular.forEach(
+                            Object.keys($scope.refContentRatingMap),
+                            function(rcId) {
+                                if ($scope.oldRefContentRatingMap[rcId] != $scope.refContentRatingMap[rcId]
+                                            || !(rcId in $scope.oldRefContentRatingMap)) {
+                                    refContentId = rcId;
+                                }
+                            }
+                        );
+                    }
+                    $scope.oldRefContentRatingMap = angular.copy($scope.refContentRatingMap);
+                    if (!$scope.internalPreview) {
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.PreviewMicrositeNewController.saveContentRating}',
+                            $scope.refContentRatingMap[refContentId],
+                            refContentId,
+                            $scope.invitationId,
+                            $scope.inviteeId,
+                            $scope.userId,
+                            $scope.otherRecepient,
+                            function(result, event) {
+                                $scope.$apply(function() {
+                                    $scope.showTestToast = true;
+                                    $timeout(function () {
+                                        $scope.showTestToast = false;
+                                    }, 4000);
+                                });
+                            },
+                            {escape: true}
+                        );
+                    }
+                }
+                $scope.downloadRefContent = function(contentWrap) {
+                    
+                    if (contentWrap.contentVersion.FileType == 'LINK') {
+                        if (!contentWrap.contentVersion.ContentUrl.startsWith('http://')
+                            && !contentWrap.contentVersion.ContentUrl.startsWith('https://')) {
+                            contentWrap.contentVersion.ContentUrl = 'http://' + contentWrap.contentVersion.ContentUrl;
+                        }
+                        $window.open(contentWrap.contentVersion.ContentUrl, '_blank');
+                    } else {
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.PreviewMicrositeNewController.downloadRefContent}',
+                            contentWrap.refContentId,
+                            function(result, event) {
+                                
+                                if (result != '' && result.startsWith('Error') == false) {
+                                    var downloadURL = $scope.siteURLFromAppCfg + result;
+                                    window.open(downloadURL, '_top');
+                                } else {
+                                    $scope.showDownloadError = true;
+                                }
+                            },
+                            {escape: true}
+                        );
+                    }
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.PreviewMicrositeNewController.updateInvitationContent}',
+                        contentWrap.refContentId,
+                        $scope.invitationId,
+                        $scope.inviteeId,
+                        $scope.userId,
+                        $scope.otherRecepient,
+                        function(result, event) {
+                            console.log(result);
+                        }
+                    );
+                }
+                $scope.shareContentOnFacebook = function(contentWrap) {
+                    if (!$scope.internalPreview) {
+                        $window.open('http://www.facebook.com/share.php?u=' + contentWrap.micrositeLink + '&t=');
+                    }
+                }
+                $scope.shareContentOnLinkedIn = function(contentWrap) {
+                    if (!$scope.internalPreview) {
+                        $window.open('http://www.linkedin.com/shareArticle?mini=true&url=' +
+                                        contentWrap.micrositeLink);
+                    }
+                }
+                $scope.shareContentOnTwitter = function(contentWrap) {
+                    if (!$scope.internalPreview) {
+                        $window.open('https://twitter.com/intent/tweet?source=webclient&text=' +
+                                        contentWrap.micrositeLink);
+                    }
+                }
+                $scope.mailContent = function(contentWrap) {
+                    if (!$scope.internalPreview) {
+                        var link = 'mailto:'
+                                    + '?subject=' + escape('Here is some interesting information')
+                                    + '&body=' + decodeURIComponent(contentWrap.micrositeLink);
+                        $window.open(link);
+                    }
+                }
+                $scope.openFooterLink = function() {
+                    if (!$scope.micrositeObj.footerLink.startsWith('http://')
+                            && !$scope.micrositeObj.footerLink.startsWith('https://')) {
+                        $window.open('https://' + $scope.micrositeObj.footerLink, '_blank');
+                    } else {
+                        $window.open($scope.micrositeObj.footerLink, '_blank');
+                    }
+                }
+                $scope.isThumbnailUploaded = function(contentId) {
+                    if (contentId in $scope.thumbnailMap) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
+        </script>
+        <style type="text/css">
+            body {
+                min-height: 96%;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                height: auto;
+                padding-bottom: 4%;
+            }
+            .bottomSheetDiv {
+                position: absolute;
+                transition: all linear 0.25s;
+                z-index: 10;
+                overflow: hidden;
+                background-color: WHITE;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 16%;
+                border-top: 0;
+                border-bottom: 9px solid white;
+                /*
+                border-left: 16px solid white;
+                border-right: 16px solid white;
+                */
+                border-radius: 0 0 6px 6px;
+            }
+            .bottomSheetDivOpen {
+                height: 50%;
+            }
+            .bottomSheetDivOpen .md-subhead {
+                overflow: auto;
+            }
+            .backdropDiv {
+                position: absolute;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                top: 0;
+                background-color: BLACK;
+                opacity: 0;
+                z-index: 5;
+                display: none;
+                border-radius: 6px;
+            }
+            .backdropDivShown {
+                display: block;
+                opacity: 0.6;
+            }
+            .multiLineEllipsis {
+                display: block;
+                display: -webkit-box;
+                width: 100%;
+                max-height: 3.9em;
+                margin: 0 0 6px 0;
+                line-height: 1.3;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                text-align: left;
+            }
+            .customCard {
+                margin: 0;
+                border-radius: 6px;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            .customCardAction {
+                margin: 0 4px !important;
+                padding: 0 !important;
+                width: auto !important;
+            }
+            .closeButton {
+                background-color: transparent !important;
+                color: #666666 !important;
+                box-shadow: none !important;
+                transition: all linear 0.2s !important;
+            }
+            .closeButton:HOVER {
+                background-color: rgba(241, 18, 18, 0.6) !important;
+                color: WHITE !important;
+            }
+            .panelContainer {
+                width: 80%;
+                transition: all linear 0.15s;
+                box-shadow: 0 5px 11px 0 rgba(0,0,0,0.18), 0 4px 15px 0 rgba(0,0,0,0.15);
+            }
+            .panelContainerOpen {
+                width: 90%;
+                margin: 16px 0;
+            }
+            .panelHeading {
+                transition: all linear 0.15s;
+                display: block;
+                cursor: pointer;
+                min-height: 3em;
+                line-height: 3em;
+                padding: 0 1em;
+                background-color: #fff;
+                border-bottom: 1px solid #ddd;
+            }
+            .panelHeadingOpen {
+                border-left: 3px solid #26a69a;
+            }
+            .panelContent {
+                transition: all linear 0.15s;
+                display: block;
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
+                background-color: white;
+                height: 0;
+            }
+            .panelContentOpen {
+                height: auto;
+                padding: 1.2em;
+            }
+            /*
+            .blurDiv {
+                position: absolute;
+                left: 0;
+                bottom: -9px;
+                width: 100%;
+                height: 17px;
+                background: #fff;
+                filter: blur(5px);
+                -webkit-filter: blur(3px);
+            }
+            .bottomSheetDivOpen .blurDiv {
+                display: none;
+            }
+            */
+            .pageHeader {
+                margin-bottom: 15px;
+                padding-left: 15px;
+                padding-top: 6px;
+            }
+            .siteBanner {
+                height: 5vw;
+                margin: 0;
+            }
+            .loadingDiv {
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                background-color: WHITE;
+                z-index: 100;
+            }
+            .custom-ellipsis-class {
+                width: 28vw;
+                display: block;
+                word-wrap: break-word;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .expirationMessage {
+                margin: 10px;
+                padding: 8px;
+                border: 1px solid gray;
+                border-radius: 5px;
+                background-color: #FFC;
+            }
+            .topMarginClass {
+                margin-top: 2% !important;
+            }
+            .md-button:not([disabled]).md-focused {
+                background-color: transparent !important;
+            }
+            .customDetail {
+                max-width: 50%;
+                max-height: 80%;
+                min-width: 50%;
+            }
+            @media (max-width: 650px) {
+                .customDetail {
+                    max-width: 80%;
+                    min-width: 50%;
+                    max-height: 100%;
+				}
+			}
+            .portraitImage {
+                height: 100% !important;
+                width: auto !important;
+                }
+            .landscapeImage {
+                width: 100% !important;
+                height: auto !important;
+            }       
+        </style>
+    </head>
+    
+    <body ng-app="previewMicrositeApp" ng-controller="previewMicrositeCtrl" ng-init="init()" style="background-color: {{micrositeObj.pageColor}}">
+        <div layout="row" layout-align="start center" class="animated" style="background-color: #54698D; color: #E0E5EE; margin: 10px; padding: 0px 10px; position: fixed; right: 20px; border-radius: 5px; z-index: 50" ng-class="{flipInX: showTestToast, flipOutX: !showTestToast}">
+            <div flex="80" class="md-subhead">{!$Label.Rating_saved_successfully}</div>
+            <md-button class="md-icon-button" ng-click="showTestToast = false" aria-label="Close">
+                <ng-md-icon aria-label="Close" icon="close"></ng-md-icon>
+            </md-button>
+        </div>
+        <div class="loadingDiv" ng-if="isLoading" layout="row" layout-align="center center">
+            <md-progress-circular md-diameter="75" md-mode="indeterminate"></md-progress-circular>
+        </div>
+        <div class="expirationMessage" ng-if="!isLoading && isInvalidURL" layout="row" layout-align="start center">
+            <ng-md-icon size="48" style="margin: 0; fill: #3591e7; height: 48px; width: 48px; float: left" aria-label="Info" icon="info"></ng-md-icon>
+            <div class="md-subhead" style="float: left; margin-left: 5px">{!$Label.Invalid_Microsite_URL}</div>
+        </div>
+        <div layout="column" layout-align="center strech">
+            <div class="pageHeader" style="background-color: {{micrositeObj.headerBackgroundColor}}">
+                <div class="siteBanner" ng-style="bannerStyle"></div>
+                <div class="md-subhead" ng-style="headerStyle">{{micrositeObj.headerText}}</div>
+                <div class="md-subhead" ng-style="subheaderStyle" style="line-height: 100%;">{{micrositeObj.subHeaderText}}</div>
+            </div>
+            <div class="expirationMessage" ng-if="!isLoading && isInvitationExpired" layout="row" layout-align="start center">
+                <ng-md-icon size="48" style="margin: 0; fill: #3591e7; height: 48px; width: 48px; float: left" aria-label="Info" icon="info"></ng-md-icon>
+                <div class="md-subhead" style="float: left; margin-left: 5px">{!$Label.Link_Expired}</div>
+            </div>
+            <md-grid-list ng-if="!isLoading && !isInvitationExpired" flex="90" md-cols-gt-md="3" md-cols-md="3" md-cols-sm="2" md-cols-xs="1" md-gutter="2vw" md-row-height-xs="100vw" md-row-height-sm="60vw" md-row-height-gt-sm="40vw" style="flex: none; margin-left: 15px; margin-right: 15px">
+                <md-grid-tile ng-if="isSamplePreview">
+                    <md-card flex="100" class="customCard" md-whiteframe="4">
+                        <md-card-header style="padding-bottom: 5px">
+                            <md-card-header-text>
+                                <div style="font-size: 120%; height: 3.9em">
+                                    <span class="md-subhead multiLineEllipsis" style="font-weight: bold; color: {{micrositeObj.titleColor}}">
+                                        <md-tooltip md-direction="bottom" md-delay="150">
+                                            Sample Ref Content Title
+                                        </md-tooltip>
+                                        Sample Ref Content Title
+                                    </span>
+                                </div>
+                                <span class="md-subhead custom-ellipsis-class" style="color: black">
+                                    <md-tooltip md-direction="bottom" md-delay="150">
+                                        Sample Account Name
+                                    </md-tooltip>
+                                    Sample Account Name
+                                </span>
+                                <span class="md-subhead" style="color: black">Sample Ref Content Type</span>
+                            </md-card-header-text>
+                        </md-card-header>
+                        <md-card-actions style="margin: 0 16px;" layout="row" layout-align="start none">
+                            <div flex="20" style="cursor: pointer" layout="row" layout-align="start end">
+                                <img ng-src="{{resource + doctypeMap['UNKNOWN']}}" style="height: 50px; width: auto" alt="type icon" />
+                            </div>
+                            <div flex="80" layout="column" layout-align="none end">
+                                <div layout="row" layout-align="end start">
+                                    <md-button md-no-ink="true" class="md-icon-button customCardAction" style="color: #C0CCD7; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.Mail}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="email"></ng-md-icon>
+                                    </md-button>
+                                    <md-button md-no-ink="true" class="md-icon-button customCardAction" style="color: #CEECF2; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.Twitter}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="twitter"></ng-md-icon>
+                                    </md-button>
+                                    <md-button md-no-ink="true" class="md-icon-button customCardAction" style="color: #5AADE1; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.LinkedIn}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="linkedin-box"></ng-md-icon>
+                                    </md-button>
+                                    <md-button md-no-ink="true" class="md-icon-button customCardAction" style="color: #3B5999; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.Facebook}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="facebook-box"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                                <div style="margin: 0 8px">
+                                    <ng-rate-it ng-model="sampleContentRating"></ng-rate-it>
+                                </div>
+                            </div>
+                        </md-card-actions>
+                        <md-card-content layout="row" layout-align="center none" style="cursor: pointer">
+                            <p>Sample Card Content</p>
+                        </md-card-content>
+                        <div flex="100" class="bottomSheetDiv" ng-class="{bottomSheetDivOpen: isSampleSummaryExpanded}">
+                            <div layout="column" layout-align="start none" flex="100">
+                                <div>
+                                    <md-button ng-click="isSampleSummaryExpanded = !isSampleSummaryExpanded" class="md-mini" style="min-height: 0; margin: 0; width: 100%; line-height: 20px; border-top: 1px solid #ddd">
+                                        <span ng-show="!isSampleSummaryExpanded">{!$Label.Show_More}</span>
+                                        <span ng-show="isSampleSummaryExpanded">{!$Label.Show_Less}</span>
+                                    </md-button>
+                                </div>
+                                <div class="md-subhead" style="font-size: 12px; line-height: 1.7">
+                                    Sample Ref Content Summary
+                                </div>
+                            </div>
+                        </div>
+                        <div class="backdropDiv" ng-click="isSampleSummaryExpanded = !isSampleSummaryExpanded" ng-class="{backdropDivShown: isSampleSummaryExpanded}"></div>
+                    </md-card>
+                </md-grid-tile>
+                <md-grid-tile ng-if="!isSamplePreview" ng-repeat="contentWrap in refContentWrapperList">
+                    <md-card flex="100" class="customCard" md-whiteframe="4">
+                        <md-card-header style="padding-bottom: 5px">
+                            <md-card-header-text>
+                                <div style="font-size: 120%; height: 3.9em">
+                                    <span class="md-subhead multiLineEllipsis" style="font-weight: bold; color: {{micrositeObj.titleColor}}">
+                                        <md-tooltip md-direction="bottom" md-delay="150">
+                                            {{contentWrap.title}}
+                                        </md-tooltip>
+                                        {{contentWrap.title}}
+                                    </span>
+                                </div>
+                                <span class="md-subhead custom-ellipsis-class" style="color: black">
+                                    <md-tooltip md-direction="bottom" md-delay="150">
+                                        {{contentWrap.accountName}}
+                                    </md-tooltip>
+                                    {{contentWrap.accountName}}
+                                </span>
+                                <span class="md-subhead" style="color: black">{{contentWrap.refContentType}}</span>
+                            </md-card-header-text>
+                        </md-card-header>
+                        <md-card-actions style="margin: 0 16px;" layout="row" layout-align="start none" ng-class="{topMarginClass: !contentWrap.allowSharing}">
+                            <div flex="20" style="cursor: pointer" layout="row" layout-align="start end">
+                                <img ng-show="!contentWrap.isInterviewType && !contentWrap.isCustomContent" ng-click="downloadRefContent(contentWrap)" ng-src="{{resource + doctypeMap[contentWrap.fileType]}}" style="height: 50px; width: auto" alt="type icon" />
+                                <img ng-show="contentWrap.isInterviewType" ng-click="showInterviewDetails($event, contentWrap)" ng-src="{{resource + doctypeMap['VIDEO']}}" style="height: 50px; width: auto" alt="type icon" />
+                                <img ng-show="contentWrap.isCustomContent" ng-click="showcustomContentDetails($event, contentWrap)" ng-src="{{customContentSymbol}}" style="height: 50px; width: auto" alt="type icon" />
+                            </div>
+                            <div flex="80" layout="column" layout-align="end end">
+                                <div layout="row" layout-align="end start" ng-if="contentWrap.allowSharing">
+                                    <md-button md-no-ink="true" ng-click="mailContent(contentWrap)" class="md-icon-button customCardAction" style="color: #C0CCD7; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.Mail}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="email"></ng-md-icon>
+                                    </md-button>
+                                    <md-button md-no-ink="true" ng-click="shareContentOnTwitter(contentWrap)" class="md-icon-button customCardAction" style="color: #CEECF2; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.Twitter}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="twitter"></ng-md-icon>
+                                    </md-button>
+                                    <md-button md-no-ink="true" ng-click="shareContentOnLinkedIn(contentWrap)" class="md-icon-button customCardAction" style="color: #5AADE1; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.LinkedIn}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="linkedin-box"></ng-md-icon>
+                                    </md-button>
+                                    <md-button md-no-ink="true" ng-click="shareContentOnFacebook(contentWrap)" class="md-icon-button customCardAction" style="color: #3B5999; cursor: pointer" aria-label="icon">
+                                        <md-tooltip md-direction="top">
+                                            {!$Label.Facebook}
+                                        </md-tooltip>
+                                        <ng-md-icon size="20" aria-label="Facebook" icon="facebook-box"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                                <div style="margin: 0 8px">
+                                    <ng-rate-it ng-model="refContentRatingMap[contentWrap.refContentId]"
+                                                rated="saveRating"
+                                                reset="saveRating">
+                                    </ng-rate-it>
+                                    <!-- (refContentRatingMap[contentWrap.refContentId], contentWrap.refContentId) -->
+                                </div>
+                            </div>
+                        </md-card-actions>
+                        
+                        <!-- For Image type ref contents -->
+                        <md-card-content ng-if="contentWrap.thumbnailStyle != null && !contentWrap.isInterviewType"
+                                            layout="row" layout-align="center none"
+                                            style="cursor: pointer"
+                                            ng-style="contentWrap.thumbnailStyle"
+                                            ng-click="downloadRefContent(contentWrap)">
+                        </md-card-content>
+                        
+                        <!-- For interview type ref contents -->
+                        <md-card-content ng-if="contentWrap.thumbnailStyle == null && contentWrap.isInterviewType"
+                                            layout="row" layout-align="center none" style="height: 55%">
+                            <youtube-video ng-show="contentWrap.videoWrapList[0].videoURL != ''" player-height="'100%'" video-url="contentWrap.videoWrapList[0].videoURL"></youtube-video>
+                        </md-card-content>
+                        <md-card-content ng-if="contentWrap.isCustomContent && !isThumbnailUploaded(contentWrap.refContentId)"
+                                            layout="row" layout-align="center none"
+                                            ng-click="showcustomContentDetails($event, contentWrap)"
+                                            style="background-image: url({{customContentSymbol120}});
+                                                    background-repeat: no-repeat;
+                                                    background-position: center;
+                                                    background-size: contain;
+                                                    padding: 0;
+                                                    cursor: pointer;
+                                                    margin: 14px;
+                                                    height: 45%;">
+                        </md-card-content>
+                        <!-- For all other ref content types (thumbnail not uploaded) -->
+                        <md-card-content ng-if="contentWrap.thumbnailStyle == null && !contentWrap.isCustomContent && !contentWrap.isInterviewType && !isThumbnailUploaded(contentWrap.refContentId)"
+                                            layout="row" layout-align="center none"
+                                            ng-click="downloadRefContent(contentWrap)"
+                                            style="background-image: url({{resource + doctypeMap[contentWrap.fileType]}});
+                                                    background-repeat: no-repeat;
+                                                    background-position: center;
+                                                    background-size: contain;
+                                                    padding: 0;
+                                                    cursor: pointer;
+                                                    margin: 14px;
+                                                    height: 45%;">
+                        </md-card-content>
+                        
+                        <!-- For contents with auto-generated thumbnail
+                        <md-card-content ng-if="contentWrap.encodedThumbnail != '' && contentWrap.thumbnailStyle == null && !contentWrap.isInterviewType && !isThumbnailUploaded(contentWrap.refContentId)"
+                                            layout="row" layout-align="center center"
+                                            ng-click="downloadRefContent(contentWrap)"
+                                            style="padding: 0;
+                                                    cursor: pointer;
+                                                    margin: 14px;
+                                                    height: 45%;">
+                            <img style="height: 100%" ng-src="{{'data:image/jpeg;base64,' + contentWrap.encodedThumbnail}}" />
+                        </md-card-content> -->
+                        
+                        <!-- For all other ref content types (thumbnail uploaded) -->
+                        <md-card-content ng-if="contentWrap.thumbnailStyle == null && !contentWrap.isCustomContent && !contentWrap.isInterviewType && isThumbnailUploaded(contentWrap.refContentId)"
+                                            layout="row" layout-align="center center"
+                                            ng-click="downloadRefContent(contentWrap)"
+                                            id="thumbnailDiv"
+                                            style="padding: 0;
+                                                    cursor: pointer;
+                                                    margin: 14px;
+                                                    height: 45%;
+                                                    overflow: hidden;">
+                            <img ng-src="{{siteURLFromAppCfg}}/servlet/servlet.FileDownload?file={{thumbnailMap[contentWrap.refContentId]}}"
+                                    image-orientation="image-orientation" ng-class="{'landscapeImage' : contentWrap.width/contentWrap.height > 1.6, 'portraitImage' : contentWrap.width/contentWrap.height <= 1.6}" />
+                        </md-card-content>
+						<!-- For Custom ref content types (thumbnail uploaded) -->
+                        <md-card-content ng-if="contentWrap.thumbnailStyle == null && contentWrap.isCustomContent && !contentWrap.isInterviewType && isThumbnailUploaded(contentWrap.refContentId)"
+                                            layout="row" layout-align="center center"
+                                            ng-click="showcustomContentDetails($event, contentWrap)"
+                                            id="thumbnailDiv"
+                                            style="padding: 0;
+                                                    cursor: pointer;
+                                                    margin: 14px;
+                                                    height: 45%;
+                                                    overflow: hidden;">
+                            <img ng-src="{{siteURLFromAppCfg}}/servlet/servlet.FileDownload?file={{thumbnailMap[contentWrap.refContentId]}}"
+                                    image-orientation="image-orientation" ng-class="{'landscapeImage' : contentWrap.width/contentWrap.height > 1.6, 'portraitImage' : contentWrap.width/contentWrap.height <= 1.6}" />
+                        </md-card-content>
+                        
+                        <div flex="100" ng-show="contentWrap.summary != null && contentWrap.summary != ''" class="bottomSheetDiv" ng-class="{bottomSheetDivOpen: contentWrap.isSummaryExpanded}">
+                            <div layout="column" layout-align="start none" flex="100">
+                                <div style="min-height:22px;">
+                                    <md-button ng-click="openCloseSummary(contentWrap)" class="md-mini" style="min-height: 0; margin: 0; width: 100%; line-height: 20px; border-top: 1px solid #ddd; background-color: #EEEEEE">
+                                        <span ng-show="!contentWrap.isSummaryExpanded">{!$Label.Show_More}</span>
+                                        <span ng-show="contentWrap.isSummaryExpanded">{!$Label.Show_Less}</span>
+                                        <!-- <ng-md-icon aria-label="Expand" icon="{{contentWrap.expandIcon}}"></ng-md-icon> -->
+                                    </md-button>
+                                </div>
+                                <div class="md-subhead" ng-if="!contentWrap.isInterviewType" style="font-size: 12px; line-height: 1.7; padding-left: 16px; padding-right: 16px">
+                                    <!-- <div class="blurDiv"></div> -->
+                                    {{contentWrap.summary}}
+                                </div>
+                                <div class="md-subhead" ng-if="contentWrap.isInterviewType" style="line-height: 1.25; padding-left: 16px; padding-right: 16px">
+                                    <p class="md-body-2" style="font-size: 12px; font-weight: bold; margin-top: 0; margin-bottom: 0;">
+                                        {!$Label.Speaker_Info}
+                                    </p>
+                                    <p class="md-body-1" style="font-size: 12px; margin-top: 0;">
+                                        {{contentWrap.speakerInfo}}
+                                    </p>
+                                    <p class="md-body-2" style="font-size: 12px; font-weight: bold; margin-bottom: 0;">
+                                        {!$Label.Org_Website}
+                                    </p>
+                                    <p class="md-body-1" style="font-size: 12px; margin-top: 0;">
+                                        {{contentWrap.orgWebsite}}
+                                    </p>
+                                    <p class="md-body-2" style="font-size: 12px; font-weight: bold; margin-bottom: 0;">
+                                        {!$Label.Org_Description}
+                                    </p>
+                                    <p class="md-body-1" style="font-size: 12px; margin-top: 0;">
+                                        {{contentWrap.orgDescription}}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="backdropDiv" ng-click="openCloseSummary(contentWrap)" ng-class="{backdropDivShown: contentWrap.isSummaryExpanded}"></div>
+                    </md-card>
+                </md-grid-tile>
+            </md-grid-list>
+            <div class="md-subhead" flex="100" ng-style="footerStyle" style="position: absolute; left: 10px; right: 10px; bottom: 10px; cursor: pointer">
+                <a ng-click="openFooterLink()" ng-style="footerStyle">{{micrositeObj.footerText}}</a>
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>

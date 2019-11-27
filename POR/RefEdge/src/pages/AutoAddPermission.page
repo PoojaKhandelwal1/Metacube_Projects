@@ -1,0 +1,207 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page standardController="Custom_Settings__c" extensions="AutoAddPermissionController"  id="thePage" sidebar="false" tabStyle="Custom_Settings__c" standardStylesheets="true" showHeader="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0" lightningStylesheets="true">
+
+	<style> 
+        div.tooltip {
+            float: right;
+            display:inline;
+            left:0;
+            opacity : 0.25;
+        }
+        div.tooltip:hover {
+            opacity : 1; 
+        }
+        div.tooltip span {
+            display: none;
+        }
+        div.tooltip:hover span {
+            display: inline;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            font-size: 109%;
+            padding: 2px 5px;
+            opacity : 1; 
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+            top: 20px;
+            right: 0;
+        }
+        .bPageBlock .detailList .dataCol {
+            width: 38%;
+        } 
+        .bPageBlock .detailList .labelCol {
+            width: 24%!important;
+        }
+        .left-select {
+			float: left; 
+			min-width: 150px; 
+			height: 80px;
+			margin-left: 0.5em;
+		}
+        .add-remove-container {
+            float: left;
+			text-align: center;
+        }
+        .right-select {
+            float: left;
+			min-width: 150px;
+			height: 80px;
+        }     
+        .divclssClassic {
+            margin-left:-125px;
+        } 
+
+        .fixMultiSelectWidth {
+            min-height : 110px;
+            max-height : 110px;
+        } 
+        
+    </style>   
+
+    <script>    
+        function onclickMethodCalled() {
+            PORShowLoading();           
+        }
+
+        function onCompleteMethodCalled() {
+            PORHideLoading();
+        }
+    </script>
+
+	<apex:outputPanel >
+    <c:POR_ModalLoader />
+        <apex:pageMessages id="pgmsgId"/>
+		<apex:form id="theForm">
+			<apex:pageBlock id="outerBlockps">
+                <apex:pageBlockButtons id="buttons" location="top">
+                    <apex:commandButton value="{!$Label.Edit}" action="{!editForm}" reRender="pgmsgId,outerBlockps,editBlock,EditBlock" rendered="{!!isEdit}" onclick="onclickMethodCalled()" oncomplete="onCompleteMethodCalled()"/>
+                    <apex:commandButton value="{!$Label.Save}" action="{!saveForm}" reRender="pgmsgId,outerBlockps,editBlock,EditBlock" rendered="{!isEdit}" onclick="onclickMethodCalled()" oncomplete="onCompleteMethodCalled()"/>
+                    <apex:commandButton value="{!$Label.Cancel}" action="{!cancelForm}" reRender="pgmsgId,outerBlockps,editBlock,EditBlock" rendered="{!isEdit}" onclick="onclickMethodCalled()" oncomplete="onCompleteMethodCalled()"/>
+                </apex:pageBlockButtons>
+                <!--    Non Editable Section  -->
+                <apex:pageBlockSection columns="1" rendered="{!!isEdit}" id="nonEditBlock">
+                    <apex:pageBlockSectionItem>
+                        <apex:outputPanel layout="block" >{!SULabel}</apex:outputPanel>
+                        <apex:outputPanel layout="block" ><div><span><b>{!$Label.Profile +'s'} -</b></span>   <span>{!cs.SU_Profiles__c}</span></div>
+                        <br/><div><span><b>{!$Label.Permission_Sets} - </b></span><span>{!cs.SU_Permission_Sets__c}</span></div><br/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem>
+                        <apex:outputPanel layout="block" >{!RMLabel}</apex:outputPanel>
+                        <apex:outputPanel layout="block" ><div><span><b>{!$Label.Profile +'s'} -</b></span> <span>{!cs.RM_Profiles__c}</span></div>
+                        <br/><div><span><b>{!$Label.Permission_Sets} -</b></span> <span>{!cs.RM_Permission_Sets__c}</span></div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem>
+                        
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+               
+                <!--    Editable Section  -->
+				<apex:pageBlockSection rendered="{!isEdit}" columns="{!columnSize}"  id="editBlock1">
+                    
+                    <apex:pageBlockSectionItem >
+						<apex:outputPanel layout="block" style="Width:250px;">{!$Label.Apply_these_ReferenceEdge_Permissions}</apex:outputPanel>
+                        <apex:selectList value="{!selectedVal}" size="1"> 
+                            <apex:actionSupport event="onchange" action="{!onChangeType}" reRender="editBlock"/>
+							<apex:selectOptions value="{!Selectlist}" /> 
+						</apex:selectList>
+					</apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <div class="{!if(isSLDS,'','divclssClassic')}">
+                <apex:pageBlockSection rendered="{!isEdit}" columns="{!columnSize}"  id="editBlock">   
+                    <apex:pageBlockSectionItem>
+						<apex:outputPanel layout="block" style="Width:330px; margin-right:-65px">{!$Label.Select_Profiles_Permission_Sets}</apex:outputPanel>
+                        <apex:outputPanel/>
+					</apex:pageBlockSectionItem>
+                    
+					<apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}">
+						<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$Label.Profile +'s'}"/>
+						<apex:outputPanel id="profileSec">
+							<apex:selectList value="{!profilesToInclude}" multiselect="true" styleClass="left-select fixMultiSelectWidth">  
+                                <apex:selectOptions value="{!allProfile}" />
+                            </apex:selectList>
+                            <div class="add-remove-container">
+                                <apex:outputPanel layout="block" styleClass="text">{!$Label.Add}</apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!addToList}" id="btnRight" reRender="profileSec">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'right.gif')}"
+                                        alt="{!$Label.Add}" styleClass="rightArrowIcon" title="Add" />
+                                        <apex:param name="isProfile" value="true" assignto="{!isProfile}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!removeFromList}" id="btnLeft" reRender="profileSec">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'left.gif')}"
+                                        alt="{!$Label.Remove}" styleClass="leftArrowIcon"
+                                        title="Remove" />
+                                        <apex:param name="isProfile" value="true" assignto="{!isProfile}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="duelingText">{!$Label.Remove}</apex:outputPanel>
+                            </div>
+                            <apex:selectList value="{!currentSelectedProfile}" multiselect="true" styleClass="right-select fixMultiSelectWidth"> 
+                                <apex:selectOptions value="{!selectedProfile}" />
+                            </apex:selectList>
+						</apex:outputPanel>
+					</apex:pageBlockSectionItem>
+
+					<apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}">
+						<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$Label.Permission_Sets}"/>
+						<apex:outputPanel id="permissionSec">
+							<apex:selectList value="{!permissionToInclude}" multiselect="true" styleClass="left-select fixMultiSelectWidth">  
+                                <apex:selectOptions value="{!allPermissionSet}" />
+                            </apex:selectList>
+                            <div class="add-remove-container">
+                                <apex:outputPanel layout="block" styleClass="text">{!$Label.Add}</apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!addToList}" id="btnRight" reRender="permissionSec">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'right.gif')}"
+                                        alt="{!$Label.Add}" styleClass="rightArrowIcon" title="Add" />
+                                        <apex:param name="isProfile" value="false" assignto="{!isProfile}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!removeFromList}" id="btnLeft" reRender="permissionSec">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'left.gif')}"
+                                        alt="{!$Label.Remove}" styleClass="leftArrowIcon"
+                                        title="Remove" />
+                                        <apex:param name="isProfile" value="false" assignto="{!isProfile}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="duelingText">{!$Label.Remove}</apex:outputPanel>
+                            </div>
+                            <apex:selectList value="{!currentSelectedPermission}" multiselect="true" styleClass="right-select fixMultiSelectWidth"> 
+                                <apex:selectOptions value="{!selectedPermission}" />
+                            </apex:selectList>
+						</apex:outputPanel>
+					</apex:pageBlockSectionItem>
+                    
+				</apex:pageBlockSection></div>
+			</apex:pageBlock>
+		</apex:form>
+	</apex:outputPanel>  
+</apex:page>

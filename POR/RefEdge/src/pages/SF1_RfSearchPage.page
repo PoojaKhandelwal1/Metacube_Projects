@@ -1,0 +1,342 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page id="pageId" controller="RefSearchBlockController" showHeader="false" sidebar="false" docType="html-5.0" standardStylesheets="false">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+
+        <style>
+            .container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: 0;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                overflow-scrolling: touch;
+                padding-bottom: 3rem;
+            }
+            .utilityBar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 0.2rem;
+                background-color: white;
+                box-shadow: 0 -2px 2px 0 rgba(0, 0, 0, 0.16);
+            }
+            .customIconContainer {
+                height: 1.8rem !important;
+                width: 1.8rem !important;
+                border-radius: 0.9rem !important;
+                line-height: 1 !important;
+                padding: 0.5em 0 !important;
+            }
+            .recordsBlock {
+                margin-top: 1rem;
+            }
+            .titleBar {
+                padding: 0.2rem 0.8rem;
+                background-color: #f5f7fa;
+            }
+            .customToastDiv {
+                color: white;
+                background-color: rgba(84, 105, 141, 0.95);
+                border-radius: 0.25rem;
+                margin: 0.5rem;
+                padding: 0.75rem 1.5rem;
+            }
+            .custom-toast-width {
+                min-width: 0;
+            }
+            @media screen and (max-width: 767px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    margin-left: 0;
+                }
+            }
+            @media screen and (min-width: 768px) {
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 50%;
+                    width: 60%;
+                    margin-left: -30%;
+                }
+            }
+        </style>
+
+        <script>
+			var sf1RefSearchApp = angular.module('sf1RefSearchApp', []);
+
+            var infScrollDirective = sf1RefSearchApp.directive('whenScrolled',
+				function() {
+					return function(scope, elm, attr) {
+						var raw = elm[0];
+						
+						elm.bind('scroll', function() {
+							
+							if (raw.scrollTop + raw.offsetHeight >= raw.scrollHeight) {
+								scope.$apply(attr.whenScrolled);
+							}
+						});
+					};
+				}
+			);
+
+            sf1RefSearchApp.service('productService', function($rootScope) {
+                var isloading = function(value) {
+                    $rootScope.$broadcast("isloading", value);
+                };
+                var callChild = function(myMap,operationMap,accountMap,accountmappingSelected,contactMap,contactmappingSelected,contentMap,contentmappingSelected,mappedFilterIds, stageFilterId) {  
+                    $rootScope.$broadcast("filter",myMap,operationMap,accountMap,accountmappingSelected,contactMap,contactmappingSelected,contentMap,contentmappingSelected,mappedFilterIds, stageFilterId); 
+                };
+                var searchText = function(value) {
+                    $rootScope.$broadcast("searchText",value); 
+                };
+                var searchTextContact = function(value, accounts) {
+                    $rootScope.$broadcast("searchTextContact", value, accounts); 
+                };
+                var searchTextContent = function(value, accounts1) {
+                    $rootScope.$broadcast("searchTextContent", value, accounts1); 
+                };
+                var stageErrorEvent = function(stageErrorMsg) {
+                    $rootScope.$broadcast("stageErrorEvent", stageErrorMsg); 
+                };
+                var toggleFiltersModalEvent = function() {
+                    $rootScope.$broadcast("toggleFiltersModalEvent", null); 
+                };
+                var initiateRequestProcessEvent = function() {
+                    $rootScope.$broadcast("initiateRequestProcessEvent", null); 
+                };
+                var fetchMoreRecordsEvent = function() {
+                    $rootScope.$broadcast("fetchMoreRecordsEvent", null); 
+                };
+                var toggleAccountSectionEvent = function(value) {
+                    $rootScope.$broadcast("toggleAccountSectionEvent", value); 
+                };
+                var toggleContactSectionEvent = function(value) {
+                    $rootScope.$broadcast("toggleContactSectionEvent", value); 
+                };
+                var toggleContentSectionEvent = function(value) {
+                    $rootScope.$broadcast("toggleContentSectionEvent", value); 
+                };
+                var shareContentEvent = function() {
+                    $rootScope.$broadcast("shareContentEvent", null); 
+                };
+                var downloadContentEvent = function() {
+                    $rootScope.$broadcast("downloadContentEvent", null); 
+                };
+                
+                return {
+                    callChild : callChild,
+                    searchText : searchText,
+                    searchTextContent : searchTextContent,
+                    searchTextContact : searchTextContact,
+                    isloading : isloading,
+                    stageErrorEvent : stageErrorEvent,
+                    toggleFiltersModalEvent : toggleFiltersModalEvent,
+                    initiateRequestProcessEvent : initiateRequestProcessEvent,
+                    toggleAccountSectionEvent : toggleAccountSectionEvent,
+                    toggleContactSectionEvent : toggleContactSectionEvent,
+                    toggleContentSectionEvent : toggleContentSectionEvent,
+                    fetchMoreRecordsEvent : fetchMoreRecordsEvent,
+                    shareContentEvent : shareContentEvent,
+                    downloadContentEvent : downloadContentEvent
+                };
+            });
+
+            var sf1RefSearchCtrl = sf1RefSearchApp.controller('sf1RefSearchCtrl',
+                function($scope, $q, productService) {
+                    $scope.isloading = true;
+                    $scope.opportunityId = '{!JSENCODE(opportunityId)}';
+                    $scope.caseId = '{!JSENCODE(caseId)}';
+                    $scope.leadId = '{!JSENCODE(leadId)}';
+                    $scope.fromLead = {!fromLead};
+                    $scope.forAccount = {!forAccount};
+                    $scope.forContent = {!forContent};
+                    $scope.isCRMContentUser = {!isCRMContentUser};
+                    $scope.isBasicEdition = {!isBasicEdition};
+                    $scope.isContactsVisible = {!isContactsVisible};
+                    //re #194
+                    $scope.isReturned = '{!isReturned}';
+                    $scope.contactIds = '{!JSENCODE(contactIds)}';
+                    $scope.userIds = '{!JSENCODE(userIds)}';
+                    $scope.recipientsIds = '{!JSENCODE(recipientsIds)}';
+                    $scope.emailSubject = '{!JSENCODE(emailSubject)}';
+                    // $scope.emailContent = '{!JSENCODE(HTMLENCODE(emailContent))}';
+                    //	Re #1191
+                    $scope.emailContent = '{!JSENCODE(emailContent)}';                    	
+                    $scope.invitaionName = '{!JSENCODE(invitaionName)}';
+                    $scope.note = '{!JSENCODE(note)}';
+                    $scope.selectedMictosite = '{!JSENCODE(selectedMictosite)}'; 
+                    $scope.expDate = '{!JSENCODE(expDate)}'; 
+					$scope.isCcAllowed = '{!isCcAllowed}';  
+			        $scope.emailTo = '{!JSENCODE(emailTo)}';
+			        $scope.emailBcc = '{!JSENCODE(emailBcc)}';
+			        $scope.emailCc = '{!JSENCODE(emailCc)}'; 
+			        $scope.opportunityName ='{!JSENCODE(opportunityName)}'; 
+					$scope.opportunityAccount ='{!JSENCODE(opportunityAccount)}'; 
+                    $scope.nameSpace = '{!nameSpace}';
+                    $scope.Visible = 'Visible__c';
+                    $scope.preFilter = {!preFilter};
+                    $scope.isAccountSectionOpen = false;
+                    $scope.isContactSectionOpen = false;
+                    $scope.isContentSectionOpen = false;
+
+                    $scope.$on('isloading', function(e, value) { 
+                        $scope.isloading = value;
+                    });
+
+                    $scope.$on('toggleAccountSectionEvent', function(e, value) { 
+                        $scope.isAccountSectionOpen = value;
+                    });
+
+                    $scope.$on('toggleContactSectionEvent', function(e, value) { 
+                        $scope.isContactSectionOpen = value;
+                    });
+
+                    $scope.$on('toggleContentSectionEvent', function(e, value) { 
+                        $scope.isContentSectionOpen = value;
+                    });
+
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+
+                    $scope.toggleFiltersModal = function() {
+                        productService.toggleFiltersModalEvent();
+                    }
+
+                    $scope.initiateRequestProcess = function() {
+                        productService.initiateRequestProcessEvent();
+                    }
+
+                    $scope.fetchMoreRecords = function() {
+                        productService.fetchMoreRecordsEvent();
+                    }
+
+                    $scope.downloadContents = function() {
+                        productService.downloadContentEvent();
+                    }
+
+                    $scope.shareContents = function() {
+                        productService.shareContentEvent();
+                    }
+                    
+                    //REF-1997
+                    $scope.backToOpportunity = function() {						
+                       sforce.one.navigateToSObject($scope.opportunityId);
+					}
+                }
+            );
+        </script>
+    </head>
+    
+    <body>
+        <div ng-app="sf1RefSearchApp" ng-controller="sf1RefSearchCtrl" class="container" when-scrolled="fetchMoreRecords()">
+            <div role="status" ng-show="isloading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+            <div ng-show="!isloading">
+                <!-- REF-1997 -->
+                <div ng-show="opportunityId != ''" style="padding:1vh;">
+                    <a ng-click="backToOpportunity()">{!$Label.Back_to_Opportunity}</a>
+                </div>
+                <c:FilterandSearchBlockSF1 />
+                <div ng-show="(((opportunityId != '' || caseId != '' || leadId != '') && forAccount)
+                                                    || ((opportunityId != '' || caseId != '' || leadId != '') && !forAccount && !forContent)
+                                                    || (opportunityId == '' && caseId == '' && leadId == ''))
+                                                    && !isContactSectionOpen && !isContentSectionOpen">
+                    <c:AccountSearchBlockSF1 />
+                </div>
+                <div ng-class="{'recordsBlock' : !isContactSectionOpen}" ng-show="(opportunityId == '' && caseId == '' && leadId == '' && !fromLead && isContactsVisible)
+                                                    && !isAccountSectionOpen && !isContentSectionOpen">
+                    <c:ContactSearchBlockSF1 />
+                </div>
+                <div ng-class="{'recordsBlock' : !isContentSectionOpen}" ng-show="(((opportunityId != '' || caseId != '' || leadId != '') && forContent)
+                                                    || ((opportunityId != '' || caseId != '' || leadId != '') && !forAccount && !forContent)
+                                                    || (opportunityId == '' && caseId == '' && leadId == ''))
+                                                    && !isAccountSectionOpen && !isContactSectionOpen">
+                    <c:ContentSearchBlockSF1 />
+                </div>
+
+                <div class="utilityBar slds-grid slds-grid_align-space">
+                    <div style="display: inline-block; text-align: center">
+                        <span class="slds-icon_container slds-icon_container_circle slds-icon-action-filter customIconContainer" ng-click="toggleFiltersModal()">
+                            <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#filter')}"></use>
+                            </svg>
+                        </span>
+                        <span style="display: block; font-size: 0.55rem">{!$Label.RF_Filters}</span>
+                    </div>
+                    <div ng-hide="isContactSectionOpen || isContentSectionOpen || forContent" style="display: inline-block; text-align: center">
+                        <span class="slds-icon_container slds-icon_container_circle slds-icon-action-share-post customIconContainer" ng-click="initiateRequestProcess()">
+                            <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#share_post')}"></use>
+                            </svg>
+                        </span>
+                        <span style="display: block; font-size: 0.55rem">{!$Label.Request}</span>
+                    </div>
+                    <div ng-hide="isContactSectionOpen || isAccountSectionOpen || forAccount" style="display: inline-block; text-align: center">
+                        <span class="slds-icon_container slds-icon_container_circle slds-icon-action-announcement customIconContainer" ng-click="shareContents()">
+                            <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#share')}"></use>
+                            </svg>
+                        </span>
+                        <span style="display: block; font-size: 0.55rem">{!$Label.Share}</span>
+                    </div>
+                    <div ng-hide="isContactSectionOpen || isAccountSectionOpen || forAccount" style="display: inline-block; text-align: center">
+                        <span class="slds-icon_container slds-icon_container_circle slds-icon-action-download customIconContainer" ng-click="downloadContents()">
+                            <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#download')}"></use>
+                            </svg>
+                        </span>
+                        <span style="display: block; font-size: 0.55rem">{!$Label.Download}</span>
+                    </div>
+                    <!-- <div style="display: inline-block; text-align: center">
+                        <span class="slds-icon_container slds-icon_container_circle slds-icon-action-more customIconContainer" ng-click="toggleFiltersModal()">
+                            <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/action-sprite/svg/symbols.svg#more')}"></use>
+                            </svg>
+                        </span>
+                        <span style="display: block; font-size: 0.55rem">{!$Label.More}</span>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>

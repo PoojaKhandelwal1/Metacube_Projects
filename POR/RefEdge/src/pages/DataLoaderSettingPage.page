@@ -1,0 +1,68 @@
+<!-- 
+ * ReferenceEdge
+  * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *   
+ * @company : Point of Reference, Inc. 
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ --> 
+<apex:page controller="DataLoaderSettingController" sideBar="false"  tabStyle="Custom_Settings__c" lightningStylesheets="true" action="{!fetchData}">
+    <!-- Message -->
+    <apex:pageMessages id="pgmsgId" rendered="{!AND(IsPageAccessible,isFullLicenseAccessible)}"/>   
+    <apex:pageMessage summary="{!$Label.Insufficient_Privileges}" strength="3" severity="Info" rendered="{!IF(isFullLicenseAccessible,NOT(IsPageAccessible),isFullLicenseAccessible)}" />
+    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+    <apex:form id="formId" rendered="{!AND(IsPageAccessible, isFullLicenseAccessible)}">
+    	<c:POR_ModalLoader id="PORLoader"/>	
+    		<apex:actionFunction action="{!fetchData}" name="fetchData" reRender="formId" >
+    			<apex:param value="" name="objectType" assignTo="{!objectType}"/>
+    		</apex:actionFunction>
+        <div id="selectorBlock" style="margin: 10px;"> 
+	        <div style="float:left ; width: 30vw;">
+	            <apex:commandLink style="color:#5C95C4;" value="{!$Label.Back_to_the_Custom_Setting_Page}" rendered="{!IF(ISNULL(customSettingId) , false , true)}" action="{!returnCustomSettings}"/><br/>
+	        </div>
+	        <div style="margin-right: 30vw;">
+		        <apex:outputLabel for="objectSelector" style="margin-right: 15px;margin-left: -10px;" value="{!$Label.Select_Object}"/>
+				<apex:selectList id="objectSelector" value="{!objectType}" label="{!$Label.Select_Object}" multiselect="false" size="1" onchange="PORShowLoading();fetchData(this.value);return false;" >
+					<apex:selectOptions value="{!allObjects}"/>
+				</apex:selectList>
+			</div>
+		</div>
+        <apex:pageBlock id="pbId" >
+            <apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.Edit}" rendered="{!NOT(isEdit)}" action="{!editSettings}" reRender="pgmsgId, pbId" />
+                <apex:commandButton value="{!$Label.Save}" rendered="{!isEdit}"  action="{!saveSettings}" reRender="pgmsgId, pbId"/>
+                <apex:commandButton value="{!$Label.Cancel}" rendered="{!isEdit}" action="{!returnSettings}" reRender="pgmsgId, pbId"/>
+            </apex:pageBlockButtons>
+            <apex:outputPanel id="inputBlk">
+                    <apex:pageBlockTable id="pbTableId" value="{!fieldList}" var="field" style="width:70%;">
+                        <apex:column headerValue="Template Fields" value="{!field.Label__c}"/>                        
+                        <apex:column headerValue="Visible" style="width:160px;">
+                            <apex:outputPanel rendered="{!isEdit}">
+                                <apex:inputField id="basicId" value="{!field.Visible__c}" rendered="{!!field.Required__c}"/>
+                                <apex:outputField value="{!field.Visible__c}" rendered="{!field.Required__c}"/>
+                            </apex:outputPanel>
+                            <apex:outputField value="{!field.Visible__c}" rendered="{!!isEdit}"/>
+                        </apex:column> 
+                        <apex:column headerValue="Order" style="width:160px;">
+                            <apex:outputPanel rendered="{!isEdit}">
+                                <apex:inputField value="{!field.Order__c}" rendered="{!!field.Required__c}"/>                                
+                                <apex:outputField value="{!field.Order__c}"  rendered="{!field.Required__c}"/>
+                            </apex:outputPanel>
+                            <apex:outputField value="{!field.Order__c}" rendered="{!!isEdit}"/>
+                        </apex:column>
+                    </apex:pageBlockTable>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

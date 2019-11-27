@@ -1,0 +1,574 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page standardController="Custom_Settings__c" extensions="ChangeAllNLNRequestsControllerSLDS" 
+		tabStyle="Custom_Settings__c" sidebar="false" id="pageId"
+		standardStylesheets="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <style>
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.7;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.7;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .slds {
+                	background: white !important;
+                }
+				.tooltip:hover .tooltipHelpShow {
+				    display : inline;
+					border-radius: 7px;
+					box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.16);
+                    bottom: 65px;
+					margin-left: -25px;
+					min-width: 65%;
+                    position: absolute;
+					background:#16325c!important;
+					
+				}
+				.tooltipHelpShow {
+				    display : none;
+					margin-left: -25px;
+                    bottom: 65px;
+					min-width: 65%;
+                    line-height: 0.95rem;
+                    position: absolute;
+					background:#16325c!important;
+					font-size: 0.75rem;
+					color: white;
+					border-radius: 5px;
+					box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.16);
+				}
+				@media only screen and (max-width: 500px) {
+	                .slds .slds-button-group + .slds-button-group, .slds .slds-button-group + .slds-button {
+	                	margin: 10px auto 0 auto;
+	                }
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    //width: 90%;
+	                    max-width: 380px;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	width: 141px;
+    					margin: 10px auto 0 auto;
+	                }
+	                .buttonStyleEdit {
+	                	width: 75px;
+    					margin: 10px auto 0 auto;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 42%;
+	                   width:15%;
+	                }
+				}
+				@media only screen and (min-width: 501px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    width: 50%;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	float: right;
+	                }
+	                .buttonStyleEdit {
+	                	float: right;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 47%;
+	                   width:4%;
+	                }
+				}
+				.slds-notify--toast {
+                	min-width: auto !important;
+                	padding: 15px 12px;
+                }
+                .container {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+                var customSettingApp = angular.module('customSettingApp', []);
+                customSettingApp.controller('customSettingCon', function ($scope, $window, $q) {
+                
+                    $scope.customSetting = {};
+                    $scope.customSettingOld = {};
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.isEdit = false;
+                    $scope.isEditEnabled = ({!$ObjectType.Custom_Settings__c.updateable});
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.showAccModal = false;
+                    $scope.showConModal = false;
+                    $scope.isloading = true;
+                    
+                    $scope.intialFunction = function() {
+                   	
+                   		if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+	                   		
+		                    $scope.fetchCS().then(function(result) {
+		                        $scope.customSetting = result;
+		                        $scope.customSettingOld = angular.copy($scope.customSetting);
+		                        $scope.isloading = false;
+		                    });
+	                    }
+                    }
+                    
+                    $scope.cancel = function() {
+                    	$scope.customSetting = angular.copy($scope.customSettingOld);
+                    	$scope.isEdit = false;
+                    }
+                    
+                    $scope.fetchCS = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ChangeAllNLNRequestsControllerSLDS.getCustomSetting}',
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.showAccPopup = function() {
+
+                    	if ($scope.customSetting.accountRULPeriod != $scope.customSettingOld.accountRULPeriod) {
+                    		$scope.showAccModal = true;
+                    	} else {
+                    		$scope.showConPopup();
+                    	}
+                    }
+                    
+                    $scope.showConPopup = function() {
+						$scope.showAccModal = false;
+						
+                    	if ($scope.customSetting.contactRULPeriod != $scope.customSettingOld.contactRULPeriod) {
+                    		$scope.showConModal = true;
+                    	} else {
+                    		$scope.save();
+                    	}
+                    }
+                    
+                    $scope.save = function() {
+                    	$scope.showConModal = false;
+                    	$scope.isloading = true;
+                    	
+                    	$scope.saveCS().then(function(result) {
+		                	console.log('saved');
+		                	$scope.isloading = false;
+		                	
+		                	if (result == '') {
+		                		$scope.isEdit = false;
+		                		$scope.customSetting.updateAllAccount = false;
+    							$scope.customSetting.updateAllContact = false;
+		                		$scope.customSettingOld = angular.copy($scope.customSetting);
+		                	} else {
+		                		$scope.isError = true;
+                    			$scope.errorMsg = result;
+		                	}
+	                    });
+                    }
+                    
+                    $scope.saveCS = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ChangeAllNLNRequestsControllerSLDS.saveCSRUL}', angular.toJson($scope.customSetting),
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.parseResult = function(result) {
+					
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                        }
+                        return result;
+                    }
+                });
+            </script>   
+        </head>
+        <body ng-app="customSettingApp" class="slds">
+        	<div class="container">
+	            <form id="frmId" class="slds-m-left--small" ng-controller="customSettingCon" ng-cloak="ng-cloak">
+	                <div ng-show="isFullLicenseAccessible == 'false'">
+	                    <svg class="slds-icon slds-icon--medium slds-p-around--x-medium" style="background-color: rgb(194, 57, 52);">
+	                        <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	                    </svg>
+	                    {!$Label.User_License}
+	                </div>
+	                
+	                <div ng-init="intialFunction();"  ng-show="isFullLicenseAccessible == 'true'">
+	                	<!-- toast -->
+	                    <div id="toast-msg" ng-show="isError" class="slds-notify_container">
+	                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+	                            <span class="slds-assistive-text">{!$Label.Error}</span>
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError = false; isModalError = false;" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;" ng-show="isError">{{parseResult(errorMsg)}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <!-- main block -->
+	                    <div>
+	                        <!-- header -->
+						    <div class="slds-grid">
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+						            <div class="slds-button-group buttonStyle" role="group" ng-show="isEdit">
+	                                       <button class="slds-button slds-button--neutral" ng-click="cancel();">{!$Label.Cancel}</button>
+	                                       <button class="slds-button slds-button--neutral" ng-click="showAccPopup()">{!$Label.Save}</button>
+						            </div>
+						            <div class="slds-button-group buttonStyleEdit" role="group" ng-show="!isEdit && isEditEnabled">
+						                <button ng-click="isEdit = true;" class="slds-button slds-button--neutral">{!$Label.Edit}</button>
+						            </div>
+						        </div>
+						    </div>
+		                    <div ng-show="!isEdit" style="margin-top: 15px;">
+		                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                            {!SUBSTITUTE($Label.DefaultReferenceUseLimits,'@@@',$Label.Accounts)}
+		                        </div>
+		                        <div class="slds-grid slds-wrap">
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <span class="slds-form-element__static">{{customSetting.accountRULActivities}}</span>
+	                                        </div>
+	                                    </div>
+		                                <hr width="97%" style="margin-top:0;"/>
+		                            </div>
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <span class="slds-form-element__static">{{customSetting.accountRULPeriod}}</span>
+	                                        </div>
+	                                    </div>
+		                                <hr width="97%" style="margin-top:0;"/>
+		                            </div>
+		                        </div>
+		                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                            {!SUBSTITUTE($Label.DefaultReferenceUseLimits,'@@@',$Label.Contacts)}
+		                        </div>
+		                        <div class="slds-grid slds-wrap">
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <span class="slds-form-element__static">{{customSetting.contactRULActivities}}</span>
+	                                        </div>
+	                                    </div>
+		                                <hr width="97%" style="margin-top:0;"/>
+		                            </div>
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <span class="slds-form-element__static">{{customSetting.contactRULPeriod}}</span>
+	                                        </div>
+	                                    </div>
+		                                <hr width="97%" style="margin-top:0;"/>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <div ng-show="isEdit" style="margin-top: 15px;">
+		                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                            {!SUBSTITUTE($Label.DefaultReferenceUseLimits,'@@@',$Label.Accounts)}
+		                        </div>
+		                        <div class="slds-grid slds-wrap">
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <input style="width:97%" type="number" class="slds-input" ng-model="customSetting.accountRULActivities"/>
+	                                        </div>
+	                                    </div>
+		                                <hr width="97%" style="margin-top:0;"/>
+		                            </div>
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <input style="width:97%" type="number" class="slds-input" ng-model="customSetting.accountRULPeriod"/>
+	                                        </div>
+	                                    </div>
+		                                <hr width="97%" style="margin-top:0;"/>
+		                            </div>
+		                        </div>
+		                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                            {!SUBSTITUTE($Label.DefaultReferenceUseLimits,'@@@',$Label.Contacts)}
+		                        </div>
+		                        <div class="slds-grid slds-wrap">
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <input style="width:97%" type="number" class="slds-input" ng-model="customSetting.contactRULActivities"/>
+	                                        </div>
+	                                    </div>
+		                            </div>
+		                            <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+	                                    <div class="slds-form-element">
+	                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.Label}</label>
+											<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}' != null && '{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}' != ''">
+												<div class="slds-form-element ">
+													<div class="slds-form-element__icon slds-align-middle">
+													<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+														<svg class="slds-button__icon" aria-hidden="true">
+															<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+														</svg>
+													</p>
+													</div>
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}</div> 
+												</div>
+												<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+													<div class="slds-popover__body">{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}</div>
+												</div>
+											</div>
+											<div class="slds-form-element__control">
+	                                            <input style="width:97%" type="number" class="slds-input" ng-model="customSetting.contactRULPeriod"/>
+	                                        </div>
+	                                    </div>
+		                            </div>
+		                        </div>
+		                    </div>
+		                </div>
+		                <!-- Pop-up -->
+	                	<div ng-show="showAccModal">
+		                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+		                        <div class="slds-modal__container">
+		                            <div class="slds-modal__header">
+		                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showAccModal = false;">
+		                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+		                                    <span class="slds-assistive-text">Close</span>
+		                                </a>
+		                            </div>
+		                            <div class="slds-modal__content slds-p-around--medium">
+		                                <div>
+		                                    {!SUBSTITUTE($Label.Update_Existing_Account_Contacts,'@@@',$Label.Accounts)}
+		                                </div>
+		                            </div>
+		                            <div class="slds-modal__footer">
+	                                   <a class="slds-button slds-button--brand" ng-click="customSetting.updateAllAccount = true; showConPopup();">{!$Label.Yes}</a>
+	                                   <a class="slds-button slds-button--neutral" ng-click="customSetting.updateAllAccount = false; showConPopup();">{!$Label.No}</a>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <div class="slds-backdrop slds-backdrop--open"></div>
+	                  	</div>
+	                  	<div ng-show="showConModal">
+		                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+		                        <div class="slds-modal__container">
+		                            <div class="slds-modal__header">
+		                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showConModal = false;">
+		                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+		                                    <span class="slds-assistive-text">Close</span>
+		                                </a>
+		                            </div>
+		                            <div class="slds-modal__content slds-p-around--medium">
+		                                <div>
+		                                    {!SUBSTITUTE($Label.Update_Existing_Account_Contacts,'@@@',$Label.Contacts)}
+		                                </div>
+		                            </div>
+		                            <div class="slds-modal__footer">
+	                                   <a class="slds-button slds-button--brand" ng-click="customSetting.updateAllContact = true; save();">{!$Label.Yes}</a>
+	                                   <a class="slds-button slds-button--neutral" ng-click="customSetting.updateAllContact = false; save();">{!$Label.No}</a>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <div class="slds-backdrop slds-backdrop--open"></div>
+	                  	</div>
+	                </div>
+	                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+	                    <img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

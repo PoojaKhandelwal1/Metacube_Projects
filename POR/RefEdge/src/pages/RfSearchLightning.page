@@ -1,0 +1,937 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com 
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page id="pageId" sidebar="false" controller="RefSearchBlockController" tabStyle="Ref_Search__tab" showHeader="false" standardStylesheets="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0" action="{!userMappingRecord}">
+    
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">    
+        <head>
+            <title>Ref Search</title>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.AngularJS)}"/>
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+            <script src="{!URLFOR($Resource.NGDraggableJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.TriToggleCSS)}" />
+            <script src="{!URLFOR($Resource.TriToggleJS)}"></script>
+            <script src="{!URLFOR($Resource.NGVideoJS)}"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.BootstrapFiles, 'bootstrap.css')}"/>
+            <script>
+
+                var totlstps = 0;
+                var oppSId = '{!JSENCODE(opportunityId)}';
+                var caseSID = '{!JSENCODE(caseId)}';
+                var leadSId = '{!JSENCODE(leadId)}';
+                var forSAccount = {!forAccount};
+                var forSContent = {!forContent};
+                var accountSec = false;
+                var contentSec = false;
+                var gettingMoreInfo = true;
+                var viewMoreResult = true;
+                var makingSelection = true;
+                var selectContinue = true;
+                var understandAlert = true;
+                var sharebtn = true;
+                var helpInClick = true;
+                var accAbout = false;
+                var accNotice = false;
+                var checkOverlay = false;
+                var preventScrollEvent = false;
+                var refSearch = angular.module("refSearch", ['ngDraggable', 'nzToggle', 'anguvideo']);
+                refSearch.directive("scroll", function ($window) {
+                
+                    return function(scope, element, attrs) {                
+                        angular.element($window).bind("scroll", function() {
+                        	if(!preventScrollEvent) {
+                        		if (this.pageYOffset >= 50) {
+                                  scope.scrolledBelow = false;
+                                  scope.scrolledBelowSLDS = true;
+                                } else {
+                                  scope.scrolledBelow = false;
+                                  scope.scrolledBelowSLDS = false;
+                                }
+	                            scope.$apply();    
+                        	} else {
+                        		preventScrollEvent = false;
+                        	}
+                        });
+                    };                  
+                });
+                refSearch.service('productService', function($rootScope) {
+                    var isloading = function(value) {  
+                        $rootScope.$broadcast("isloading",value); 
+
+                        //  REF - 1228
+                        if (!value && checkOverlay) {
+                            checkOverlay = false;
+                              
+                            if({!showOveray}) {
+                                stepCountForOverlay();                            
+                            }
+                        }                        
+                    };
+                    var callChild = function(myMap,operationMap,accountMap,accountmappingSelected,contactMap,contactmappingSelected,contentMap,contentmappingSelected,mappedFilterIds, stageFilterId) {  
+                        $rootScope.$broadcast("filter",myMap,operationMap,accountMap,accountmappingSelected,contactMap,contactmappingSelected,contentMap,contentmappingSelected,mappedFilterIds, stageFilterId); 
+                    };
+                    var searchText = function(value) {
+                        if(((oppSId != '' || caseSID != '' || leadSId != '') && !forSAccount && forSContent)) {
+                    		var accounts = []; 
+                    		searchTextContent(value, accounts);
+                    	} else {
+                    		$rootScope.$broadcast("searchText",value); 
+                    	}
+                    };
+                    
+                    var clearAllFiltersAndSearchText = function() {
+                    	$rootScope.$broadcast("clearAllFiltersAndSearchText"); 
+                    };
+                    
+                    var SelectedColumnsList = function(accountColumns, contactColumns, contentColumns) {
+                        $rootScope.$broadcast("SelectedColumnsList", accountColumns, contactColumns, contentColumns); 
+                    };
+                    var openColumnSelector = function(showColumnSelectionModal) {
+                        $rootScope.$broadcast("openColumnSelector", showColumnSelectionModal); 
+                    };
+                    var searchTextContact = function(value, accounts) {
+                        $rootScope.$broadcast("searchTextContact", value, accounts); 
+                    };
+                    var searchTextContent = function(value, accounts1) {
+                        $rootScope.$broadcast("searchTextContent", value, accounts1); 
+                    };
+                    var stageErrorEvent = function(stageErrorMsg) {
+                        $rootScope.$broadcast("stageErrorEvent", stageErrorMsg); 
+                    };
+                    var referenceStatusChangeEvent = function(refStatus) {
+                        $rootScope.$broadcast("referenceStatusChangeEvent", refStatus); 
+                    };
+                    var requestData = function(reqWrapper) {
+                        $rootScope.$broadcast("requestData", reqWrapper); 
+                    };
+                    
+                    return {
+                        callChild : callChild,
+                        searchText : searchText,
+                        searchTextContent : searchTextContent,
+                        searchTextContact : searchTextContact,
+                        SelectedColumnsList : SelectedColumnsList,
+                        isloading : isloading,
+                        openColumnSelector : openColumnSelector,
+                        stageErrorEvent : stageErrorEvent,
+                        referenceStatusChangeEvent : referenceStatusChangeEvent,
+                        requestData : requestData,
+                        clearAllFiltersAndSearchText : clearAllFiltersAndSearchText
+                    };
+                });
+                var refSearchCon = refSearch.controller('refSearchController',function($scope, productService){
+                    $scope.showColumnSelectionModal1 = false;
+                    $scope.showOwner = {!showOwner};
+                    $scope.isloading = true;
+                    $scope.isApplyingPreFilters = true;
+                    checkOverlay = true;
+                    $scope.$on('isloading', function(e, value) { 
+                        $scope.isloading = value;
+                        if(!value) {
+                            $scope.isApplyingPreFilters = false;
+                        }
+                    });
+                    $scope.$on('openColumnSelector', function(e, showColumnSelectionModal) { 
+                        $scope.showColumnSelectionModal1 = showColumnSelectionModal;
+                    });
+                    $scope.actionSet = [];
+                
+                    $scope.columnMap = [];
+                    $scope.tempColumnMap = [];
+                    $scope.accountColumns = [];
+                    $scope.contactColumns = [];
+                    $scope.contentColumns = [];
+                    $scope.opportunityId = '{!JSENCODE(opportunityId)}';
+                    $scope.caseId = '{!JSENCODE(caseId)}';
+                    $scope.leadId = '{!JSENCODE(leadId)}';
+                    $scope.trackRecord = '{!JSENCODE(trackRecord)}';
+                    $scope.fromLead = {!fromLead};
+                    $scope.forAccount = {!forAccount};
+                    $scope.forContent = {!forContent};
+                    $scope.isCRMContentUser = {!isCRMContentUser};
+                    $scope.isCollectionCreateable = {!isCollectionCreateable};
+                    $scope.isBasicEdition = {!isBasicEdition};
+                    $scope.isContactsVisible = {!isContactsVisible};
+                    $scope.accountColumnsSaved = false;
+                    $scope.contactColumnsSaved = false;
+                    $scope.contentColumnsSaved = false;
+                    $scope.allAccountColsHidden = true;
+                    $scope.allContactColsHidden = true;
+                    $scope.allContentColsHidden = true;
+                    //re #194
+                    $scope.isReturned = '{!isReturned}';
+                    $scope.contactIds = '{!JSENCODE(contactIds)}';
+                    $scope.userIds = '{!JSENCODE(userIds)}';
+                    $scope.recipientsIds = '{!JSENCODE(recipientsIds)}';
+                    $scope.emailSubject = '{!JSENCODE(emailSubject)}';
+                   // $scope.emailContent = '{!JSENCODE(HTMLENCODE(emailContent))}';
+                   //   Re #1191
+                   $scope.emailContent = '{!JSENCODE(emailContent)}';                       
+                    $scope.invitaionName = '{!JSENCODE(invitaionName)}';
+                    $scope.note = '{!JSENCODE(note)}';
+                    $scope.selectedMictosite = '{!JSENCODE(selectedMictosite)}'; 
+                    $scope.expDate = '{!JSENCODE(expDate)}'; 
+                    $scope.isCcAllowed = '{!isCcAllowed}';  
+                    $scope.emailTo = '{!JSENCODE(emailTo)}';
+                    $scope.emailBcc = '{!JSENCODE(emailBcc)}';
+                    $scope.emailCc = '{!JSENCODE(emailCc)}'; 
+                    $scope.opportunityName ='{!JSENCODE(opportunityName)}'; 
+                    $scope.opportunityAccount ='{!JSENCODE(opportunityAccount)}'; 
+                    $scope.nameSpace = '{!nameSpace}';
+                    $scope.Visible = 'Visible__c';
+                    $scope.preFilter = {!preFilter};
+                    $scope.showExportButton = false;
+                    $scope.isRefMatch = {!isRefMatch};
+                    $scope.sharedContactsEnabled = {!sharedContactsEnabled};
+                    $scope.refRequestId = '{!JSENCODE(refRequestId)}';
+                    $scope.accRequestId = '{!JSENCODE(accRequestId)}';
+                    $scope.unspecRequestId = '{!JSENCODE(unspecRequestId)}';
+                    $scope.projectType = '{!JSENCODE(projectType)}';
+                    $scope.refRequestWrapper = {};
+                    $scope.selectedRequestItem = {};
+                    $scope.isUr = false;
+                    //REF-1964
+                    $scope.isHubMatch = {!isHubMatch};
+                    $scope.showMoreRecordsView = false; 
+                    $scope.updateCount = function(countValue) {
+                        if ($scope.actionSet != null && $scope.actionSet.indexOf(countValue) == -1) {
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.RefSearchBlockController.updateCount}',
+                                $scope.trackRecord, countValue,
+                                function(result, event) {
+                                    if (result == 'true')
+                                    $scope.actionSet.push(countValue);
+                                }
+                            );
+                        }
+                    }
+
+                    $scope.$on('requestData', function(event, requestWrapper) {
+                        $scope.refRequestWrapper = requestWrapper;
+
+                        if ($scope.accRequestId != '' && $scope.unspecRequestId == '') {
+                            $scope.isUr = false;
+							
+							if($scope.refRequestWrapper && $scope.refRequestWrapper['accRequests']) {
+								for(var loop=0; loop<$scope.refRequestWrapper['accRequests'].length; loop++) {
+									var ar = $scope.refRequestWrapper['accRequests'][loop];
+									
+									if (ar['accRequestId'] == $scope.accRequestId) {
+	                                    $scope.selectedRequestItem = angular.copy(ar);
+	                                    $scope.selectedRequestId = ar['accRequestId'];
+	                                }
+								}
+							}
+							
+                        } else if ($scope.accRequestId == '' && $scope.unspecRequestId != '') {
+                            $scope.isUr = true;
+							
+							if($scope.refRequestWrapper && $scope.refRequestWrapper['unspecRequests']) {
+								for(var loop=0; loop<$scope.refRequestWrapper['unspecRequests'].length; loop++) {
+									var ur = $scope.refRequestWrapper['unspecRequests'][loop];
+									if (ur['unspecRequestId'] == $scope.unspecRequestId) {
+	                                    $scope.selectedRequestItem = angular.copy(ur);
+	                                    $scope.selectedRequestId = ur['unspecRequestId'];
+	                                }
+								}
+							}
+                        }
+                    });
+                    
+                    $scope.getColumnWrapperMap = function() {
+
+                        if ({!!isRefMatch}) {
+                            jQuery("#helpoverlayId").css({"display":"block"});
+                        }
+
+                        $scope.allAccountColsHidden = true;
+                        $scope.allContactColsHidden = true;
+                        $scope.allContentColsHidden = true;
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getColumnWrapperMap}',
+                            function(result, event) {
+                                if (result != null) {
+                                    result = $scope.parseResult(result);
+                                    $scope.$apply(function () {
+                                        $scope.columnMap = JSON.parse(result);
+                                        $scope.accountColumns = $scope.columnMap['Account'];                                    
+                                        $scope.contactColumns = $scope.columnMap['Contact'];
+                                        $scope.contentColumns = $scope.columnMap['Content'];
+                                        var breakFlag = true;
+                                        
+                                        if($scope.accountColumns) {
+                                        	for(var loop=0; loop<$scope.accountColumns.length; loop++) {
+	                                        	var item = $scope.accountColumns[loop];
+	                                        	
+	                                        	if (item.name == 'LastNDays') {
+	                                                item.label = item.label.replace('$', {!RULPeriodLength});
+	                                            }
+	                                            
+	                                            // Condition to hide/show About helpoverlay 
+	                                            if (item.name == 'About') {                                                
+	                                                accAbout = item.isSelected ? true : false;
+	                                            }
+	
+	                                            // Condition to hide/show Notice of helpoverlay 
+	                                            if (item.name == 'Notice') {
+	                                                accNotice = item.isSelected ? true : false;
+	                                            } 
+	
+	                                            if ($scope.allAccountColsHidden) {
+	                                                if (item.userMapping[$scope.nameSpace + $scope.Visible]) {
+	                                                    $scope.allAccountColsHidden = false;
+	                                                }
+	                                            }
+	                                            if (breakFlag) {
+	                                                if (item.userMapping.Id != null && item.userMapping.Id != '') {
+	                                                    $scope.accountColumnsSaved = true;
+	                                                    breakFlag = false;
+	                                                }
+	                                            }
+	                                        }
+                                        }
+
+                                        if (accNotice || !$scope.accountColumnsSaved || $scope.allAccountColsHidden) {
+                                            accNotice = true;
+                                        }
+                                        if (accAbout || !$scope.accountColumnsSaved || $scope.allAccountColsHidden) {
+                                            accAbout = true;
+                                        }
+                                        breakFlag = true;
+                                        
+                                        if($scope.contactColumns) {
+                                        	for(var loop=0; loop<$scope.contactColumns.length; loop++) {
+	                                        	var item = $scope.contactColumns[loop];
+	                                        	
+	                                        	if (item.name == 'LastNDays') {
+	                                                item.label = item.label.replace('$', {!RULPeriodLengthContact});
+	                                            }
+	                                            if ($scope.allContactColsHidden) {
+	                                                if (item.userMapping[$scope.nameSpace + $scope.Visible]) {
+	                                                    $scope.allContactColsHidden = false;
+	                                                }
+	                                            }
+	                                            if (breakFlag) {
+	                                                if (item.userMapping.Id != null && item.userMapping.Id != '') {
+	                                                    $scope.contactColumnsSaved = true;
+	                                                    breakFlag = false;
+	                                                }
+	                                            }
+	                                        }
+                                        }
+                                        
+                                        breakFlag = true;
+                                        
+                                        if($scope.contentColumns) {
+                                        	for(var loop=0; loop<$scope.contentColumns.length; loop++) {
+	                                        	var item = $scope.contentColumns[loop];
+	                                        	if ($scope.allContentColsHidden) {
+	                                                 if (item.userMapping[$scope.nameSpace + $scope.Visible]) {
+	                                                     $scope.allContentColsHidden = false;
+	                                                 }
+	                                             }
+	                                             if (breakFlag) {
+	                                                 if (item.userMapping.Id != null && item.userMapping.Id != '') {
+	                                                     $scope.contentColumnsSaved = true;
+	                                                     breakFlag = false;
+	                                                 }
+	                                             }
+	                                       	}
+                                        }
+                                        productService.SelectedColumnsList($scope.accountColumns, $scope.contactColumns, $scope.contentColumns);
+                                    });
+                                }
+                            },
+                            {escape: true}
+                        );
+                        Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.RefSearchBlockController.hasPermissionOnEnableRefSearchExport}', 
+                            function(result) {
+                                if (result!= null) {
+                                    $scope.showExportButton = result;
+                                } else {
+                                    $scope.showExportButton = false;
+                                }
+                            }
+                        );
+                     //   jQuery("#helpoverlayId").css({"float":"right", "cursor":"pointer", "position":"relative", "top": - jQuery('#helpoverlayId').offset().top + 20});
+                    }
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+                    $scope.saveSelectedColumns = function() {
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.saveSelectedColumns}',
+                            angular.toJson($scope.columnMap),
+                            function(result, event) {
+                                if (result != '') {
+                                    result = $scope.parseResult(result); 
+                                    $scope.$apply(function() {
+                                        $scope.columnMap = JSON.parse(result);
+                                    });
+                                }
+                                $scope.getColumnWrapperMap();
+                            },
+                            {escape: true}
+                        );
+                        productService.openColumnSelector(false);
+                    }
+                    $scope.cancelSelectedColumns = function() {
+                        $scope.getColumnWrapperMap();
+                        productService.openColumnSelector(false);
+                    }
+                });
+                
+                /*  
+                REF - 1288
+                objective : To show HelpOverlays
+                modified By : Rajneesh 14 mar 2018
+                */ 
+                var counter = 0;
+                var msg = '';
+                var header = '';
+                var content = '';
+                var addcls = '';
+                var removcls = '';
+                var loc = '';
+                var frmTop = '';
+                var frmLft = '';
+                var accTotlCount = 0;
+                var viewedAccCount = 0;
+                var cntTotlCount = 0;
+                var viewedContentCount = 0;
+                var helpAssistant = '{!JSENCODE(helpAssistant)}'; 
+                
+                function rfSearchCall(totCount, viewedAccTotalCount) {
+                    accTotlCount = totCount;
+                    viewedAccCount = viewedAccTotalCount;
+                }
+
+                function rfSearchContntCall(totcntCount, viewedContntTotalCount) {
+                    cntTotlCount = totcntCount;
+                    viewedContentCount = viewedContntTotalCount;
+                }
+
+                function ShowOrHideComponent(action) { 
+                    counter ++;
+                    var timeout = 0;
+                    if (action) {
+                        var helpOverlayMap = JSON.parse('{!JSENCODE(helpOverlay)}');
+
+                        if (counter == 1) {
+                            msg = helpAssistant + ' ' + JSON.parse('"' + helpOverlayMap[1].value + '"');
+                            header = helpOverlayMap[1].header;
+                            content = msg.replace('@@@', totlstps);
+                            addcls = '';
+                            removcls = 'arrow_compbox arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                            loc = 'tabListId';
+                            frmTop = '175';
+                            frmLft = '50';
+                            
+                        } else if(counter == 2) {   
+                            header = helpOverlayMap[2].header;
+                            content = JSON.parse('"' + helpOverlayMap[2].value + '"');
+                            addcls = 'arrow_box_top';
+                            removcls = 'arrow_compbox arrow_box_top_right arrow_box_top_Corner';
+                            loc = 'tabListId'; 
+                            frmTop = '52';
+                            frmLft = '38';
+                            
+                        } else if(counter == 3) {   
+                            header = helpOverlayMap[3].header;
+                            content = JSON.parse('"' + helpOverlayMap[3].value + '"');
+                            addcls = 'arrow_box_top_Corner';
+                            removcls = 'arrow_compbox arrow_box_top arrow_box_top_right';
+                            loc = 'moreButtonId'; 
+                            frmTop = '35';
+                            frmLft = '-315';
+                            
+                        } else if(counter == 4) {
+                            header = helpOverlayMap[4].header;
+                            content = JSON.parse('"' + helpOverlayMap[4].value + '"');
+                            addcls = 'arrow_box_top';
+                            removcls = 'arrow_compbox arrow_box_top_right arrow_box_top_Corner';
+                            loc = 'searchTextField'; 
+                            frmTop = '60';
+                            frmLft = '225';
+                            
+                        } else if(accountSec && gettingMoreInfo && accAbout && accTotlCount > 0) {
+                            gettingMoreInfo = false;
+                            header = helpOverlayMap[5].header;
+                            content = JSON.parse('"' + helpOverlayMap[5].value + '"');
+                            addcls = 'arrow_box_top_right';
+                            removcls = 'arrow_compbox arrow_box_top arrow_box_top_Corner';
+                            loc = 'col3';
+                            window.scrollTo(0, 0);
+							timeout = 150;
+                            frmTop = '-10';
+                            frmLft = '-330';
+                            
+                        } else if(((!showMoreAccountSection && accountSec && accTotlCount > 5) 
+                        				|| (showMoreAccountSection && accountSec && (viewedAccCount < accTotlCount)) 
+                        				|| (!showMoreContentSection && contentSec && cntTotlCount > 5)
+                        				|| (showMoreContentSection && contentSec && (viewedContentCount < cntTotlCount))) 
+                        			&& viewMoreResult) { //Show more/View More handling
+                            viewMoreResult = false;
+                            header = helpOverlayMap[6].header;
+                            content = JSON.parse('"' + helpOverlayMap[6].value + '"');
+                            addcls = 'arrow_box_top';
+                            removcls = 'arrow_compbox arrow_box_top_right arrow_box_top_Corner';
+                            
+                            if (!showMoreAccountSection && !showMoreContentSection && !showMoreContactSection) { // before click on show more (Show more handling)
+                            	if(accountSec && accTotlCount > 5) {
+                            		loc = 'accShowMore';
+                            	} else if(contentSec && cntTotlCount > 5) { 
+                            		loc = 'contentShowMore';
+	                            	preventScrollEvent = true;
+	                            	window.scrollBy(0, jQuery('#contentShowMore').offset().top);
+                            	}
+                            } else if(showMoreAccountSection && accountSec && (viewedAccCount < accTotlCount)) { // after click on account show more (View More handling)
+                            	loc = 'accViewMore';
+                            } else if(showMoreContentSection && contentSec && (viewedContentCount < cntTotlCount)) { // after click on content show more (View More handling)
+                            	loc = 'contentViewMore';
+                            	window.scrollTo(0, 0);
+								timeout = 150;
+                            }
+                            frmTop = '34';
+                            frmLft = '20';
+                            
+                        } else if(((accountSec && accTotlCount > 0) || (contentSec && cntTotlCount > 0)) && makingSelection) { //Making selection handling
+                            makingSelection = false;
+                            header = helpOverlayMap[7].header;
+                            content = JSON.parse('"' + helpOverlayMap[7].value + '"');
+                            addcls = 'arrow_compbox';
+                            removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+
+                            if (accountSec && accTotlCount > 0) {
+                                loc = 'accSelection';
+                                window.scrollTo(0, 0);
+                            } else if(contentSec && cntTotlCount > 0) {
+                                loc = 'contentSelection';
+                                
+                                if(!showMoreContentSection) {
+                                	preventScrollEvent = true;
+                            		window.scrollBy(0, jQuery('#contentSelection').offset().top);
+                                } else {
+                                	window.scrollTo(0, 0);
+									timeout = 150;
+                                }
+                            } 
+                            frmTop = '-12';
+                            frmLft = '35';
+                            
+                        } else if(accountSec && selectContinue && accTotlCount > 0) {
+                            selectContinue = false;
+                            header = helpOverlayMap[8].header;
+                            content = JSON.parse('"' + helpOverlayMap[8].value + '"');
+                            addcls = 'arrow_box_top_Corner';
+                            removcls = 'arrow_compbox arrow_box_top arrow_box_top_right';
+                            loc = 'accSelectContinue'; 
+                            frmTop = '43';
+                            frmLft = '-280';
+                            
+                        } else if(accountSec && understandAlert && accNotice && accTotlCount > 0) {
+                            understandAlert = false;
+                            header = helpOverlayMap[9].header;
+                            content = JSON.parse('"' + helpOverlayMap[9].value + '"');
+                            addcls = 'arrow_compbox';
+                            removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                            loc = 'col2';
+                            frmTop = '-10';
+                            frmLft = '100';
+                            
+                        } else if(sharebtn && contentSec) {
+                            sharebtn = false;
+                            header = helpOverlayMap[10].header;
+                            content = JSON.parse('"' + helpOverlayMap[10].value + '"');
+                            addcls = 'arrow_box_top_Corner';
+                            removcls = 'arrow_compbox arrow_box_top arrow_box_top_right';
+                            loc = 'contntShareBtn'; 
+                            
+                            preventScrollEvent = true;
+                            window.scrollBy(0, jQuery('#contntShareBtn').offset().top);
+
+                            if (accountSec) {
+                            	frmTop = '37';
+                            } else {
+                            	frmTop = '45';
+                            }                            
+                            frmLft = '-310';
+                            
+                        } else if (helpInClick) {
+                            helpInClick = false;
+                            header = helpOverlayMap[11].header;
+                            content = JSON.parse('"' + helpOverlayMap[11].value + '"');
+                            addcls = 'arrow_box_top_Corner';
+                            removcls = 'arrow_compbox arrow_box_top arrow_box_top_right';
+                            loc = 'helpoverlayId'; 
+                            window.scrollTo(0, 0);
+                            frmTop = '58';
+                            frmLft = '-310';
+                        } else {
+                            action = false;
+                        }
+                    } else {
+                    	action = false;
+                    }
+                        
+                    setTimeout(function() {
+                    	showHideHelpOverlays(action, header, content, loc, addcls, removcls, totlstps, frmTop, frmLft);
+                    }, timeout);
+                }
+				
+				function setTotalStepUsingAccountSection(actualStepsCount, isAccountContent) {
+                    //Set available steps count For Account block
+                    var totalSteps = 0;
+                    if (accAbout && accNotice) {
+                    	totalSteps = actualStepsCount;
+                    } else if (!accAbout  && !accNotice){
+                    	totalSteps = actualStepsCount - 2;
+                    } else {
+                    	totalSteps = actualStepsCount - 1;
+                    }
+                    
+                    //Add steps count For Content block if needed
+                    if(isAccountContent && !showMoreAccountSection && !showMoreContactSection) { //Content Share button handling
+                    	if (({!!isCRMContentUser}) || (!(cntTotlCount > 0))) {
+	                        sharebtn = false;
+	                    } else {
+	                        totalSteps = totalSteps + 1;
+	                        contentSec = true;
+	                    }
+                    } 
+                    
+                    totlstps = totalSteps;
+				}
+				
+				function setTotalStepUsingContentSection(actualStepsCount) {
+					//Set available steps count For Content block (Content Share button handling)
+					var totalSteps = 0;
+					if ({!!isCRMContentUser}) {                              
+                         totalSteps = actualStepsCount - 1;
+                         sharebtn = false;
+                     } else {                            
+                         totalSteps = actualStepsCount;
+                         contentSec = true;
+                     }
+                     totlstps = totalSteps;
+				}
+                
+                function stepCountForOverlay() {
+
+                    accCountFunction();
+                    contntCountFunction();
+
+                    if(((oppSId != '' || caseSID != '' || leadSId != '') && forSAccount && forSContent)
+						|| ((oppSId != '' || caseSID != '' || leadSId != '') && !forSAccount && !forSContent)
+						|| (oppSId == '' && caseSID == '' && leadSId == '')) {  //When both Account and Content section are available 
+																				//either direct or when navigate from opp/case/lead 
+						
+						if(!showMoreAccountSection && !showMoreContentSection && !showMoreContactSection && (accTotlCount > 0 || cntTotlCount > 0)) { //Before click on show more
+							if(accTotlCount > 0) { //Calculate total steps count using Account block
+								accountSec = true;
+								if(accTotlCount > 5 || cntTotlCount > 5) { //When either Account/Content show more is visible (Show More handling)
+									setTotalStepUsingAccountSection(10, true);
+								} else { //When neither Account nor Content show more is visible (Show More handling)
+									setTotalStepUsingAccountSection(9, true);
+								}
+							} else if(cntTotlCount > 0) { //Calculate total steps count using Content block
+								if(cntTotlCount > 5) { //When Content show more is visible (Show More handling)
+									setTotalStepUsingContentSection(8);
+								} else { //When Content show more is not visible (Show More handling)
+									setTotalStepUsingContentSection(7);
+								}
+							} 
+						} else if(showMoreAccountSection && accTotlCount > 0) { //When Account Show more is clicked -
+																				//Calculate total steps count using Account block (View More handling)
+							accountSec = true;
+							if(viewedAccCount < accTotlCount) { //When Account View More is available (View More handling)
+								setTotalStepUsingAccountSection(10, true);
+							} else { //When Account View More is not available (View More handling) 
+								setTotalStepUsingAccountSection(9, true);
+							}
+						} else if(showMoreContentSection && cntTotlCount > 0) { //When Content Show more is clicked -
+																				//Calculate total steps count using Content block (View More handling)
+							contentSec = true;
+							if(viewedContentCount < cntTotlCount) { //When Content View More is available (View More handling)
+								setTotalStepUsingContentSection(8);
+							} else { //When Content View More is not available (View More handling) 
+								setTotalStepUsingContentSection(7);
+							}
+						} else { //set default steps count
+							totlstps = 5;
+                           	sharebtn = false;
+						}
+                    } else if (((oppSId != '' || caseSID != '' || leadSId != '') && forSAccount)) { //When only Account section is available - 
+                    																				//when navigate from opp/case/lead 
+                        if (accTotlCount > 0) { //Calculate total steps count using Account block
+                            accountSec = true;
+                            if ((!showMoreAccountSection && accTotlCount > 5)
+                            	|| (showMoreAccountSection && (viewedAccCount < accTotlCount))) { //When either show more or view more link is visible (Show/View More handling)
+                                setTotalStepUsingAccountSection(10, false);
+                            } else { //When show more or view more link both are not visible (Show/View More handling)
+                            	setTotalStepUsingAccountSection(9, false);
+                            }
+                        } else { //if account records are not present
+                            totlstps = 5;
+                            sharebtn = false;
+                        } 
+                    } else { //When only Content section is available - when navigate from opp/case/lead
+                        
+                        if (cntTotlCount > 0) { //Calculate total steps count using Content block
+                            contentSec = true;
+                            if ((!showMoreContentSection && cntTotlCount > 5)
+                            	|| (showMoreContentSection && (viewedContentCount < cntTotlCount))) { //When either show more or view more link is visible (Show/View More handling)
+                                setTotalStepUsingContentSection(8);
+                            } else { //When show more or view more link both are not visible (Show/View More handling)
+                                setTotalStepUsingContentSection(7);
+                            }
+                        } else { //if content records are not present
+                            totlstps = 5;
+                            sharebtn = false;
+                        }
+                    }
+                    ShowOrHideComponent(true);
+                }
+
+                function tourHelpoverlay() {
+                    counter = 0;
+                    gettingMoreInfo = true;
+                    helpInClick = true;
+                    viewMoreResult = true;
+                    makingSelection = true;
+                    selectContinue = true;
+                    understandAlert = true;
+                    sharebtn = true;
+                    accountSec = false;
+                    contentSec = false;
+                    stepCountForOverlay();
+                }
+				
+				var showMoreAccountSection = false;
+				var showMoreContactSection = false;
+				var showMoreContentSection = false;
+                //  REF-1970  - Modified By - Rajneesh Raj(Nov 12, 2018)
+                function showMoreSectionView(isAcc, isContact, isContent, isHelpPageIcon) {
+                   
+                    if(isAcc) {
+                        document.getElementById("accountBlock").style.display = "block";
+                    } else {
+                        document.getElementById("accountBlock").style.display = "none";
+                    }
+
+                    //REF-2120
+                    if(isContact) {
+                        document.getElementById("contactBlock").style.display = "block";
+                        document.getElementById("contactBlock1").style.display = "block";
+                    } else {
+                        document.getElementById("contactBlock").style.display = "none";
+                        document.getElementById("contactBlock1").style.display = "none";
+                    }
+
+                    if(isContent) {
+                        document.getElementById("contentBlock").style.display = "block";
+                    } else {
+                        document.getElementById("contentBlock").style.display = "none";
+                    }
+
+                    if(isHelpPageIcon) {
+                        document.getElementById("helpoverlayId").style.display = "block";
+                    } else {
+                        document.getElementById("helpoverlayId").style.display = "none";
+                    }
+                    
+                    if(isAcc && isContact && isContent) {
+                    	showMoreAccountSection = false;
+                    	showMoreContactSection = false;
+                    	showMoreContentSection = false;
+                    } else if(isAcc) {
+                    	showMoreAccountSection = true;
+                    } else if(isContact) {
+                    	showMoreContactSection = true;
+                    } else if(isContent) {
+                    	showMoreContentSection = true;
+                    }	
+                }
+                
+            </script>
+            <style>
+                #filter-block {
+                    padding-left: 7px;
+                    border-bottom: 1px solid #979797;
+                    box-shadow: 0 3px 3px #979797;
+                    padding-right: 10px;
+                    background-color: WHITE;
+                }
+                .stickToTop {
+                    width: 97%;
+                    background-color: WHITE;
+                    z-index: 999;
+                    position: fixed;
+                    top: 0;
+                    padding-right: 10px;
+                }
+                .stickToTopSLDS {
+                    width: 100%;
+                    background-color: WHITE;
+                    z-index: 999;
+                    position: fixed;
+                    top: 0;
+                    padding-right: 14px;
+                }
+                #header-div {
+                    background: WHITE;
+                    box-shadow: 0 2px 10px #888888;
+                    padding: 0 10px;
+                }
+                #pageBody {
+                    margin-bottom: 35px;
+                }
+
+                .slds .slds-button--neutral {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    text-align: center;
+                    vertical-align: middle;
+                    border: 1px solid #d8dde6;
+                    border-left: 1px solid #d8dde6 !important;
+                    background-color: white;
+                    / border-right: none; /
+                }
+
+                .slds .slds-icon-text-default {
+                    fill: #ff9900;
+                }
+                
+                .slds .slds-checkbox .slds-checkbox--faux {
+                	cursor: pointer;
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux{
+                	cursor: not-allowed;
+                }
+
+            </style>
+        </head>
+        <!-- Message -->
+        <apex:pageMessages id="pgmsgId"/>
+        <body id="pageBody" class="slds body-inside-iframe" ng-app="refSearch" ng-controller="refSearchController" ng-init="getColumnWrapperMap();" ng-cloak="ng-cloak">
+
+            <div ng-if="!isRefMatch" onclick="tourHelpoverlay()" id="helpoverlayId" style="cursor: pointer; float: right; display: block; position: fixed; right: 0; z-index: 1000;">
+                <span class="slds-icon_container" title="Help for the page">
+                    <svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon_x-small" style="width: 24px;margin-top: 10px !important;margin-right: 10px;margin-left: 10px;">
+                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3,'/assets/icons/utility-sprite/svg/symbols.svg#question_mark')}"></use>
+                    </svg>
+                </span>
+            </div>
+
+            <div id="filter-block" scroll="scroll" ng-class="{stickToTop: scrolledBelow, stickToTopSLDS: scrolledBelowSLDS}">
+                <c:FilterandSearchBlock />
+            </div>
+
+            <!-- REF-2120 -->
+            <div id="contactBlock1" >
+                <div ng-if="isRefMatch && ((opportunityId == '' && caseId == '' && leadId == '' && !fromLead && isContactsVisible && !isRefMatch)
+                                            || (isRefMatch && !sharedContactsEnabled) || isHubMatch)">
+                <c:ContactSearchBlock />
+                </div>
+            </div>
+
+            <div id="accountBlock" >
+                <div ng-if="(((opportunityId != '' || caseId != '' || leadId != '') && forAccount)
+                            || ((opportunityId != '' || caseId != '' || leadId != '') && !forAccount && !forContent)
+                            || (opportunityId == '' && caseId == '' && leadId == '')) && !isHubMatch">
+                    <c:AccountSearchBlock />
+                </div>
+            </div>
+
+            <!-- REF-2120 -->
+            <div id="contactBlock">
+                <div ng-if="!isRefMatch && ((opportunityId == '' && caseId == '' && leadId == '' && !fromLead && isContactsVisible && !isRefMatch)
+                                            || (isRefMatch && !sharedContactsEnabled) || isHubMatch)">
+                    <c:ContactSearchBlock />
+                </div>
+            </div>
+
+            <div id="contentBlock" >
+                <div ng-if="(((opportunityId != '' || caseId != '' || leadId != '') && forContent)
+                            || ((opportunityId != '' || caseId != '' || leadId != '') && !forAccount && !forContent)
+                            || (opportunityId == '' && caseId == '' && leadId == '')) && !isRefMatch">
+                    <c:ContentSearchBlock />
+                </div>
+            </div>
+
+            <div ng-show="isloading">
+                <div class="slds-spinner--medium" id="loading" ng-class="{'ref-search-load-backdrop': !isRefMatch}"> 
+                   <img id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                   <span ng-if="(preFilter && opportunityId != '' && isApplyingPreFilters)">Applying Pre Filters....</span>
+                </div>
+            </div> 
+            <!--   
+            REF - 1288
+            objective : To show HelpOverlays
+            modified By : Rajneesh 14 mar 2018
+            -->
+            <c:HelpOverlays /> 
+
+        </body>
+        <style>
+            #loading-image {
+               position: fixed;
+               top: 40%;
+               left: 47%;
+               width: 4%;
+            } 
+            #loading {
+                width: 100%;
+                height: 500%;
+                left: 0;
+                right: 0;
+                background-color: rgba(255, 255, 255, 1) !important;
+                top: 0;
+                bottom: 0;
+                position: absolute;
+                display: block;
+                text-align: center;
+                z-index: 9005;
+            }
+            
+            #loading.ref-search-load-backdrop {
+            	background-color: rgba(126, 140, 153, 0.8) !important;
+            }
+            #loading.ref-search-load-backdrop span {
+            	position: fixed;
+                top: 59%;
+                left: 43%;
+                font-size: 18px;
+                color: #dddd;
+            } 
+            .slds .slds-button{
+                cursor: pointer;
+            }
+        </style>
+    </html>
+</apex:page>

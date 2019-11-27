@@ -1,0 +1,1789 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Nomination__c" id="pageId" extensions="NominationFormControllerSLDS" showHeader="{!NOT(isSLDS)}" sidebar="false" docType="html-5.0">
+<apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+<script>
+	var isSLDS = false;
+
+	jQuery(document).ready(function() {
+		var elm = document.getElementById('AppBodyHeader');
+		
+		if (elm != null) {
+			isSLDS = false;
+		} else {
+			isSLDS = true;
+		}
+	});
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<script src="{!URLFOR($Resource.AngularJS)}"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+        <script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script>
+        <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+		<script src="{!URLFOR($Resource.MomentJS)}"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+        <apex:includeScript value="/support/console/44.0/integration.js" />
+
+		<style>
+			
+			.tooltip:hover .tooltipHelpShow {
+				display : inline;
+				border-radius: 7px;
+				box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.16);
+				bottom: 65px;
+				margin-left: -25px;
+				position: absolute;
+				background:#16325c!important;
+			}
+			.tooltipHelpShow {
+				display : none;
+				margin-left: -25px;
+				bottom: 65px;
+				line-height: 0.95rem;
+				position: absolute;
+				background:#16325c!important;
+				font-size: 0.75rem;
+				color: white;
+				border-radius: 5px;
+				box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.16);
+			}
+			.tooltip:hover .tooltipHelpShowTA {
+				display : inline;
+				margin-left: -25px;
+				line-height: 0.95rem;
+				position: absolute;
+				background:#16325c!important;
+				font-size: 0.75rem;
+				color: white;
+				border-radius: 5px;
+				box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.16);
+				bottom: 104%;
+			}
+			.tooltipHelpShowTA {
+				display : none;
+				margin-left: -25px;
+				line-height: 0.95rem;
+				position: absolute;
+				background:#16325c!important;
+				font-size: 0.75rem;
+				color: white;
+				border-radius: 5px;
+				box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.16);
+				bottom: 104%;
+			}
+			div.tooltipClassic {
+				opacity:0.35;
+				width: 20px;
+				float: right;
+				margin-right: 1px;
+				display:inline;
+			}
+			div.tooltipClassic:hover {
+				opacity:1;
+				width: 20px;
+				float: right;
+				margin-right: 1px;
+				display:inline;
+			}
+			div.tooltipClassic span {
+				display: none;
+				font-weight:normal;
+				text-align:left;
+				padding: 3px 5px;
+				margin-left: 8px;
+				width: 250px;
+			}
+			div.tooltipClassic:hover span {
+				display: inline;
+				position: absolute;
+				border: 1px solid orange;
+				width: 15em;
+				z-index: 1;
+				background-color: #fefdb9;
+				padding: 2px 5px;
+				border: 1px solid orange;
+				text-align: left;
+				right: 25px;
+				top: 25px;
+				white-space: normal;
+				font-weight: normal;
+				color: #000;
+			}
+			.activity-div:after {
+				content: "";
+				position: absolute;
+				right: -4px;
+				top: 30px;
+				width: 1px;
+				bottom: 0;
+				background: #ccc;
+			}
+			.required {
+				color:red;
+				display: inline;
+				font-weight:bold;
+			}
+			.slds {
+				background: white !important;
+			}
+			@media only screen and (max-width: 500px) {
+				.toast-msg {
+					position: fixed;
+					top: 10px;
+					left: 0;
+					right: 0;
+					//width: 90%;
+					max-width: 380px;
+					margin: 0 auto;
+					z-index: 1100000;
+				}
+				.buttonStyle {
+					width: 160px;
+					margin: 10px auto 0 auto;
+				}
+				#loading-image {
+					position: fixed;
+					top: 40%;
+					left: 42%;
+					width:15%;
+				}
+			}
+			@media only screen and (min-width: 501px) {
+				.toast-msg {
+					position: fixed;
+					top: 10px;
+					left: 0;
+					right: 0;
+					width: 50%;
+					margin: 0 auto;
+					z-index: 1100000;
+				}
+				.buttonStyle {
+					float: right;
+				}
+				#loading-image {
+					position: fixed;
+					top: 40%;
+					left: 47%;
+					width:4%;
+				}
+			}
+			.slds-notify--toast {
+				min-width: auto !important;
+				padding: 15px 12px;
+			}  
+			#loading { 
+				width: 100%;
+				height: 100%;
+				top: 0px;
+				left: 0px;
+				position: absolute;
+				display: block;
+				opacity: 0.7;
+				filter: alpha(opacity = 50);
+				-moz-opacity: 0.7;
+				background-color: #fff;
+				text-align: center;
+				z-index: 19005;
+			}
+			.remove-flex{
+				flex: none !important;
+				-webkit-flex: none !important;
+			}
+			.container {
+				position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: 0;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                overflow-scrolling: touch;
+			}
+			#adp-time {
+				display: none !important;
+			}
+			.pbTitle {
+            	font-size: 0.8em !important;
+			    font-weight: bold !important;
+			    padding: 12px !important;
+            }
+            #classicDiv .tertiaryPalette {
+            	background: #79b4cd;
+            	border-color: #79b4cd;
+            	color: black !important;
+				margin-bottom: 0.5rem;
+            }
+            #classicDiv .tertiaryPalette h3 {
+            	font-size: 1.1em !important;
+            }
+			.classicSpinner {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-left: -30px;
+            }
+            .classicSpinnerBackground {
+                top: 0;
+                height: 70vh;
+                left: 0;
+                right: 0;
+                background-color: WHITE;
+                opacity: 0.7;
+                z-index: 9999;
+            }
+            .pageHeader {
+                background-color: #F4F6F9;
+            }
+			.classicRequiredDiv {
+				background-color: #C00;
+				display: inline-block;
+				position: absolute;
+				left: -5px;
+				height: 95%;
+			}
+			.classicModal {
+	            background-color: #f8f8f8;
+	            box-shadow: 0 0 20px #6D6D6D;
+				position: fixed;
+				left: 50%;
+				z-index: 999;
+			}
+			.classicModalHeader {
+				background-color: #03a7e5;
+				border-radius: 3px;
+				margin: 2px;
+				padding: 0.3rem 0.3rem 0.3rem 1.2rem;
+			}
+			.classicModalHeader a {
+				float: right;
+				line-height: 1.5em;
+				color: #f8f8f8;
+				border-radius: 3px;
+				padding: 0 0.28rem;
+				cursor: pointer;
+			}
+			.classicModalHeader a:HOVER {
+				background-color: #f8f8f8;
+				color: #ff6a00;
+			}
+			.classicModalHeader span {
+				color: #f8f8f8;
+				font-weight: bold;
+				line-height: 150%;
+			}
+			.classicModalContent {
+				padding: 0.5rem 1rem;
+				max-height: 20rem;
+				overflow-y: auto;
+			}
+			.classicModalFooter {
+				padding: 0.6rem 1.6rem;
+				text-align: right;
+				background-color: #eeeeee;
+				border-top: 1px solid lightgray;
+			}
+			.classicModalFooter a {
+				line-height: 220%;
+				text-decoration: none !important;
+				color: black;
+				padding: 4px 3px;
+			}
+			.classicModalbackdrop {
+				background-color: black;
+	            opacity: 0.20;
+	            filter: alpha(opacity = 20);
+	            position: absolute;
+	            width: 100%;
+	            height: 100%;
+	            top: 0;
+	            left: 0;
+	            z-index: 99;
+			}
+			.modalErrorMsg {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 4px 10px 4px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+			}
+			.errorPageMsgDiv {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+            }
+			.successImg {
+				background-image: url(/img/msg_icons/info32.png);
+				background-position: 0 0;
+				width: 32px;
+				height: 32px;
+				background-size: 32px;
+			}
+			.errorImg {
+				background-image: url(/img/msg_icons/error24.png);
+				background-position: 0 0;
+				width: 32px;
+				height: 32px;
+				background-size: 32px;
+			}
+		</style>
+
+        <script>
+			var nominationApp = angular.module('nominationApp', ['angularMultiSelectList','angularjs-datetime-picker']);
+			var nominationCon = nominationApp.controller('nominationCon', function($scope,$location, $q) {
+				$scope.info;
+				$scope.accountId = '{!JSENCODE(accountId)}';
+				$scope.contactId = '{!JSENCODE(contactId)}';
+				$scope.refLeadId = '{!JSENCODE(refLeadId)}';
+				$scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+				$scope.showMore = '{!JSENCODE(showMore)}';
+				$scope.pageNo = '{!JSENCODE(pageNo)}';
+				$scope.userId = '{!JSENCODE(userId)}';
+				$scope.isFromProfileUpdate = {!isFromProfileUpdate};
+				$scope.isSLDS = isSLDS;
+				$scope.showProfileUpdateNominationToast = false;
+				$scope.isloading = true;
+				$scope.isallDataFetched = false;
+				$scope.isError = false;
+				$scope.errorMsg = '';
+				$scope.isModalError = false;
+				$scope.modalErrorMessage = '';
+				$scope.comments = '';
+				$scope.editFilter = false;
+				$scope.filterIds = [];
+				$scope.filterAttMap = {};
+				$scope.filterAttMap2 = {};
+				$scope.permissionsMsg = '';
+				$scope.showPermissionsMsg = false;
+				$scope.isShowRefSection = false;;
+				$scope.isShowFilterSection = false;
+				$scope.showModal = false;
+				$scope.modalMsg = '';
+				$scope.fromContact = false;
+				$scope.oldRecordId = '';
+				$scope.dateFormat = 'yyyy-MM-dd';
+				$scope.isNominationSubmitted = false;
+				
+				//initial function which is called on page load
+				$scope.load  = function() {
+					$scope.getDateFormat().then(function(result) {
+						
+						if (result != null) {  
+							$scope.dateFormat = result;
+						}
+						$scope.intialFunction();
+					});
+				}
+				
+				//Cast date format according to locale
+				$scope.getDateFormat = function () {
+					var deferred = $q.defer();
+					Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.NominationFormControllerSLDS.getDateFormat}', 
+						function(result, event) {
+							deferred.resolve(result);
+						},
+						{escape: true}
+					);
+					return deferred.promise;
+				}
+				
+				$scope.intialFunction = function() {
+					// changes for #732 - getting the error message for insufficient permissions
+					// Gaurav Saini (14 Feb, 2017)
+					Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.NominationFormControllerSLDS.getPermissionsMessage}',
+						$scope.refLeadId,
+						function(result, event) {
+							
+							if (result != '') {
+								$scope.showPermissionsMsg = true;
+								$scope.permissionsMsg = result;
+							}
+						},
+						{escape: true}
+					);
+					
+					if ($scope.isFullLicenseAccessible) {
+						
+						if ($scope.contactId != null && $scope.contactId != '') {
+							$scope.oldRecordId = $scope.accountId;
+						}
+						
+						$scope.fetchInfo().then(function(result) {
+							$scope.info = result;
+							$scope.isallDataFetched = true;
+							$scope.sectionsMap = {};
+							
+							angular.forEach($scope.info.sections, function(section) {
+								$scope.sectionsMap[section.name] = section.visible;
+							});
+							
+							angular.forEach($scope.info.filters, function(filter) {
+								$scope.filterIds.push(filter.id);
+							});
+							
+							if ($scope.filterIds.length > 0) {
+								$scope.getAllFilterAttributes().then(function(filterAttResult) {
+									
+									if (filterAttResult != null && filterAttResult != '') {
+										$scope.filterAttMap2 = angular.copy(filterAttResult);
+										$scope.filterAttMap = angular.copy(filterAttResult);
+										$scope.setAttributes();
+										$scope.setContactAttributes();
+										$scope.isloading = false;
+									}
+									$scope.setRefTypesAndFilters();
+								});
+							} else {
+								$scope.setRefTypesAndFilters();
+								$scope.isloading = false;
+							}
+						});
+					}
+				}
+
+				//Method to set Ref Types and Filters according to account and contact
+				//Created By: Rekha @24 April 2017 regarding #570 
+				$scope.setRefTypesAndFilters = function() {
+					$scope.isShowRefSection = false;
+					$scope.isShowFilterSection = false;
+					
+					angular.forEach(
+						$scope.info.refTypes,
+						function(ref) {
+
+							if ($scope.info.selectedContact != null && $scope.info.selectedContact != '') {
+								
+								//if reftype available for contact only
+								if (ref.avaliableForContact) {
+									ref.isShow = true;
+									$scope.isShowRefSection = true;
+								} else {
+									ref.isShow = false;
+								}
+							} else if ($scope.info.selectedAccount != null && $scope.info.selectedAccount != '') {
+								
+								//if reftype available only for account
+								if (ref.avaliableForAccount) {
+									ref.isShow = true;
+									$scope.isShowRefSection = true;
+								} else {
+									ref.isShow = false;
+								}
+							}
+						}
+					);
+					
+					angular.forEach(
+						$scope.info.filters,
+						function(filter) {
+
+							if ($scope.info.selectedContact != null && $scope.info.selectedContact != '') {
+								
+								//if filter available for contact only
+								if (filter.avaliableForContact) {
+									filter.isShow = true;
+									$scope.isShowFilterSection = true;
+								} else {
+									filter.isShow = false;
+								}
+							} else if ($scope.info.selectedAccount != null && $scope.info.selectedAccount != '') {
+								
+								//if filter available only for account
+								if (filter.avaliableForAccount) {
+									filter.isShow = true;
+									$scope.isShowFilterSection = true;
+								} else {
+									filter.isShow = false;
+								}
+							}
+							//re #911
+							var isFilterShow = false;
+							
+							angular.forEach(
+								$scope.filterAttMap[filter.id],
+								function(att) {
+		
+									if ($scope.info.selectedContact != null && $scope.info.selectedContact != '') {
+										
+										//if att available for contact only
+										if (att.avaliableForContact) {
+											att.isShow = true;
+										} else {
+											att.isShow = false;
+										}
+									} else if ($scope.info.selectedAccount != null && $scope.info.selectedAccount != '') {
+										
+										//if att available only for account
+										if (att.avaliableForAccount) {
+											att.isShow = true;
+										} else {
+											att.isShow = false;
+										}
+									}
+									
+									if (att.isShow) {
+										isFilterShow = true;
+									}
+								}
+							);
+							
+							if (filter.isShow) {
+								filter.isShow = isFilterShow;
+							}
+						}
+					);
+					$scope.setAccountContactAttribute(false);
+				}
+
+				$scope.setAttributes = function() {
+				
+					if (parseInt(Object.keys($scope.info.accountLabelAttValues).length) > 0 && $scope.info.selectedAccount != '') {
+						var labelMap = $scope.info.accountLabelAttValues[$scope.info.selectedAccount];
+						
+						angular.forEach($scope.info.filters, function(filter) {
+						
+                            angular.forEach(
+                                Object.keys($scope.info.contactLabelAttValues),
+                                function(conId) {
+
+                                    if (Object.keys($scope.info.contactLabelAttValues[conId]).indexOf(filter.id) >= 0) {
+
+                                        angular.forEach($scope.filterAttMap[filter.id], function(att) {
+                                            att.isSelected = false;
+                                        });
+                                        filter.selectedAttributes = '';
+                                        filter.selectedAttIds = [];
+                                    }
+                                }
+                            );
+                        });
+						
+						angular.forEach($scope.info.filters, function(filter) {
+						
+							if (Object.keys(labelMap).indexOf(filter.id) >= 0) {
+								var selectedAtt = '';
+								var selectedAttIds = [];
+								
+								angular.forEach($scope.filterAttMap[filter.id], function(att) {
+									var breakLoop = false
+									angular.forEach(labelMap[filter.id], function(labelMapAtt) {
+										if (!breakLoop) {
+											if (labelMapAtt == att.id && att.avaliableForAccount) {
+												att.isSelected = true;
+												selectedAttIds.push(att.id);
+												
+												if (selectedAtt == '') {
+													selectedAtt = att.name;
+												} else if (selectedAtt.indexOf(att.name) < 0) {
+													selectedAtt += ', ' + att.name;
+												}
+												breakLoop = true;
+											} else {
+												att.isSelected = false;
+											}
+										}
+									});
+								});
+								filter.selectedAttributes = angular.copy(selectedAtt);
+								filter.selectedAttIds = angular.copy(selectedAttIds);
+							}
+						});
+					}
+				}
+				
+				$scope.setContactAttributes = function() {
+					$scope.setRefTypesAndFilters();
+					
+					if (parseInt(Object.keys($scope.info.contactLabelAttValues).length) > 0 && $scope.info.selectedContact != '') {
+						var labelMap = $scope.info.contactLabelAttValues[$scope.info.selectedContact];
+						
+						angular.forEach($scope.info.filters, function(filter) {
+						
+							if (Object.keys(labelMap).indexOf(filter.id) >= 0) {
+								var selectedAtt = '';
+								var selectedAttIds = [];
+								
+								angular.forEach($scope.filterAttMap[filter.id], function(att) {
+									var breakLoop = false;
+									angular.forEach(labelMap[filter.id], function(labelMapAtt) {
+										if (!breakLoop) {
+											if (labelMapAtt == att.id && att.avaliableForContact) {
+												att.isSelected = true;
+												selectedAttIds.push(att.id);
+												
+												if (selectedAtt == '') {
+													selectedAtt = att.name;
+												} else if (selectedAtt.indexOf(att.name) < 0) {
+													selectedAtt += ', '+att.name;
+												} 
+												breakLoop = true;
+											} else {
+												att.isSelected = false;
+											}
+										}
+									});
+								});
+								filter.selectedAttributes = angular.copy(selectedAtt);
+								filter.selectedAttIds = angular.copy(selectedAttIds);
+							}
+						});
+					} else {
+						$scope.setAttributes();
+					}
+				}
+				
+				$scope.changeContact = function() {
+					$scope.showModal = true;
+					$scope.modalMsg = '{!$Label.Add_Remove_Contact}';
+					$scope.fromContact = true;
+				}
+				
+				$scope.changeAccount = function() {
+					$scope.showModal = true;
+					$scope.modalMsg = '{!$Label.Add_Remove_Account}';
+					$scope.fromContact = false;
+				}
+				
+				$scope.changeValue = function(isChange) {
+					$scope.showModal = false;
+					
+					if (isChange) {
+						
+						if ($scope.fromContact) {
+							$scope.oldRecordId = $scope.info.selectedContact;
+							$scope.setContactAttributes();
+						} else {
+							$scope.oldRecordId = $scope.info.selectedAccount;
+							$scope.setAttributes();
+						}
+					} else {
+					
+						if ($scope.fromContact) {
+							$scope.info.selectedContact = $scope.oldRecordId;
+						} else {
+							$scope.info.selectedAccount = $scope.oldRecordId;
+						}
+					}
+				}
+				
+				$scope.openFilterModal = function() {
+					$scope.isModalError = false;
+					$scope.isError = false;
+					
+					if (parseInt(Object.keys($scope.filterAttMap).length) == 0) {
+						$scope.isloading = true;
+						
+						$scope.getAllFilterAttributes().then(function(filterAttResult) {
+							
+							if (filterAttResult != null && filterAttResult != '') {
+								$scope.filterAttMap2 = angular.copy(filterAttResult);
+								$scope.filterAttMap = angular.copy(filterAttResult);
+								$scope.isloading = false;
+								$scope.editFilter = true;
+							}
+						});
+					} else {
+						$scope.filterAttMap2 = angular.copy($scope.filterAttMap);
+						$scope.editFilter = true;
+					}
+				}
+				
+				$scope.parseResult = function(result) {
+				
+					if (result != null) {
+						result = result.replace(/&quot/gi, '"');
+						result = result.replace(/&amp/g, '&');
+						result = result.replace(/&lt/g, '<');
+						result = result.replace(/&gt/g, '>');
+						result = result.replace(/&#39/g, '\'');
+						result = result.replace(/;/g, '');
+						return result;
+					}
+				}
+				
+				$scope.setAccountContactAttribute = function(isSave) {
+					
+					angular.forEach($scope.info.filters, function(filter) {
+						var selectedAtt = '';
+						var selectedAttIds = [];
+						
+						angular.forEach($scope.filterAttMap[filter.id], function(att) {
+						
+							if (att.isSelected) {
+								
+								if ($scope.info.selectedContact != null && $scope.info.selectedContact != '') {
+									
+									//if att available for contact only
+									if (att.avaliableForContact) {
+										selectedAttIds.push(att.id);
+										
+										if (selectedAtt == '') {
+											selectedAtt = att.name;
+										} else if (selectedAtt.indexOf(att.name) < 0) {
+											selectedAtt += ', '+att.name;
+										}
+									}
+								} else if ($scope.info.selectedAccount != null && $scope.info.selectedAccount != '') {
+									
+									//if att available only for account
+									if (att.avaliableForAccount) {
+										selectedAttIds.push(att.id);
+										
+										if (selectedAtt == '') {
+											selectedAtt = att.name;
+										} else if (selectedAtt.indexOf(att.name) < 0) {
+											selectedAtt += ', '+att.name;
+										}
+									}
+								}
+							}
+						});
+						
+						if (filter.isShow && selectedAttIds.length == 0 && filter.required == true && isSave == true) {
+							$scope.modalErrorMessage = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+							$scope.isModalError = true;
+						} else {
+							filter.selectedAttributes = angular.copy(selectedAtt);
+							filter.selectedAttIds = angular.copy(selectedAttIds);
+						}
+					});
+				}
+				
+				$scope.closeFilterModal = function(isSave) {
+					$scope.isModalError = false;
+					
+					if (isSave) {
+						
+						angular.forEach($scope.info.filters, function(filter) {
+							var isAnyAttributeSelected = false;
+							
+							if (filter.isShow && filter.required) {
+
+								angular.forEach($scope.filterAttMap[filter.id], function(att) {
+								
+									if (att.isSelected) {
+										
+										if ($scope.info.selectedContact != null && $scope.info.selectedContact != '') {
+											
+											//if att available for contact only
+											if (att.avaliableForContact) {
+												isAnyAttributeSelected = true;
+											}
+										} else if ($scope.info.selectedAccount != null && $scope.info.selectedAccount != '') {
+											
+											//if att available only for account
+											if (att.avaliableForAccount) {
+												isAnyAttributeSelected = true;
+											}
+										}
+									}
+								});
+								
+								if (!isAnyAttributeSelected) {
+									$scope.modalErrorMessage = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+									$scope.isModalError = true;
+								}
+							}
+						});
+
+						if (!$scope.isModalError) {
+							$scope.setAccountContactAttribute(true);
+							$scope.editFilter = false;
+							$scope.filterAttMap2 = angular.copy($scope.filterAttMap);
+						}
+					} else {
+						$scope.filterAttMap = angular.copy($scope.filterAttMap2);
+						$scope.editFilter = false;
+					}
+				}
+				
+				$scope.getAllFilterAttributes = function() {
+					var deferred = $q.defer();
+					var filterIdsJSON = angular.toJson($scope.filterIds);
+					Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.NominationFormControllerSLDS.getAllFilterAttributes}',filterIdsJSON,
+						function(result, event) {
+							deferred.resolve(result);
+						},
+						{escape: true}
+					);
+					return deferred.promise;
+				}
+				
+				$scope.fetchInfo = function() {
+					var deferred = $q.defer();
+					Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.NominationFormControllerSLDS.fetchInfo}',
+						$scope.accountId,
+						$scope.contactId,
+						$scope.refLeadId,
+						$scope.isFromProfileUpdate,
+						function(result, event) {
+							deferred.resolve(result);
+						},
+						{escape: true}
+					);
+					return deferred.promise;
+				}
+				
+				$scope.save = function() {
+					var deferred = $q.defer();
+					var infoJSON = angular.toJson($scope.info).replace(/&quot/gi, '\\"');
+					Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.NominationFormControllerSLDS.submit}',
+						$scope.parseResult(infoJSON), $scope.refLeadId,
+						function(result, event) {
+							deferred.resolve(result);
+						},
+						{escape: true}
+					);
+					return deferred.promise;
+				}
+				
+				// added for #732 - method to check permission to perform DML
+				// Gaurav Saini (14 Feb, 2017)
+				$scope.checkPermission = function() {
+					var deferred = $q.defer();
+					Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.NominationFormControllerSLDS.getPermissionsMessage}',
+						$scope.refLeadId,
+						function(result, event) {
+							deferred.resolve(result);
+						},
+						{escape: true}
+					);
+					return deferred.promise;
+				}
+				
+				//#1070 : convert date to yyyy-MM-dd format befor sending to controller
+				$scope.convertToDate = function(date) {
+					date = (date == null) ? '' : date;
+					var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+					
+					if (date == null || date == '') {
+						return '';
+					}
+					
+					if (date.match(regEx)) {
+						tempDF = date.split('-');
+						
+						if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+							return null;
+						}
+						return date;
+					}
+
+					try {
+						var tempDF = $scope.dateFormat;
+						var tempDate = date + '';
+						tempDF = tempDF.split(/[./-]/g);
+						tempDate = tempDate.split(/[./-]/g);
+						var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+						var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+						var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+						var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+						
+						if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+							
+							if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4
+									|| !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+								return null;
+							}
+							return dateString;
+						} else {
+							return null;
+						}
+					} catch (e) {
+						return null;
+					}
+				}
+				
+				$scope.checkDate = function(day, month, year) {
+						var returnval = true;
+						
+						if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null
+								|| year.trim() == '' || parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+							returnval = false;
+						} else {
+							day = parseInt(day);
+							month = parseInt(month);
+							year = parseInt(year);
+						}
+					returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+					var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+									: (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+					returnval = (day > days) ? false : returnval;
+					return returnval;
+				}
+				
+				$scope.submit = function() {
+					// changes for #732 - checking permissions
+					// Gaurav Saini (14 Feb, 2017)
+					$scope.checkPermission().then(function(result) {
+						
+						if (result != '') {
+							$scope.showPermissionsMsg = true;
+							$scope.permissionsMsg = result;
+						} else {
+							$scope.showPermissionsMsg = false;
+						}
+						
+						if (!$scope.showPermissionsMsg) {
+							$scope.isError = false; 
+							
+							angular.forEach($scope.info.sections, function(section) {
+								
+								if (section.name == 'Section 6 – Free Form Text' && section.required == true && $scope.info.notes == '') {
+									$scope.errorMsg = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+									$scope.isError = true;
+								}
+							});
+							
+							if ($scope.sectionsMap['Section 3 – Attributes']) {
+								angular.forEach($scope.info.filters, function(filter) {
+									
+									if (filter.selectedAttIds.length == 0 && filter.required == true && filter.isShow) {
+										$scope.errorMsg = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+										$scope.isError = true;
+									}
+								});
+							}
+							
+							if ($scope.sectionsMap['Section 4 – Custom Fields']) {
+							
+								angular.forEach($scope.info.nomiFields, function(field) {
+									
+									if (field.required == true) {
+										
+										if (field.type == 'MULTIPICKLIST' && field.multiPickOptions.length == 0) {
+											$scope.errorMsg = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+											$scope.isError = true;
+										} 
+										
+										if (field.type == 'PICKLIST' && (field.value == null || field.value == '')) {
+											$scope.errorMsg = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+											$scope.isError = true;
+										}                                         
+										
+										if (field.type == '' && field.value != true) {
+											$scope.errorMsg = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+											$scope.isError = true;
+										} else if (field.value == '') {
+											$scope.errorMsg = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+											$scope.isError = true;
+										} else if (field.type == 'DATE' || field.type == 'DATETIME') {
+											var dateString = $scope.convertToDate(field.value);
+											
+											if (dateString != null) {
+												field.value = dateString;
+											} else {
+												$scope.isError = true;
+												$scope.errorMsg = '{!$Label.Date_Invalid}' + field.value; 
+											}
+										} 
+									} else if (field.type == 'DATE' || field.type == 'DATETIME') {
+										var dateString = $scope.convertToDate(field.value);
+										
+										if (dateString != null) {
+											field.value = dateString;
+										} else {
+											$scope.isError = true;
+											$scope.errorMsg = '{!$Label.Date_Invalid}' + field.value; 
+										}
+									} 
+								});
+							}
+
+							if (!$scope.isError) {
+								$scope.isloading = true;
+								
+								$scope.save().then(function(result) {
+								
+									if (result.indexOf('success;') >= 0) {
+										$scope.isloading = false;
+										var resultList = result.split(';');
+										var msg = '';
+										var points = '';
+										$scope.isNominationSubmitted = true;
+										
+										if (resultList.length > 2) {
+											msg = resultList[2].split(':')[1];
+											points = resultList[1].split(':')[1];
+											
+											if (points != null && points != '' && points != '0') {
+												
+												if ($scope.isFromProfileUpdate) {
+													isFromProfileUpdate = true;
+													$scope.showProfileUpdateNominationToast = true;
+													
+													if ((typeof sforce != 'undefined') && (sforce != null) && Object.keys(sforce).length == 2) {
+														redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+																			+ '&accountId=' + $scope.accountId
+																			+ '&showmore=' + $scope.showMore
+																			+ '&pageno=' + $scope.pageNo
+																			+ '&helpoverlay=false'
+																			+ '&userId=' + $scope.userId;
+													} else {
+														redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+																			+ '?accountId=' + $scope.accountId
+																			+ '&showmore=' + $scope.showMore
+																			+ '&pageno=' + $scope.pageNo
+																			+ '&helpoverlay=false'
+																			+ '&userId=' + $scope.userId;
+													}
+												}
+												showDisolvingAlert(points, msg);
+											} else {
+												
+												if ($scope.isFromProfileUpdate) {
+													isFromProfileUpdate = true;
+													$scope.showProfileUpdateNominationToast = true;
+													
+													if ((typeof sforce != 'undefined') && sforce != null && Object.keys(sforce).length == 2) {
+														redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+																			+ '&accountId=' + $scope.accountId
+																			+ '&showmore=' + $scope.showMore
+																			+ '&pageno=' + $scope.pageNo
+																			+ '&helpoverlay=false'
+																			+ '&userId=' + $scope.userId;
+													} else {
+														redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+																			+ '?accountId=' + $scope.accountId
+																			+ '&showmore=' + $scope.showMore
+																			+ '&pageno=' + $scope.pageNo
+																			+ '&helpoverlay=false'
+																			+ '&userId=' + $scope.userId;
+													}
+												}
+												redirectToBack();
+											}
+										} else {
+											
+											if ($scope.isFromProfileUpdate) {
+												isFromProfileUpdate = true;
+												$scope.showProfileUpdateNominationToast = true;
+												
+												if ((typeof sforce != 'undefined') && sforce != null && Object.keys(sforce).length == 2) {
+													redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+																		+ '&accountId=' + $scope.accountId
+																		+ '&showmore=' + $scope.showMore
+																		+ '&pageno=' + $scope.pageNo
+																		+ '&helpoverlay=false'
+																		+ '&userId=' + $scope.userId;
+												} else {
+													redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+																		+ '?accountId=' + $scope.accountId
+																		+ '&showmore=' + $scope.showMore
+																		+ '&pageno=' + $scope.pageNo
+																		+ '&helpoverlay=false'
+																		+ '&userId=' + $scope.userId;
+												}
+											}
+											redirectToBack();
+										}
+									} else {
+										$scope.errorMsg = result;
+										$scope.isError = true;
+										$scope.isloading = false;
+									}
+								});
+							}
+						}
+					});
+				};
+
+				$scope.back = function() {
+					
+					if ($scope.isFromProfileUpdate) {
+						isFromProfileUpdate = true;
+						
+						if ((typeof sforce != 'undefined') && sforce != null && Object.keys(sforce).length == 2) {
+							redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+												+ '&accountId=' + $scope.accountId
+												+ '&showmore=' + $scope.showMore
+												+ '&pageno=' + $scope.pageNo
+												+ '&helpoverlay=false'
+												+ '&userId=' + $scope.userId;
+						} else {
+							redirectionURL = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+												+ '?accountId=' + $scope.accountId
+												+ '&showmore=' + $scope.showMore
+												+ '&pageno=' + $scope.pageNo
+												+ '&helpoverlay=false' 
+												+ '&userId=' + $scope.userId;
+						}
+					}
+					redirectToBack();
+				}
+			});
+			
+			var redirectionURL = '';
+			var isFromProfileUpdate = false;
+			
+			function showDisolvingAlert(points, message) {
+			
+				if (typeof points != 'undefined' && points != '' && points != '0') {
+					notification(points, message); 
+				}
+			}
+			
+            function getPTabId() {
+                sforce.console.getEnclosingPrimaryTabId(closePTab);
+            }
+
+            function closePTab(result) {
+                sforce.console.closeTab(result.id);
+            }
+ 
+			function redirectToBack() {
+				
+                if (isFromProfileUpdate && (typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                    sforce.console.openPrimaryTab(null, redirectionURL, true, null, null, null);
+                    sforce.console.fireEvent('closeTab', 'closeTab', getPTabId);
+                } else {
+
+                    if ((typeof sforce != 'undefined') && sforce != null) {
+
+                        if (Object.keys(sforce)[0] == 'console' && Object.keys(sforce).length == 1) {
+
+                            if (isFromProfileUpdate) {
+                                window.location.href = redirectionURL;
+                            } else if ('{!JSENCODE(contactId)}' != '') {
+                                window.location.href = '/' + '{!JSENCODE(contactId)}';
+                            } else if ('{!JSENCODE(accountId)}' != '') {
+                                window.location.href = '/' + '{!JSENCODE(accountId)}';
+                            } else if ('{!JSENCODE(refLeadId)}' != '') {
+                                window.location = '/_ui/core/chatter/ui/ChatterPage';
+                            }
+                        } else {
+
+                        if (isFromProfileUpdate) {
+                            sforce.one.navigateToURL(redirectionURL, true);
+                        } else if ('{!JSENCODE(contactId)}' != '') {
+                            sforce.one.navigateToSObject('{!JSENCODE(contactId)}', 'detail');
+                        } else if ('{!JSENCODE(accountId)}' != '') {
+                            sforce.one.navigateToSObject('{!JSENCODE(accountId)}', 'detail');
+                        } else if ('{!JSENCODE(refLeadId)}' != '') {
+                            window.location = '/_ui/core/chatter/ui/ChatterPage';
+                        }
+                        }
+                    } else {
+
+                        if (isFromProfileUpdate) {
+                            window.location.href = redirectionURL;
+                        } else if ('{!JSENCODE(contactId)}' != '') {
+                            window.location.href = '/' + '{!JSENCODE(contactId)}';
+                        } else if ('{!JSENCODE(accountId)}' != '') {
+                            window.location.href = '/' + '{!JSENCODE(accountId)}';
+                        } else if ('{!JSENCODE(refLeadId)}' != '') {
+                            window.location = '/_ui/core/chatter/ui/ChatterPage';
+                        }
+                    }
+                }
+			}
+		</script>
+	</head>
+	
+	<body>
+		<div ng-app="nominationApp" ng-controller="nominationCon" ng-cloak="ng-cloak">
+			<div ng-show="!isFullLicenseAccessible">
+				<svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+					<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+				</svg>
+				{!$Label.User_License}
+			</div>
+
+			<div ng-show="isFullLicenseAccessible" ng-init="load();">
+				<c:RewardNotification />
+				
+				<div ng-show="!isSLDS" id="classicDiv">
+					<div class="classicSpinnerBackground" ng-show="isloading">
+						<apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60" />
+					</div>
+					<div ng-show="!isloading">
+						<div class="errorPageMsgDiv" style="border-color: #c00 !important; position: relative" ng-show="showPermissionsMsg || isError">
+							<img class="errorImg" src="/s.gif" />
+							<span style="position: absolute; padding-top: 0.2rem; padding-left: 0.4rem">
+								<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+								<span ng-show="showPermissionsMsg">{{permissionsMsg}}</span>
+								<span ng-show="isError">{{errorMsg}}</span>
+							</span>
+						</div>
+						<div class="errorPageMsgDiv" style="border-color: #39f !important; position: relative" ng-show="isNominationSubmitted || showProfileUpdateNominationToast">
+							<img class="successImg" src="/s.gif" />
+							<span style="position: absolute; top: 1rem; padding-left: 0.4rem" ng-show="showProfileUpdateNominationToast">{!$Label.Profile_Update_Nomination_Message}</span>
+							<span style="position: absolute; top: 1rem; padding-left: 0.4rem" ng-show="!showProfileUpdateNominationToast && refLeadId != null && refLeadId != ''">{!$Label.Thank_Note_for_Lead}</span>
+							<span style="position: absolute; top: 1rem; padding-left: 0.4rem" ng-show="!showProfileUpdateNominationToast && (refLeadId == null || refLeadId == '')">{!$Label.Thank_Note}</span>
+						</div>
+
+						<div ng-show="!isNominationSubmitted">
+							<div style="width: 100%; margin-bottom: 0.75rem">
+								<img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" style="margin-right: 10px; height: 2.5rem" />
+								<div style="display: inline-block">
+									<div style="font-size: 2em">
+										{{parseResult(info.header)}}
+									</div>
+									<span style="font-size: 1.2em;">
+										{{parseResult(info.subHeader)}}
+									</span>
+								</div>
+							</div>
+
+							<apex:pageBlock mode="Edit">
+								<apex:pageBlockButtons >
+									<a class="btn" style="text-decoration: none; color: black; padding: 4px 3px;" ng-click="back()">{!$Label.Cancel}</a>
+									<a class="btn" style="text-decoration: none; color: black; padding: 4px 3px;" ng-click="submit()">{!$Label.Submit}</a>
+								</apex:pageBlockButtons>
+
+								<div class="pbSubheader brandTertiaryBgr first tertiaryPalette">
+									<span class="pbSubExtra" style="float: left">
+										<h3>{!$Label.Account_Contact_Information}</h3>
+									</span>
+								</div>
+								<div class="pbSubsection">
+									<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+										<tbody>
+											<tr>
+												<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+													{!$Label.Account}
+												</th>
+												<td class="dataCol  first  last ">
+													<a href="/{{info.selectedAccount}}" ng-show="isFromProfileUpdate || (info.selectedAccount != '' && info.accountList.length == 0)" target="_blank" style="cursor: pointer; text-decoration: underline;">
+														{{parseResult(info.selectedAccountName)}}
+													</a>
+													<select ng-model="info.selectedAccount" ng-show="!isFromProfileUpdate && info.accountList.length > 0" ng-change="changeAccount()">
+														<option ng-repeat="option in info.accountList" value="{{option.id}}">{{parseResult(option.name)}}</option>
+													</select>
+												</td>
+												<th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+													<label>{!$Label.Contact}</label>
+												</th>
+												<td class="dataCol  first  last ">
+													<a ng-show="contactId != null && contactId != ''" href="/{{info.selectedContact}}" target="_blank" style="cursor: pointer; text-decoration: underline;">
+														{{parseResult(info.selectedContactName)}}
+													</a>
+													<select ng-model="info.selectedContact" ng-show="!(contactId != null && contactId != '') && info.contactList.length >= 2" ng-change="changeContact()">
+														<option ng-repeat="option in info.contactList" value="{{option.id}}">{{parseResult(option.name)}}</option>
+													</select>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+
+								<div ng-repeat="section in info.sections" style="margin-top: 1rem">
+									<div ng-show="section.name == 'Section 3 – Attributes' && section.visible == true && info.filters.length > 0 && isShowFilterSection">
+										<div class="pbSubheader brandTertiaryBgr first tertiaryPalette">
+											<span class="pbSubExtra" style="float: left">
+												<h3>{{parseResult(section.label)}}</h3>
+											</span>
+										</div>
+										<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+											<tbody>
+												<tr>
+													<th class="labelCol vfLabelColTextWrap  first " scope="row">
+														<label>&nbsp;</label>
+													</th>
+													<td class="data2Col  first ">
+														<a style="color:#1797C0; cursor: pointer" ng-click="openFilterModal()">{!$Label.Select_And_Edit}</a>
+													</td>
+												</tr>
+												<tr ng-repeat="filter in info.filters" ng-show="filter.isShow">
+													<th class="labelCol vfLabelColTextWrap " scope="row">
+														<label>
+															{{parseResult(filter.name)}}
+															<span ng-show="filter.required" style="color: #CC0000;">|</span>
+														</label>
+													</th>
+													<td class="data2Col ">
+														<span>{{parseResult(filter.selectedAttributes)}}</span>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+
+									<div ng-show="section.name == 'Section 4 – Custom Fields' && section.visible == true && info.nomiFields.length > 0">
+										<div class="pbSubheader brandTertiaryBgr first tertiaryPalette">
+											<span class="pbSubExtra" style="float: left">
+												<h3>{{parseResult(section.label)}}</h3>
+											</span>
+										</div>
+										<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+											<tbody>
+												<tr ng-repeat="field in info.nomiFields">
+													<th class="labelCol vfLabelColTextWrap helpButtonOn" scope="row">
+														<label>
+															{{parseResult(field.label)}}
+														</label>
+														<div class="helpOrb tooltipClassic" style="right: -9px;top:5px" ng-show="field.inlineHelpText != null && field.inlineHelpText != ''">
+															<span>
+															{{field.inlineHelpText}}
+															</span>
+														</div>
+													</th>
+													<td class="data2Col ">
+														<div style="position: relative">
+															<div ng-show="field.required" class="classicRequiredDiv">&nbsp;</div>
+                                                            <multi-select ng-show="field.type == 'MULTIPICKLIST'"
+                                                                          ng-model="field.multiPickOptions"
+                                                                          available="field.multiPickAvailOptions"
+                                                                          selected-label="SELECTED"
+                                                                          available-label="AVAILABLE"
+                                                                          is-slds="isSLDS"
+                                                                          display-attr="name">
+                                                            </multi-select>
+															<input ng-model="field.value" ng-show="field.type != 'DATE' && field.type != 'MULTIPICKLIST'  && field.type != 'PICKLIST' && field.type != 'TEXTAREA' && field.type != 'BOOLEAN'" />
+															<input ng-model="field.value" ng-show="field.type == 'DATE' || field.type == 'DATETIME'" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+															<select ng-show="field.type == 'PICKLIST'" ng-model="field.value">
+																<option ng-repeat="option in field.picklistValues" value="{{option}}">{{parseResult(option)}}</option>
+															</select>
+															<textarea ng-model="field.value" ng-show="field.type == 'TEXTAREA'" rows="3"></textarea>
+															<input ng-show="field.type == 'BOOLEAN'" type="checkbox" id="{{'cf' + $index}}" name="{{'cf' + $index}}" ng-model="field.value" />
+														</div>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+
+									<div ng-show="section.name == 'Section 5 – Reference Activities' && section.visible == true && info.refTypes.length > 0 && isShowRefSection">
+										<div class="pbSubheader brandTertiaryBgr first tertiaryPalette">
+											<span class="pbSubExtra" style="float: left">
+												<h3>{{parseResult(section.label)}}</h3>
+											</span>
+										</div>
+										<div class="slds-grid slds-wrap" style="margin-top: 7px; padding: 0 12px;">
+											<div ng-repeat="ref in info.refTypes" ng-show="ref.isShow" style="padding: 3px 10px; width: 30%; display: inline-block">
+												<input type="checkbox" id="{{'cb' + $index}}" name="{{'cb' + $index}}" ng-model="ref.isSelected" />
+												<label for="{{'cb' + $index}}">{{parseResult(ref.name)}}</label>
+											</div>
+										</div>
+									</div>
+
+									<div ng-show="section.name == 'Section 6 – Free Form Text' && section.visible == true">
+										<div class="pbSubheader brandTertiaryBgr first tertiaryPalette">
+											<span class="pbSubExtra" style="float: left">
+												<h3>{{parseResult(section.label)}}</h3>
+											</span>
+										</div>
+										<table class="detailList" border="0" cellpadding="0" cellspacing="0">
+											<tbody>
+												<tr>
+													<th class="labelCol vfLabelColTextWrap  first  last " scope="row">{!$Label.Comments}</th>
+													<td class="data2Col  first  last ">
+														<div style="position: relative">
+															<div ng-show="section.required" class="classicRequiredDiv">&nbsp;</div>
+															<textarea ng-model="info.notes" rows="4" cols="100"></textarea>
+														</div>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+
+								<div ng-show="editFilter">
+									<section role="dialog" tabindex="-1" class="classicModal" style="margin-left: -35%; width: 70%; top: 20vh;">
+										<div>
+											<header class="classicModalHeader">
+												<a ng-click="closeFilterModal(false)" title="Close">
+													<i class="fa fa-times" aria-hidden="true"></i>
+												</a>
+												<span>{!$Label.RF_Filters}</span>
+											</header>
+											<div class="classicModalContent">
+												<div class="modalErrorMsg" style="border-color: #cc0000; position: relative" ng-show="isModalError">
+													<img class="errorImg" src="/s.gif" />
+													<span style="position: absolute; padding-top: 0.2rem; padding-left: 0.4rem">
+														<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+														<span>{{modalErrorMessage}}</span>
+													</span>
+												</div>
+												<div ng-repeat="filter in info.filters" ng-show="filter.isShow" style="padding-bottom: 0.75rem">
+													<div style="font-size: 1.2rem">
+														{{parseResult(filter.name)}}
+														<span ng-show="filter.required" style="color: #c00; padding-left: 3px; font-weight: bold">|</span>
+													</div>
+													<div style="margin: 2% 0 2% 2%;">
+														<div style="cursor: pointer; width: 30%; display: inline-block" ng-repeat="attribute in filterAttMap[filter.id]" ng-show="attribute.isShow">
+															<img src="{!$Resource.Tick}" style="width:15px !important; float:left" ng-show="attribute.isSelected" />
+															<div style="margin-left: 25px; margin-bottom: 5px" ng-click="attribute.isSelected = !attribute.isSelected">
+																{{parseResult(attribute.name)}}
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+											<footer class="classicModalFooter">
+												<a class="btn" ng-click="closeFilterModal(true)">{!$Label.Save}</a>
+												<a class="btn" ng-click="closeFilterModal(false)">{!$Label.Cancel}</a>
+											</footer>
+										</div>
+									</section>
+									<div class="classicModalbackdrop"></div>
+								</div>
+
+								<div ng-show="showModal">
+									<section role="dialog" tabindex="-1" class="classicModal" style="margin-left: -20%; width: 40%; top: 35vh;">
+										<div>
+											<div class="classicModalContent">
+												{{modalMsg}}
+											</div>
+											<footer class="classicModalFooter">
+												<a class="btn" ng-click="changeValue(true)">{!$Label.Yes}</a>
+												<a class="btn" ng-click="changeValue(false)">{!$Label.Cancel}</a>
+											</footer>
+										</div>
+									</section>
+									<div class="classicModalbackdrop"></div>
+								</div>
+							</apex:pageBlock>
+						</div>
+					</div>
+				</div>
+				
+				<div ng-show="isSLDS" id="lightningDiv" class="container slds">
+					<div id="frmId">
+						<div ng-show="isallDataFetched">
+							<!-- added for #732 - insufficient permissions message toast -->
+							<!-- Gaurav Saini -->
+							<div class="slds-notify_container" ng-show="showPermissionsMsg">
+								<div class="slds-notify slds-notify--toast slds-theme--error" role="alert" style="position: fixed; top: 0; width: 50%; z-index: 999; left: 50%; margin-left: -25%;">
+									<span class="slds-assistive-text">Info</span>
+									<button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" ng-click="showPermissionsMsg = false">
+										<svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+										</svg>
+										<span class="slds-assistive-text">Close</span>
+									</button>
+									<div class="slds-notify__content">
+										<h2 class="slds-text-heading--small" style="font-size: 16px; white-space: pre-line;">{{permissionsMsg}}</h2>
+									</div>
+								</div>
+							</div>
+							<!-- header -->
+							<div class="slds-page-header" role="banner">
+								<div class="slds-grid slds-wrap">
+									<div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+										<div class="slds-media">
+											<div class="slds-media__figure">
+												<img class="slds-icon slds-icon--large" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+											</div>
+											<div class="slds-grid" style="margin-top: 1%;">
+												<h1 class="slds-text-heading--medium" title="{{parseResult(info.header)}}">{{parseResult(info.header)}}</h1>
+											</div>
+										</div>
+									</div>
+									<div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+										<div class="slds-button-group buttonStyle" role="group">
+											<button class="slds-button slds-button--neutral" ng-click="back();">{!$Label.Cancel}</button>
+											<button class="slds-button slds-button--neutral" ng-click="submit()">{!$Label.Submit}</button>
+										</div>
+									</div>
+								</div>
+								<div class="slds-grid slds-page-header__detail-row slds-text-heading--small">
+									<div>{{parseResult(info.subHeader)}}</div>
+								</div>
+							</div>
+							<!-- toast msg block -->
+							<div id="toast-msg" ng-show="isError || isModalError" class="slds-notify_container toast-msg">
+								<div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+									<span class="slds-assistive-text">{!$Label.Error}</span>
+									<button class="slds-button slds-button--icon-inverse slds-notify__close">
+										<svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;isModalError=false;" style="cursor:pointer">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+										</svg>
+										<span class="slds-assistive-text">{!$Label.Close}</span>
+									</button>
+									<div class="slds-notify__content slds-grid">
+										<svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+										</svg>
+										<div class="slds-col slds-align-middle">
+											<h2 class="slds-text-heading--small" style="white-space: pre-wrap;" ng-show="isModalError">{{modalErrorMessage}}</h2>
+											<h2 class="slds-text-heading--small" style="white-space: pre-wrap;" ng-show="isError">{{errorMsg}}</h2>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div ng-show="showProfileUpdateNominationToast" class="slds-notify_container toast-msg">
+								<div class="slds-notify slds-notify--toast slds-theme--success" role="alert">
+									<span class="slds-assistive-text">{!$Label.Error}</span>
+									<button class="slds-button slds-button--icon-inverse slds-notify__close">
+										<svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="showProfileUpdateNominationToast = false;" style="cursor: pointer">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+										</svg>
+										<span class="slds-assistive-text">{!$Label.Close}</span>
+									</button>
+									<div class="slds-notify__content slds-grid">
+										<svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+										</svg>
+										<div class="slds-col slds-align-middle">
+											<h2 class="slds-text-heading--small">{!$Label.Profile_Update_Nomination_Message}</h2>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div style="padding: 12px;">
+								<div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+									{!$Label.Account_Contact_Information}
+								</div>
+								<div class="slds-grid slds-wrap">
+									<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+										<div class="slds-form-element">
+											<label class="slds-form-element__label">{!$Label.Account}<div class="required">*</div></label>
+											<div class="slds-form-element__control">
+												<span class="slds-form-element__static" ng-show="isFromProfileUpdate || (info.selectedAccount != '' && info.accountList.length == 0)">
+													<a style="cursor: pointer;" href="/{{info.selectedAccount}}" target="_blank">{{parseResult(info.selectedAccountName)}}</a>
+												</span>
+												<select class="slds-select" ng-model="info.selectedAccount" ng-show="!isFromProfileUpdate && info.accountList.length > 0" ng-change="changeAccount()">
+													<option ng-repeat="option in info.accountList" value="{{option.id}}">{{parseResult(option.name)}}</option>
+												</select>
+											</div>	
+										</div>
+									</div>
+									<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+										<div class="slds-form-element">
+											<label class="slds-form-element__label">{!$Label.Contact}</label>
+											<div class="slds-form-element__control">
+												<span class="slds-form-element__static" ng-show="contactId != null && contactId != ''">
+													<a style="cursor: pointer;" href="/{{info.selectedContact}}" target="_blank">{{parseResult(info.selectedContactName)}}</a>
+												</span>
+												<select class="slds-select" ng-model="info.selectedContact" ng-show="!(contactId != null && contactId != '') && info.contactList.length >= 2" ng-change="changeContact()">
+													<option ng-repeat="option in info.contactList" value="{{option.id}}">{{parseResult(option.name)}}</option>
+												</select>
+											</div>	
+										</div>
+									</div>
+								</div>
+								<hr/>
+								<div ng-repeat="section in info.sections">
+									<div ng-show="section.name == 'Section 3 – Attributes' && section.visible == true && info.filters.length > 0 && isShowFilterSection">
+										<div class="slds-grid slds-col slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+											<div class="slds-section-title slds-p-around--xx-small slds-has-flexi-truncate" style="font-size: 15px !important;">
+												{{parseResult(section.label)}}
+											</div>
+											<div class="slds-no-flex slds-col--padded">
+												<div class="slds-dropdown-trigger slds-is-open">
+													<button class="slds-button slds-button--icon-border-filled slds-button--icon-x-small">
+														<svg class="slds-button__icon slds-button__icon--hint">
+															<use xlink:href="{{'{!URLFOR($Resource.LightningCSS)}' + '/assets/icons/utility-sprite/svg/symbols.svg#down'}}"></use>
+														</svg>
+													</button>
+													<div class="slds-dropdown slds-dropdown--right">
+														<ul class="dropdown__list">
+															<li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="openFilterModal();">
+																{!$Label.Edit}
+															</a></li>
+														</ul>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="slds-grid slds-wrap">
+											<div class="slds-form-element slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" ng-repeat="filter in info.filters" ng-show="filter.isShow">
+												<label class="slds-form-element__label">{{parseResult(filter.name)}}<div ng-show="filter.required"  class="required">*</div></label>
+												<div class="slds-form-element__control slds-col--padded">
+													<span>{{parseResult(filter.selectedAttributes)}}</span>
+												</div>
+											</div>
+										</div>
+										<hr/>
+									</div>
+									<div ng-show="section.name == 'Section 4 – Custom Fields' && section.visible == true && info.nomiFields.length > 0">
+										<div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+											{{parseResult(section.label)}}
+										</div>
+										<div class="slds-grid slds-wrap">
+											<div class="slds-form-element slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3 remove-flex" ng-repeat="field in info.nomiFields">
+												<label class="slds-form-element__label form-element-label" style="margin-right: 0;">{{parseResult(field.label)}}<div ng-show="field.required"  class="required">*</div></label>
+												<div style="display: inline-flex;" class="tooltip" ng-show="field.inlineHelpText != null && field.inlineHelpText != ''">
+													<div class="slds-form-element ">
+														<div class="slds-form-element__icon slds-align-middle">
+														<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+															<svg class="slds-button__icon" aria-hidden="true">
+																<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+															</svg>
+														</p>
+														</div>
+													</div>
+													<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-fall-into-ground" ng-class="{'tooltipHelpShow' : field.type != 'TEXTAREA' && field.type != 'MULTIPICKLIST', 'tooltipHelpShowTA' : field.type == 'TEXTAREA' || field.type == 'MULTIPICKLIST'}" role="tooltip" id="help">
+														<div class="slds-popover__body">{{field.inlineHelpText}}</div> 
+													</div>
+													<div class="slds-popover slds-popover_tooltip slds-nubbin--bottom-left slds-rise-from-ground" ng-class="{'tooltipHelpShow' : field.type != 'TEXTAREA' && field.type != 'MULTIPICKLIST', 'tooltipHelpShowTA' : field.type == 'TEXTAREA' || field.type == 'MULTIPICKLIST'}" role="tooltip" id="help">
+														<div class="slds-popover__body">{{field.inlineHelpText}}</div>
+													</div>
+												</div>
+												<div class="slds-form-element__control" ng-show="field.type == 'MULTIPICKLIST'">
+                                                    <multi-select ng-model="field.multiPickOptions"
+                                                                  available="field.multiPickAvailOptions"
+                                                                  selected-label="SELECTED"
+                                                                  available-label="AVAILABLE"
+                                                                  display-attr="name">
+                                                    </multi-select>
+                                                </div>
+												<div class="slds-form-element__control" ng-show="field.type != 'DATE' && field.type != 'MULTIPICKLIST'  && field.type != 'PICKLIST' && field.type != 'TEXTAREA' && field.type != 'BOOLEAN'">
+													<input class="slds-input" ng-model="field.value"/>
+												</div>
+												
+												<div class="slds-form-element__control" ng-show="field.type == 'DATE' || field.type == 'DATETIME'">
+													<input class="slds-input" ng-model="field.value" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+												</div>
+												<div class="slds-form-element__control" ng-show="field.type == 'PICKLIST'">
+													<select class="slds-select" ng-model="field.value">
+														<option ng-repeat="option in field.picklistValues" value="{{option}}">{{parseResult(option)}}</option>
+													</select>
+												</div>
+												<div class="slds-form-element__control" ng-show="field.type == 'TEXTAREA'">
+													<textarea ng-model="field.value" class="slds-textarea" rows="3"></textarea>
+												</div>
+												<div class="slds-form-element__control" ng-show="field.type == 'BOOLEAN'">
+													<span class="slds-form-element__static">
+														<label class="slds-checkbox">
+															<input type="checkbox" ng-model="field.value"/>
+															<span class="slds-checkbox--faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>	
+										</div>
+										<hr/>
+									</div>
+									<div ng-show="section.name == 'Section 5 – Reference Activities' && section.visible == true && info.refTypes.length > 0 && isShowRefSection">
+										<div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+											{{parseResult(section.label)}}
+										</div>
+										<div class="slds-grid slds-wrap">
+											<div ng-repeat="ref in info.refTypes" ng-show="ref.isShow" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3 remove-flex">
+												<div class="slds-form-element">
+													<div class="slds-form-element__control">
+														<div class="slds-refedge-checkbox">
+															<label class="slds-checkbox">
+																<input type="checkbox" ng-model="ref.isSelected" />
+																<span class="slds-checkbox--faux"></span>
+															</label>
+															<div class="slds-form-element__label slds-refedge-form-element__label">
+																<span>{{parseResult(ref.name)}}</span>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<hr/>
+									</div>
+									<div ng-show="section.name == 'Section 6 – Free Form Text' && section.visible == true">
+										<div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+											{{parseResult(section.label)}}
+										</div>
+										<div class="slds-grid slds-wrap">
+											<div class="slds-form-element slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+												<label class="slds-form-element__label">{!$Label.Comments}<div class="required" ng-show="section.required == true">*</div></label>
+												<div class="slds-form-element__control">
+													<textarea ng-model="info.notes" class="slds-textarea slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" rows="3"></textarea>
+												</div>	
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div ng-show="editFilter">
+								<div class="slds-modal slds-fade-in-open slds-modal--large" aria-hidden="false" role="dialog">
+									<div class="slds-modal__container">
+										<div class="slds-modal__header">
+											<button class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="closeFilterModal(false)">
+												<img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+												<span class="slds-assistive-text">{!$Label.Close}</span>
+											</button>
+											<h2 class="slds-text-heading--medium">{!$Label.RF_Filters}</h2>
+										</div>
+										<div class="slds-modal__content slds-p-around--medium slds-scrollable--y">
+											<div ng-repeat="filter in info.filters" style="padding:10px;">
+												<div ng-show="filter.isShow"> 
+													<div style="width:100%;">
+														<div style="display: inline !important;" class="slds-badge slds-theme--shade" >{{parseResult(filter.name)}}<div ng-show="filter.required"  class="required">*</div></div>
+													</div>
+													<div class="slds-grid slds-wrap" style="margin:2% 0 2% 2%;">
+														<div style="cursor: pointer;" ng-repeat="attribute in filterAttMap[filter.id]" ng-show="attribute.isShow"  class="slds-col slds-size--1-of-1 slds-medium-size--1-of-3 slds-large-size--1-of-3 remove-flex">
+															<img src="{!$Resource.GreenCheck}" style="width:15px !important;float:left;margin:1%;" ng-show="attribute.isSelected == true"/>
+															<div style="margin-left:25px;" ng-click="attribute.isSelected = !attribute.isSelected">
+																{{parseResult(attribute.name)}}
+															</div>
+														</div>
+													</div>
+													<hr />
+												</div>
+											</div>
+										</div>
+										<div class="slds-modal__footer">
+											<button class="slds-button slds-button--neutral" ng-click="closeFilterModal(false);">{!$Label.Cancel}</button>
+											<button class="slds-button slds-button--neutral" ng-click="closeFilterModal(true);">{!$Label.Save}</button>
+										</div>
+									</div>
+								</div>
+								<div class="slds-backdrop slds-backdrop--open"></div>
+							</div>
+							<div ng-show="showModal">
+								<div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+									<div class="slds-modal__container">
+										<div class="slds-modal__header">
+											<a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="changeValue(false)">
+												<img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+												<span class="slds-assistive-text">Close</span>
+											</a>
+										</div>
+										<div class="slds-modal__content slds-p-around--medium">
+											{{modalMsg}}
+										</div>
+										<div class="slds-modal__footer">
+											<a class="slds-button slds-button--brand" ng-click="changeValue(true)">{!$Label.Yes}</a>
+											<a class="slds-button slds-button--brand" ng-click="changeValue(false)">{!$Label.Cancel}</a>
+										</div>
+									</div>
+								</div>
+								<div class="slds-backdrop slds-backdrop--open"></div>
+							</div>
+						</div>
+						<div ng-show="isloading" class="slds-spinner--medium" id="loading">
+							<img id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+</apex:page>

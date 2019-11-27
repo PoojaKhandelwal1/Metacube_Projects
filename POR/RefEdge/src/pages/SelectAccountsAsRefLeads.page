@@ -1,0 +1,1425 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reference_Lead__c" recordSetVar="refLeads" extensions="SelectAccountsAsRefLeads,ListViewFiltersController" sidebar="false" docType="html-5.0" standardStylesheets="false">
+<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+<script>
+	$(document).ready(function() {
+		$('#phHeader td.left div').css({"width": "19vw", "height": "auto"});
+	});
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<script>
+			var SLDS_BASE_URL = "{!URLFOR($Resource.LightningCSS_2_3, '')}";
+			var RESOURCE_ROOT = "{!URLFOR($Resource.ListViewDirective, '')}";
+			var PICKLIST_DIRECTIVE_RESOURCE = "{!URLFOR($Resource.PicklistValueDirective, '')}";
+			var deleteImg = "{!$Resource.RedCrossMark}";
+			var classicSpinnerImg = "{!$Resource.LoaderSpinner}";
+			var refedgeLogoImg = "{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}";
+
+			var getDateFormatRemoteAction = '{!$RemoteAction.ListViewFiltersController.getDateFormat}';
+			var getListViewFiltersRemoteAction = '{!$RemoteAction.ListViewFiltersController.getListViewFilters}';
+			var getFieldsListRemoteAction = '{!$RemoteAction.ListViewFiltersController.getFieldsList}';
+			var saveUserMappingsRemoteAction = '{!$RemoteAction.ListViewFiltersController.saveUserMappings}';
+			var isNameUniqueRemoteAction = '{!$RemoteAction.ListViewFiltersController.isNameUnique}';
+
+			var filtersLabel = '{!$Label.RF_Filters}';
+			var listViewCreatorLabel = '{!$Label.List_View_Creator_Heading}';
+			var noDataFoundLabel = 'No filters are currently applied.'; // re REF-1498
+			var addFilterLabel = '{!$Label.Add_Filter}';
+			var removeAllLabel = '{!$Label.Remove_All}';
+			var newFilterLabel = '{!$Label.New_Filter}';
+			var fieldLabel = '{!$Label.T_Field}';
+			var cancelLabel = '{!$Label.Cancel}';
+			var saveLabel = '{!$Label.Save}';
+			var saveAsLabel = '{!$Label.Save_As}';
+			var operatorLabel = '{!$Label.Operator}';
+			var valueLabel = '{!$Label.Value}';
+			var doneLabel = '{!$Label.Done}';
+			var saveNewListViewLabel = '{!$Label.Save_New_List_View}';
+			var listNameLabel = '{!$Label.List_Name}';
+			var requiredLabel = '{!$Label.REQUIRED_VALUES}';
+			var listViewUpdatedLabel = '{!$Label.List_view_updated}';
+		</script>
+
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+		<apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+		<script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+		<script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+        <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+		<apex:stylesheet value="{!URLFOR($Resource.PicklistValueDirective, 'css/picklistValueSelector.css')}" />
+		<script src="{!URLFOR($Resource.PicklistValueDirective, 'js/picklistValueSelector.js')}"></script>
+		<apex:stylesheet value="{!URLFOR($Resource.ListViewDirective, 'css/ListViewFilter.css')}" />
+		<script src="{!URLFOR($Resource.ListViewDirective, 'js/ListViewFilter.js')}"></script>
+		
+		<style>
+			#lightningDiv :not(i) {
+				font-family: "Salesforce Sans",Arial,sans-serif !important;
+			}
+            .errorPageMsgDiv {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+            }
+			.modalErrorMsg {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+			}
+            .custom-toast-width {
+				min-width: 0;
+				width: 96%;
+			}
+		    .container {
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				overflow-x: hidden;
+				overflow-y: auto;
+			}
+			@media screen and (max-width: 767px) {
+			    .horizontal-padding-large {
+			        padding-right: 0.5rem;
+			        padding-left: 0.5rem;
+			    }
+			    .custom-toast-container {
+			    	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 0;
+				    width: 100%;
+				    margin-left: 0;
+			    }
+			    .responsiveInput {
+			    	width: 100%;
+			    }
+			}
+			@media screen and (min-width: 768px) {
+			    .horizontal-padding-large {
+			        padding-right: 1.5rem;
+			        padding-left: 1.5rem;
+			    }
+			    .custom-toast-container {
+			    	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 50%;
+				    width: 60%;
+				    margin-left: -30%;
+			    }
+			    .responsiveInput {
+			    	width: 30%;
+			    }
+			}
+			#classicDiv .pbbody {
+				margin: 0;
+			}
+			.classicSpinner {
+            	position: absolute;
+			    top: 50%;
+			    left: 50%;
+			    margin-left: -30px;
+            }
+            .classicSpinnerbackground {
+            	height: 80vh;
+			    background-color: WHITE;
+			    opacity: 0.7;
+			    z-index: 9999;
+            }
+			.classicTable {
+				border: 1px solid #e0e3e5;
+			    background-color: #fff;
+			}
+			.classicTable tr:HOVER {
+				background-color: #e3f3ff;
+			}
+			.classicTableHeaderCell {
+				background: #f2f3f3;
+				border-width: 0 0 1px 1px;
+				border-color: #e0e3e5;
+				color: #000;
+				font-size: .9em;
+				font-weight: bold;
+				padding: 5px 2px 4px 5px;
+				border: 1px solid #ededed;
+			}
+			.classicTablebodyCell {
+				border-width: 0 0 1px 0;
+				border-color: #ededed;
+				border-style: solid;
+				padding: 4px 2px 4px 5px;
+				font-size: .9em;
+			}
+			.infScrollDiv {
+				height: 70vh;
+				overflow-y: auto;
+				display: inline-block;
+			    width: 95vw;
+			}
+			.infScrollDivLightning {
+				height: 80vh;
+				overflow-y: auto;
+				width: 100%;
+    			overflow-x: auto;
+			}
+			.pbTitle {
+            	font-size: 0.8em !important;
+			    font-weight: bold !important;
+			    padding: 12px !important;
+            }
+            .errorClass {
+            	border: 2px solid #c00;
+            }
+            .errorClassSLDS {
+            	border: 2px solid #c00;
+            }
+			.classicModal {
+	            background-color: #f8f8f8;
+	            box-shadow: 0 0 20px #6D6D6D;
+				position: fixed;
+				top: 25vh;
+				left: 45%;
+				margin-left: -20%;
+				width: 50%;
+				z-index: 999;
+			}
+			.classicModalHeader {
+				background-color: #03a7e5;
+				border-radius: 3px;
+				margin: 2px;
+				padding: 0.3rem 0.3rem 0.3rem 1.2rem;
+			}
+			.classicModalHeader a {
+				float: right;
+				line-height: 1.5em;
+				color: #f8f8f8;
+				border-radius: 3px;
+				padding: 0 0.28rem;
+			}
+			.classicModalHeader a:HOVER {
+				background-color: #f8f8f8;
+				color: #ff6a00;
+			}
+			.classicModalHeader span {
+				color: #f8f8f8;
+				font-weight: bold;
+			}
+			.classicModalContent {
+				padding: 1.3rem;
+			}
+			.classicModalFooter {
+				padding: 0.6rem 1.6rem;
+				text-align: right;
+				background-color: #eeeeee;
+				border-top: 1px solid lightgray;
+			}
+			.classicModalFooter a {
+				line-height: 220%;
+				text-decoration: none !important;
+				color: black;
+				padding: 4px 3px;
+				font-size: 0.85em;
+			}
+			.classicModalbackdrop {
+				background-color: black;
+	            opacity: 0.20;
+	            filter: alpha(opacity = 20);
+	            position: absolute;
+	            width: 100%;
+	            height: 100%;
+	            top: 0;
+	            left: 0;
+	            z-index: 99;
+			}
+			.listViewMenuBackdrop {
+				position: absolute;
+	            top: 0;
+	            bottom: 0;
+	            left: 0;
+	            right: 0;
+	            z-index: 10;
+			}
+			.deleteListViewIcon {
+				fill: #d8dde6;
+			}
+			.deleteListViewIcon:HOVER {
+				fill: #53688d;
+			}
+		</style>
+		
+		<script>
+			var selectAsRefLeadsApp = angular.module('selectAsRefLeadsApp', ['angularMultiSelectList', 'angularjs-datetime-picker', 'listViewFilterApp', 'picklistValueSelectorApp']);
+			var infiniteScrollDIrective = selectAsRefLeadsApp.directive('whenScrolled',
+				function() {
+					return function(scope, elm, attr) {
+						var raw = elm[0];
+						
+						elm.bind('scroll', function() {
+							
+							if (raw.scrollTop + raw.offsetHeight >= raw.scrollHeight) {
+								scope.$apply(attr.whenScrolled);
+							}
+						});
+					};
+				}
+			);
+			var selectAsRefLeadsCtrl = selectAsRefLeadsApp.controller('selectAsRefLeadsCtrl',
+				function($scope, $q) {
+					$scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+					$scope.isLoading = false;
+					$scope.existingRefLeadsAccIds = [];
+					$scope.alreadyPresentAccountIds = [];
+					$scope.selectedAccIds = [];
+					$scope.accountWrapperList = [];
+					$scope.isError = false;
+					$scope.errorMessage = '';
+					$scope.isSuccess = false;
+					$scope.showSuccessToast = false;
+					$scope.successMessage = '';
+					$scope.isSLDS = {!isSLDS};
+					$scope.isRefProspectEnabled = {!isRefProspectEnabled};
+					$scope.showEnableProspectToast = {!isRefProspectEnabled};
+					$scope.pageVariables = {};
+					$scope.pageVariables['isAllAccountsSelected'] = false;
+					$scope.pageVariables['searchText'] = '';
+					$scope.pageVariables['searchError'] = false;
+					$scope.pageVariables['isTextSearchApplied'] = false;
+					$scope.pageVariables['isAllAccountsFetched'] = false;
+					$scope.refLeadListViewId = '{!JSENCODE(refLeadListViewId)}';
+					$scope.refLeadIdPrefix = '{!JSENCODE(refLeadIdPrefix)}';
+					$scope.isFromCustomSettings = {!isFromCustomSettings};
+					$scope.nameSpace = '{!JSENCODE(nameSpace)}';
+					$scope.showColumnSelectionModal = false;
+					$scope.pageVariables['selectedColumnsList'] = [];
+					$scope.pageVariables['tempSelectedColumnsList'] = [];
+					$scope.pageVariables['availableColumnsList'] = [];
+					$scope.pageVariables['defaultFieldsList'] = '{!JSENCODE(defaultFieldsToDisplayJson)}';
+					$scope.showMaxColumnsError = false;
+					$scope.pageVariables['showListViewMenu'] = false;
+					$scope.pageVariables['listFilterProcessName'] = 'ListFiltersProspect';
+					$scope.listViewWrapperList = [];
+					$scope.pageVariables['selectedListView'] = {};
+					$scope.pageVariables['isMultiEntity'] = true;
+					$scope.pageVariables['objectsMap'] = {};
+					$scope.pageVariables['objectsMap']['Accounts'] = 'Account';
+					$scope.pageVariables['objectsMap']['Reference Profiles'] = 'Reference_Basic_Information__c';
+					$scope.pageVariables['objectsMap']['Opportunities'] = 'Opportunity';
+					$scope.pageVariables['objectsMap']['Opportunity Products'] = 'OpportunityLineItem';
+					
+					$scope.init = function() {
+						$scope.isLoading = true;
+						$scope.existingRefLeadsAccIds = [];
+						$scope.selectedAccIds = [];
+						$scope.accountWrapperList = [];
+						$scope.alreadyPresentAccountIds = [];
+						$scope.pageVariables['defaultFieldsList'] = $scope.parseResult($scope.pageVariables['defaultFieldsList']);
+						$scope.pageVariables['defaultFieldsList'] = JSON.parse($scope.pageVariables['defaultFieldsList']);
+						
+						if ($scope.isFullLicenseAccessible && $scope.isRefProspectEnabled) {
+							
+							$scope.getPermissionsMessage().then(function(result) {
+								
+								if (result != '') {
+									$scope.isError = true;
+									$scope.errorMessage = result;
+								}
+							});
+							
+							$scope.getFieldsList().then(function(result) {
+								$scope.pageVariables['tempSelectedColumnsList'] = [];
+
+								angular.forEach(
+									result,
+									function(fieldWrapper) {
+
+										if (fieldWrapper['isSelected']) {
+											$scope.pageVariables['tempSelectedColumnsList'].push(fieldWrapper);
+										}
+									}
+								);
+
+								if ($scope.pageVariables['tempSelectedColumnsList'].length == 0) {
+									$scope.pageVariables['tempSelectedColumnsList'] = angular.copy($scope.pageVariables['defaultFieldsList']);
+								}
+								
+								$scope.getExistingRefLeadAccIds().then(function(result) {
+									$scope.existingRefLeadsAccIds = result;
+									
+									$scope.getListViews().then(function(result) {
+										$scope.listViewWrapperList = result;
+										$scope.listViewWrapperList[0]['isSelected'] = true;
+										$scope.pageVariables['selectedListView'] = $scope.listViewWrapperList[0];
+
+										$scope.getAccountsList().then(function(result) {
+											$scope.accountWrapperList = result;
+											
+											angular.forEach(
+												result,
+												function(accWrap) {
+													$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+													accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+												}
+											);
+											$scope.isLoading = false;
+											$scope.pageVariables['isAllAccountsFetched'] = false;
+
+											if (result.length < 50) {
+												$scope.pageVariables['isAllAccountsFetched'] = true;
+											}
+										});
+									});
+								});
+							});
+						} else {
+							$scope.isLoading = false;
+						}
+					}
+
+					$scope.getListViews = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.SelectAccountsAsRefLeads.getListViews}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+					
+					$scope.getPermissionsMessage = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.SelectAccountsAsRefLeads.getPermissionsMessage}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getExistingRefLeadAccIds = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.SelectAccountsAsRefLeads.getExistingRefLeadAccIds}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getAccountsList = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.SelectAccountsAsRefLeads.getAccountsList}',
+							angular.toJson($scope.existingRefLeadsAccIds),
+							angular.toJson($scope.pageVariables['tempSelectedColumnsList']),
+							$scope.pageVariables['selectedListView']['userMappingId'],
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getMoreAccounts = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.SelectAccountsAsRefLeads.getMoreAccounts}',
+							angular.toJson($scope.existingRefLeadsAccIds),
+							angular.toJson($scope.alreadyPresentAccountIds),
+							$scope.pageVariables['searchText'],
+							angular.toJson($scope.pageVariables['tempSelectedColumnsList']),
+							$scope.pageVariables['selectedListView']['userMappingId'],
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+					
+					$scope.createRefLeads = function() {
+						var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.SelectAccountsAsRefLeads.createRefLeads}',
+							angular.toJson($scope.selectedAccIds),
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+					}
+
+					$scope.getFieldsList = function() {
+						var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.SelectAccountsAsRefLeads.getSelectedFieldsList}',
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+					}
+
+					$scope.saveSelectedFields = function() {
+						var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.SelectAccountsAsRefLeads.saveSelectedFields}',
+							angular.toJson($scope.pageVariables['selectedColumnsList']),
+							angular.toJson($scope.pageVariables['tempSelectedColumnsList']),
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+					}
+
+					$scope.getAccountsOnColumnsChange = function() {
+						var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.SelectAccountsAsRefLeads.getAccountsOnColumnsChange}',
+							angular.toJson($scope.alreadyPresentAccountIds),
+							angular.toJson($scope.pageVariables['tempSelectedColumnsList']),
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+					}
+
+					$scope.deleteUserMapping = function(listViewId) {
+						var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.SelectAccountsAsRefLeads.deleteUserMapping}',
+							listViewId,
+							function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+					}
+					
+					$scope.parseResult = function(result) {
+						result = result.replace(/&quot/gi, '"');
+						result = result.replace(/&amp/g, '&');
+						result = result.replace(/&lt/g, '<');
+						result = result.replace(/&gt/g, '>');
+						result = result.replace(/;/g, '');
+						result = result.replace(/&#39/g, '\'');
+						return result;
+					}
+					
+					$scope.returnToRefLeads = function() {
+						
+						if ((typeof sforce != 'undefined') && (sforce != null)) {
+							
+							if ($scope.isFromCustomSettings) {
+								var url = '{!URLFOR($Page.RefProspectorSettingsPage)}';
+								sforce.one.navigateToURL(url, true);
+							} else {
+								
+								if ($scope.refLeadListViewId != null && $scope.refLeadListViewId != '') {
+								sforce.one.navigateToList($scope.refLeadListViewId, null, $scope.nameSpace + 'Reference_Lead__c');
+								} else {
+									window.location = '/_ui/core/chatter/ui/ChatterPage';
+								}
+							}
+						} else {
+							
+							if ($scope.isFromCustomSettings) {
+								window.location.href = '/apex/RefProspectorSettingsPage';
+							} else {
+								window.location.href = '/' + $scope.refLeadIdPrefix;
+							}
+						}
+					}
+					
+					$scope.hideToast = function() {
+						$scope.isError = false;
+						$scope.showSuccessToast = false;
+						$scope.showEnableProspectToast = true;
+					}
+					
+					$scope.showMoreAccounts = function() {
+						
+						if (!$scope.pageVariables['isAllAccountsFetched']) {
+							$scope.isLoading = true;
+							
+							$scope.getMoreAccounts().then(function(result) {
+								
+								angular.forEach(
+									result,
+									function(accWrap) {
+										$scope.accountWrapperList.push(accWrap);
+										$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+										accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+										
+										if ($scope.selectedAccIds.indexOf(accWrap['Id']) >= 0) {
+											accWrap['isSelected'] = true;
+										}
+									}
+								);
+								$scope.pageVariables['isAllAccountsSelected'] = false;
+								$scope.isLoading = false;
+								$scope.pageVariables['isAllAccountsFetched'] = false;
+								
+								if (result.length < 50) {
+									$scope.pageVariables['isAllAccountsFetched'] = true;
+								}
+							});
+						}
+					}
+					
+					$scope.searchAccounts = function($event) {
+						var keyCode = $event.which || $event.keyCode;
+						
+                        if (keyCode === 13 || $event.target.className == 'btn') {
+							
+							if ($scope.pageVariables['searchText'].trim().length < 2) {
+								$scope.pageVariables['searchError'] = true;
+							} else {
+								$scope.pageVariables['searchError'] = false;
+								$scope.isLoading = true;
+								$scope.accountWrapperList = [];
+								$scope.alreadyPresentAccountIds = [];
+								$scope.pageVariables['isTextSearchApplied'] = true;
+								
+								$scope.getMoreAccounts().then(function(result) {
+									$scope.accountWrapperList = result;
+									
+									angular.forEach(
+										result,
+										function(accWrap) {
+											$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+											accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+											
+											if ($scope.selectedAccIds.indexOf(accWrap['Id']) >= 0) {
+												accWrap['isSelected'] = true;
+											}
+										}
+									);
+									$scope.isLoading = false;
+									$scope.pageVariables['isAllAccountsFetched'] = false;
+
+									if (result.length < 50) {
+										$scope.pageVariables['isAllAccountsFetched'] = true;
+									}
+								});
+							}
+                        }
+					}
+					
+					$scope.clearTextSearch = function() {
+						$scope.pageVariables['searchError'] = false;
+						$scope.pageVariables['searchText'] = '';
+						$scope.isLoading = true;
+						$scope.accountWrapperList = [];
+						$scope.alreadyPresentAccountIds = [];
+						$scope.pageVariables['isTextSearchApplied'] = false;
+						
+						$scope.getAccountsList().then(function(result) {
+							$scope.accountWrapperList = result;
+							
+							angular.forEach(
+								result,
+								function(accWrap) {
+									$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+									accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+									
+									if ($scope.selectedAccIds.indexOf(accWrap['Id']) >= 0) {
+										accWrap['isSelected'] = true;
+									}
+								}
+							);
+							$scope.isLoading = false;
+							$scope.pageVariables['isAllAccountsFetched'] = false;
+							
+							if (result.length < 50) {
+								$scope.pageVariables['isAllAccountsFetched'] = true;
+							}
+						});
+					}
+					
+					$scope.selectAllAccounts = function(isAllAccountsSelected) {
+						
+						if (isAllAccountsSelected) {
+							
+							angular.forEach(
+								$scope.accountWrapperList,
+								function(accWrap) {
+									
+									if ($scope.selectedAccIds.indexOf(accWrap['Id']) == -1) {
+										$scope.selectedAccIds.push(accWrap['Id']);
+										accWrap['isSelected'] = true;
+									}
+								}
+							);
+						} else {
+							$scope.selectedAccIds = [];
+							
+							angular.forEach(
+								$scope.accountWrapperList,
+								function(accWrap) {
+									accWrap['isSelected'] = false;
+								}
+							);
+						}
+					}
+					
+					$scope.selectDeselectAccount = function(accWrap) {
+						var index = $scope.selectedAccIds.indexOf(accWrap['Id']);
+						
+						if (index == -1) {
+							$scope.selectedAccIds.push(accWrap['Id']);
+						} else {
+							$scope.selectedAccIds.splice(index, 1);
+							$scope.pageVariables.isAllAccountsSelected = false;
+						}
+						
+						if ($scope.selectedAccIds.length == $scope.accountWrapperList.length) {
+							$scope.pageVariables.isAllAccountsSelected = true;
+						}
+					}
+					
+					$scope.save = function() {
+						$scope.isError = false;
+						
+						if ($scope.selectedAccIds.length == 0) {
+							$scope.isError = true;
+							$scope.errorMessage = 'Select atleast one account.';
+						} else {
+							
+							$scope.getPermissionsMessage().then(function(result) {
+								
+								if (result != '') {
+									$scope.isError = true;
+									$scope.errorMessage = result;
+								} else {
+									$scope.isLoading = true;
+									
+									$scope.createRefLeads().then(function(result) {
+										
+										if (result.startsWith('success')) {
+											$scope.isSuccess = true;
+											$scope.showSuccessToast = true;
+											var count = result.split('-')[1];
+											
+											if (count == '1') {
+												$scope.successMessage = count + ' new Reference Lead record has been created.';
+											} else {
+												$scope.successMessage = count + ' new Reference Lead records have been created.';
+											}
+										} else {
+											$scope.isError = true;
+											$scope.errorMessage = result;
+										}
+										$scope.isLoading = false;
+									});
+								}
+							});
+						}
+					}
+
+					$scope.openColumnSelector = function() {
+						$scope.isLoading = true;
+						$scope.showMaxColumnsError = false;
+
+						$scope.getFieldsList().then(function(result) {
+							$scope.pageVariables['selectedColumnsList'] = [];
+							$scope.pageVariables['tempSelectedColumnsList'] = [];
+							$scope.pageVariables['availableColumnsList'] = [];
+							
+							angular.forEach(
+								result,
+								function(fieldWrapper) {
+
+									if (fieldWrapper['isSelected']) {
+										$scope.pageVariables['selectedColumnsList'].push(fieldWrapper);
+										$scope.pageVariables['tempSelectedColumnsList'].push(fieldWrapper);
+									} else {
+										$scope.pageVariables['availableColumnsList'].push(fieldWrapper);
+									}
+								}
+							);
+							$scope.showColumnSelectionModal = true;
+							$scope.isLoading = false;
+						});
+					}
+
+					$scope.cancelColumnSelector = function() {
+						$scope.showColumnSelectionModal = false;
+
+						if ($scope.pageVariables['tempSelectedColumnsList'].length == 0) {
+							$scope.pageVariables['tempSelectedColumnsList'] = angular.copy($scope.pageVariables['defaultFieldsList']);
+						}
+					}
+
+					$scope.saveColumnSelector = function() {
+						
+						if ($scope.pageVariables['selectedColumnsList'].length > 15) {
+							$scope.showMaxColumnsError = true;
+						} else {
+							$scope.showMaxColumnsError = false;
+							$scope.isLoading = true;
+							
+							$scope.saveSelectedFields().then(function(result) {
+
+								if (result.indexOf('success--') >= 0) {
+									result = result.split('success--')[1];
+									$scope.pageVariables['tempSelectedColumnsList'] = JSON.parse(result);
+									$scope.accountWrapperList = [];
+
+									if ($scope.pageVariables['tempSelectedColumnsList'].length == 0) {
+										$scope.pageVariables['tempSelectedColumnsList'] = angular.copy($scope.pageVariables['defaultFieldsList']);
+									}
+
+									$scope.getAccountsOnColumnsChange().then(function(result) {
+
+										angular.forEach(
+											result,
+											function(accWrap) {
+												$scope.accountWrapperList.push(accWrap);
+												accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+												
+												if ($scope.selectedAccIds.indexOf(accWrap['Id']) >= 0) {
+													accWrap['isSelected'] = true;
+												}
+											}
+										);
+										$scope.isLoading = false;
+										$scope.showColumnSelectionModal = false;
+									});
+								} else {
+									$scope.isError = true;
+									$scope.errorMessage = result;
+									$scope.isLoading = false;
+									$scope.showColumnSelectionModal = false;
+								}
+							});
+						}
+					}
+
+					$scope.toggleListViewMenu = function() {
+						$scope.pageVariables['showListViewMenu'] = !$scope.pageVariables['showListViewMenu'];
+					}
+
+					$scope.selectListView = function(listView) {
+						
+						if (listView != null) {
+							$scope.isLoading = true;
+							
+							angular.forEach(
+								$scope.listViewWrapperList,
+								function(tempListView) {
+									tempListView['isSelected'] = false;
+								}
+							);
+							listView['isSelected'] = true;
+							$scope.pageVariables['selectedListView'] = listView;
+							$scope.accountWrapperList = [];
+							$scope.alreadyPresentAccountIds = [];
+							$scope.selectedAccIds = [];
+
+							$scope.getAccountsList().then(function(result) {
+								$scope.accountWrapperList = result;
+								
+								angular.forEach(
+									result,
+									function(accWrap) {
+										$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+										accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+									}
+								);
+								$scope.pageVariables['showListViewMenu'] = false;
+								$scope.isLoading = false;
+								$scope.pageVariables['isAllAccountsFetched'] = false;
+
+								if (result.length < 50) {
+									$scope.pageVariables['isAllAccountsFetched'] = true;
+								}
+							});
+						}
+					}
+
+					$scope.deleteListView = function(deleteIndex, listViewId) {
+						$scope.isLoading = true;
+						$scope.listViewWrapperList.splice(deleteIndex, 1);
+						$scope.accountWrapperList = [];
+						$scope.alreadyPresentAccountIds = [];
+						$scope.selectedAccIds = [];
+
+						$scope.deleteUserMapping(listViewId).then(function(result) {
+							$scope.listViewWrapperList[0]['isSelected'] = true;
+							$scope.pageVariables['selectedListView'] = $scope.listViewWrapperList[0];
+							
+							$scope.getAccountsList().then(function(result) {
+								$scope.accountWrapperList = result;
+								
+								angular.forEach(
+									result,
+									function(accWrap) {
+										$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+										accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+									}
+								);
+								$scope.pageVariables['showListViewMenu'] = false;
+								$scope.isLoading = false;
+								$scope.pageVariables['isAllAccountsFetched'] = false;
+
+								if (result.length < 50) {
+									$scope.pageVariables['isAllAccountsFetched'] = true;
+								}
+							});
+						});
+					}
+
+					$scope.$on('listViewUpdated', function(event, data) {
+						$scope.isLoading = true;
+						$scope.listViewWrapperList = [];
+						$scope.accountWrapperList = [];
+						$scope.selectedAccIds = [];
+						$scope.alreadyPresentAccountIds = [];
+
+						if (data['isNewListView']) {
+
+							$scope.getListViews().then(function(result) {
+								$scope.listViewWrapperList = result;
+
+								angular.forEach(
+									$scope.listViewWrapperList,
+									function(listView) {
+
+										if (data['listViewId'] == listView['userMappingId']) {
+											listView['isSelected'] = true;
+											$scope.pageVariables['selectedListView'] = listView;
+										} else {
+											listView['isSelected'] = false;
+										}
+									}
+								);
+
+								$scope.getAccountsList().then(function(result) {
+									$scope.accountWrapperList = result;
+									
+									angular.forEach(
+										result,
+										function(accWrap) {
+											$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+											accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+										}
+									);
+									$scope.isLoading = false;
+									$scope.pageVariables['isAllAccountsFetched'] = false;
+									
+									if (result.length < 50) {
+										$scope.pageVariables['isAllAccountsFetched'] = true;
+									}
+								});
+							});
+						} else {
+							
+							$scope.getListViews().then(function(result) {
+								$scope.listViewWrapperList = result;
+
+								angular.forEach(
+									result,
+									function(listView) {
+
+										if (data['listViewId'] == listView['userMappingId']) {
+											listView['isSelected'] = true;
+											$scope.pageVariables['selectedListView'] = listView;
+										} else {
+											listView['isSelected'] = false;
+										}
+									}
+								);
+
+								$scope.getAccountsList().then(function(result) {
+									$scope.accountWrapperList = result;
+									
+									angular.forEach(
+										result,
+										function(accWrap) {
+											$scope.alreadyPresentAccountIds.push(accWrap['Id']);
+											accWrap['isSelected'] = accWrap['isSelected'] == 'true' ? true : false;
+										}
+									);
+									$scope.isLoading = false;
+									$scope.pageVariables['isAllAccountsFetched'] = false;
+
+									if (result.length < 50) {
+										$scope.pageVariables['isAllAccountsFetched'] = true;
+									}
+								});
+							});
+						}
+					});
+
+
+				}
+			);
+		</script>
+	</head>
+	
+	<body>
+		<div ng-app="selectAsRefLeadsApp" ng-controller="selectAsRefLeadsCtrl" ng-cloak="ng-cloak">
+			
+			<div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+	            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+					<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					</svg>
+				</span>
+	            {!$Label.User_License}
+	        </div>
+	        
+	        <div ng-init="init()" ng-show="isFullLicenseAccessible">
+	        	
+	        	<div ng-if="!isSLDS" id="classicDiv">
+	        		<div class="classicSpinnerbackground" ng-show="isLoading">
+						<apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60"/>
+					</div>
+					
+	        		<!-- Warning message for enabling Reference Prospector -->
+	        		<div class="errorPageMsgDiv" style="border-color: #ffb75d;" ng-show="!isRefProspectEnabled">
+						<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+							<svg class="slds-icon" aria-hidden="true" style="fill: #ffb75d;">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+							</svg>
+						</span>
+						<div style="float: left; padding-top: 10px;">
+							{!$Label.Enable_Ref_Prospect_Message}
+						</div>
+					</div>
+					
+					<!-- Error message -->
+					<div class="errorPageMsgDiv" style="border-color: #cc0000;" ng-show="isError && isRefProspectEnabled">
+						<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+							<svg class="slds-icon" aria-hidden="true" style="fill: #cc0000;">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+							</svg>
+						</span>
+						<div style="float: left;">
+							<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+							<div ng-repeat="msg in errorMessage.split('\n')">
+								{{msg}}
+							</div>
+						</div>
+					</div>
+					
+					<!-- Success message -->
+					<div class="errorPageMsgDiv" style="border-color: #349900;" ng-show="showSuccessToast && isRefProspectEnabled">
+						<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+							<svg class="slds-icon" aria-hidden="true" style="fill: #349900;">
+								<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+							</svg>
+						</span>
+						<div style="float: left; padding-top: 10px;">
+							{{successMessage}}
+						</div>
+					</div>
+					<a class="btn" ng-show="isSuccess || !isRefProspectEnabled" style="margin: 20px; line-height: 220%; text-decoration: none; color: black; padding: 4px 3px" ng-click="returnToRefLeads()">{!$Label.back}</a>
+					
+					<div ng-show="isRefProspectEnabled && !isSuccess && !isLoading">
+						<div class="listViewContainer" style="margin-bottom: 0.7rem">
+							<img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" style="height: 2.5rem" />
+							<select ng-change="selectListView(pageVariables['selectedListView'])" ng-model="pageVariables['selectedListView']" ng-options="listView as listView['viewName'] for listView in listViewWrapperList" style="margin-left: 0.5rem; margin-right: 0.5rem; min-width: 12rem; font-weight: bold">
+							</select>
+							<list-view-filter process="pageVariables['listFilterProcessName']" objects-map="pageVariables['objectsMap']" is-multi-entity="pageVariables['isMultiEntity']" list-view-id="pageVariables['selectedListView']['userMappingId']" template-name="classic" object-name="Accounts">
+							</list-view-filter>
+							<span ng-show="pageVariables['selectedListView']['viewName'] != 'All Accounts'">|</span>
+							<a ng-show="pageVariables['selectedListView']['viewName'] != 'All Accounts'" ng-click="deleteListView(listViewWrapperList.indexOf(pageVariables['selectedListView']), pageVariables['selectedListView']['userMappingId'])" style="text-decoration: none">{!$Label.Delete}</a>
+						</div>
+						<apex:pageblock title="{!$Label.Create_Reference_Prospector_List}">
+							<apex:pageblockbuttons location="top">
+								<a ng-click="save()" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.Save}</a>
+								<a ng-click="returnToRefLeads()" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.back}</a>
+							</apex:pageblockbuttons>
+							<div style="padding: 0.5rem 1rem;">
+								<input type="text" ng-model="pageVariables['searchText']" ng-keypress="searchAccounts($event)" ng-class="{'errorClass': pageVariables['searchError']}" placeholder="{!$Label.Search}" style="padding: 2px;" />
+								<a ng-click="searchAccounts($event)" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.Search}</a>
+								<a ng-click="clearTextSearch()" ng-show="pageVariables['isTextSearchApplied']" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.Clear}</a>
+								<a ng-click="openColumnSelector()" class="btn" style="text-decoration: none; color: black; font-size: 0.85em; float: right">{!$Label.Select_fields_to_display}</a>
+								<span ng-show="pageVariables['searchError']" style="color: #d74c3b; display: block;">{!$Label.Atleast_two_characters}</span>
+							</div>
+							<div ng-show="accountWrapperList.length > 0" class="infScrollDiv" when-scrolled="showMoreAccounts()">
+								<table class="classicTable">
+									<thead>
+										<tr>
+											<th scope="col" class="classicTableHeaderCell" style="text-align: center; width: 3.5rem;">
+												<input type="checkbox" ng-change="selectAllAccounts(pageVariables.isAllAccountsSelected)" ng-model="pageVariables.isAllAccountsSelected" id="ccbAll" name="ccbAll" />
+											</th>
+											<th ng-repeat="column in pageVariables['tempSelectedColumnsList']" scope="col" class="classicTableHeaderCell">
+												{{column['label']}}
+											</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr ng-repeat="accWrap in accountWrapperList">
+											<td data-label="Select Account" class="classicTablebodyCell" style="text-align: center; width: 3.5rem;">
+												<input type="checkbox" ng-change="selectDeselectAccount(accWrap)" ng-model="accWrap['isSelected']" id="{{'ccb' + $index}}" name="{{'ccb' + $index}}" />
+											</td>
+											<td ng-repeat="column in pageVariables['tempSelectedColumnsList']" class="classicTablebodyCell">
+												{{accWrap[column['apiName']]}}
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div ng-show="accountWrapperList.length == 0" class="errorPageMsgDiv" style="border-color: #ffb75d;">
+								<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+									<svg class="slds-icon" aria-hidden="true" style="fill: #ffb75d;">
+										<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+									</svg>
+								</span>
+								<div style="float: left; padding-top: 10px;">
+									{!$Label.No_matches_found}
+								</div>
+							</div>
+							<div ng-show="showColumnSelectionModal">
+								<section role="dialog" tabindex="-1" class="classicModal">
+									<div>
+										<header class="classicModalHeader">
+											<a ng-click="cancelColumnSelector()" title="Close">
+												<i class="fa fa-times" aria-hidden="true"></i>
+											</a>
+											<span>{!$Label.Select_fields_to_display}</span>
+										</header>
+										<div class="classicModalContent">
+											<div class="modalErrorMsg" style="border-color: #cc0000;" ng-show="showMaxColumnsError">
+												<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+													<svg class="slds-icon" aria-hidden="true" style="fill: #cc0000;">
+														<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+													</svg>
+												</span>
+												<div style="float: left; line-height: 250%">
+													<span style="font-weight: bold; color: #cc0000">Error:</span>
+													<span>{!$Label.Max_Columns_Error}</span>
+												</div>
+											</div>
+											<div style="display: inline-block; left: 50%; position: relative; margin-left: -45%">
+												<multi-select ng-model="pageVariables.selectedColumnsList"
+																available="pageVariables.availableColumnsList"
+																selected-label="{!$Label.Selected_Custom_Fields}"
+																available-label="{!$Label.Available_Custom_Fields}"
+																display-attr="label"
+																is-slds="isSLDS">
+												</multi-select>
+											</div>
+										</div>
+										<footer class="classicModalFooter">
+											<a class="btn" ng-click="saveColumnSelector()">{!$Label.Save}</a>
+			                        		<a class="btn" ng-click="cancelColumnSelector()">{!$Label.Cancel}</a>
+										</footer>
+									</div>
+								</section>
+								<div class="classicModalbackdrop"></div>
+							</div>
+						</apex:pageblock>
+					</div>
+	        	</div>
+	        	
+	        	<div ng-if="isSLDS" id="lightningDiv" class="container">
+	        		<div role="status" ng-show="isLoading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+						<span class="slds-assistive-text">Loading</span>
+						<div class="slds-spinner__dot-a"></div>
+						<div class="slds-spinner__dot-b"></div>
+					</div>
+					
+	        		<!-- Warning message for enabling Reference Prospector -->
+					<div class="custom-toast-container" ng-show="!isRefProspectEnabled && !showEnableProspectToast">
+						<div class="slds-notify slds-notify_toast slds-theme_warning custom-toast-width" role="alert">
+							<span class="slds-assistive-text">Info</span>
+							<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+								<svg class="slds-icon slds-icon_small" aria-hidden="true">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+								</svg>
+							</span>
+							<a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideToast()">
+								<svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+								</svg>
+								<span class="slds-assistive-text">Close</span>
+							</a>
+							<div class="slds-notify__content">
+								<h2 class="slds-text-heading_small" style="font-size: 16px;">
+									{!$Label.Enable_Ref_Prospect_Message}
+								</h2>
+							</div>
+						</div>
+					</div>
+	        		
+	        		<!-- Error message -->
+	        		<div class="custom-toast-container" ng-show="isError && isRefProspectEnabled">
+						<div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+							<span class="slds-assistive-text">Info</span>
+							<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+								<svg class="slds-icon slds-icon_small" aria-hidden="true">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+								</svg>
+							</span>
+							<a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideToast()">
+								<svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+								</svg>
+								<span class="slds-assistive-text">Close</span>
+							</a>
+							<div class="slds-notify__content">
+								<h2 class="slds-text-heading_small" style="font-size: 16px;">
+									<p ng-repeat="msg in errorMessage.split('\n')">
+					                    {{msg}}
+					                </p>
+								</h2>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Success message -->
+					<div class="custom-toast-container" ng-show="showSuccessToast && isRefProspectEnabled">
+						<div class="slds-notify slds-notify_toast slds-theme_success custom-toast-width" role="alert">
+							<span class="slds-assistive-text">Info</span>
+							<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+								<svg class="slds-icon slds-icon_small" aria-hidden="true">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+								</svg>
+							</span>
+							<a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideToast()">
+								<svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+								</svg>
+								<span class="slds-assistive-text">Close</span>
+							</a>
+							<div class="slds-notify__content">
+								<h2 class="slds-text-heading_small" style="font-size: 16px;">
+									{{successMessage}}
+								</h2>
+							</div>
+						</div>
+					</div>
+	        		<a style="margin: 1rem; float: right;" class="slds-button slds-button_neutral" ng-show="isSuccess || !isRefProspectEnabled" ng-click="returnToRefLeads()">{!$Label.back}</a>
+	        		
+	        		<div ng-show="isRefProspectEnabled && !isSuccess && !isLoading">
+        				<div class="slds-page-header">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-col">
+									<div class="slds-media slds-media_center">
+										<div class="slds-media__figure" style="margin-bottom: 0.5rem">
+											<span class="slds-icon_container">
+												<img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" style="height: 2.5rem; width: 2.5rem" />
+											</span>
+										</div>
+										<div class="slds-media__body">
+											<p class="slds-text-title_caps slds-line-height_reset">{!$Label.Create_Reference_Prospector_List}</p>
+											<h1 class="slds-page-header__title slds-truncate">
+												<a ng-click="toggleListViewMenu()" class="slds-button slds-button_reset slds-type-focus slds-truncate" aria-haspopup="true">
+													<span class="slds-grid slds-has-flexi-truncate slds-grid_vertical-align-center">
+														<span class="slds-truncate">{{pageVariables['selectedListView']['viewName']}}</span>
+														<svg class="slds-button__icon slds-button__icon_right slds-no-flex" aria-hidden="true">
+															<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+														</svg>
+													</span>
+												</a>
+												<div ng-show="pageVariables['showListViewMenu']" class="slds-dropdown slds-dropdown_left slds-dropdown_small" style="margin-left: 5rem; box-shadow: 0 3px 3px grey; z-index: 20">
+													<ul class="slds-dropdown__list" role="menu">
+														<li class="slds-dropdown__header slds-truncate" style="margin-left: 0" role="separator">
+															<span class="slds-text-title_caps">List Views</span>
+														</li>
+														<li ng-repeat="listView in listViewWrapperList" ng-class="{'slds-is-selected' : listView['isSelected']}" class="slds-dropdown__item" style="margin-left: 0" role="presentation">
+															<a role="menuitemcheckbox" aria-checked="true" ng-click="selectListView(listView)">
+																<span class="slds-truncate">
+																	<svg class="slds-icon slds-icon_selected slds-icon_x-small slds-icon-text-default slds-m-right_x-small" aria-hidden="true" style="fill: #1c77c7">
+																		<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+																	</svg>
+																	{{listView['viewName']}}
+																</span>
+																<svg ng-click="$event.stopPropagation(); deleteListView($index, listView['userMappingId'])" ng-show="listView['viewName'] != 'All Accounts'" class="deleteListViewIcon slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_medium slds-shrink-none" aria-hidden="true">
+																	<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#delete')}"></use>
+																</svg>
+															</a>
+														</li>
+													</ul>
+												</div>
+												<div ng-click="toggleListViewMenu()" ng-show="pageVariables['showListViewMenu']" class="listViewMenuBackdrop"></div>
+											</h1>
+										</div>
+									</div>
+								</div>
+								<div class="slds-col slds-no-flex slds-grid slds-align-bottom">
+									<div class="slds-grid slds-wrap">
+										<div class="slds-size_1-of-1">
+											<a ng-click="save()" style="float: right; margin-left: 5px" class="slds-button slds-button_brand">{!$Label.Save}</a>
+											<a ng-click="returnToRefLeads()" style="float: right; margin-left: 5px" class="slds-button slds-button_neutral">{!$Label.back}</a>
+										</div>
+										<div class="slds-size_1-of-1" style="padding-top: 5px">
+											<a ng-click="openColumnSelector()" class="slds-button slds-button_icon slds-button_icon-border-filled" title="{!$Label.Select_fields_to_display}" style="line-height: 1.75rem; float: right">
+												<svg aria-hidden="true" class="slds-button__icon">
+													<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#table')}"></use>
+												</svg>
+												<span class="slds-assistive-text">{!$Label.Select_fields_to_display}</span>
+											</a>
+											<list-view-filter process="pageVariables['listFilterProcessName']" objects-map="pageVariables['objectsMap']" is-multi-entity="pageVariables['isMultiEntity']" list-view-id="pageVariables['selectedListView']['userMappingId']" template-name="lightning" object-name="Accounts"></list-view-filter>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<div>
+							<div style="padding: 1rem 1.5rem;">
+								<div class="slds-form-element responsiveInput" ng-class="{'slds-has-error' : pageVariables['searchError']}">
+									<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+										<svg ng-show="!pageVariables['isTextSearchApplied']" class="slds-icon slds-input__icon slds-input__icon_right slds-icon-text-default" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#search')}"></use>
+										</svg>
+										<svg style="cursor: pointer;" ng-click="clearTextSearch()" ng-show="pageVariables['isTextSearchApplied']" class="slds-icon slds-input__icon slds-input__icon_right slds-icon-text-default" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+										</svg>
+										<input type="text" class="slds-input" ng-model="pageVariables['searchText']" ng-keypress="searchAccounts($event)" placeholder="{!$Label.Search}" />
+									</div>
+									<div ng-show="pageVariables['searchError']" class="slds-form-element__help">{!$Label.Atleast_two_characters}</div>
+								</div>
+							</div>
+							<div ng-show="accountWrapperList.length > 0" class="infScrollDivLightning" when-scrolled="showMoreAccounts()">
+								<table class="slds-table slds-table_bordered" style="table-layout: fixed">
+									<thead>
+										<tr>
+											<th scope="col" style="text-align: center; width: 4rem">
+												<div class="slds-form-element">
+													<div class="slds-form-element__control">
+														<span class="slds-checkbox">
+															<input type="checkbox" ng-change="selectAllAccounts(pageVariables.isAllAccountsSelected)" ng-model="pageVariables.isAllAccountsSelected" id="lcbAll" name="lcbAll" />
+															<label class="slds-checkbox__label" for="lcbAll">
+																<span class="slds-checkbox_faux"></span>
+															</label>
+														</span>
+													</div>
+												</div>
+											</th>
+											<th ng-repeat="column in pageVariables['tempSelectedColumnsList']" scope="col" style="white-space: normal;">
+												{{column['label']}}
+											</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr ng-repeat="accWrap in accountWrapperList">
+											<td scope="row" style="text-align: center;">
+												<div class="slds-form-element">
+													<div class="slds-form-element__control">
+														<span class="slds-checkbox">
+															<input type="checkbox" ng-change="selectDeselectAccount(accWrap)" ng-model="accWrap['isSelected']" id="{{'lcb' + $index}}" name="{{'lcb' + $index}}" />
+															<label class="slds-checkbox__label" for="{{'lcb' + $index}}">
+																<span class="slds-checkbox_faux"></span>
+															</label>
+														</span>
+													</div>
+												</div>
+											</td>
+											<td ng-repeat="column in pageVariables['tempSelectedColumnsList']" style="white-space: normal;">
+												<span style="font-size: 0.8rem;word-wrap: break-word;">{{accWrap[column['apiName']]}}</span>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div ng-show="accountWrapperList.length == 0" class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_warning" role="alert">
+								<span class="slds-icon_container slds-icon-utility-warning slds-m-right_x-small" title="Description of icon when needed">
+									<svg class="slds-icon slds-icon_x-small" aria-hidden="true">
+										<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+									</svg>
+								</span>
+								<h2>{!$Label.No_matches_found}</h2>
+							</div>
+							<div ng-show="showColumnSelectionModal">
+								<section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+									<div class="slds-modal__container">
+										<header class="slds-modal__header">
+											<a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="cancelColumnSelector()">
+												<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+													<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+												</svg>
+												<span class="slds-assistive-text">Close</span>
+											</a>
+											<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate slds-text-color_weak">{!$Label.Select_fields_to_display}</h2>
+										</header>
+										<div class="slds-modal__content slds-p-around_medium">
+											<div ng-show="showMaxColumnsError" style="background: rgb(194, 57, 52); padding: 0.5rem; color: rgb(255, 255, 255); font-size: 0.8rem; border-radius: 0.25rem; margin-bottom: 5px">
+												{!$Label.Max_Columns_Error}
+											</div>
+											<multi-select ng-model="pageVariables.selectedColumnsList"
+															available="pageVariables.availableColumnsList"
+															selected-label="{!$Label.Selected_Custom_Fields}"
+															available-label="{!$Label.Available_Custom_Fields}"
+															display-attr="label">
+											</multi-select>
+										</div>
+										<footer class="slds-modal__footer">
+											<a class="slds-button slds-button_neutral" ng-click="cancelColumnSelector()">{!$Label.Cancel}</a>
+											<a class="slds-button slds-button_brand" ng-click="saveColumnSelector()">{!$Label.Save}</a>
+										</footer>
+									</div>
+								</section>
+								<div class="slds-backdrop slds-backdrop_open"></div>
+							</div>
+						</div>
+	        		</div>
+	        	</div>
+	        </div>
+		</div>
+	</body>
+</html>
+</apex:page>

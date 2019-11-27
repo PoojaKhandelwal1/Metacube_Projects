@@ -1,0 +1,575 @@
+<!--
+    * ReferenceEdge
+    * 
+    * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+    *
+    * @company : Point of Reference, Inc.
+    * @website : www.point-of-reference.com
+    *
+    * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+    * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+    * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+    * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+    * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+    * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+    * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+    * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+    * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+    * WRITTEN CONSENT FROM COMPANY.
+-->
+<apex:page controller="DataCollectorCustomController" showHeader="{!!isSLDS}" sidebar="false"            
+standardstylesheets="false"
+applyHtmlTag="{!!isSLDS}"
+applyBodyTag="false"
+docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" lang="en">
+        <head>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>            
+            <apex:includeScript value="{!URLFOR($Resource.AngularJS)}"/>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.BootstrapFiles, 'bootstrap.css')}"/>
+            <script src="{!URLFOR($Resource.NGDraggableJS)}"></script>
+            
+            <!-- Add POR_ModalLoader Component-->
+            <c:POR_ModalLoader id="PORLoader"/>
+            
+            <style>
+                .dropzone{
+                    background-color: #fff;
+                    border: 1px solid #ddd;
+                    padding: 3px;
+                    z-index : -999;
+                    
+                }
+                
+                .contentDiv {
+                    margin: 5px 0 0 30px;
+                    float: left;
+                    width: 51%;
+                    text-align: center;
+                    padding: 3px;
+                    max-height: 30px;
+                    background-color: #F0F8FC;
+                    color: #253045;
+                }
+                
+                .crossBtn {
+                    float: right;
+                    background-color: #F0F8FC;
+                    width: 4%;
+                    cursor: pointer;
+                    font-weight: bold;
+                }
+
+                div#allFields{
+                    width: 91%;
+                }
+                .contentSec {
+                    background: #e6e6e621;
+                    height: 200px;   
+                    overflow-y: auto;
+                    margin:10px;
+                    padding:15px;
+                }
+                
+                .addFields {
+                    float: left;
+                 //   width: 96%;
+                    background: #F0F8FC;
+                    color: #253045;
+                    height: 20px;
+                }
+
+                body {
+                    font-size: 115%;
+                }
+
+                .errorMessages {
+                    display: block;
+                    list-style-type: disc;
+                    margin: 0 10px 15px 10px;
+                    padding: 8px 35px 8px 30px;
+                    color: #B94A48;
+                    background-color: #F2DEDE;
+                    border: 2px solid #EED3D7;
+                    border-radius: 4px;
+                    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+                }
+
+                .slds .slds-page-header {
+                    padding: 10px 24px 12px !important;    
+                }
+
+                .classicHeader {
+                    height: 34px;
+                    background-color: #eff2f7;
+                    margin-left: 1%;
+                    width: 98%;
+                    border-radius: 4px;
+                }
+
+                .classicBtnClass{
+                    margin: -0.2px;
+                    padding: 4px 6px;
+                    border: 1px solid #b5b5b5;
+                    border-bottom-color: #7f7f7f;
+                    background: #e8e8e9 url(/img/alohaSkin/btn_sprite.png) repeat-x right top;
+                    font-weight: bold;
+                    font-size: 0.88em;
+                    -moz-border-radius: 3px;
+                    -webkit-border-radius: 3px;
+                    border-radius: 3px;
+                }
+                
+                #secHeader {
+                    margin-bottom: -11px;
+                    height : 30px;
+                    background: #FFFFFF;
+                    color: #253045;"
+                }
+                
+                .SelectFields {
+                    text-align: center;
+                    padding: 8px;
+                    border: .1px solid lightgrey;
+                    background-color: #F0F8FC;
+                    cursor: pointer;
+                    color: #253045;
+                }
+                .warningMessages {
+                    display: block;
+                    list-style-type: disc;
+                    margin: 0 10px 15px 10px;
+                    padding: 8px 35px 8px 30px;
+                    color: #381414;
+                    background-color: #fdd4b8;   
+                    border-radius: 4px;
+                    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+                }
+            </style>
+
+            <!--
+            *   REF-1934    (Page Scroll on mouse movement )
+            *   Modified By : Rajneesh (sept 19,2018)
+            -->               
+            <script type="text/javascript">
+                $(document).on('mousemove', function(e) {
+                    var y = e.clientY;
+                    var h = $(window).height();
+                    var n = h - y;  
+                    
+                    if (n < 40) {
+                        var t = parseFloat($(window).scrollTop());                        
+                        $('html,body').animate({scrollTop:t + 100 + 'px'},75);
+                    } else {
+                        $('html,body').stop();
+                    }
+                    
+                    if (n > 600) {                   
+                        var t = parseFloat($(window).scrollTop());
+                        $('html,body').animate({scrollTop:t - 100 + 'px'},75);
+                    }
+                });
+            </script>
+
+            <script type="text/javascript">              
+                var formName = '';
+                var app = angular.module('my-app', ['ngDraggable']);
+                var control = app.controller('my-controller', function($scope, $q, $window) {
+                    
+                    $scope.isSLDS = {!isSLDS};
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.reportName = '{!JSENCODE(formName)}';
+                    formName = $scope.reportName;
+                    $scope.reportHeaderName = '{!JSENCODE(formHeader)}';
+                    $scope.reportSubHeaderName = '{!JSENCODE(subHeader)}';
+                    $scope.sectionInfo = '{!JSENCODE(formDeatil)}';
+                    $scope.isWarning = false;
+                    $scope.isEdit = false;
+                    
+                    if($scope.reportName != '') {
+                        $scope.isEdit = true;
+                    }                    
+
+                    if($scope.sectionInfo != '') {
+                        $scope.sectionInfo = JSON.parse('{!JSENCODE(formDeatil)}');  
+                    } 
+                    
+                    $scope.dmRecordList = '{!JSENCODE(dmRecordList)}';
+                    console.log('section information : ',$scope.sectionInfo);
+                    $scope.droppedObjects = [];                     
+                    $scope.displayData = [];
+                    $scope.addSection = [];
+                    
+                    var fieldVal = JSON.parse('{!JSENCODE(fieldInfo)}');
+                    var requiredFieldsToAdd = JSON.parse('{!JSENCODE(requiredFields)}');
+                    
+                    for (i in fieldVal ) {
+                        $scope.displayData.push(fieldVal[i]);
+                    }
+                    $scope.displayData.splice(-1,1)
+                    
+                    //this function will be called on page load
+                    $scope.intialFunction = function() {
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.DataCollectorCustomController.getPermissionsMessage}',
+                        function(result, event) {
+                            if (result != '') {
+                                $scope.isError = true;
+                                $scope.errorMsg = result;
+                                $scope.$apply();
+                            }
+                        });
+                    }
+                    
+                    $scope.onDragCompleteRemove = function(data,evt) {
+                        var index = $scope.displayData.indexOf(data);
+                        if (index > -1) {
+                            $scope.displayData.splice(index, 1);
+                        }
+                    }
+                    
+                    $scope.addElement = function() { 
+                        var size = $scope.addSection.length;                       
+                        $scope.addSection.push({Name:"", id : size, Field : []});                           
+                    }
+                    
+                    $scope.onDropSecComplete = function(data, evt, secDetail) {                        
+                        $scope.addSection[secDetail.id].Field.push({fieldName : data.fLabel, fieldAPIName : data.fAPIName, fieldType : data.fType, fieldPosition : $scope.addSection[secDetail.id].Field.length});
+                    }
+                    
+                    $scope.onDragSecComplete = function(data, secDetail) {  
+                        $scope.displayData.push({fAPIName : data.fieldAPIName, fLabel : data.fieldName, fType : data.fieldType});
+                        var index = data.fieldPosition;
+                        var initVal = 0;
+                        $scope.addSection[secDetail.id].Field.splice(index, 1);
+                        angular.forEach(
+                        $scope.addSection[secDetail.id].Field,
+                        function(ar) {
+                            ar.fieldPosition = initVal ;
+                            initVal ++;
+                        });
+                    }
+                    
+                    $scope.removeSection = function(sectn){
+                        var secIndex = sectn.id;
+                        
+                        if($scope.addSection[sectn.id].Field.length > 0) {
+                            
+                            angular.forEach(
+                            $scope.addSection[sectn.id].Field,
+                            function(fld){
+                                $scope.displayData.push({fAPIName : fld.fieldAPIName, fLabel : fld.fieldName, fType : fld.fieldType});                                   
+                            }
+                            );                            
+                        }
+                        
+                        $scope.addSection.splice(secIndex,1);
+                        var indx = 0;
+                        angular.forEach(
+                        $scope.addSection,
+                        function(sec) {
+                            sec.id = indx;
+                            indx++;
+                        }
+                        );                        
+                    }
+                    
+                    // In case of edit get form filled
+                    if($scope.sectionInfo.length > 0) {
+                        
+                        angular.forEach(
+                        $scope.sectionInfo,
+                        function(secInfo) {
+                            $scope.addSection.push({Name:secInfo.Name, id : secInfo.id, Field : []});
+                            console.log('@@## :- ',$scope.addSection);
+                            if(secInfo.field.length > 0) {
+                                angular.forEach(
+                                secInfo.field,
+                                function(data) {
+                                    $scope.addSection[secInfo.id].Field.push({fieldName : data.fieldName, fieldAPIName : data.fieldAPIName, fieldType : data.fieldType, fieldPosition : data.fieldPosition});                                    
+                                }
+                                );
+                            }
+                        }
+                        );
+                    }                    
+                    
+                    var saveResult = false;
+                    
+                    $scope.submit = function() {
+                        $scope.isError = false;
+                        var checkVal = true;
+                    
+                        var requiredFieldCount = 0;
+
+                        if($scope.reportName == '' || $scope.reportHeaderName == '' || $scope.reportSubHeaderName == '') {                          
+                            $scope.isError = true;
+                            checkVal = false;
+                            $scope.errorMsg = '{!$Label.Please_complete_all_required_fields}';                           
+                            } else if($scope.addSection.length < 1 ) {
+                            $scope.isError = true;
+                            checkVal = false;
+                            $scope.errorMsg = '{!$Label.No_section_is_added}';
+                        }                      
+                        else{
+                            
+                            angular.forEach(
+                            $scope.addSection,
+                            function(secInfo) {
+                                
+                                if(secInfo.Name == '') {
+                                    $scope.isError = true;
+                                    checkVal = false;
+                                    $scope.errorMsg = '{!$Label.Header_Empty_Error}' +' '+(secInfo.id+1);
+                                    } else if(secInfo.Field.length < 1) {
+                                    $scope.isError = true;
+                                    checkVal = false;
+                                    $scope.errorMsg = '{!$Label.Section}'+' " '+secInfo.Name+' " '+'{!$Label.Section_Include_Message}';
+                                    }else{
+                                    angular.forEach(
+                                    secInfo.Field,
+                                    function(item) {
+                                        
+                                        if(requiredFieldsToAdd.includes(item.fieldAPIName)) {
+                                            requiredFieldCount ++;
+                                        }                                        
+                                    }
+                                    );  
+                                                              
+                                }                                
+                            }
+                            );                            
+                            
+                            // REF-1855
+                            if(requiredFieldsToAdd.length == requiredFieldCount) {
+                                saveResult = true;
+                                } else if(checkVal) {
+                                saveResult = false;
+                                $scope.isError = true;
+                                $scope.errorMsg = '{!$Label.Required_Field_List}'+' ' +'{!JSENCODE(requiredFieldName)}';
+                            }   
+
+                            if(saveResult && !$scope.isError) {
+                                
+                                Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.DataCollectorCustomController.saveResult}',
+                                angular.toJson($scope.addSection), $scope.reportName, $scope.reportHeaderName, $scope.reportSubHeaderName, $scope.dmRecordList,
+                                function(result, event) {
+                                    
+                                    if(result == 'SUCCESS') { 
+                                                                           
+                                        if($scope.isSLDS) {
+                                            sforce.one.navigateToURL('{!$Page.DataCollectorManagePage}?customSettingId={!JSENCODE(customSettingId)}', true);
+                                        }else {
+                                            window.location.href = '{!$Page.DataCollectorManagePage}?customSettingId={!JSENCODE(customSettingId)}';
+                                        }                                        
+                                   } else {
+                                   
+                                        $scope.isError = true;
+                                        $scope.errorMsg = result;
+                                        $scope.$apply();
+                                    }                                   
+                                }
+                                
+                                );
+                                
+                            }                            
+                        }
+                    }
+                    
+                    $scope.checkEdit = function() {
+                        
+                        if($scope.isEdit) {
+                            $scope.isWarning = true;
+                        }
+                    }
+                    
+                    $scope.cancel = function() {
+                        
+                        if($scope.isSLDS) {
+                            sforce.one.navigateToURL('{!$Page.DataCollectorManagePage}?customSettingId={!JSENCODE(customSettingId)}', true);
+                        }else {
+                            window.location.href = '{!$Page.DataCollectorManagePage}?customSettingId={!JSENCODE(customSettingId)}';
+                        }
+                    }
+                });
+                </script>
+                    
+                </head>
+                <body ng-app="my-app" class="slds">
+                    <div class="container-fluid" ng-controller="my-controller"  ng-cloak="ng-cloak" ng-init="intialFunction();">
+                        
+                        <!--        Section to show error message    (Lightning And Classic)---->
+                        <div class="errorMessages" ng-show="isError && !isSLDS"> <ul><li>{{errorMsg}}</li></ul> </div>                 
+                        
+                        <div ng-show="isError && isSLDS" class="slds-notify_container toast-msg">
+                            <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                                <span class="slds-assistive-text">{!$Label.Error}</span>
+                                <button class="slds-button slds-button--icon-inverse slds-notify__close">
+                                    <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;" style="cursor:pointer">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                    </svg>
+                                    <span class="slds-assistive-text">{!$Label.Close}</span>
+                                </button>
+                                <div class="slds-notify__content slds-grid">
+                                    <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+                                    </svg>
+                                    <div class="slds-col slds-align-middle">
+                                        <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{errorMsg}}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!--      END    ---  Section to show error message    (Lightning And Classic)---->
+                        <!--        Warning Section             -->
+
+                        <div class="warningMessages" ng-show="isWarning && !isSLDS"> <ul><li>{!$Label.DC_Form_Rename_Warning}</li></ul> </div>
+
+                        <div ng-show="isWarning && isSLDS" class="slds-notify_container toast-msg">
+                            <div class="slds-notify slds-notify--toast slds-theme--success" role="alert">
+                                <button class="slds-button slds-button--icon-inverse slds-notify__close">
+                                    <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isWarning = false;" style="cursor:pointer">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                    </svg>
+                                    <span class="slds-assistive-text">{!$Label.Close}</span>
+                                </button>
+                                <div class="slds-notify__content slds-grid">
+                                    <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+                                    </svg>
+                                    <div class="slds-col slds-align-middle">
+                                        <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{!$Label.DC_Form_Rename_Warning}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!--        End Warning section     -->
+                        <!--        Header Section   For Lightning     -->
+                        <div class="slds-page-header" ng-show="isSLDS">
+                            <div class="slds-grid">
+                                <div class="slds-col slds-has-flexi-truncate">
+                                    <div class="slds-media slds-no-space slds-grow">
+                                        <div class="slds-media__figure">
+                                            <apex:image url="{!URLFOR($Resource.RefEdge_Square_Icon,'icon-small.png')}" style="max-width: 50px;"/>                               
+                                        </div>
+                                        <div class="slds-media__body">
+                                            <nav>
+                                                <ol class="slds-breadcrumb slds-line-height_reset">
+                                                    <li class="slds-breadcrumb__item">
+                                                        <span style="font-size:25px;">{!$Label.Data_Collector}</span>
+                                                    </li>
+                                                </ol>
+                                            </nav>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+                                    <div class="slds-button-group buttonStyle" role="group" style="float: right;">
+                                        <button class="slds-button slds-button--neutral" ng-click="addElement();">{!$Label.Add_Section}</button>
+                                        <button class="slds-button slds-button--neutral" ng-click="cancel()">{!$Label.Cancel}</button>
+                                        <button class="slds-button slds-button--neutral" ng-click="submit()">{!$Label.Save}</button>
+                                    </div>
+                                </div>                        
+                            </div>  
+                        </div>   
+                        
+                        <div class="classicHeader col-sm-12 col-xs-12 col-md-12 col-lg-12" ng-show="!isSLDS">
+                            <div style="float:left;">
+                                <apex:image url="{!URLFOR($Resource.RefEdge_Square_Icon,'icon-small.png')}" style="max-width: 32px; margin-left: -37%;"/>
+                                
+                            </div>
+                            <div style="float:left;margin-top: 4px;">
+                                <span style="font-size:18px;">{!$Label.Data_Collector}</span>
+                            </div>
+                            
+                            <div style="text-align: center; padding:4px; font-family:sans-serif;">
+                                <input type="button" value="{!$Label.Add_Section}" ng-click="addElement()" class="classicBtnClass"/>                            
+                                <input type="button" value="{!$Label.Cancel}" ng-click="cancel()" class="classicBtnClass"/>
+                                <input type="button" value="{!$Label.Save}" ng-click="submit()" class="classicBtnClass"/>
+                            </div>
+                        </div>
+                        
+                        <br/>  
+                        
+                        <!--        Header Section   For Classic        -->
+                        
+                        
+                        <!--        end of Header Section        -->
+                        <!--       Div for form information        -->
+                        <div class="row">
+                            <div class="col-sm-12 col-xs-12 col-md-12 col-lg-12" style=" float:left; width: 94%;">
+                                <div class="col-sm-12 col-md-4 col-lg-4" style=" float:left;">                            
+                                    <span style="color: #706e6b;">{!$Label.Form_Name}<span style="color:red">*</span></span><br/>   
+                                    <input type="text" class="form-control" name="msg" ng-model="reportName" ng-click="checkEdit();"/>                           
+                                </div>
+                                
+                                <div class="col-sm-12 col-md-4 col-lg-4" style=" float:left;">
+                                    <span style="color: #706e6b;">{!$Label.Form_Header}<span style="color:red">*</span></span><br/>   
+                                    <input type="text" class="form-control" name="msg" ng-model="reportHeaderName"/>  
+                                </div>
+                                
+                                <div class="col-sm-12 col-md-4 col-lg-4" style=" float:left;">
+                                    <span style="color: #706e6b;">{!$Label.Form_Sub_Header}<span style="color:red">*</span></span><br/>   
+                                    <input type="text" class="form-control" name="msg" ng-model="reportSubHeaderName"/>  
+                                </div>
+                            </div>                    
+                        </div>
+                        <hr/>
+                        <div style="padding-left: 0.9%; margin-top: -0.86%; margin-bottom: 0.9%; color: #706e6b;">                    
+                            {!$Label.Drag_and_Drop_Message1} <br/>
+                            {!$Label.Drag_and_Drop_Message2} <br/>
+                            {!$Label.Drag_and_Drop_Message3} <br/>             
+                        </div>
+                        <!--        Draggable Section   -->
+                        <div class="row">
+                            <div class="col-sm-3 col-xs-3 col-md-3 col-lg-3" style="margin-left:1%">
+                                <div style="padding-left: 0.9%; margin-top: 0.86%; margin-bottom: 0.9%; color: #706e6b; font-size: initial;">                    
+                                    {!$Label.Available}  {!$Label.Fields}                                     
+                                </div>
+                                <div id="allFields">                           
+                                    <div ng-repeat="filter in displayData | orderBy : 'fLabel'">
+                                        <div ng-drag="true" ng-drag-data="filter" ng-drag-success="onDragCompleteRemove($data,$event)">
+                                            <div class="SelectFields">{{filter.fLabel}}</div>
+                                        </div>
+                                    </div>                            
+                                </div> 
+                            </div>
+                            <div class="col-sm-8 col-xs-8 col-md-8 col-lg-8">
+                                <div>
+                                    <div ng-repeat="section in addSection">
+                                        <div class="contentSec">
+                                            <div>
+                                                <div style="Width:92%;">
+                                                    <input id="secHeader" type="text" class="form-control" ng-model="section.Name" placeholder="Section Header"/>
+                                                </div>
+                                                <div style="float:right; position: relative; top: -18px;color: red;cursor: pointer;" ng-click="removeSection(section);" ng-if="section.id != 0">{!$Label.Remove}</div><br/>
+                                            </div>
+                                            <div ng-drop="true" ng-drop-success="onDropSecComplete($data, $event, section)" style="height:120px; display: block;">                            
+                                                <div ng-repeat="obj in section.Field" class="contentDiv">
+                                                    <div style="font-family: sans-serif;color: black;width:100%">
+                                                        <div class="addFields">{{obj.fieldName}}</div>
+                                                        <div class="crossBtn" ng-click="onDragSecComplete(obj, section)">X</div>
+                                                    </div>                                 
+                                                </div>          
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>            
+                </body>
+                
+            </html>
+        </apex:page>

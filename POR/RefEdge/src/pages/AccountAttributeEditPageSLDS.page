@@ -1,0 +1,491 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page id="pageId" standardController="Account_Attribute__c" extensions="AccountAttributeEditControllerSLDS"
+            showHeader="false"
+            sidebar="false"
+            standardstylesheets="false"
+            applyHtmlTag="false"
+            applyBodyTag="false"
+            docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/custom-slds.css')}" />   
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            <style>
+            	.slds {
+                	background: white !important;
+                }
+				.tooltip:hover .tooltipHelpShow {
+					display : inline;
+					bottom: 65px;
+					position: absolute;
+				}
+				.tooltip:hover .tooltipHelpHide {
+					display : none;
+					bottom: 65px;
+					position: absolute;
+				}
+
+				.tooltipHelpShow {
+					display : none;
+					bottom: 65px;
+					line-height: 0.95rem;
+                    position: absolute;
+				}
+				.tooltipHelpHide {
+					display : inline;
+					bottom: 65px;
+					line-height: 0.95rem;
+                    position: absolute;
+				}
+				.slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux:after, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux:after {
+					border-color: #7d8894; 
+				}
+				.slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux {
+					background-color: white;
+				}
+                @media only screen and (max-width: 500px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    //width: 90%;
+	                    max-width: 380px;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	width: 78px;
+    					margin: 10px auto 0 auto;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 42%;
+	                   width:15%;
+	                }
+	                .container {
+	                	padding:12px;
+	                }
+				}
+				@media only screen and (min-width: 501px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    width: 50%;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	float: right;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 47%;
+	                   width:4%;
+	                }
+	                .container {
+	                	margin-top: 15px;
+	                	margin-left: 70px;
+	                }
+				}
+				.slds-notify--toast {
+                	min-width: auto !important;
+                	padding: 15px 12px;
+                }  
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.7;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.7;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .container1 {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+            	function redirect(accId) {
+            		sforce.one.navigateToSObject(accId, 'detail');
+            	}
+                var accAttributeApp = angular.module('accAttributeApp', []);
+                var accAttributeCon = accAttributeApp.controller('accAttributeCon', function($scope, $location, $q) {
+                    $scope.accAttId = '{!JSENCODE(accAttId)}';
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.isallDataFetched = false;
+                    $scope.isloading = true;
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.showInheritableError = false;
+                    
+                    //this function will be called on page load
+                    $scope.intialFunction = function() {
+					    if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+                        
+                        	//fetching all the data initially related to attribute
+                            $scope.fetchInfo().then(function(result) {
+                                $scope.info = result;
+                                $scope.isloading = false;
+                                $scope.isallDataFetched = true;
+                                console.log($scope.info);
+                                
+                                //check for CRUD and FLS permissions
+                                $scope.checkPermission().then(function(result) {
+                                    
+                                    if (result != '') {
+                                        $scope.isError = true;
+                                        $scope.errorMsg = result;
+                                    } else {
+                                        $scope.isError = false;
+                                    }
+                                });
+                            });
+                        }
+                    }
+                    //remoteAction call
+                    $scope.save = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AccountAttributeEditControllerSLDS.save}', 
+                            angular.toJson($scope.info), 
+                            function(result, event) {
+                            	deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    //remoteAction call
+                    $scope.deleteAtt = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AccountAttributeEditControllerSLDS.removeAttributes}', 
+                            angular.toJson($scope.info), 
+                            function(result, event) {
+                               	deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    //remoteAction call
+                    $scope.fetchInfo = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AccountAttributeEditControllerSLDS.fetchInfo}', 
+                            $scope.accAttId,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    //remoteAction call
+                    $scope.checkPermission = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AccountAttributeEditControllerSLDS.getPermissionsMessage}',
+                            function(result, event) {
+                                console.log(result);
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.checkInheritable = function() {
+                    	
+                    	if (!$scope.info.isInheritableNew) {
+                    		$scope.showInheritableError = true;
+                    	} else {
+                    		$scope.isloading = true;
+                    		
+                    		$scope.save().then(function(result) {
+                    			$scope.isloading = false;
+	                        	
+	                        	if (result != '') {
+	                        		$scope.isError = true;
+	                        		$scope.errorMsg = result;
+	                        		$scope.info.isInheritableNew = true;
+	                        	} else {
+	                        		redirect($scope.info.accountId);
+	                        	}
+                    		});
+                    	}
+                    }
+                    
+	                //when you select yes option
+	                $scope.yes = function() {
+	                	$scope.isloading = true;
+	                	$scope.showInheritableError = false;
+	                	
+	                	//update account attribute and delete related contact attribute and content attribute
+                        $scope.deleteAtt().then(function(result) {
+                        	$scope.isloading = false;
+                        	console.log(result);
+                        	if (result != '') {
+                        		$scope.isError = true;
+                        		$scope.errorMsg = result;
+                        		$scope.info.isInheritableNew = true;
+                        	} else {
+                        		$scope.save().then(function(result) {
+	                    			$scope.isloading = false;
+		                        	
+		                        	if (result != '') {
+		                        		$scope.isError = true;
+		                        		$scope.errorMsg = result;
+		                        		$scope.info.isInheritableNew = true;
+		                        	} else {
+		                        		redirect($scope.info.accountId);
+		                        	}
+	                    		});
+                        	}
+                        });
+	                }
+	                $scope.parseResult = function(result) {
+					
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                            return result;
+                        }
+                    }
+                    
+	                $scope.cancel = function() {
+	                	redirect($scope.info.accountId);
+	                }
+	                //when you select no option
+	                $scope.no = function() {
+	                	$scope.isloading = true;
+	                	$scope.showInheritableError = false;
+                   		$scope.save().then(function(result) {
+                			$scope.isloading = false;
+                     	
+	                     	if (result != '') {
+	                     		$scope.isError = true;
+	                     		$scope.errorMsg = result;
+	                     		$scope.info.isInheritableNew = true;
+	                     	} else {
+	                     		redirect($scope.info.accountId);
+	                     	}
+                		});
+	                }
+                });
+            </script>
+        </head>
+        <body class="slds" ng-app="accAttributeApp">
+        	<div class="container1">
+	            <form id="frmId" ng-controller="accAttributeCon" ng-cloak="ng-cloak" >
+	                <div ng-show="isFullLicenseAccessible == 'false'">
+	                    <svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+	                        <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	                    </svg>
+	                    {!$Label.User_License}
+	                </div>
+	                <div ng-init="intialFunction();" ng-show="isFullLicenseAccessible == 'true'">
+	                    <!-- header -->
+	                    <div class="slds-page-header" role="banner">
+						    <div class="slds-grid slds-wrap">
+						        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-media">
+						                <div class="slds-media__figure">
+						                    <img class="slds-icon slds-icon--large" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+						                </div>
+						                <div style="margin-top: 1%;">
+	                                    	<h1 class="slds-text-heading--medium" title="{!$Label.New_Attribute}">{!$Label.Account_Attribute_Edit}</h1>
+	                                    </div>
+						            </div>
+						        </div>
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-button-group buttonStyle" role="group">
+						                <button class="slds-button slds-button--neutral" ng-click="cancel();">{!$Label.Cancel}</button>
+						            </div>
+						        </div>
+						    </div>
+						</div>
+	                    <!-- toast -->
+	                    <div id="toast-msg" ng-show="isError" class="slds-notify_container">
+	                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+	                            <span class="slds-assistive-text">{!$Label.Error}</span>
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="no();" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;" ng-show="isError">{{parseResult(errorMsg)}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <!-- main block -->
+	                    <div class="container">
+		                    <div class="slds-grid slds-wrap">
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+		                      		<div class="slds-form-element">
+			                            <label class="slds-form-element__label form-element-label" style="margin-right: 0;">{!$ObjectType.Account_Attribute__c.fields.Account__c.Label}</label>
+										<div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Account_Attribute__c.fields.Account__c.inlineHelpText}' != null && '{!$ObjectType.Account_Attribute__c.fields.Account__c.inlineHelpText}' != ''">
+											<div class="slds-form-element ">
+												<div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+												<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+													<svg class="slds-button__icon" aria-hidden="true">
+														<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+													</svg>
+													<span class="slds-assistive-text">Help</span>
+												</p>
+												</div>
+											</div>
+											<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+												<div class="slds-popover__body">{!$ObjectType.Account_Attribute__c.fields.Account__c.inlineHelpText}</div>
+											</div>
+											<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+												<div class="slds-popover__body">{!$ObjectType.Account_Attribute__c.fields.Account__c.inlineHelpText}</div>
+											</div>
+										</div>
+			                            <div class="slds-form-element__control">
+			                                <span class="slds-form-element__static">
+			                                    <a style="cursor: pointer;" href="/{{info.accountId}}" target="_blank">{{parseResult(info.accountName)}}</a>
+			                                </span>
+			                            </div>
+			                        </div>
+			                        <div class="slds-form-element">
+			                            <label class="slds-form-element__label form-element-label" style="margin-right: 0;">{!$ObjectType.Account_Attribute__c.fields.Attribute__c.Label}</label>
+			                            <div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Account_Attribute__c.fields.Attribute__c.inlineHelpText}' != null && '{!$ObjectType.Account_Attribute__c.fields.Attribute__c.inlineHelpText}' != ''">
+											<div class="slds-form-element ">
+												<div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+												<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+													<svg class="slds-button__icon" aria-hidden="true">
+														<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+													</svg>
+													<span class="slds-assistive-text">Help</span>
+												</p>
+												</div>
+											</div>
+											<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+												<div class="slds-popover__body">{!$ObjectType.Account_Attribute__c.fields.Attribute__c.inlineHelpText}</div>
+											</div>
+											<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+												<div class="slds-popover__body">{!$ObjectType.Account_Attribute__c.fields.Attribute__c.inlineHelpText}</div>
+											</div>
+										</div>
+										<div class="slds-form-element__control">
+				                            <span class="slds-form-element__static">
+			                                    <a style="cursor: pointer;" href="/{{info.attId}}" target="_blank">{{parseResult(info.attName)}}</a>
+			                                </span>
+			                            </div>
+			                        </div>
+			                        <div class="slds-form-element">
+			                            <label class="slds-form-element__label form-element-label" style="margin-right: 0;">{!$ObjectType.Account_Attribute__c.fields.Inheritable__c.Label}</label>
+			                            <div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Account_Attribute__c.fields.Inheritable__c.inlineHelpText}' != null && '{!$ObjectType.Attribute__c.fields.Inheritable__c.inlineHelpText}' != ''">
+											<div class="slds-form-element ">
+												<div class="slds-form-element__icon slds-align-middle" style="margin-left: 16px;">
+												<p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+													<svg class="slds-button__icon" aria-hidden="true">
+														<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+													</svg>
+													<span class="slds-assistive-text">Help</span>
+												</p>
+												</div>
+											</div>
+											<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpHide" role="tooltip" id="help">
+												<div class="slds-popover__body">{!$ObjectType.Account_Attribute__c.fields.Inheritable__c.inlineHelpText}</div>
+											</div>
+											<div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+												<div class="slds-popover__body">{!$ObjectType.Account_Attribute__c.fields.Inheritable__c.inlineHelpText}</div>
+											</div>
+										</div>
+										<div class="slds-form-element__control">
+			                                <span class="slds-form-element__static">
+			                                    <label class="slds-checkbox" ng-show="!info.isInheritableDisabled">
+			                                        <input type="checkbox" ng-model="info.isInheritableNew" ng-change="checkInheritable();"/>
+			                                        <span class="slds-checkbox--faux"></span>
+			                                    </label>
+			                                    <label class="slds-checkbox" ng-show="info.isInheritableDisabled">
+			                                        <input type="checkbox" ng-model="info.isInheritableNew" disabled="disabled"/>
+			                                        <span class="slds-checkbox--faux"></span>
+			                                    </label>
+			                                </span>
+			                            </div>
+			                        </div>
+		               			</div>	
+		                  	</div>
+	                    </div>
+	                    <!-- pop-ups -->
+	                    <div ng-show="showInheritableError">
+		                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+		                        <div class="slds-modal__container">
+		                            <div class="slds-modal__header">
+		                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showInheritableError = false; info.isInheritableNew = true;">
+		                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+		                                    <span class="slds-assistive-text">Close</span>
+		                                </a>
+		                            </div>
+		                            <div class="slds-modal__content slds-p-around--medium">
+		                                <div>
+		                                    {!$Label.Account_Attribute_Edit_Msg}
+		                                </div>
+		                            </div>
+		                            <div class="slds-modal__footer">
+	                                    <button class="slds-button slds-button--brand" ng-click="yes()">{!$Label.Yes}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="no()">{!$Label.No}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="showInheritableError = false; info.isInheritableNew = true;">{!$Label.Cancel}</button>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <div class="slds-backdrop slds-backdrop--open"></div>
+	                    </div>
+	                </div>
+	                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+	                    <img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

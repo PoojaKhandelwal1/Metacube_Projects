@@ -1,0 +1,1025 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page id="pageId" controller="AddLabelAttributesControllerSLDS"
+            showHeader="false"
+            sidebar="false"
+            standardstylesheets="false"
+            applyHtmlTag="false"
+            applyBodyTag="false"
+            docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+            <apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+            <script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script>
+            <apex:includeScript value="/support/console/44.0/integration.js" />
+            <style>
+                .activity-div:after {
+                    content: "";
+                    position: absolute;
+                    right: -4px;
+                    top: 30px;
+                    width: 1px;
+                    bottom: 0;
+                    background: #ccc;
+                }
+                .slds {
+                	background: white !important;
+                }
+                @media only screen and (max-width: 500px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    //width: 90%;
+	                    max-width: 380px;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	width: 141px;
+    					margin: 10px auto 0 auto;
+	                }
+	                .buttonStyleNext {
+	                	width: 210px;
+    					margin: 10px auto 0 auto;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 42%;
+	                   width:15%;
+	                }
+				}
+				@media only screen and (min-width: 501px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    width: 50%;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	float: right;
+	                }
+	                .buttonStyleNext {
+	                	float: right;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 47%;
+	                   width:4%;
+	                }
+				}
+				.slds-notify--toast {
+                	min-width: auto !important;
+                	padding: 15px 12px;
+                }  
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.7;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.7;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .remove-flex{
+                    flex:none !important;
+                    webkit-flex:none !important;
+                }
+                
+                .showBtn {
+                	display: block;
+               	}
+               	.hideBtn {
+               		display: none;
+               	}
+               	.slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux{ 
+	                background-color: white !important;
+	                border-radius: 20%;
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux:after, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux:after{
+                	border-color : gray;
+                }
+                .slds {
+                	background: white !important;
+                }
+                .container {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+            	function redirect(url) {
+                    sforce.one.navigateToSObject(url, 'detail');
+            	}
+                var attributeApp = angular.module('attributeApp', ['angularMultiSelectList']);
+                var attributeCon = attributeApp.controller('attributeCon', function($scope, $location, $q) {
+                    $scope.info;
+                    $scope.objId = '{!JSENCODE(objId)}';
+                    $scope.PUMAccountId = '{!JSENCODE(PUMAccountId)}';
+                    $scope.refRefreshId = '{!JSENCODE(refRefreshId)}';
+                    $scope.pageNo = '{!JSENCODE(pageno)}';
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.isloading = true;
+                    $scope.isallDataFetched = false;
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.allAttMap = {};
+                    $scope.existingAttIds = [];
+                    $scope.showMemberCandidateModal = false;
+                    $scope.showCandidateModal = false;
+                    $scope.refMemberCandidateInfo = '';
+                    $scope.memberCandidateInfo = '';
+                    $scope.showFilterError = false;
+					//REF-2111
+                    $scope.isPreventSelectionOfMappedAttributes = '{!isPreventSelectionOfMappedAttributes}';
+                    //this function will be called on page load
+                    $scope.intialFunction = function() {
+                    
+                        if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+                        	//fetching all the data initially related to account, contact, content or filter
+                            $scope.fetchInfo().then(function(result) {
+                                $scope.info = result;
+                                $scope.isloading = false;
+                                $scope.isallDataFetched = true;
+                                angular.forEach(
+                                	$scope.info.existingAtts,
+                                	
+                                	function(item) {
+                                		$scope.existingAttIds.push(item.id);
+                                	}
+                                );
+                                //check for CRUD and FLS permissions
+                                $scope.checkPermission().then(function(result) {
+		                        	
+		                        	if (result != '') {
+		                            	$scope.isError = true;
+		                        		$scope.errorMsg = result;
+		                            } else {
+		                            	$scope.isError = false;
+		                            }
+		                      	});
+                            });
+                        }
+                    }
+                    //remoteAction call
+                    $scope.checkPermission = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddLabelAttributesControllerSLDS.getPermissionsMessage}',
+                            angular.toJson($scope.info), 
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    //remoteAction call
+                    $scope.fetchInfo = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddLabelAttributesControllerSLDS.fetchInfo}', 
+                            $scope.objId, $scope.PUMAccountId, $scope.refRefreshId, 
+                            function(result, event) {
+                                    deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.back = function() {
+                        $scope.redirectToBack();
+                    }
+                    //redirect page to respective record
+                    $scope.redirectToBack = function() {
+	                    
+	                    if ($scope.info.refRefresh != null) {
+	               			$scope.cancelProfileUpdate();
+	               		} else if ($scope.info.labelId != '') {
+	               			redirect($scope.info.labelId);
+	               		} else if ($scope.info.contentId != '') {
+	               			redirect($scope.info.contentId);
+	               		} else if ($scope.info.contactId != '') {
+	               			redirect($scope.info.contactId);
+	               		} else if ($scope.info.accountId != '') {
+	               			redirect($scope.info.accountId);
+	               		}
+	                }
+	                //function will check for attributes which are not linked to any Filter
+                    $scope.checkForFilter = function() {
+                        
+                    	$scope.checkPermission().then(function(result) {
+                        	$scope.isCreateContact = true;
+                        	
+                        	if (result != '') {
+                            	$scope.isError = true;
+	                        	$scope.errorMsg = result;
+                            } else {
+                            	$scope.info.currentAtts = [];
+                            	$scope.info.currentAttName = {};
+		                    	var isFilterPresent = true;
+		                    	
+		                        angular.forEach (
+			                       	$scope.allAttMap,
+			                       	function (value, key) {
+			                       		
+			                       		if (value.isSelected) {
+			                       			
+			                       			if (isFilterPresent && !value.isFilter) {
+			                       				isFilterPresent = false;
+			                       			}
+			                       			$scope.info.currentAtts.push(key);
+			                       			$scope.info.currentAttName[key] = $scope.parseResult(value.name);
+			                       		}
+			                       	}
+			                    );
+			                    
+			                    if ($scope.info.labelId != '') {
+                                    $scope.submit();
+                                } else {
+
+                                    if (!isFilterPresent) {
+                                        $scope.showFilterError = true;
+                                    } else {
+                                        $scope.showPopup();
+                                    }
+                                }
+                            }
+                      	});
+                    }
+                    //function will validate all data
+                    $scope.showPopup = function(isOnlySave) {
+                        $scope.refMemberCandidateInfo = '';
+	                    $scope.isOnlySave = isOnlySave;
+	                    $scope.showFilterError = false;
+	                    
+	                    //check that attribute is selected or not
+	                    if ($scope.info.currentAtts.length == 0) {
+	                        $scope.isError = true;
+	                        $scope.errorMsg = '{!$Label.No_Attribute_Selected}';
+	                    } else {
+	                    	$scope.isError = false;
+	                    }
+	                    
+	                    if (!$scope.isError) {
+		                    var accModalStr = '';
+                			
+                			//if contact is selected in shared contact scenario then check for selected accounts referenceable or candidate or nothing
+		                	if ($scope.info.contactId != '' && $scope.info.accConObj.isSharedContact && $scope.info.accConObj.selectedAccounts != null 
+		                				&& $scope.info.accConObj.selectedAccounts.length > 0) {
+		                		angular.forEach(
+			                       	$scope.info.accConObj.selectedAccounts,
+			                       	function (item) {
+			                       		
+			                       		if (!item.isReference && !item.isCandidate) {
+			                       			accModalStr += 'b';
+			                       		} else if (!item.isReference && item.isCandidate) {
+			                       			accModalStr += 'c';
+			                       		} 
+			                       	}
+			                    );
+			                    
+			                    if (accModalStr == '') {
+			                    	$scope.info.accConObj.isAccountReferenceProgramMember = true;
+			                    	$scope.info.accConObj.isAccountCandidate = false;
+			                    } else if (accModalStr.indexOf('b') >= 0) {
+			                    	$scope.info.accConObj.isAccountReferenceProgramMember = false;
+			                    	$scope.info.accConObj.isAccountCandidate = false;
+			                    } else if (accModalStr.indexOf('c') >= 0) {
+			                    	$scope.info.accConObj.isAccountReferenceProgramMember = false;
+			                    	$scope.info.accConObj.isAccountCandidate = true;
+			                    }
+		                	}
+		                	
+		                	//show popups in case of contact is not a reference program member or candidate
+		                	if ($scope.info.contactId != '') {
+		                	
+		                		if ($scope.info.contactId != '' && !$scope.info.accConObj.isContactReferenceProgramMember 
+		                					&& !$scope.info.accConObj.isContactCandidate) {
+		                			$scope.showMemberCandidateModal = true;
+		                			$scope.refMemberCandidateInfo = '{!$Label.Contact_Member_Candidate_Message}';
+	                			//show popups in case of contact is not a reference program member and if you want to convert it
+		                		} else if ($scope.info.contactId != '' && !$scope.info.accConObj.isContactReferenceProgramMember 
+		                					&& $scope.info.accConObj.isContactCandidate) {
+		                			$scope.showMemberCandidateModal = true;
+		                			$scope.refMemberCandidateInfo = '{!$Label.Change_Contact_Candidate_to_Member}';
+		                		} else {
+		                			if ($scope.info.accountId != '' && !$scope.info.accConObj.isAccountReferenceProgramMember 
+		                					&& !$scope.info.accConObj.isAccountCandidate) {
+		                				
+		                				if ($scope.info.accConObj.isContactReferenceProgramMember) {
+		                					$scope.showCandidateModal = true;
+		                					$scope.memberCandidateInfo = '{!$Label.Account_Member_Message}';
+		                				} else {
+		                					$scope.showCandidateModal = true;
+		                					$scope.memberCandidateInfo = '{!$Label.Account_Candidate_Message}';
+		                				}
+                					} else {
+                						$scope.submit();
+                					}
+		                		}
+		                	} else {
+		                		//show popups in case of account is not a reference program member or candidate
+		                		if ($scope.info.accountId != '' && !$scope.info.accConObj.isAccountReferenceProgramMember 
+		                					&& !$scope.info.accConObj.isAccountCandidate) {
+		                			$scope.showMemberCandidateModal = true;
+		                			$scope.refMemberCandidateInfo = '{!$Label.Account_Member_Candidate_Message}';
+	                			//show popups in case of account is not a reference program member and if you want to convert it
+		                		} else if ($scope.info.accountId != '' && !$scope.info.accConObj.isAccountReferenceProgramMember 
+		                					&& $scope.info.accConObj.isAccountCandidate) {
+		                			$scope.showMemberCandidateModal = true;
+		                			$scope.refMemberCandidateInfo = '{!$Label.Change_Account_Candidate_to_Member}';
+		                		} else {
+		                			$scope.submit();
+		                		}
+		                	}
+	                    }
+	                }
+	                
+	                //if you select the candidate option
+	                $scope.candidate = function() {
+	                	$scope.showMemberCandidateModal = false;
+	                	
+	                	if ($scope.info.accountId != '' && $scope.info.contactId == '') {
+		                	$scope.info.accConObj.makeAccountCandidate = true;
+		                	$scope.info.accConObj.makeAccountMember = false;
+		                	$scope.info.accConObj.makeContactMember = false;
+		                	$scope.info.accConObj.makeContactCandidate = false;
+		                	$scope.submit();
+	                	} else if ($scope.info.contactId != '') {
+	                		$scope.info.accConObj.makeContactMember = false;
+		                	$scope.info.accConObj.makeContactCandidate = true;
+		                	
+		                	if (!$scope.info.accConObj.isContactReferenceProgramMember) {
+		                		
+		                		//check for account also that account is reference program member or not
+	                			if ($scope.info.accountId != '' && !$scope.info.accConObj.isAccountReferenceProgramMember 
+	                					&& !$scope.info.accConObj.isAccountCandidate) {
+	                				$scope.showCandidateModal = true;
+                					$scope.memberCandidateInfo = '{!$Label.Account_Candidate_Message}';
+               					} else {
+               						$scope.submit();
+               					}
+           					}
+	                	}
+	                }
+	                //if you select member option
+	                $scope.member = function() {
+	                	$scope.showMemberCandidateModal = false;
+	                	if ($scope.info.accountId != '' && $scope.info.contactId == '') {
+	                	
+		                	$scope.info.accConObj.makeAccountCandidate = false;
+		                	$scope.info.accConObj.makeAccountMember = true;
+		                	$scope.info.accConObj.makeContactMember = false;
+		                	$scope.info.accConObj.makeContactCandidate = false;
+		                	$scope.submit();
+	                	} else if ($scope.info.contactId != '') {
+	                		$scope.info.accConObj.makeContactMember = true;
+		                	$scope.info.accConObj.makeContactCandidate = false;
+		                	
+		                	if (!$scope.info.accConObj.isContactReferenceProgramMember) {
+		                		
+		                		//check for account also that account is reference program member or not
+	                			if ($scope.info.accountId != '' && !$scope.info.accConObj.isAccountReferenceProgramMember 
+	                					&& !$scope.info.accConObj.isAccountCandidate) {
+	                				$scope.showCandidateModal = true;
+                					$scope.memberCandidateInfo = '{!$Label.Account_Member_Message}';
+               					} else {
+               						$scope.submit();
+               					}
+           					}
+	                	}
+	                }
+	                
+	                //on cancel option
+	                $scope.cancel = function() {
+	                	$scope.info.accConObj.makeAccountCandidate = false;
+	                	$scope.info.accConObj.makeAccountMember = false;
+	                	$scope.info.accConObj.makeContactMember = false;
+	                	$scope.info.accConObj.makeContactCandidate = false;
+	                	
+                		$scope.showMemberCandidateModal = false;
+                		$scope.showCandidateModal = false;
+                		$scope.showFilterError = false;
+	                }
+	                //when you select yes option
+	                $scope.yes = function() {
+	                	$scope.showCandidateModal = false;
+	                	
+	                	if ($scope.info.contactId != '' && $scope.info.accountId != '' && !$scope.info.accConObj.isAccountReferenceProgramMember 
+		                					&& !$scope.info.accConObj.isAccountCandidate) {
+		                					
+       						if ($scope.info.accConObj.isContactReferenceProgramMember || $scope.info.accConObj.makeContactMember) {
+       							$scope.info.accConObj.makeAccountCandidate = false;
+			                	$scope.info.accConObj.makeAccountMember = true;
+		                	} else {
+		                		$scope.info.accConObj.makeAccountCandidate = true;
+			                	$scope.info.accConObj.makeAccountMember = false;
+		                	}			
+       					}
+       					$scope.submit();
+	                }
+	                //when you select no option
+	                $scope.no = function() {
+	                	$scope.showCandidateModal = false;
+	                	
+	                	if ($scope.info.contactId != '' && $scope.info.accountId != '' && !$scope.info.accConObj.isAccountReferenceProgramMember 
+		                					&& !$scope.info.accConObj.isAccountCandidate) {
+       						$scope.info.accConObj.makeAccountCandidate = false;
+		                	$scope.info.accConObj.makeAccountMember = false;
+       					}
+       					$scope.submit();
+	                }
+	                
+	                //function to save all data
+                    $scope.submit = function() {
+                        $scope.isloading = true;
+                        
+                        $scope.save().then(function(result) {
+                            $scope.isloading = false;
+                            
+                            if (result.indexOf('Error: ') >= 0) {
+                            	$scope.isError = true;
+                            	$scope.errorMsg = result;
+                            } else {
+                            	console.log('saved');
+                            	$scope.redirectToBack();
+                            }
+                        });
+                    }
+                    //remoteAction called
+                    $scope.save = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddLabelAttributesControllerSLDS.saveAttributes}', 
+                            angular.toJson($scope.info), 
+                            function(result, event) {
+                            	deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.parseResult = function(result) {
+					
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                            return result;
+                        }
+                    }
+                    
+                    $scope.deleteAttribute = function(attWrapper) {
+                    	$scope.isloading = true;
+                    	
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddLabelAttributesControllerSLDS.deleteAttribute}',
+                            attWrapper.accConAttributeId,
+                            $scope.info.accountId,
+                            $scope.info.contactId,
+                            $scope.info.refRefresh.quarantined,
+                            $scope.info.refRefresh.id,
+                            function(result, event) {
+                            	
+                            	if (result == 'success') {
+	                            	$scope.intialFunction();
+                            	} else {
+                            		$scope.isloading = false;
+                            		console.log(result);
+                            	}
+                            	$scope.$apply();
+                            },
+                            {escape: true}
+                        );
+                        
+                    }
+                    
+                    $scope.cancelProfileUpdate = function() {
+                    	var url;
+                    	
+                    	if ($scope.PUMAccountId != null && $scope.PUMAccountId != '') {
+	                    	url = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+									+ '&userId=' + $scope.info.refRefresh['ownerId']
+									+ '&accountId=' + $scope.PUMAccountId
+									+ '&helpoverlay=false'
+									+ '&pageno=' + $scope.pageNo;
+                    	} else {
+                    		url = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+									+ '&userId=' + $scope.info.refRefresh['ownerId']
+									+ '&accountId=' + $scope.info.refRefresh['accountId']
+									+ '&helpoverlay=false'
+									+ '&pageno=' + $scope.pageNo;
+                    	}
+
+                        if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                            sforce.console.openPrimaryTab(null, url, true, null, null, null);
+                            sforce.console.fireEvent('closeTab', 'closeTab', $scope.getPTabId);
+                        } else if ((typeof sforce != 'undefined') && sforce != null && !sforce.console.isInConsole()) {
+                            sforce.one.navigateToURL(url, true);
+                        }
+                    }
+
+                    $scope.getPTabId = function() {
+                        sforce.console.getEnclosingPrimaryTabId($scope.closePTab);
+                    }
+
+                    $scope.closePTab = function(result) {
+                        sforce.console.closeTab(result.id);
+                    }
+                });
+                //directive to create tree of attributes
+                attributeApp.directive("rootAtt", function($q, $compile) {
+                    return {
+                        restrict: "E",
+                        scope: {
+                            roots: "=",
+                            allAttMap: "=",
+                            existingAttIds: "=",
+							isPreventSelectionOfMappedAttributes: "="
+                        },
+                        //create tree nodes for root attributes
+                        template: '<div class="slds-tree_container" role="application">'+
+                            '<ul class="slds-tree" role="tree" aria-labelledby="treeheading">'+
+                                '<li id="tree0-node0" role="treeitem" aria-level="1" ng-repeat="root in rootAtts">'+
+                                    '<div class="slds-tree__item">'+
+                                        '<button class="slds-button slds-button--icon slds-m-right--x-small" style="width:15px;" ng-click="showAttributes(root.id, root.parent)">'+
+                                        	'<i ng-show="root.hasChild && !root.isExpand" class="fa fa-chevron-right" style="color:#16325c" aria-hidden="true"></i>' +
+                                        	'<i ng-show="root.hasChild && root.isExpand" class="fa fa-chevron-down" style="color:#16325c" aria-hidden="true"></i>' +
+                                        '</button>'+
+                                        '<a tabindex="-1" role="presentation" class="slds-truncate">{{root.name}}</a>'+
+                                    '</div>'+
+                                    '<div id="{{root.id}}" ng-show="root.isExpand">'+
+                                    '</div>'+
+                                '</li>'+
+                            '</ul>'+
+                        '</div>',
+                        link:
+                            function(scope, elm, attrs, $scope) {
+                                scope.rootAtts = scope.roots;
+                                scope.allAttMap = {};
+                                scope.existingAttIds = scope.existingAttIds;
+                                scope.isPreventSelectionOfMappedAttributes = scope.isPreventSelectionOfMappedAttributes;
+                                var parseResult = function(result, isRoot) {
+								
+			                        if (result != null) {
+			                        	
+			                        	if (isRoot) {
+			                        		result = result.replace(/;/g, '');
+			                        	}
+			                            result = result.replace(/&quot/gi, '"');
+			                            result = result.replace(/&amp/g, '&');
+			                            result = result.replace(/&lt/g, '<');
+			                            result = result.replace(/&gt/g, '>');
+			                            result = result.replace(/&#39/g, '\'');
+			                            
+			                            if (!isRoot) {
+			                            	result = result.replace(/;/g, '');
+			                            }
+			                            return result;
+			                        }
+			                    }
+                                
+                                var dataLoading = function(scopeAttr) {
+									var loading = $q.defer();
+									
+									if (scope[scopeAttr]) {
+										loading.resolve(scope[scopeAttr]);
+									} else {
+										scope.$watch(
+											scopeAttr,
+											function(newValue, oldValue) {
+											
+												if (newValue !== undefined) {
+													loading.resolve(newValue);
+												}
+											}
+										);
+									}
+									return loading.promise;
+								};
+								
+                                $q.all([dataLoading("roots")]).then(
+									function(results) {
+										scope.rootAtts = scope.roots;
+										scope.rootAtts = angular.fromJson(parseResult(angular.toJson(scope.rootAtts), true));
+									}
+								);
+								
+			                    //function called when any attribute is expended 
+								scope.showAttributes = function(attId, parent) {
+									var isshow = false;
+									
+									if (parent == '') {
+										angular.forEach(
+		                                	scope.rootAtts,
+		                                	
+		                                	function(item) {
+		                                	
+		                                		if (item.id == attId) {
+		                                		
+		                                			if (item.isExpand) {
+		                                				item.isExpand = false;
+		                                			} else {
+		                                				item.isExpand = true;
+		                                				isshow = true;
+		                                			}
+		                                		}
+		                                	}
+		                                );
+	                                } else {
+	                                	
+	                                	if (angular.element(document.getElementById(attId)).html() == '' || angular.element(document.getElementById(attId)).hasClass("hideBtn")) {
+	                                		isshow = true;
+	                                		angular.element(document.getElementById(attId)).removeClass("hideBtn");
+	                                		angular.element(document.getElementById('btn'+attId)).children(".fa-chevron-right").addClass("hideBtn");
+	                                		angular.element(document.getElementById('btn'+attId)).children(".fa-chevron-down").removeClass("hideBtn");
+	                                	} else {
+	                                		isshow = false;
+	                                		angular.element(document.getElementById(attId)).addClass("hideBtn");
+	                                		angular.element(document.getElementById('btn'+attId)).children(".fa-chevron-down").addClass("hideBtn");
+	                                		angular.element(document.getElementById('btn'+attId)).children(".fa-chevron-right").removeClass("hideBtn");
+	                                		
+	                                	}
+	                                }
+	                                
+	                                //in case if this attribute is expended first time then it will fetch all the child attributes
+									if (isshow) {
+										
+										if (angular.element(document.getElementById(attId)).html() == '') {
+										
+											scope.getAttributes(attId, parent+';'+attId).then(function(result) {
+				                                var parents = parent.split(';');
+				                                
+				                                if (parents.length == 0) {
+				                                	
+				                                	angular.forEach(
+					                                	scope.rootAtts,
+					                                	function(item) {
+					                                	
+					                                		if (item.id == attId) {
+					                                			item.attributes = currentAtt;
+					                                		}
+					                                	}
+					                                );
+				                                }
+				                                //generate the html of next level
+				                                var str = '<div class="slds-tree_container" role="application" style="margin-left: 20px;">'+
+						                            '<ul class="slds-tree" role="tree" aria-labelledby="treeheading">';
+						                            
+						                            angular.forEach(result, function(att, index) {
+						                            	scope.allAttMap[att.id] = {name : parseResult(att.name, false), isSelected : false, isFilter : att.isFilter};
+						                                str += '<li id="tree0-node0" role="treeitem" aria-level="1">'+
+						                                    '<div class="slds-tree__item">'+
+						                                        '<button ng-show="'+att.hasChild +'" id="btn'+att.id+'" class="slds-button slds-button--icon slds-m-right--x-small" style="width:12px;" ng-click="showAttributes(\''+att.id+'\', \''+attId+'\')">'+
+						                                        	'<i class="fa fa-chevron-right showBtn" style="color:#16325c"></i>' +
+                                        							'<i class="fa fa-chevron-down hideBtn" style="color:#16325c"></i>' +
+						                                        '</button>';
+
+						                                        if (scope.existingAttIds.indexOf(att.id) >= 0) {
+						                                        	str += '<div style="width:13px;height:13px;margin-top:10px;margin-right:5px;display: inherit;">' +
+						                                        	'<img src="{!$Resource.GreenCheck}"/></div>'+
+							                                        '<a tabindex="-1" role="presentation" class="slds-truncate">'+parseResult(att.name, false)+'</a>';
+						                                        } else {
+                                                                    //REF-2111
+                                                                    if (att.isMapped == true && scope.isPreventSelectionOfMappedAttributes == 'true') {
+                                                                        str += '<div style="width:13px;height:13px;margin-top:10px;margin-right:5px;display: inherit;">' +
+                                                                        '<img src="{!$Resource.GreenCheck}" ng-show="false"/></div>'+
+                                                                        '<a tabindex="-1" role="presentation" class="slds-truncate" ng-click="">'+parseResult(att.name, false)+'</a>';
+                                                                    } else {
+                                                                         str += '<div style="width:13px;height:13px;margin-top:10px;margin-right:5px;display: inherit;">' +
+                                                                        '<img src="{!$Resource.GreenCheck}" ng-show="allAttMap[\''+att.id+'\'].isSelected == true"/></div>'+
+                                                                        '<a tabindex="-1" role="presentation" class="slds-truncate" ng-click="allAttMap[\''+att.id+'\'].isSelected = !allAttMap[\''+att.id+'\'].isSelected">'+parseResult(att.name, false)+'</a>';
+                                                                    }
+																}
+					                                    str += '</div>'+
+						                                    '<div id="'+att.id+'">'+
+						                                    '</div>'+
+						                                '</li>';
+					                                });
+					                                str += '</ul>'+
+						                        			'</div>';
+				                                angular.element(document.getElementById(attId)).append($compile(str)(scope));
+				                            });
+			                            }
+									} 
+								}
+								//remoteAction called
+								scope.getAttributes = function(attId, p) {
+			                        var deferred = $q.defer();
+			                        Visualforce.remoting.Manager.invokeAction(
+			                            '{!$RemoteAction.AddLabelAttributesControllerSLDS.getAttributes}', attId, p,
+			                            function(result, event) {
+			                                    deferred.resolve(result);
+			                            },
+			                            {escape: true}
+			                        );
+			                        return deferred.promise;
+			                    }
+                            }
+                    }
+                }); 
+               	
+            </script>
+        </head>
+        <body ng-app="attributeApp" class="slds">
+        	<div class="container">
+	            <form id="frmId" ng-controller="attributeCon" ng-cloak="ng-cloak" >
+	                <div ng-show="isFullLicenseAccessible == 'false'">
+	                    <svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+	                        <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	                    </svg>
+	                    {!$Label.User_License}
+	                </div>
+	                <div ng-init="intialFunction();" ng-show="isFullLicenseAccessible == 'true' && isallDataFetched">
+	                    <!-- header -->
+	                    <div class="slds-page-header" role="banner">
+						    <div class="slds-grid slds-wrap">
+						        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-media">
+						                <div class="slds-media__figure">
+						                    <img class="slds-icon slds-icon--large" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+						                </div>
+						                <div style="margin-top: 1%;">
+	                                    	<h1 class="slds-text-heading--medium" title="{!$Label.T_Add_New_Attributes}">{!$Label.T_Add_New_Attributes}</h1>
+	                                    </div>
+						            </div>
+						        </div>
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex" ng-hide="info.refRefresh != null">
+						            <div class="slds-button-group buttonStyle" role="group">
+						                <button class="slds-button slds-button--neutral" ng-click="back();">{!$Label.Cancel}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="checkForFilter()">{!$Label.Save}</button>
+						            </div>
+						        </div>
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex" ng-show="info.refRefresh != null">
+						            <div class="slds-button-group buttonStyleNext" role="group">
+						                <button class="slds-button slds-button--neutral" ng-click="back();">{!$Label.Cancel}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="checkForFilter()">{!$Label.Save}</button>
+	                                    <a class="slds-button slds-button--neutral" ng-click="cancelProfileUpdate()" style="cursor: pointer;">{!$Label.Done}</a>
+						            </div>
+						        </div>
+						    </div>
+						    <div class="slds-grid slds-page-header__detail-row">
+	                            <div>{!$Label.AttributeMappingInformation}</div>
+	                        </div>
+						</div>
+	                    <!-- toast -->
+	                    <div id="toast-msg" ng-show="isError" class="slds-notify_container">
+	                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+	                            <span class="slds-assistive-text">{!$Label.Error}</span>
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;isModalError=false;" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;" ng-show="isError">{{parseResult(errorMsg)}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <!-- main block -->
+	                    <div style="padding:12px;">
+		                    <div ng-if="info.accountId != ''">
+		                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                            {!$Label.Information}
+		                        </div>
+		                        <div class="slds-grid slds-wrap">
+			                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+			                    		<div class="slds-form-element">
+			                          		<label class="slds-form-element__label">{!$Label.Account}</label>
+		                                    <div class="slds-form-element__control">
+		                                        <span class="slds-form-element__static" ng-if="info.contactId == '' || info.accConObj.isSharedContact == false || (info.accConObj.accounts.length <= 1 && info.accConObj.selectedAccounts.length == 0) || (info.accConObj.accounts.length == 0 && info.accConObj.selectedAccounts.length <= 1)">
+		                                            <a style="cursor: pointer;" href="/{{info.accountId}}" target="_blank">{{parseResult(info.accountName)}}</a>
+		                                        </span>
+			                                </div>
+			                                <div class="slds-form-element__control" ng-show="info.contactId != '' && info.accConObj.isSharedContact == true && ((info.accConObj.accounts.length >= 1 && info.accConObj.selectedAccounts.length >= 1) || (info.accConObj.accounts.length > 1 && info.accConObj.selectedAccounts.length == 0) || (info.accConObj.accounts.length == 0 && info.accConObj.selectedAccounts.length > 1))">
+				                                <multi-select ng-model="info.accConObj.selectedAccounts"
+				                                                available="info.accConObj.accounts"
+				                                                selected-label="{!$Label.Selected_Accounts}"
+				                                                available-label="{!$Label.Available_Accounts}"
+				                                                display-attr="name">
+				                                </multi-select>
+				                            </div>
+		                              	</div>
+			                    	</div>
+			                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2" ng-if="info.contactId != ''">
+			                    		<div class="slds-form-element">
+			                          		<label class="slds-form-element__label">{!$Label.Contact}</label>
+		                                    <div class="slds-form-element__control">
+		                                        <span class="slds-form-element__static">
+		                                            <a style="cursor: pointer;" href="/{{info.contactId}}" target="_blank">{{parseResult(info.contactName)}}</a>
+		                                        </span>
+			                                </div>	
+		                              	</div>
+			                    	</div>
+			                    </div>
+		                    </div>
+		                    <hr ng-if="info.accountId != ''"/>
+		                    <div>
+		                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                            {!$Label.Current_Attributes}
+		                        </div>
+		                        <div class="slds-grid slds-wrap" style="justify-content: flex-start;">
+		                            <div class="slds-col remove-flex" ng-repeat="att in info.existingAtts" style="float:left;padding-right: 0.75rem;padding-bottom: 5px;">
+		                                <div class="slds-pill" style="min-width: 40px;text-align: center;">
+		                                    <span class="slds-pill__label">{{att.name}}</span>
+			                                <a class="slds-button slds-button--icon-bare slds-pill__remove" ng-show="info.refRefresh != null && !att.isFromMapping" ng-click="deleteAttribute(att)">
+			                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility/close_60.png')}" alt="close" height="20" width="20"/>
+			                                    <span class="slds-assistive-text">Remove</span>
+			                                </a>
+		                                </div>
+		                            </div>
+		                            <div class="slds-col remove-flex" ng-repeat="(key, value) in allAttMap" style="float:left;padding-right: 0.75rem;padding-bottom: 5px;" ng-show="value.isSelected">
+		                                <div class="slds-pill" style="min-width: 40px;text-align: center;">
+		                                    <span class="slds-pill__label">{{value.name}}</span>
+		                                    <button class="slds-button slds-button--icon-bare slds-pill__remove" ng-click="value.isSelected = false">
+		                                        <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility/close_60.png')}" alt="close" height="20" width="20"/>
+		                                        <span class="slds-assistive-text">Remove</span>
+		                                    </button>
+		                                </div>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <hr/>
+		                    <div>
+		                        <div class="slds-section-title slds-p-around--xx-small" style="font-size: 15px !important;">
+		                            {!$Label.T_Add_Attributes}
+		                        </div>
+		                        <root-att roots="info.rootAttributes" is-prevent-selection-of-mapped-attributes="isPreventSelectionOfMappedAttributes" all-Att-Map="allAttMap" existing-Att-Ids="existingAttIds"></root-att>
+		                    </div>
+		                    <div class="slds-p-around--x-large" ng-show="info.refRefresh != null && info.refRefresh.quarantineUpdates.length > 0">
+		                    	<table class="slds-table slds-table--bordered">
+									<thead>
+										<tr class="slds-text-heading--label">
+											<th scope="col">
+												<span class="slds-truncate">{!$Label.Added}</span>
+											</th>
+											<th scope="col">
+												<span class="slds-truncate">{!$Label.Removed}</span>
+											</th>
+											<th scope="col">
+												<span class="slds-truncate">{!$Label.Removed}</span>
+											</th>
+											<th scope="col">
+												<span class="slds-truncate">{!$Label.Added}</span>
+											</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr ng-repeat="profileUpdateDetail in info.refRefresh.quarantineUpdates">
+											<td data-label="{!$Label.Added}">
+												<div class="slds-form-element__control">
+		                                            <span class="slds-form-element__static">
+		                                                <label class="slds-checkbox">
+		                                                    <input type="checkbox" ng-model="profileUpdateDetail['added']" disabled="disabled" />
+		                                                    <span class="slds-checkbox--faux"></span>
+		                                                </label>
+		                                            </span>
+		                                        </div>
+											</td>
+											<td data-label="{!$Label.Removed}">
+												<div class="slds-form-element__control">
+		                                            <span class="slds-form-element__static">
+		                                                <label class="slds-checkbox">
+		                                                    <input type="checkbox" ng-model="profileUpdateDetail['removed']" disabled="disabled" />
+		                                                    <span class="slds-checkbox--faux"></span>
+		                                                </label>
+		                                            </span>
+		                                        </div>
+											</td>
+											<td data-label="{!$Label.Removed}">
+												<span class="slds-truncate">{{profileUpdateDetail['changeFrom']}}</span>
+											</td>
+											<td data-label="{!$Label.Added}">
+												<span class="slds-truncate">{{profileUpdateDetail['changeTo']}}</span>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+		                    </div>
+	                    </div>
+	                    <div ng-show="showMemberCandidateModal">
+		                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+		                        <div class="slds-modal__container">
+		                            <div class="slds-modal__header">
+		                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancel()">
+		                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+		                                    <span class="slds-assistive-text">Close</span>
+		                                </a>
+		                            </div>
+		                            <div class="slds-modal__content slds-p-around--medium">
+		                                <div>
+		                                    {{refMemberCandidateInfo}}
+		                                </div>
+		                            </div>
+		                            <div class="slds-modal__footer">
+	                                    <button class="slds-button slds-button--brand" ng-click="candidate()">{!$Label.Candidate}</button>
+	                                    <button class="slds-button slds-button--brand" ng-click="member()">{!$Label.Member}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="cancel()">{!$Label.Cancel}</button>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <div class="slds-backdrop slds-backdrop--open"></div>
+	                    </div>
+	                    <div ng-show="showCandidateModal">
+		                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+		                        <div class="slds-modal__container">
+		                            <div class="slds-modal__header">
+		                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancel()">
+		                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+		                                    <span class="slds-assistive-text">Close</span>
+		                                </a>
+		                            </div>
+		                            <div class="slds-modal__content slds-p-around--medium">
+		                                <div>
+		                                    {{memberCandidateInfo}}
+		                                </div>
+		                            </div>
+		                            <div class="slds-modal__footer">
+	                                    <button class="slds-button slds-button--brand" ng-click="yes()">{!$Label.Yes}</button>
+	                                    <button class="slds-button slds-button--brand" ng-click="no()">{!$Label.No}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="cancel()">{!$Label.Cancel}</button>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <div class="slds-backdrop slds-backdrop--open"></div>
+	                    </div>
+	                    <div ng-show="showFilterError">
+		                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+		                        <div class="slds-modal__container">
+		                            <div class="slds-modal__header">
+		                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancel()">
+		                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+		                                    <span class="slds-assistive-text">Close</span>
+		                                </a>
+		                            </div>
+		                            <div class="slds-modal__content slds-p-around--medium">
+		                                <div>
+		                                    {!$Label.Filter_Not_Attached}
+		                                </div>
+		                            </div>
+		                            <div class="slds-modal__footer">
+	                                    <button class="slds-button slds-button--brand" ng-click="showPopup()">{!$Label.Yes}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="cancel()">{!$Label.No}</button>
+		                            </div>
+		                        </div>
+		                    </div>
+		                    <div class="slds-backdrop slds-backdrop--open"></div>
+	                    </div>
+	                </div>
+	                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+	                    <img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

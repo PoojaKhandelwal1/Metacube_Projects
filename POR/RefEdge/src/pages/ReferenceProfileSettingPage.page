@@ -1,0 +1,956 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page sidebar="false" controller="ReferenceProfileSettingController" docType="html-5.0" standardStylesheets="false" lightningStylesheets="true">
+<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+<script>
+	$(document).ready(function() {
+		$('#phHeader td.left div').css({"width": "19vw", "height": "auto"});
+	});
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+		
+		<style>
+			#lightningDiv * {
+				font-family: "Salesforce Sans",Arial,sans-serif !important;
+			}
+			.container {
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				overflow-x: hidden;
+				overflow-y: scroll;
+			}
+			.slds-checkbox [type=checkbox][disabled]+.slds-checkbox__label .slds-checkbox_faux { 
+                background-color: white !important;
+                border-radius: 20%;
+            }
+            .slds-checkbox [type=checkbox][disabled]+.slds-checkbox__label .slds-checkbox_faux:after {
+            	border-color: gray !important;
+            }
+            .centerAlign {
+           	    text-align: center !important;
+            }
+            #lightningDiv td {
+            	border: none !important;
+            }
+            .classicSpinner {
+            	position: absolute;
+			    top: 50%;
+			    left: 50%;
+			    margin-left: -30px;
+            }
+            .classicSpinnerBackground {
+            	top: 0;
+			    height: 100vh;
+			    left: 0;
+			    right: 0;
+			    background-color: WHITE;
+			    opacity: 0.7;
+			    z-index: 9999;
+            }
+            .classicTable {
+            	background-color: WHITE;
+			    border-collapse: collapse;
+			    border: 2px solid #CFCCCC;
+			    font-size: 11px;
+            }
+            .classicTable th, .classicTable td {
+            	padding: 8px;
+            	border-left: 2px solid #CFCCCC;
+            	border-right: 2px solid #CFCCCC;
+            }
+            .grayCell {
+            	background-color: #dedede;
+            }
+            .classicInput {
+            	font-size: 13px;
+            	width: 90%;
+            }
+            .pbTitle {
+            	font-size: 0.8em !important;
+			    font-weight: bold !important;
+			    padding: 12px !important;
+            }
+            .errorPageMsgDiv {
+            	border-radius: 4px;
+            	border-color: #c00;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+            }
+            .errorImg {
+            	background-image: url(/img/msg_icons/error24.png);
+			    background-position: 0 0;
+			    width: 24px;
+			    height: 24px;
+            }
+		</style>
+		
+		<script>
+			var refProfileSettingApp = angular.module('refProfileSettingApp', []);
+			var refProfileSettingCtrl = refProfileSettingApp.controller('refProfileSettingCtrl',
+				function($scope, $q) {
+					$scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+					$scope.isSLDS = {!isSLDS};
+					$scope.customSettingId = '{!JSENCODE(customSettingId)}';
+					$scope.isLoading = false;
+					$scope.isEdit = false;
+					$scope.refTypeMappings = [];
+					$scope.tempRefTypeMappings = [];
+					$scope.filterMappings = [];
+					$scope.tempFilterMappings = [];
+					$scope.mappingsPresent = [];
+					$scope.formHeadersMap = {};
+					$scope.tempFormHeadersMap = {};
+					$scope.pageHeadersMap = {};
+					$scope.tempPageHeadersMap = {};
+					$scope.pageHeadersList = [];
+					$scope.showPermissionsMsg = false;
+                   	$scope.permissionsMsg = '';
+					
+					$scope.getPermissionsMsg = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceProfileSettingController.getPermissionsMessage}',
+							function(result, event) {
+								deferred.resolve($scope.parseResult(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.initialFunction = function() {
+						$scope.isLoading = true;
+						/*initialize variable again - #1160*/
+						$scope.refTypeMappings = [];
+						$scope.tempRefTypeMappings = [];
+						$scope.filterMappings = [];
+						$scope.tempFilterMappings = [];
+						$scope.mappingsPresent = []; 
+						
+						$scope.getPermissionsMsg().then(function(result) {
+							
+                            if (result != '') {
+                            	$scope.showPermissionsMsg = true;
+                            	$scope.permissionsMsg = result;
+                            }
+						});
+						
+						$scope.getDataMappings().then(function(result) {
+							
+							angular.forEach(
+								result,
+								function(dataMapping) {
+									
+									if (dataMapping['refTypeId'] != '') {
+										
+										if ($scope.mappingsPresent.indexOf(dataMapping['refTypeId']) == -1) {
+											$scope.mappingsPresent.push(dataMapping['refTypeId']);
+											$scope.refTypeMappings.push(dataMapping);
+										}
+									} else if (dataMapping['filterId'] != '') {
+										
+										if ($scope.mappingsPresent.indexOf(dataMapping['filterId']) == -1) {
+											$scope.mappingsPresent.push(dataMapping['filterId']);
+											$scope.filterMappings.push(dataMapping);
+										}
+									}
+								}
+							);
+							
+							$scope.getRefTypeMappings().then(function(result) { 
+								
+								angular.forEach(
+									result,
+									function(dataMapping) {
+										$scope.refTypeMappings.push(dataMapping);
+									}
+								);
+							});
+							
+							$scope.getFilterMappings().then(function(result) { 
+								
+								angular.forEach(
+									result,
+									function(dataMapping) {
+										$scope.filterMappings.push(dataMapping);
+									}
+								);
+							});
+							
+							$scope.getFormHeaders().then(function(result) {
+								$scope.formHeadersMap = result[0];
+								$scope.pageHeadersMap = result[1];
+								$scope.pageHeadersList = angular.copy(Object.keys($scope.pageHeadersMap)).reverse();
+								$scope.isLoading = false;
+							});
+						});
+					}
+					
+					$scope.parseResult = function(result) {
+						result = result.replace(/&quot/gi, '"');
+						result = result.replace(/&amp/g, '&');
+						result = result.replace(/&lt/g, '<');
+						result = result.replace(/&gt/g, '>');
+						result = result.replace(/;/g, '');
+						result = result.replace(/&#39/g, '\'');
+						return result;
+					}
+					
+					$scope.getDataMappings = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceProfileSettingController.getDataMappings}',
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getRefTypeMappings = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceProfileSettingController.getRefTypeMappings}',
+							angular.toJson($scope.mappingsPresent),
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getFilterMappings = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceProfileSettingController.getFilterMappings}',
+							angular.toJson($scope.mappingsPresent),
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.getFormHeaders = function() {
+						var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.ReferenceProfileSettingController.getFormHeaders}',
+							function(result, event) {
+								result = $scope.parseResult(result);
+								var tempArr = result.split('@@@');
+								tempArr[0] = JSON.parse(tempArr[0]);
+								tempArr[1] = JSON.parse(tempArr[1]);
+								deferred.resolve(tempArr);
+							}
+						);
+						return deferred.promise;
+					}
+					
+					$scope.handleVisibleChange = function(dataMapping) {
+						
+						if (!dataMapping['visible']) {
+							dataMapping['required'] = false;
+						}
+					}
+					
+					$scope.handleRequiredChange = function(dataMapping) {
+						
+						if (dataMapping['required']) {
+							dataMapping['visible'] = true;
+						}
+					}
+					
+					$scope.editForm = function() {
+						$scope.isEdit = true;
+						$scope.tempRefTypeMappings = angular.copy($scope.refTypeMappings);
+						$scope.tempFilterMappings = angular.copy($scope.filterMappings);
+						$scope.tempFormHeadersMap = angular.copy($scope.formHeadersMap);
+						$scope.tempPageHeadersMap = angular.copy($scope.pageHeadersMap);
+					}
+					
+					$scope.cancelForm = function() {
+						$scope.isEdit = false;
+						$scope.refTypeMappings = angular.copy($scope.tempRefTypeMappings);
+						$scope.filterMappings = angular.copy($scope.tempFilterMappings);
+						$scope.formHeadersMap = angular.copy($scope.tempFormHeadersMap);
+						$scope.pageHeadersMap = angular.copy($scope.tempPageHeadersMap);
+					}
+					
+					$scope.saveForm = function() {
+						var dataMappingToUpsert = [];
+						var dataMappingsToDelete = [];
+						
+						angular.forEach(
+							$scope.refTypeMappings,
+							function(refTypeMapping) {
+								
+								if (refTypeMapping['visible'] || refTypeMapping['required']) {
+									dataMappingToUpsert.push(refTypeMapping);
+								} else if (!refTypeMapping['visible'] && !refTypeMapping['required'] && refTypeMapping['dataMappingId'] != '') {
+									dataMappingsToDelete.push(refTypeMapping);
+								}
+							}
+						);
+						
+						angular.forEach(
+							$scope.filterMappings,
+							function(filterMapping) {
+								
+								if (filterMapping['visible'] || filterMapping['required']) {
+									dataMappingToUpsert.push(filterMapping);
+								} else if (!filterMapping['visible'] && !filterMapping['required'] && filterMapping['dataMappingId'] != '') {
+									dataMappingsToDelete.push(filterMapping);
+								}
+							}
+						);
+						
+						angular.forEach(
+							Object.keys($scope.formHeadersMap),
+							function(headerName) {
+								dataMappingToUpsert.push($scope.formHeadersMap[headerName]);
+							}
+						);
+						
+						$scope.getPermissionsMsg().then(function(result) {
+							
+                            if (result != '') {
+                            	$scope.showPermissionsMsg = true;
+                            	$scope.permissionsMsg = result;
+                            } else {
+								$scope.isLoading = true;
+								
+								Visualforce.remoting.Manager.invokeAction(
+									'{!$RemoteAction.ReferenceProfileSettingController.saveForm}',
+									angular.toJson(dataMappingToUpsert),
+									angular.toJson(dataMappingsToDelete),
+									function(result, event) {
+										
+										if (!result.startsWith('success')) {
+											$scope.isError = true;
+										} else {
+											$scope.isEdit = false;											
+										}
+										$scope.initialFunction();
+										$scope.$apply();
+									}
+								);
+                            }
+						});
+					}
+					
+					$scope.backToCustomSettings = function() {
+						
+						if ($scope.customSettingId != null && $scope.customSettingId != '') {
+							
+							if ((typeof sforce != 'undefined') && (sforce != null)) {
+								sforce.one.navigateToSObject($scope.customSettingId, 'detail');
+							}
+						}
+					}
+				}
+			);
+		</script>
+	</head>
+	
+	<body>
+		<div ng-app="refProfileSettingApp" ng-controller="refProfileSettingCtrl" ng-cloak="ng-cloak">
+			<c:RewardNotification />
+			
+			<div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+	            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+					<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					</svg>
+				</span>
+	            {!$Label.User_License}
+	        </div>
+			
+			<div ng-show="isFullLicenseAccessible" ng-init="initialFunction()">
+				<div ng-if="!isSLDS" id="classicDiv">
+					<div class="classicSpinnerBackground" ng-show="isLoading">
+						<apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60"/>
+					</div>
+					<div ng-show="!isLoading">
+						<div class="errorPageMsgDiv" ng-show="showPermissionsMsg">
+							<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+							<span>{{permissionsMsg}}</span>
+						</div>
+						<a href="/{{customSettingId}}" style="text-decoration: underline;">{!$Label.Back_to_the_Custom_Setting_Page}</a>
+						
+						<apex:pageBlock title="{!$Label.Ref_Profile_Form_Settings}">
+							<apex:pageBlockButtons >
+								<a ng-show="!isEdit" ng-click="editForm()" class="btn" style="text-decoration: none; color: black; padding: 4px 3px;">{!$Label.Edit}</a>
+								<a ng-show="isEdit" ng-click="saveForm()" class="btn" style="text-decoration: none; color: black; padding: 4px 3px;">{!$Label.Save}</a>
+								<a ng-show="isEdit" ng-click="cancelForm()" class="btn" style="text-decoration: none; color: black; padding: 4px 3px;">{!$Label.Cancel}</a>
+							</apex:pageBlockButtons>
+							<table style="table-layout: fixed" class="classicTable">
+								<thead>
+									<tr>
+										<th class="centerAlign grayCell" style="width: 20%">
+											<div title="{!$Label.Section_Order}">
+												{!$Label.Section_Order}
+											</div>
+										</th>
+										<th style="width: 50%"></th>
+										<th class="centerAlign grayCell" style="width: 15%">
+											<div title="{!$Label.Visible}">
+												{!$Label.Visible}
+											</div>
+										</th>
+										<th class="centerAlign grayCell" style="width: 15%">
+											<div title="{!$Label.Required}">
+												{!$Label.Required}
+											</div>
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<!-- Section 1 - Header -->
+									<tr>
+										<th class="grayCell"></th>
+										<td class="grayCell">
+											<div style="font-weight: bold;" title="{{pageHeadersMap[pageHeadersList[0]]}}">{{pageHeadersMap[pageHeadersList[0]]}}</div>
+										</td>
+										<td class="grayCell"></td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<tr>
+										<td class="centerAlign">
+											<div title="{{formHeadersMap[pageHeadersList[0]]['orderNo']}}">{{formHeadersMap[pageHeadersList[0]]['orderNo']}}</div>
+										</td>
+										<td>
+											<div style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[0]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[0]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit">
+												<input class="classicInput" type="text" ng-model="formHeadersMap[pageHeadersList[0]]['fieldAPIName']" />
+											</div>
+										</td>
+										<td class="centerAlign">
+											<input type="checkbox" id="section0v-c" name="section0v-c" ng-model="formHeadersMap[pageHeadersList[0]]['visible']" ng-disabled="!isEdit" />
+										</td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<!-- Section 2 - Sub Header -->
+									<tr>
+										<th class="grayCell"></th>
+										<td class="grayCell">
+											<div style="font-weight: bold;" class="slds-truncate" title="{{pageHeadersMap[pageHeadersList[1]]}}">{{pageHeadersMap[pageHeadersList[1]]}}</div>
+										</td>
+										<td class="grayCell"></td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<tr>
+										<td class="centerAlign" data-label="{!$Label.Section_Order}">
+											<div title="{{formHeadersMap[pageHeadersList[1]]['orderNo']}}">{{formHeadersMap[pageHeadersList[1]]['orderNo']}}</div>
+										</td>
+										<td>
+											<div style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[1]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[1]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit">
+												<input class="classicInput" type="text" ng-model="formHeadersMap[pageHeadersList[1]]['fieldAPIName']" />
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<input type="checkbox" id="section1v-c" name="section1v-c" ng-model="formHeadersMap[pageHeadersList[1]]['visible']" ng-disabled="!isEdit" />
+										</td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<!-- Section 3 Filters -->
+									<tr>
+										<th class="grayCell" scope="row"></th>
+										<td class="grayCell">
+											<div style="font-weight: bold;" title="{{pageHeadersMap[pageHeadersList[2]]}}">{{pageHeadersMap[pageHeadersList[2]]}}</div>
+										</td>
+										<td class="grayCell"></td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<tr>
+										<td class="centerAlign" data-label="{!$Label.Section_Order}">
+											<div ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[2]]['orderNo']}}">{{formHeadersMap[pageHeadersList[2]]['orderNo']}}</div>
+											<div ng-show="isEdit">
+												<input style="width: 35%; font-size: 13px;" type="number" ng-model="formHeadersMap[pageHeadersList[2]]['orderNo']" />
+											</div>
+										</td>
+										<td>
+											<div style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[2]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[2]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit">
+												<input class="classicInput" type="text" ng-model="formHeadersMap[pageHeadersList[2]]['fieldAPIName']" />
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<input type="checkbox" id="section2v-c" name="section2v-c" ng-model="formHeadersMap[pageHeadersList[2]]['visible']" ng-disabled="!isEdit" />
+										</td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<tr ng-repeat="filter in filterMappings"> 
+										<td scope="row"></td>
+										<td>
+											<div style="text-align: right" title="{{filter['filterName']}}">{{filter['dataMappingName']}}</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<input type="checkbox" id="{{'cbv-c' + $index}}" name="{{'cbv-c' + $index}}" ng-change="handleVisibleChange(filter)" ng-model="filter['visible']" ng-disabled="!isEdit" />
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Required}">
+											<input type="checkbox" id="{{'cbr-c' + $index}}" name="{{'cbr-c' + $index}}" ng-change="handleRequiredChange(filter)" ng-model="filter['required']" ng-disabled="!isEdit" />
+										</td>
+									</tr>
+									
+									<!-- Section 4 - Referenceability Types -->
+									<tr>
+										<th class="grayCell" scope="row"></th>
+										<td class="grayCell">
+											<div style="font-weight: bold;" title="{{pageHeadersMap[pageHeadersList[3]]}}">{{pageHeadersMap[pageHeadersList[3]]}}</div>
+										</td>
+										<td class="grayCell"></td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<tr>
+										<td class="centerAlign" data-label="{!$Label.Section_Order}">
+											<div ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[3]]['orderNo']}}">{{formHeadersMap[pageHeadersList[3]]['orderNo']}}</div>
+											<div ng-show="isEdit">
+												<input style="width: 35%; font-size: 13px;" type="number" ng-model="formHeadersMap[pageHeadersList[3]]['orderNo']" />
+											</div>
+										</td>
+										<td>
+											<div style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[3]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[3]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit">
+												<input class="classicInput" type="text" ng-model="formHeadersMap[pageHeadersList[3]]['fieldAPIName']" />
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<input type="checkbox" id="section3v-c" name="section3v-c" ng-model="formHeadersMap[pageHeadersList[3]]['visible']" ng-disabled="!isEdit" />
+										</td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<tr ng-repeat="refType in refTypeMappings">
+										<td scope="row"></td>
+										<td>
+											<div style="text-align: right" title="{{refType['dataMappingName']}}">{{refType['dataMappingName']}}</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<input type="checkbox" id="{{'cbrtv-c' + $index}}" name="{{'cbrtv-c' + $index}}" ng-model="refType['visible']" ng-disabled="!isEdit" />
+										</td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<!-- Section 5 - Comments -->
+									<tr>
+										<th class="grayCell" scope="row"></th>
+										<td class="grayCell">
+											<div style="font-weight: bold;" title="{{pageHeadersMap[pageHeadersList[4]]}}">{{pageHeadersMap[pageHeadersList[4]]}}</div>
+										</td>
+										<td class="grayCell"></td>
+										<td class="grayCell"></td>
+									</tr>
+									
+									<tr>
+										<td class="centerAlign" scope="row" data-label="{!$Label.Section_Order}">
+											<div ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[4]]['orderNo']}}">{{formHeadersMap[pageHeadersList[4]]['orderNo']}}</div>
+											<div ng-show="isEdit">
+												<input type="number" style="width: 35%; font-size: 13px;" ng-model="formHeadersMap[pageHeadersList[4]]['orderNo']" />
+											</div>
+										</td>
+										<td>
+											<div style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[4]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[4]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit">
+												<input class="classicInput" type="text" ng-model="formHeadersMap[pageHeadersList[4]]['fieldAPIName']" />
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<input type="checkbox" id="section4v-c" name="section4v-c" ng-change="handleVisibleChange(formHeadersMap[pageHeadersList[4]])" ng-model="formHeadersMap[pageHeadersList[4]]['visible']" ng-disabled="!isEdit" />
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Required}">
+											<input type="checkbox" id="section4r-c" name="section4r-c" ng-change="handleRequiredChange(formHeadersMap[pageHeadersList[4]])" ng-model="formHeadersMap[pageHeadersList[4]]['required']" ng-disabled="!isEdit" />
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</apex:pageBlock>
+					</div>
+				</div>
+				
+				<div ng-if="isSLDS" id="lightningDiv" class="container">
+					<div role="status" ng-show="isLoading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+						<span class="slds-assistive-text">Loading</span>
+						<div class="slds-spinner__dot-a"></div>
+						<div class="slds-spinner__dot-b"></div>
+					</div>
+					<div ng-show="!isLoading">
+						<div class="slds-page-header">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-col">
+									<div class="slds-media slds-media_center">
+										<div class="slds-media__figure">
+											<span class="slds-icon_container">
+												<img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" />
+											</span>
+										</div>
+										<div class="slds-media__body">
+											<h1 class="slds-page-header__title slds-truncate slds-align-middle">{!$Label.Ref_Profile_Form_Settings}</h1>
+										</div>
+									</div>
+								</div>
+								<div class="slds-col slds-no-flex slds-grid slds-align-bottom">
+									<a ng-click="backToCustomSettings()" class="slds-button slds-button_neutral">{!$Label.Back_to_the_Custom_Setting_Page}</a>
+									<a ng-show="!isEdit" ng-click="editForm()" class="slds-button slds-button_neutral">{!$Label.Edit}</a>
+									<a ng-show="isEdit" ng-click="saveForm()" class="slds-button slds-button_brand">{!$Label.Save}</a>
+									<a ng-show="isEdit" ng-click="cancelForm()" class="slds-button slds-button_neutral">{!$Label.Cancel}</a>
+								</div>
+							</div>
+						</div>
+						
+						<div class="slds-p-vertical_large">
+							
+							<table class="slds-table slds-table_bordered slds-table_cell-buffer slds-no-row-hover" style="table-layout: fixed">
+								<thead>
+									<tr class="slds-text-title_caps">
+										<th class="centerAlign" scope="col" style="width: 20%">
+											<div class="slds-truncate" title="{!$Label.Section_Order}">
+												{!$Label.Section_Order}
+											</div>
+										</th>
+										<th scope="col" style="width: 50%"></th>
+										<th class="centerAlign" scope="col" style="width: 15%">
+											<div class="slds-truncate" title="{!$Label.Visible}">
+												{!$Label.Visible}
+											</div>
+										</th>
+										<th class="centerAlign" scope="col" style="width: 15%">
+											<div class="slds-truncate" title="{!$Label.Required}">
+												{!$Label.Required}
+											</div>
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<!-- Section 1 - Header -->
+									<tr class="slds-hint-parent" style="background-color: #e9edf4">
+										<th scope="row"></th>
+										<td>
+											<div style="font-weight: bold;" class="slds-truncate" title="{{pageHeadersMap[pageHeadersList[0]]}}">{{pageHeadersMap[pageHeadersList[0]]}}</div>
+										</td>
+										<td></td>
+										<td></td>
+									</tr>
+									
+									<tr class="slds-hint-parent">
+										<td class="centerAlign" scope="row" data-label="{!$Label.Section_Order}">
+											<div class="slds-truncate" title="{{formHeadersMap[pageHeadersList[0]]['orderNo']}}">{{formHeadersMap[pageHeadersList[0]]['orderNo']}}</div>
+										</td>
+										<td>
+											<div class="slds-truncate" style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[0]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[0]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input type="text" class="slds-input" ng-model="formHeadersMap[pageHeadersList[0]]['fieldAPIName']" />
+												</div>
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="section0v" name="section0v" ng-model="formHeadersMap[pageHeadersList[0]]['visible']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="section0v">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+										<td></td>
+									</tr>
+									
+									<!-- Section 2 - Sub Header -->
+									<tr class="slds-hint-parent" style="background-color: #e9edf4">
+										<th scope="row"></th>
+										<td>
+											<div style="font-weight: bold;" class="slds-truncate" title="{{pageHeadersMap[pageHeadersList[1]]}}">{{pageHeadersMap[pageHeadersList[1]]}}</div>
+										</td>
+										<td></td>
+										<td></td>
+									</tr>
+									
+									<tr class="slds-hint-parent">
+										<td class="centerAlign" scope="row" data-label="{!$Label.Section_Order}">
+											<div class="slds-truncate" title="{{formHeadersMap[pageHeadersList[1]]['orderNo']}}">{{formHeadersMap[pageHeadersList[1]]['orderNo']}}</div>
+										</td>
+										<td>
+											<div class="slds-truncate" style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[1]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[1]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input type="text" class="slds-input" ng-model="formHeadersMap[pageHeadersList[1]]['fieldAPIName']" />
+												</div>
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="section1v" name="section1v" ng-model="formHeadersMap[pageHeadersList[1]]['visible']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="section1v">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+										<td></td>
+									</tr>
+									
+									<!-- Section 3 Filters -->
+									<tr class="slds-hint-parent" style="background-color: #e9edf4">
+										<th scope="row"></th>
+										<td>
+											<div style="font-weight: bold;" class="slds-truncate" title="{{pageHeadersMap[pageHeadersList[2]]}}">{{pageHeadersMap[pageHeadersList[2]]}}</div>
+										</td>
+										<td></td>
+										<td></td>
+									</tr>
+									
+									<tr class="slds-hint-parent">
+										<td class="centerAlign" scope="row" data-label="{!$Label.Section_Order}">
+											<div ng-show="!isEdit" class="slds-truncate" title="{{formHeadersMap[pageHeadersList[2]]['orderNo']}}">{{formHeadersMap[pageHeadersList[2]]['orderNo']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input style="width: 35%" type="number" class="slds-input" ng-model="formHeadersMap[pageHeadersList[2]]['orderNo']" />
+												</div>
+											</div>
+										</td>
+										<td>
+											<div class="slds-truncate" style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[2]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[2]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input type="text" class="slds-input" ng-model="formHeadersMap[pageHeadersList[2]]['fieldAPIName']" />
+												</div>
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="section2v" name="section2v" ng-model="formHeadersMap[pageHeadersList[2]]['visible']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="section2v">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+										<td></td>
+									</tr>
+									
+									<tr ng-repeat="filter in filterMappings">
+										<td scope="row"></td>
+										<td>
+											<div class="slds-truncate" style="text-align: right" title="{{filter['filterName']}}">{{filter['dataMappingName']}}</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="{{'cbv' + $index}}" name="{{'cbv' + $index}}" ng-change="handleVisibleChange(filter)" ng-model="filter['visible']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="{{'cbv' + $index}}">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Required}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="{{'cbr' + $index}}" name="{{'cbr' + $index}}" ng-change="handleRequiredChange(filter)" ng-model="filter['required']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="{{'cbr' + $index}}">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+									</tr>
+									
+									<!-- Section 4 - Referenceability Types -->
+									<tr class="slds-hint-parent" style="background-color: #e9edf4">
+										<th scope="row"></th>
+										<td>
+											<div style="font-weight: bold;" class="slds-truncate" title="{{pageHeadersMap[pageHeadersList[3]]}}">{{pageHeadersMap[pageHeadersList[3]]}}</div>
+										</td>
+										<td></td>
+										<td></td>
+									</tr>
+									
+									<tr class="slds-hint-parent">
+										<td class="centerAlign" scope="row" data-label="{!$Label.Section_Order}">
+											<div ng-show="!isEdit" class="slds-truncate" title="{{formHeadersMap[pageHeadersList[3]]['orderNo']}}">{{formHeadersMap[pageHeadersList[3]]['orderNo']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input style="width: 35%" type="number" class="slds-input" ng-model="formHeadersMap[pageHeadersList[3]]['orderNo']" />
+												</div>
+											</div>
+										</td>
+										<td>
+											<div class="slds-truncate" style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[3]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[3]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input type="text" class="slds-input" ng-model="formHeadersMap[pageHeadersList[3]]['fieldAPIName']" />
+												</div>
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="section3v" name="section3v" ng-model="formHeadersMap[pageHeadersList[3]]['visible']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="section3v">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+										<td></td>
+									</tr>
+									
+									<tr ng-repeat="refType in refTypeMappings">
+										<td scope="row"></td>
+										<td>
+											<div class="slds-truncate" style="text-align: right" title="{{refType['dataMappingName']}}">{{refType['dataMappingName']}}</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="{{'cbrtv' + $index}}" name="{{'cbrtv' + $index}}" ng-model="refType['visible']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="{{'cbrtv' + $index}}">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+										<td></td>
+									</tr>
+									
+									<!-- Section 5 - Comments -->
+									<tr class="slds-hint-parent" style="background-color: #e9edf4">
+										<th scope="row"></th>
+										<td>
+											<div style="font-weight: bold;" class="slds-truncate" title="{{pageHeadersMap[pageHeadersList[4]]}}">{{pageHeadersMap[pageHeadersList[4]]}}</div>
+										</td>
+										<td></td>
+										<td></td>
+									</tr>
+									
+									<tr class="slds-hint-parent">
+										<td class="centerAlign" scope="row" data-label="{!$Label.Section_Order}">
+											<div ng-show="!isEdit" class="slds-truncate" title="{{formHeadersMap[pageHeadersList[4]]['orderNo']}}">{{formHeadersMap[pageHeadersList[4]]['orderNo']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input type="number" style="width: 35%" class="slds-input" ng-model="formHeadersMap[pageHeadersList[4]]['orderNo']" />
+												</div>
+											</div>
+										</td>
+										<td>
+											<div class="slds-truncate" style="white-space: normal" ng-show="!isEdit" title="{{formHeadersMap[pageHeadersList[4]]['fieldAPIName']}}">{{formHeadersMap[pageHeadersList[4]]['fieldAPIName']}}</div>
+											<div ng-show="isEdit" class="slds-form-element">
+												<div class="slds-form-element__control">
+													<input type="text" class="slds-input" ng-model="formHeadersMap[pageHeadersList[4]]['fieldAPIName']" />
+												</div>
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Visible}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="section4v" name="section4v" ng-change="handleVisibleChange(formHeadersMap[pageHeadersList[4]])" ng-model="formHeadersMap[pageHeadersList[4]]['visible']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="section4v">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+										<td class="centerAlign" data-label="{!$Label.Required}">
+											<div class="slds-form-element slds-m-top_x-small slds-m-horizontal_small">
+												<div class="slds-form-element__control">
+													<span class="slds-checkbox">
+														<input type="checkbox" id="section4r" name="section4r" ng-change="handleRequiredChange(formHeadersMap[pageHeadersList[4]])" ng-model="formHeadersMap[pageHeadersList[4]]['required']" ng-disabled="!isEdit" />
+														<label class="slds-checkbox__label" for="section4r">
+															<span class="slds-checkbox_faux"></span>
+														</label>
+													</span>
+												</div>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					
+					<!-- Modals and Toasts -->
+					
+					<!-- Permissions toast -->
+					<div class="slds-notify_container" ng-show="showPermissionsMsg">
+					    <div class="slds-notify slds-notify_toast slds-theme_error" role="alert">
+					        <span class="slds-assistive-text">Info</span>
+					        <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="showPermissionsMsg = false">
+					            <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+					                <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+					            </svg>
+					            <span class="slds-assistive-text">Close</span>
+					        </a>
+					        <div class="slds-notify__content">
+					            <h2 class="slds-text-heading_small" style="font-size: 16px; white-space: pre-line;">{{permissionsMsg}}</h2>
+					        </div>
+					    </div>
+					</div>
+					
+					
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+</apex:page>

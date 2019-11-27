@@ -1,0 +1,319 @@
+<!--
+    * ReferenceEdge
+    * 
+    * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+    *
+    * @company : Point of Reference, Inc.
+    * @website : www.point-of-reference.com
+    *
+    * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+    * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+    * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+    * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+    * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+    * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+    * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+    * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+    * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+    * WRITTEN CONSENT FROM COMPANY.
+-->
+<apex:page controller="DataCollectorManagePageController" lightningStylesheets="true" sidebar="false">
+    <script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >
+        <apex:pageMessages id="pgmsgId"/>
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" /> 
+        
+        <style type="text/css">
+            #EmailSec {
+            width:100%;
+            background:lavender;
+            border-radius: 5px;
+            }
+            
+            .headerClass {
+            font-size: x-large;
+            font-weight: lighter;
+            text-align:  center;
+            background-color: lightblue;
+            padding: 8px;
+            margin: 1px;
+            font-family: sans-serif;    
+            border-radius: 5px;
+            }
+            
+            .SubjectClass {
+            height: 30px;
+            background-color:  lightgrey;
+            padding:  5px;
+            border-radius:  5px;
+            }
+            
+            .custPopup{
+            background-color: white;
+            border-width: 0.5px;
+            border-style: solid;
+            z-index: 9999;
+            left: 50%;
+            padding:10px;
+            position: absolute;            
+            width: 500px;
+            margin-left: -250px;
+            top:100px;
+            border-radius: 5px;
+            }
+            
+            .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+            }
+            
+            .apexp .bPageBlock .detailList .list {
+            width: 175%;
+            }
+            
+            .borderClassic {
+            text-align: center;
+            background-color: gainsboro;
+            height: 28px;
+            border-radius: 5px 5px 5px 5px;
+            padding-top: 5px;
+            }
+            .borderSLDS {
+            text-align: center;
+            background-color: gainsboro;
+            height: 28px;
+            border-radius: 5px 5px 5px 5px;
+            padding-top: 3px;
+            }
+            
+            body {
+            font-size: 75%;
+            }
+            
+            .allCenter {            
+            visibility:hidden;"
+            
+            }
+            .firstBlock{
+            text-align : center;
+            }
+            
+            .modalHeader {
+                margin: 0;
+                font-weight: bold;
+                padding: 8px;
+                text-align: center;
+                background: #03A7E4;
+                color:#FFFFFF;
+                font-family: Arial,
+                Helvetica,sans-serif;
+                font-size: 13.3px;
+                margin-left:2px;
+                margin-right:2px;
+                margin-top:2px;
+                border-radius:4px;              
+            }
+
+            .modelBtn {
+                float : right;
+            }
+
+            .editSubject {
+                background-color:white;
+                border:1px solid #cfd0d2;
+                padding: 8px 0 3px 5px;
+                width: 430px;
+            }
+
+            .previewSubject {
+                background-color:white;
+                padding: 8px 0 3px 5px;
+                width: 430px;
+            }
+
+            .editBody {
+                background-color:white;
+                border:1px solid #cfd0d2;
+                padding: 8px 0 3px 5px;
+                width: 430px;
+                height:135px;
+                overflow-y: auto;
+            }
+
+            .previewBody {
+                background-color:white;
+                padding: 8px 0 3px 5px;
+                width: 430px;
+                height:135px;
+                overflow-y: auto;
+            }
+
+            .headerRow {
+                Display : none
+            }
+
+            .errorMessages {
+                display: block;
+                list-style-type: disc;
+                margin: 0 10px 15px 10px;
+                padding: 8px 35px 8px 30px;
+                color: #B94A48;
+                background-color: #F2DEDE;
+                border: 2px solid #EED3D7;
+                border-radius: 4px;
+                text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+            }
+
+        </style>
+        
+        <script type="text/javascript">
+            
+            //    To edit or preview the message content
+            function upDateForm(recordId, checkClick) {        
+                paraFunction(recordId, checkClick);
+            }
+            
+            //    To edit or preview the Form
+            function viewEditForm(recordId, editView) {
+                editViewFunction(recordId, editView);             
+            }
+            
+        </script>
+        
+        <apex:form > 
+            <!--    Action Function        -->
+            <apex:actionFunction name="paraFunction" action="{!showPopup}" rerender="tstpopup">     
+                <apex:param name="firstParam" assignTo="{!dmRecordId}" value="" />
+                <apex:param name="secParam" assignTo="{!preview}" value="" />
+            </apex:actionFunction>
+            
+            <apex:actionFunction name="editViewFunction" action="{!editAndViewPageRedirect}" rerender="tstpopup">     
+                <apex:param name="firstParam" assignTo="{!dmRecordId}" value="" />
+                <apex:param name="secParam" assignTo="{!editPreviewForm}" value="" />
+            </apex:actionFunction>
+            <apex:actionFunction name="closepopups" action="{!closePopup}" rerender="tstpopup"/>
+
+            <apex:actionFunction name="formDelete" action="{!deleteForm}" rerender="pbId">     
+                <apex:param name="firstParam" assignTo="{!dmRecordId}" value="" />
+            </apex:actionFunction>
+
+            <div style="float:left ; width: 45%; margin-left: 5px">
+                <apex:commandLink style="color:#5C95C4;" value="{!$Label.Back_to_the_Custom_Setting_Page}" action="{!returnCustomSettings}"/><br/>
+            </div>
+
+            <apex:pageBlock id="pbId" title="{!$Label.Data_Collector_Section}">
+                <div class="{!IF(errorMsg != '' && !isSLDS,"errorMessages","headerRow")}">
+                    <ul>
+                        <li>{!errorMsg}</li>
+                    </ul>
+                </div> 
+
+                <!--      LIGHTNING ALERT SECTION      --> 
+                <div class="{!IF(errorMsg != '' && isSLDS,"","headerRow")}">
+                    <div class="slds-scope">
+                        <div id="target" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                            <div id="messageOnPageLoad" class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" role="alert">
+                                <span class="slds-icon_container">
+                                    <svg class="slds-icon slds-icon-text-default slds-icon--small slds-m-right--x-small" aria-hidden="true">
+                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#info"></use>
+                                    </svg>
+                                </span>
+                                <h2><span>{!errorMsg}</span></h2>
+                            </div>
+                        </div>
+                    </div>    
+                </div>
+                <!--      END   LIGHTNING ALERT SECTION      --> 
+
+                <apex:pageblockButtons id="btn" location="top">
+                    <apex:commandButton value="{!$Label.New_Form}" action="{!redirectFormPage}"/>                           
+                </apex:pageblockButtons>
+                <apex:outputPanel layout="block" style="overflow:auto;height:500px">
+                    
+                    <apex:pageBlockTable id="pbt" value="{!wrapList}" var="dm">                    
+                        <apex:column headerValue="{!$Label.Form_Name}" id="formName" style="width:28%; padding-left: 4%;" headerClass="firstBlock">
+                            <apex:outputText value="{!dm.formName}"/>
+                            <div style="float: right; margin-right: 8%;">
+                                <apex:commandLink value="{!$Label.Manage_Label}" style="cursor:pointer; color: #019fd5;" onclick="viewEditForm('{!dm.dmRecordList[0]}', 'Edit'); return false;"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <apex:commandLink value="{!$Label.Preview_E_mail}" style="cursor:pointer; color: #019fd5;" onclick="viewEditForm('{!dm.dmRecordList[0]}', 'View'); return false;"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <apex:commandLink value="{!$Label.DeleteFull}" style="cursor:pointer; color: #019fd5;" onclick="formDelete('{!dm.dmRecordList[0]}'); return false;"/>
+                            </div>
+                        </apex:column>
+                        <apex:column headerValue="{!$Label.Message_Content}" headerClass="firstBlock">
+                            <apex:pageblockTable id="childBlock" value="{!dm.dmRecordList}" var="dmRec">
+                                <apex:column value="{!dmRec.Section_Name__c}"  headerClass="allCenter" id="innerTable" style="width:25%;"/>
+                                
+                                <apex:column title="Customize Subject and Message for {!dmRec.Section_Name__c} Notification" headerClass="allCenter"  style="width:22%;">
+                                    <a style="cursor:pointer; color: #019fd5;" onclick="upDateForm('{!dmRec}', 'Manage')" id="mngId">{!$Label.Manage_Label}</a>
+                                </apex:column>
+                                
+                                <apex:column title="View Subject and Message for {!dmRec.Section_Name__c} Notification" headerClass="allCenter">
+                                    <a style="cursor:pointer; color: #019fd5;" onclick="upDateForm('{!dmRec}', 'Preview')" id="prevId">{!$Label.Preview_E_mail}</a>
+                                </apex:column>                    
+                            </apex:pageblockTable>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    
+                </apex:outputPanel>
+                
+            </apex:pageBlock>        
+            <apex:outputPanel id="tstpopup">
+                <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp}"/>
+                <apex:outputPanel styleClass="custPopup" layout="block" rendered="{!displayPopUp}">
+                    <apex:outputPanel rendered="{!!isSLDS}">
+                        <div class="modalHeader">                           
+                            <h2>{!dmRecord.Section_Name__c} Message</h2>
+                        </div>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!isSLDS}">
+                        <div style="text-align: center;"> <span style="font-size:16px">{!dmRecord.Section_Name__c} Message</span></div>
+                    </apex:outputPanel>
+                    <br/>
+                    
+                    <table>
+                        <tr>
+                            <td style="width: 65px;">
+                                <apex:outputText value="{!$Label.Subject}" style="text-align: center;padding-top: 11% !important;display:  flex;"/>
+                            </td>
+                            <td>
+                                <div class="{!if(isPreview,"previewSubject","editSubject")}">
+                                    <apex:inputText id="Subject" value="{!dmRecord.Field_API_Name__c}" style="border: 0;width:100%;" rendered="{!!isPreview}"/>
+                                    <apex:outputText id="Subject1" value="{!dmRecord.Field_API_Name__c}" style="border: 0;width:100%;" rendered="{!isPreview}"/>
+                                    <br/>
+                                </div> 
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td style="width: 65px; vertical-align: top;padding-top: 1.5%;">
+                                <apex:outputText value="Body"/>
+                            </td>
+                            <td>
+                                <div class="{!if(isPreview,"previewBody","editBody")}">
+                                    <apex:inputTextarea id="msg" value="{!dmRecord.DC_Message__c}" style="border:0; width:98%;Height:55px" rendered="{!!isPreview}"/>
+                                    <apex:outputText id="msg1" value="{!dmRecord.DC_Message__c}" style="border:0; width:98%;Height:55px" rendered="{!isPreview}"/> 
+                                    <br/><br/>  
+                                    <apex:outputLabel value="Opportunity: "/> <apex:outputLabel value="Opportunity Name"/>
+                                    <br/>
+                                    <apex:outputLabel value="[Link]"/>                                  
+                                </div>
+                            </td>
+                        </tr>
+                        
+                    </table><br/>
+                    <div class="modelBtn"> 
+                        <apex:commandButton value="{!$Label.Close}" action="{!closePopup}" rerender="tstpopup"/>
+                        <apex:commandButton value="{!$Label.Save}" action="{!Save}" rerender="tstpopup" rendered="{!!isPreview}"/>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:form>
+    </html>
+</apex:page>

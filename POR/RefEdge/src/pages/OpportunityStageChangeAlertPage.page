@@ -1,0 +1,278 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page standardController="Custom_Settings__c" extensions="OpportunityStageChangeAlertController" id="thePage"
+sidebar="false" tabStyle="Custom_Settings__c" standardStylesheets="true" showHeader="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0" lightningStylesheets="true">
+    
+    <style> 
+        div.tooltip {
+            float: right;
+            display:inline;
+            left:0;
+            opacity : 0.25;
+        }
+        div.tooltip:hover {
+            opacity : 1; 
+        }
+        div.tooltip span {
+            display: none;
+        }
+        div.tooltip:hover span {
+            display: inline;
+            position: absolute;
+            width: 15em;
+            z-index: 12;
+            background-color: #fefdb9;
+            font-size: 109%;
+            padding: 2px 5px;
+            opacity : 1; 
+            border: 1px solid orange;
+            text-align: left;
+            white-space: normal;
+            font-weight: normal;
+            color: #000;
+            top: 20px;
+            right: 0;
+        }
+        .bPageBlock .detailList .dataCol {
+            width: 38%;
+        } 
+        .bPageBlock .detailList .labelCol {
+            width: 24%!important;
+        }
+        .left-select {
+			float: left; 
+			min-width: 150px; 
+			height: 80px;
+			margin-left: 0.5em;
+		}
+        .add-remove-container {
+            float: left; text-align: center;
+        }
+        .right-select {
+            float: left; min-width: 150px; height: 80px;
+        }
+    </style>   
+    
+    <apex:outputPanel >
+        <apex:pageMessages id="pgmsgId"/>
+        <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+        <apex:form rendered="{!isFullLicenseAccessible}" id="theForm">
+            <apex:pageBlock id="outerBlock" mode="{!IF(isEdit,'edit','maindetail')}">
+                <apex:pageBlockButtons id="buttons" location="top" rendered="{!$ObjectType.Custom_Settings__c.updateable}">
+                    <apex:commandButton value="{!$Label.Edit}" action="{!editForm}" reRender="pgmsgId,outerBlock,editBlock,nonEditBlock,msgoutputpannel" rendered="{!!isEdit}" />
+                    <apex:commandButton value="{!$Label.Save}" action="{!saveForm}" reRender="pgmsgId,outerBlock,editBlock,nonEditBlock,msgoutputpannel" rendered="{!isEdit}"/>
+                    <apex:commandButton value="{!$Label.Cancel}" action="{!cancelForm}" reRender="pgmsgId,outerBlock,editBlock,nonEditBlock" rendered="{!isEdit}" />
+                </apex:pageBlockButtons>
+                <apex:outputPanel id="msgoutputpannel">
+                    <script>
+                        function javascriptMethod() {
+                            var conMessage = '{!JSENCODE(cs.Prompt_Message__c)}';
+                        
+                            var r = confirm("\nYou just changed the stage from 'x' to 'y'\n\n"+conMessage);          
+                        }
+                    </script>
+                </apex:outputPanel>
+                <!--    Non Editable Section  -->
+                <apex:pageBlockSection columns="2" rendered="{!!isEdit}" id="nonEditBlock">
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.Show_Matching_Reference_Accounts_link__c}"></apex:outputField>
+					</apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.Show_Matching_Reference_Content_link__c}"></apex:outputField>
+					</apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.Enable_Reference_Prompt__c}"></apex:outputField>
+					</apex:pageBlockSectionItem>
+                    <apex:outputText />                
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+                        <apex:outputField value="{!cs.Prompt_Message__c}" style="width: 342px;" id="alrtMsg"><br/>
+                        <a href="#" onClick="javascriptMethod();" style="color: dodgerblue;">{!$Label.Preview_Message}</a></apex:outputField>
+                    </apex:pageBlockSectionItem><apex:outputText />
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Account_Stages__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.Account_Stages__c}"></apex:outputField>
+					</apex:pageBlockSectionItem><apex:outputText />
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Content_Stages__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.Content_Stages__c}"></apex:outputField>
+					</apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+                <!--    Editable Section  -->
+                <apex:pageBlockSection rendered="{!isEdit}" columns="2"  id="editBlock">
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Accounts_link__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField value="{!cs.Show_Matching_Reference_Accounts_link__c}"></apex:inputField>
+					</apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Show_Matching_Reference_Content_link__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField value="{!cs.Show_Matching_Reference_Content_link__c}"></apex:inputField>
+					</apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Enable_Reference_Prompt__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField value="{!cs.Enable_Reference_Prompt__c}"></apex:inputField>
+					</apex:pageBlockSectionItem>
+                    <apex:outputText />
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Prompt_Message__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Prompt_Message__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Prompt_Message__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Prompt_Message__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Prompt_Message__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Prompt_Message__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+                        <apex:inputField value="{!cs.Prompt_Message__c}" style="width: 342px;"/>                        
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection> 
+                <apex:pageBlockSection rendered="{!isEdit}" columns="1"  id="editBlock1">
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Account_Stages__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Account_Stages__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+                        <apex:outputPanel id="accountStagePanel">
+                            <apex:selectList value="{!currentAccountStage}" multiselect="true" styleClass="left-select">  
+                                <apex:selectOptions value="{!allAccountStage}" />
+                            </apex:selectList>
+                            <div class="add-remove-container">
+                                <apex:outputPanel layout="block" styleClass="text">{!$Label.Add}</apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!addToList}" id="btnRight" reRender="accountStagePanel">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'right.gif')}"
+                                        alt="{!$Label.Add}" styleClass="rightArrowIcon" title="Add" />
+                                        <apex:param name="isAccount" value="true" assignto="{!isAccount}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!removeFromList}" id="btnLeft" reRender="accountStagePanel">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'left.gif')}"
+                                        alt="{!$Label.Remove}" styleClass="leftArrowIcon"
+                                        title="Remove" />
+                                        <apex:param name="isAccount" value="true" assignto="{!isAccount}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="duelingText">{!$Label.Remove}</apex:outputPanel>
+                            </div>
+                            <apex:selectList value="{!currentSelectedAccountStage}" multiselect="true" styleClass="right-select"> 
+                                <apex:selectOptions value="{!selectedAccountStage}" />
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Content_Stages__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+                                <span>
+								{!$ObjectType.Custom_Settings__c.fields.Content_Stages__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+                        <apex:outputPanel id="contentStagePanel">
+                            <apex:selectList value="{!currentContentStage}" multiselect="true" styleClass="left-select">  
+                                <apex:selectOptions value="{!allContentStage}" />
+                            </apex:selectList>
+                            <div class="add-remove-container">
+                                <apex:outputPanel layout="block" styleClass="text">{!$Label.Add}</apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!addToList}" id="btnRight" reRender="contentStagePanel">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'right.gif')}"
+                                        alt="{!$Label.Add}" styleClass="rightArrowIcon" title="Add" />
+                                        <apex:param name="isAccount" value="false" assignto="{!isAccount}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="text">
+                                    <apex:commandLink action="{!removeFromList}" id="btnLeft" reRender="contentStagePanel">
+                                        <apex:image url="{!URLFOR($Resource.DirectionalImages, 'left.gif')}"
+                                        alt="{!$Label.Remove}" styleClass="leftArrowIcon"
+                                        title="Remove" />
+                                        <apex:param name="isAccount" value="false" assignto="{!isAccount}"/>
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" styleClass="duelingText">{!$Label.Remove}</apex:outputPanel>
+                            </div>
+                            <apex:selectList value="{!currentSelectedContentStage}" multiselect="true" styleClass="right-select"> 
+                                <apex:selectOptions value="{!selectedContentStage}" />
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </apex:pageBlock>
+        </apex:form>
+    </apex:outputPanel>
+</apex:page>

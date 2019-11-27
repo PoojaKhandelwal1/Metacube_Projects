@@ -1,0 +1,2684 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page controller="ReferenceUseRequestSLDS"
+            showHeader="false"
+            sidebar="false"
+            standardstylesheets="false"
+            applyHtmlTag="false"
+            applyBodyTag="false"
+            docType="html-5.0"
+            action="{!userMappingRecord}">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/custom-slds.css')}" />   
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            <apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+            <script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+            <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+            <script src="{!URLFOR($Resource.MomentJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.JqueryFiles, 'jquery-ui-1.9.2.custom.min.css')}"/>
+            <apex:includeScript value="{!URLFOR($Resource.BootstrapFiles,'bootstrap.js')}"/>
+            <script type="text/javascript">var __sfdcSessionId = '{!GETSESSIONID()}';</script>
+            <script src="/soap/ajax/42.0/connection.js" type="text/javascript"></script>
+
+            <style>
+                #error-block {
+                    background-color: #A60000;
+                    color: WHITE;
+                    font-size: 15px;
+                    border-radius: 5px;
+                }
+                #loading-image {
+                   position: fixed;
+                   top: 40%;
+                   left: 47%;
+                   width:4%;
+                } 
+                       
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.5;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.5;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                a {
+                    cursor: pointer;
+                }
+                .slds .slds-form-element__control .slds-radio{
+                    display : inline !important;
+                }
+                .slds-form-element{
+                    padding:7px;
+                }
+                .remove-flex{
+                    flex:none !important;
+                    webkit-flex:none !important;
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux{ 
+                    background-color: white !important;
+                    border-radius: 20%;
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux:after, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux:after{
+                    border-color : gray;
+                }
+                .slds .slds-truncate{
+                    white-space: normal !important;
+                }
+                .slds .slds-max-medium-table--stacked-horizontal td{
+                    overflow: visible !important;
+                }
+                #toast-msg {
+                    position: fixed;
+                    top: 10px;
+                    left: 0;
+                    right: 0;
+                    width: 50%;
+                    margin: 0 auto;
+                    z-index: 1100000;
+                }
+                .requiredFieldBlock {
+                    background-color: #c00;
+                    position: absolute;
+                    right: -5px;
+                    width: 3px;
+                    top: 1px; 
+                    bottom: 0px;
+                }
+                .tooltip:hover .tooltipHelpShow {
+                    display : inline;
+                    bottom: 93%;
+                    position: absolute;
+                }
+                .tooltipHelpShow {
+                    display : none;
+                    bottom: 93%;
+                    line-height: 0.95rem;
+                    position: absolute;
+                }
+                .overlay {
+                    z-index : 100000;
+                }
+                
+                .addSearchIcon{
+                    background-image: url({!URLfor ($Resource.LightningCSS, '/assets/icons/utility/search_60.png')});
+                    background-repeat: no-repeat;
+                    background-size: 22px;
+                    background-position-x: 98%;
+                    background-position-y: 50%;
+                }
+                .errorClass{
+                    background-color: #fff !important;
+                    border-color: #c23934 !important;
+                    box-shadow: #c23934 0 0 3px !important;
+                    background-clip: padding-box !important;
+                }
+                .addSearchIcon.active{
+                    background-image: url({!URLfor ($Resource.LightningCSS, '/assets/icons/utility/close_60.png')});
+                    cursor : pointer;
+                }
+                select {
+                	cursor: pointer !important; 
+                }
+            </style>
+            <script>
+                function back(oppId) {
+                
+                    if ((typeof sforce != 'undefined') && (sforce != null)) {
+                        sforce.one.navigateToSObject(oppId, 'detail');
+                    }
+                }
+
+                <!--    To restrict back button of browser   -->
+                history.pushState(null, null, location.href);
+                window.onpopstate = function () {
+                    history.go(1);
+                };
+                /* REF-1572
+                objective : To show HelpOverlays
+                modified By : Rajesh 29 May 2018
+                */ 
+                var counter = 0;
+                var msg = '';
+                var header = '';
+                var content = '';
+                var addcls = '';
+                var removcls = '';
+                var loc = '';
+                var frmTop = '';
+                var frmLft = '';
+                var totlstps='7';
+                var isBusinessGrpEnable = false;
+                var helpAssistant = '{!JSENCODE(helpAssistant)}';
+                var isShowModel = true;
+                var isFilter = false;
+                var isRefTypeExist = false;
+                var isCountUpdated = false;
+                var isTileView = true;
+                var filterStep = false;
+                var isAdvRoutingStep = false;
+                var isFinish = true;
+                var isP2PRequest = true;
+
+                function ShowOrHideComponent(action) {  
+                    counter ++; 
+                    jQuery(window).scrollTop(0); 
+                 
+                    if (action) {   
+                        var helpOverlayMap = JSON.parse('{!JSENCODE(helpOverlay)}');
+
+                        if ('{!isThisBasic}' == 'false') {
+
+                            if (counter == 1) { 
+                                jQuery("#divDetails").show();  
+                                msg = helpAssistant + ' ' + JSON.parse('"' + helpOverlayMap[1].value + '"'); 
+                                header = helpOverlayMap[1].header; 
+                                content = msg.replace('@@@', totlstps);
+                                addcls = '';
+                                removcls = 'arrow_compbox arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                                loc = 'divRefType';
+                                frmTop = 6;
+                                frmLft = 123;  
+                            } else if (counter == 2) {  
+                                header = helpOverlayMap[2].header; 
+                                content = JSON.parse('"' + helpOverlayMap[2].value + '"');  
+                                addcls = 'arrow_compbox';
+                                removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                                loc = 'divRefType'; 
+                                frmTop = 27;
+                                frmLft = 320;  
+                            } else if (counter == 3) {    
+                                isShowModel = false;
+                                jQuery("#divDetails").hide(); 
+                                header = helpOverlayMap[3].header; 
+                                content = JSON.parse('"' + helpOverlayMap[3].value + '"');
+                                addcls = 'arrow_compbox';
+                                removcls = 'arrow_compbox arrow_box_top_Corner arrow_box_top_right';
+                                loc = 'ddlAcc'; 
+                                frmTop = -2;
+                                frmLft = '67'; 
+                            } else if (counter == 4) {  
+                                jQuery("#divDetails").hide();
+                                header = helpOverlayMap[4].header;
+                                content = JSON.parse('"' + helpOverlayMap[4].value + '"');
+                             
+                                if (isTileView != false) { 
+                                    window.scrollBy(0, jQuery('#divRepeat').offset().top - 150);  
+                                    addcls = 'arrow_compbox';
+                                    removcls = 'arrow_box_top_Corner arrow_box_top_right';
+                                    loc = 'tile-0'; 
+                                    frmTop = 5;
+                                    frmLft =  angular.element(angular.element('#tile-0')[0]).innerWidth();
+                                } else { 
+                                    addcls = 'arrow_box_top_right';
+                                    removcls = 'arrow_box_top_Corner arrow_compbox';
+                                    loc = 'lblAction'; 
+                                    frmTop = 23;
+                                    frmLft = -352; 
+                                }                           
+                            } else if (filterStep) {  
+                                window.scrollBy(0, jQuery('#divGenInfo').offset().top - 150);
+                                var headervalue = helpOverlayMap[5].header;
+                                header = headervalue.replace('@@@','');
+                                content = JSON.parse('"' + helpOverlayMap[5].value + '"');
+                                addcls = 'arrow_compbox';
+                                removcls = 'arrow_box_top_right arrow_box_top arrow_box_top_Corner';
+                                loc = 'divGenInfo'; 
+                                frmTop = 0;
+                                frmLft = '170'; 
+                                filterStep = false;                         
+                            } else if (isAdvRoutingStep) {  
+                                header = helpOverlayMap[6].header;   
+                                content = JSON.parse('"' + helpOverlayMap[6].value + '"');
+                                addcls = 'arrow_compbox';
+                                removcls = 'arrow_box_top_right arrow_box_top arrow_box_top_Corner';
+                                loc = 'ddlAcc';  
+                                frmTop = 63;  
+                                frmLft = '250';
+                                isAdvRoutingStep = false;  
+                            }  else if (isFinish) {  
+                                header = helpOverlayMap[7].header;
+                                content = JSON.parse('"' + helpOverlayMap[7].value + '"');
+                                addcls = 'arrow_box_top_Corner';
+                                removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner'; 
+                                loc = 'btnSubmit';  
+                                frmTop = 44;  
+                                frmLft = '-290';
+                                isFinish = false; 
+                            } else {    
+                                jQuery("#divDetails").show();
+                                action = false;   
+                            }  
+                        } else {
+
+                            if (counter == 1) {
+                                jQuery("#divDetails").show();  
+                                msg = helpAssistant + ' ' + JSON.parse('"' + helpOverlayMap[1].value + '"'); 
+                                header = helpOverlayMap[1].header; 
+                                content = msg.replace('@@@', totlstps);
+                                addcls = '';
+                                removcls = 'arrow_compbox arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                                loc = 'divRefType';
+                                frmTop = 6;
+                                frmLft = 123;   
+                            } else if (counter == 2) {  
+                                header = helpOverlayMap[2].header;
+                                content = JSON.parse('"' + helpOverlayMap[2].value + '"');
+                                addcls = 'arrow_compbox';
+                                removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner';
+                                loc = 'divRefType'; 
+                                frmTop = 27;  
+                                frmLft = 320; 
+                            } else if (counter == 3) {  
+                                jQuery("#divDetails").hide();
+                                header = helpOverlayMap[4].header;
+                                content = JSON.parse('"' + helpOverlayMap[4].value + '"');
+                             
+                                if (isTileView != false) { 
+                                    window.scrollBy(0, jQuery('#divRepeat').offset().top - 150);  
+                                    addcls = 'arrow_compbox';
+                                    removcls = 'arrow_box_top_Corner arrow_box_top_right';
+                                    loc = 'tile-0'; 
+                                    frmTop = 5;
+                                    frmLft =  angular.element(angular.element('#tile-0')[0]).innerWidth();
+                                } else { 
+                                    addcls = 'arrow_box_top_right';
+                                    removcls = 'arrow_box_top_Corner arrow_compbox';
+                                    loc = 'lblAction'; 
+                                    frmTop = 23;
+                                    frmLft = -352; 
+                                }           
+                                                
+                            } else if (isFinish) {   
+                                header = helpOverlayMap[7].header; 
+                                content = JSON.parse('"' + helpOverlayMap[7].value + '"');
+                                addcls = 'arrow_box_top_Corner';
+                                removcls = 'arrow_box_top arrow_box_top_right arrow_box_top_Corner'; 
+                                loc = 'btnSubmit';  
+                                frmTop = 44;  
+                                frmLft = '-307';
+                                isFinish = false; 
+                            } else {    
+                                jQuery("#divDetails").show();
+                                action = false;   
+                            }   
+                        }  
+                     } else {
+						jQuery("#divDetails").show();
+					 }
+                    showHideHelpOverlays(action, header, content, loc, addcls, removcls, totlstps, frmTop, frmLft); 
+                }
+                 
+                function tourHelpoverlay() {
+                    jQuery(".helpTraining").hide();
+                    /*REF-1572
+                        objective : To show HelpOverlays
+                        modified By : Rajesh 29 May 2018
+                    */ 
+                    counter = 0; 
+                    msg = '';
+                    header = '';
+                    content = '';
+                    addcls = '';
+                    removcls = '';
+                    loc = '';
+                    frmTop = '';
+                    frmLft = '';
+                    jQuery("#divDetails").show(); 
+                    filterStep = false;
+                    isAdvRoutingStep = false;
+                    isFinish = true;
+                    totlstps='7';
+ 
+                    if ('{!isThisBasic}' == 'false') {
+                    
+                        if (isFilter || isRefTypeExist) {  
+                            filterStep = true;
+                        } else {
+                            totlstps --;
+                        }
+                         
+                        if ('{!isAdvRouting}' == 'true' && isP2PRequest) { 
+                            isAdvRoutingStep = true;
+                        } else {
+                            totlstps --;
+                        } 
+                    } else {
+                        totlstps = 4;
+                    }
+                    ShowOrHideComponent(true); 
+                }
+
+                var referenceRequest = angular.module("referenceRequest", ['angularjs-datetime-picker', 'angularMultiSelectList']);
+                var referenceRequestCon = referenceRequest.controller('referenceRequestCon', function($scope, $location, $q, $filter) {
+                    //REF-2019
+                    $scope.showFilter = true;
+                    $scope.cs = '';
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.isBasic = '{!isThisBasic}';
+                    $scope.isloading = true;
+                    $scope.accountIds = '{!JSENCODE(accountIds)}';
+                    $scope.isP2PRequest = false;
+                    isP2PRequest = false;
+                    $scope.refUse = {};
+                    $scope.refUse.oppId = '{!JSENCODE(opportunityId)}';
+                    $scope.refUse.caseId = '{!JSENCODE(caseId)}';
+                    $scope.refUse.leadId = '{!JSENCODE(leadId)}';
+                    $scope.forAccount = '{!JSENCODE(forAccount)}';
+                    $scope.forContent = '{!JSENCODE(forContent)}';
+                    $scope.refUse.accId = '{!accId}';
+                    $scope.oppName = '{!JSENCODE(oppName)}';
+                    $scope.oppAccName = '{!JSENCODE(oppAccName)}';
+                    $scope.caseName = '{!JSENCODE(caseName)}';
+                    $scope.caseAccName = '{!JSENCODE(caseAccName)}';
+                    //regarding ticket #809
+                    $scope.leadCompany = '{!JSENCODE(leadCompany)}';
+                    $scope.leadName = '{!JSENCODE(leadName)}';
+                    $scope.isAdvRouting = '{!isAdvRouting}';
+                    $scope.isMandatory = '{!isMandatory}';
+                    $scope.businessGrpName = '{!JSENCODE(businessGrpName)}';
+                    $scope.isAccountSelected = '{!isAccountSelected}';
+                    $scope.userDateFormat = '{!userDateFormat}';
+                    //$scope.userDateFormat = '';
+                    $scope.requestedAccounts = [];
+                    $scope.refTypes = {};
+                    $scope.refTypeMappingMap = {};
+                    $scope.refTypeIdSet = [];
+                    $scope.Number_of_request_accounts = 'Number_of_request_accounts__c';
+                    $scope.min_lead_time_per_request_type = 'min_lead_time_per_request_type__c';
+                    $scope.max_accounts_per_request_type = 'max_accounts_per_request_type__c';
+                    $scope.Minimum_Deadline = 'Minimum_Deadline__c';
+                    $scope.General_Notes = 'General_Notes__c';
+                    $scope.Account = 'Account__c'
+                    $scope.GeneralNotes = '';
+                    $scope.minDeadlineCS;
+                    $scope.nameSpace = '{!nameSpace}';
+                    $scope.noOfAccounts = '';
+                    $scope.selectedAccounts = {};
+                    $scope.verifiedDate = new Date();
+                    $scope.lastNo = 0;
+                    $scope.defaultDate;
+                    $scope.minDeadlineLabel = '';
+                    $scope.applytoall = 'true';
+                    $scope.selectedAccount;
+                    $scope.showGenNotes = false;
+                    $scope.isError = false;
+                    $scope.isModalError = false;
+                    $scope.errorMessage = '';
+                    $scope.modalErrorMessage = '';
+                    $scope.fieldMap = {};
+                    $scope.refTypeFieldMap = {};
+                    $scope.refNoteSet = [];
+                    $scope.filterMap = {};
+                    $scope.filterAttMap = {};
+                    $scope.isFilterPresent = false;
+                    $scope.justEnter = true;
+                    $scope.isTileView = true;
+                    $scope.isRequestSubmitted = false;
+                    $scope.isShowRequestSubmittedToast = false;
+                    $scope.avilableRoutingGrp = [];
+                    $scope.selectedRoutingGrp = [];
+                    $scope.selectedRoutingGrpNames = '';
+                    $scope.editDetail = isShowModel;
+                    // added for #603 - Gaurav Saini (30 Dec, 2016)
+                    $scope.showInfoToast = false;
+                    $scope.infoMessage = '';
+                    //REF-2132
+                    $scope.isRequestSubmittedUploadFiles = false;
+                    $scope.listOfUploadedFile = [];
+                    $scope.referenceRequestId = '';
+                    $scope.isUploadFiles = false;
+                    $scope.points = [];
+                    $scope.attachSupportingDocuments = {!attachSupportingDocuments};
+                    //REF-2366
+                    $scope.showAllAttributes = false;
+                    $scope.seeAllAttributesModalList = [];
+                    $scope.hasBulkAttributeRecords = false;
+                    $scope.selectedAttributesFromModal = [];
+                    $scope.showAllAttributes = false;
+                    $scope.filterAttMapForSeeAllModal = {};
+                    $scope.filterNameForShowAllAttributesModal = '';
+                    $scope.filterIdForShowAllAttributesModal = '';
+                    $scope.isFilterRequiredForShowAllAttributesModal = false;
+                    $scope.searchAttText = '';
+                    $scope.isSearchTextError = false;
+                    
+                     //initial function which is called on page load 
+                    $scope.intialFunction = function() { 
+
+                        if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+                            $scope.getTotalNoOfRequests().then(function(reqcount) {
+                                $scope.cs = reqcount;
+                                $scope.minDeadlineCS = $scope.cs[$scope.nameSpace + $scope.Minimum_Deadline];
+                                $scope.minDeadlineLabel = '{!$Label.Min_deadline_days}'.replace('@@@', $scope.minDeadlineCS);
+                                $scope.GeneralNotes = $scope.cs[$scope.nameSpace + $scope.General_Notes];
+                                
+                                for (var i = 0; i <= $scope.cs[$scope.nameSpace + $scope.Number_of_request_accounts]; i++) {
+                                    $scope.requestedAccounts.push('' + i);
+                                }
+                                var dateWrapper = '{"deadLineDate":"' + new Date().toJSON().slice(0, 10) + '","days":' + $scope.minDeadlineCS + '}';
+                                
+                                $scope.calculateDate(dateWrapper).then(function(dateResult) {
+                                    dateResult = new Date(dateResult).getTime();
+                                    $scope.defaultDate = dateResult;
+                                });
+                                
+                                if (($scope.accountIds != null && $scope.accountIds != '') || (!$scope.isBasic || $scope.isBasic == 'false')) {
+                                    $scope.getAccountRequests().then(function(accWrpList) {
+                                        //changes related to #713
+                                        angular.forEach(accWrpList, function(con) {
+                                            con.accountName = $scope.parseResult(con.accountName);
+                                        });
+                
+                                        for (var i = 0; i < accWrpList.length; i++) {
+                                            $scope.selectedAccounts[accWrpList[i].recordCount] = accWrpList[i];
+                                            $scope.lastNo = accWrpList[i].recordCount;
+                                            
+                                            if (!accWrpList[i].isManaged) {
+                                                $scope.isP2PRequest = true;
+                                                isP2PRequest = true;
+                                            } else if (!$scope.showFilter) { 
+                                                $scope.showFilter = true;
+                                            }
+                                        }
+                                        $scope.selectedAccount = angular.copy($scope.selectedAccounts[accWrpList[0].recordCount]);
+                
+                                        if ($scope.selectedAccount.deadline == undefined || $scope.selectedAccount.deadline == '') {
+                                            var tempdate = $filter('date')($scope.defaultDate, $scope.userDateFormat);
+                                            $scope.selectedAccount.deadLineDate = tempdate;
+                                            $scope.selectedAccount.deadline = tempdate;
+                                        }
+                                        $scope.noOfAccounts = '' + Object.keys($scope.selectedAccounts).length;
+                                    });
+                                    
+                                    $scope.getRefTypes('' + $scope.minDeadlineCS).then(function(refTypeslist) {
+                                        $scope.refTypes[''] = {
+                                            'ref': {},
+                                            'name': '--None--',
+                                            'minDeadline': '',
+                                            maxRequest: 0,
+                                            'note': '',
+                                            'isManaged': false
+                                        };
+                                        
+                                        for (var i = 0; i < refTypeslist.length; i++) {
+                                            $scope.refTypes[refTypeslist[i].ref.Id] = refTypeslist[i];
+                                            $scope.refTypeMappingMap[refTypeslist[i].ref.Id] = 0;
+                                            
+                                            if (refTypeslist[i].note != null && refTypeslist[i].note != '') {
+                                                $scope.refNoteSet.push(refTypeslist[i].ref.Id);
+                                            }
+                                        }
+                                        $scope.isloading = false;
+                                        $scope.editDetail = true; 
+
+                                        /*Check overley */
+                                        if('{!showOveray}' == 'true') {
+                                            tourHelpoverlay(); 
+                                        }
+                                    });
+                                    
+                                    Visualforce.remoting.Manager.invokeAction(
+                                        '{!$RemoteAction.ReferenceUseRequestSLDS.getAddFields1}',
+                                        function(result, event) {
+                                            $scope.$apply(function() {
+                                            
+                                                if (result != null && result != '') {
+                                                    result = $scope.parseResult(result);
+                                                    result = JSON.parse(result);
+                                                    $scope.fieldMap = result;
+                                                }
+                                            });
+                                        }, {
+                                            escape: true
+                                        }
+                                    );
+                                }
+                            });
+                            
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.ReferenceUseRequestSLDS.getRoutingGroup1}',
+                                function(result, event) {
+                                
+                                    if (result != null && result != '') {
+                                        result = JSON.parse($scope.parseResult(result));
+                                        $scope.avilableRoutingGrp = result;
+                                    }
+                                }, {
+                                    escape: true
+                                }
+                            );
+                            
+                            if ($scope.isAdvRouting == 'true') {  
+                                Visualforce.remoting.Manager.invokeAction(
+                                    '{!$RemoteAction.ReferenceUseRequestSLDS.getMandatoryFilters}', $scope.isAccountSelected,
+                                    function(result, event) {
+                                    
+                                        if (result != null && result != '') {
+                                            result = JSON.parse($scope.parseResult(JSON.stringify(result)));
+                                            var tempMap = angular.copy($scope.filterMap);
+                                            $scope.filterMap = angular.copy(result);
+                                            $scope.isFilterPresent = (Object.keys($scope.filterMap).length > 0);
+                                            isFilter = $scope.isFilterPresent;
+
+                                            angular.forEach($scope.filterMap, function(obj, key) {
+                                            
+                                                if ($scope.filterMap[key] != undefined && $scope.filterMap[key] != '') {
+                                                    $scope.filterMap[key].selectedAttributes = angular.copy(obj.selectedAttributes);
+                                                    $scope.filterMap[key].selectedAttIds = angular.copy(obj.selectedAttIds);
+                
+                                                } else {
+                                                    $scope.filterMap[key] = angular.copy(obj);
+                                                    $scope.filterMap[key].visible = false;
+                                                }
+                                            });
+                
+                                        }
+                                    }, {
+                                        escape: true
+                                    }
+                                );
+                            }
+                
+                        }
+                    }
+                    
+                    //#1070 : convert date to yyyy-MM-dd format befor sending to controller
+                    $scope.convertToDate = function (date) {
+                            date = (date == null) ? '' : date;
+                            var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+                            
+                            if (date == null || date == '') {
+                                return '';
+                            }
+                            
+                            if (date.match(regEx))  { 
+                                tempDF = date.split('-');
+                                if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+                                    return null;
+                                }
+                                return date; 
+                        }
+                        try {
+                            var tempDF = $scope.userDateFormat;
+                            var tempDate = date + '';
+                            tempDF = tempDF.split(/[./-]/g);
+                            tempDate = tempDate.split(/[./-]/g);
+                            var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] : tempDate[tempDF.indexOf('MM')];
+                            var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] : tempDate[tempDF.indexOf('dd')];
+                            var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+                            var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+                            
+                            if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+                                
+                                if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+                                    return null;
+                                }
+                                return dateString;
+                            } else {
+                                return null;
+                            }
+                        } catch (e) {
+                            return null;
+                        }
+                    }
+                    
+                    $scope.checkDate = function (day, month, year){
+                        var returnval = true;
+                            if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == '' ||
+                                parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+                                returnval = false;
+                            } else {
+                                day = parseInt(day);
+                                month = parseInt(month);
+                                year = parseInt(year);
+                            }
+                        returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+                        var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+                                        : (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+                        returnval = (day > days) ? false : returnval;
+                        return returnval;
+                    }
+                    
+                    $scope.calculateDate = function(dateWrapper) {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.calculateDateNew}', dateWrapper,
+                            function(result, event) {
+                            
+                                if (result != null && result != '') {
+                                    deferred.resolve(result);
+                                }
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.parseResult = function(result) {
+                    
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                            return result;
+                        }
+                    }
+                    
+                    $scope.getRefTypes = function(minDate) {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.getRefTypes1}', minDate,
+                            function(result, event) {
+                            
+                                if (result != null && result != '') {
+                                    result = JSON.parse($scope.parseResult(result));
+                                    deferred.resolve(result);
+                                }
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getAccountRequests = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.getAccountRquestss}', $scope.accountIds,
+                            function(result, event) {
+                            
+                                if (result != null && result != '') {
+                                    result = JSON.parse($scope.parseResult(result));
+                                    deferred.resolve(result);
+                                }
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getTotalNoOfRequests = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.fetchCS}',
+                            function(result, event) {
+                            
+                                if (result != null && result != '') {
+                                    deferred.resolve(result);
+                                }
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.checkforWeekend = function(dateWrapper) {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.checkforWeekend}', dateWrapper,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getRefTypeFields = function(fieldMapJSON, accountJSON, refNoteSet) {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.getRefAddFields1}', fieldMapJSON, accountJSON, refNoteSet,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                result = JSON.parse(result);
+                                deferred.resolve(result);
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getFilters = function(refIdsJSON, isPToPRequest) {
+                        var deferred = $q.defer();
+                        $scope.selectedRoutingGrpNames = '';
+                        //Getting Routing guoup Name
+                        if ($scope.selectedRoutingGrp.length > 0) {
+      
+                            for (var i = 0; i < $scope.selectedRoutingGrp.length; i++) {
+                            
+                                if (i == 0) {
+                                    $scope.selectedRoutingGrpNames = $scope.selectedRoutingGrp[i].value;
+                                } else {
+                                    $scope.selectedRoutingGrpNames += ',' + $scope.selectedRoutingGrp[i].value;
+                                }  
+                            }
+                        }
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.getFilters1}', refIdsJSON + '@@' + $scope.selectedRoutingGrpNames + '@@' + isPToPRequest,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                result = JSON.parse(result);
+                                deferred.resolve(result);
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getAllFilterAttributes = function(filterIdsJSON) {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.getAllFilterAttributes1}', filterIdsJSON,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                result = JSON.parse(result);
+                                deferred.resolve(result);
+                            }, {
+                                escape: true
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.cancel = function() {
+                        var selectedAccIdsParam = '';
+                        var form = document.createElement("form");
+                        form.setAttribute("method", "POST");
+                        form.setAttribute("action", "{!URLFOR($Page.RfSearchLightning)}");
+                        
+                        if ($scope.refUse.oppId != '') {
+                            var hiddenField = document.createElement("input");
+                            hiddenField.setAttribute("type", "hidden");
+                            hiddenField.setAttribute("name", "OpportunityId");
+                            hiddenField.setAttribute("value", $scope.refUse.oppId);
+                            form.appendChild(hiddenField);
+                        }
+                        
+                        if ($scope.refUse.caseId != '') {
+                            var hiddenField = document.createElement("input");
+                            hiddenField.setAttribute("type", "hidden");
+                            hiddenField.setAttribute("name", "caseId");
+                            hiddenField.setAttribute("value", $scope.refUse.caseId);
+                            form.appendChild(hiddenField);
+                        }
+                        
+                        if ($scope.refUse.leadId != '') {
+                            var hiddenField = document.createElement("input");
+                            hiddenField.setAttribute("type", "hidden");
+                            hiddenField.setAttribute("name", "leadId");
+                            hiddenField.setAttribute("value", $scope.refUse.leadId);
+                            form.appendChild(hiddenField);
+                        }
+                        
+                        if ($scope.forAccount != null) {
+                            var hiddenField = document.createElement("input");
+                            hiddenField.setAttribute("type", "hidden");
+                            hiddenField.setAttribute("name", "forAccount");
+                            hiddenField.setAttribute("value", $scope.forAccount);
+                            form.appendChild(hiddenField);
+                        }
+                        
+                        if ($scope.forContent != null) {
+                            var hiddenField = document.createElement("input");
+                            hiddenField.setAttribute("type", "hidden");
+                            hiddenField.setAttribute("name", "forContent");
+                            hiddenField.setAttribute("value", $scope.forContent);
+                            form.appendChild(hiddenField);
+                        }
+
+                        angular.forEach(
+                            $scope.selectedAccounts,
+                            function(account, key) {
+
+                                if (selectedAccIdsParam == '') {
+                                    selectedAccIdsParam = account.rbi[$scope.nameSpace + $scope.Account];
+                                } else {
+                                    selectedAccIdsParam += ',' + account.rbi[$scope.nameSpace + $scope.Account];
+                                }
+                            }
+                        );
+                        var hiddenField1 = document.createElement("input");
+                        hiddenField1.setAttribute("type", "hidden");
+                        hiddenField1.setAttribute("name", "selectedAccIdsParam");
+                        hiddenField1.setAttribute("value", selectedAccIdsParam);
+                        form.appendChild(hiddenField1);
+
+                        var overlayHid = document.createElement("input");
+                        overlayHid.setAttribute("type", "hidden");
+                        overlayHid.setAttribute("name", "helpOverlay");
+                        overlayHid.setAttribute("value", false);
+                        form.appendChild(overlayHid);
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                
+                    $scope.edit = function(recodeNo) {
+                        $scope.editDetail = true;
+                        $scope.modalErrorMessage = '';
+                        $scope.isModalError = false;
+                        $scope.isError = false;
+                        
+                        if ($scope.selectedAccounts[recodeNo].referenceTypeName != '') {
+                            $scope.minDeadlineLabel = '{!$Label.Min_deadline_days}'.replace('@@@', $scope.refTypes[$scope.selectedAccounts[recodeNo].referenceType].minDeadline);
+                        } else {
+                            $scope.minDeadlineLabel = '{!$Label.Min_deadline_days}'.replace('@@@', $scope.minDeadlineCS);
+                        }
+                        $scope.selectedAccount = angular.copy($scope.selectedAccounts[recodeNo]);
+                        
+                        if ($scope.selectedAccount.deadline == undefined || $scope.selectedAccount.deadline == '') {
+                            var tempDate = $filter('date')($scope.defaultDate, $scope.userDateFormat);
+                            $scope.selectedAccount.deadLineDate = tempDate;
+                            $scope.selectedAccount.deadline = tempDate;
+                        } else {
+                            var dateValue = new Date($scope.selectedAccount.deadline).getTime();
+                            var tempdate = $filter('date')(dateValue, $scope.userDateFormat);
+                            $scope.selectedAccount.deadLineDate = tempdate;
+                            $scope.selectedAccount.deadline = tempdate;
+                        }
+                    }
+                
+                    $scope.deleteReq = function(recodeNo) { 
+                        $scope.isloading = true;
+                        var refType = angular.copy($scope.selectedAccounts[recodeNo].referenceType);
+                        delete $scope.selectedAccounts[recodeNo];
+                        var referenceCount = 0;
+                        $scope.showGenNotes = false;
+                        var totalReq = parseInt($scope.noOfAccounts) - 1;
+                        
+                        //REF-2019
+                        if (totalReq <= 0) {
+                            $scope.showFilter = false;
+                        } 
+                        
+                        $scope.noOfAccounts = '' + totalReq;
+                        var isUnspecifiedPresent = false;
+                        $scope.isP2PRequest = false;
+                        isP2PRequest = false;
+                        $scope.showFilter = false;
+                        
+                        if (refType != undefined && refType != '') {
+                            angular.forEach($scope.selectedAccounts, function(account, key) {
+                                
+                                if (account.isManaged && account.referenceType != undefined && account.referenceType != '' && refType == account.referenceType) {
+                                    referenceCount += 1;
+                                }
+                                
+                                if (account.accountName == '{!$Label.No_Account_Specified}' || account.isManaged) {
+                                    $scope.showGenNotes = true;
+                                    isUnspecifiedPresent = true;
+                                }
+
+                                if (!account.isManaged && account.accountName != '{!$Label.No_Account_Specified}' && ($scope.refTypes == null || account.referenceType == null || $scope.refTypes[account.referenceType] == null || !$scope.refTypes[account.referenceType].isManaged)) {
+                                    $scope.isP2PRequest = true;
+                                    isP2PRequest = true;
+                                } else if (!$scope.showFilter) { 
+                                    $scope.showFilter = true;
+                                }
+                            });
+                            var countRef = angular.copy($scope.refTypeMappingMap[refType]);
+                            $scope.refTypeMappingMap[refType] = countRef - 1;
+                            
+                            if (referenceCount < 1) { 
+                            
+                                if ($scope.refTypeIdSet.indexOf(refType) >= 0) {
+                                    var refCount = 0;
+                                    // Just check reftype associated to another account or not.
+                                    angular.forEach($scope.selectedAccounts, function(account, key) {
+                                                                 
+                                        if (account.referenceType == refType) {
+                                            refCount += 1; 
+                                        } 
+                                    });
+                                   
+                                    if (refCount < 1) {
+                                        delete $scope.refTypeFieldMap[refType];
+                                        var index = $scope.refTypeIdSet.indexOf(refType);
+                                        $scope.refTypeIdSet.splice(index, 1);
+                                        var refTypeIdSet = angular.toJson($scope.refTypeIdSet);
+                                        
+                                        $scope.getFilters(refTypeIdSet, $scope.isP2PRequest).then(function(filterResult) {
+                                        
+                                            if (filterResult != null && filterResult != '') {
+                                                var tempMap = angular.copy($scope.filterMap);
+                                                $scope.filterMap = angular.copy(filterResult);
+                                                $scope.isFilterPresent = (Object.keys($scope.filterMap).length > 0);
+                                                isFilter = $scope.isFilterPresent;
+                                                angular.forEach(tempMap, function(obj, key) {
+                                                
+                                                    if ($scope.filterMap[key] != undefined && $scope.filterMap[key] != '') {
+                                                        $scope.filterMap[key].selectedAttributes = angular.copy(obj.selectedAttributes);
+                                                        $scope.filterMap[key].selectedAttIds = angular.copy(obj.selectedAttIds);
+                                                    } else {
+                                                        $scope.filterMap[key] = angular.copy(obj);
+                                                        $scope.filterMap[key].visible = false;
+                                                    }
+                                                });
+                                            } else {
+                                                angular.forEach($scope.filterMap, function(obj, key) {
+                                                    $scope.filterMap[key].visible = false;
+                                                });
+                                            }
+                                            $scope.isloading = false;
+                                            $scope.editDetail = false;
+                                        });
+                                    } else {
+                                         $scope.isloading = false;
+                                        $scope.editDetail = false;
+                                    }
+                                } else {
+                                    $scope.isloading = false;
+                                    $scope.editDetail = false;
+                                }
+                            } else {
+                                $scope.isloading = false;
+                                $scope.editDetail = false;
+                            }
+                        } else {
+                            $scope.isloading = false;
+                            $scope.editDetail = false;
+                            $scope.showFilter = false;
+                            angular.forEach($scope.selectedAccounts, function(account, key) {
+                                
+                                if (!account.isManaged && account.accountName != '{!$Label.No_Account_Specified}' && ($scope.refTypes == null || account.referenceType == null || $scope.refTypes[account.referenceType] == null || !$scope.refTypes[account.referenceType].isManaged)) {
+                                    $scope.isP2PRequest = true;
+                                    isP2PRequest = true;
+                                } else if (!$scope.showFilter) { 
+                                    $scope.showFilter = true;
+                                }
+                            });
+                        }
+                    }
+                    
+                    $scope.saveDetails = function(recodeNo) {
+                        $scope.isModalError = false;
+                         
+                        if ($scope.selectedAccount.deadline == undefined || $scope.selectedAccount.referenceType == undefined 
+                                        || $scope.selectedAccount.deadline == '' || $scope.selectedAccount.referenceType == ''
+                                        || ({!cs.Request_Notes_Required__c} && !$scope.selectedAccount.notes)) {
+                            $scope.modalErrorMessage = {!cs.Request_Notes_Required__c} ? '{!$Label.Edit_popup_all_fields_must_filled1}' : '{!$Label.Edit_popup_all_fields_must_filled}';
+                            $scope.isModalError = true;
+                        } else { 
+                            $scope.isloading = true;
+                            var minimumDeadline = $scope.refTypes[$scope.selectedAccount.referenceType].minDeadline;
+                            var deadlinedate ;
+                            var oldFormat = $scope.selectedAccount.deadline;
+                            var dateString = $scope.convertToDate($scope.selectedAccount.deadline); //check if date is in correct format : #1070
+                            
+                            if (dateString == null) {
+                                $scope.isModalError = true;
+                                $scope.isloading = false;
+                                    $scope.modalErrorMessage = '{!$Label.Date_Invalid}' + $scope.selectedAccount.deadline; 
+                            } else {
+                                deadlinedate = dateString;
+                                $scope.selectedAccount.deadline = deadlinedate;
+                                var dateWrapper = '{"deadLineDate":"' + deadlinedate + '","days":' + minimumDeadline + '}';
+                                var isManagedRefType = $scope.refTypes[$scope.selectedAccount.referenceType].isManaged;
+                                    
+                                $scope.checkforWeekend(dateWrapper).then(function(dateResult) {
+                                
+                                    if (dateResult != '') {
+                                        $scope.modalErrorMessage = $scope.parseResult(dateResult);
+                                        $scope.isModalError = true;
+                                        $scope.isloading = false;
+                                        deadlinedate = oldFormat;
+                                        $scope.selectedAccount.deadline = deadlinedate;
+                                    } else {
+                                        var refCount = 0
+                                        var preRefCount = 0;
+                                        var isUnspecifiedPresent = false;
+                                        var isManaged = false;
+                                        
+                                        if ($scope.applytoall == 'false') {
+                                            refCount = 1 + $scope.refTypeMappingMap[$scope.selectedAccount.referenceType];
+                                            
+                                            if ($scope.refTypes[$scope.selectedAccount.referenceType].maxRequest != undefined 
+                                                        && $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest > 0 
+                                                            && refCount > $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest) {
+                                                $scope.modalErrorMessage = $scope.parseResult('{!$Label.No_of_Accounts_Per_ReqType_Error}'.replace('@@@', '' + $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest).replace('@@@', '' + $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest));
+                                                $scope.isModalError = true;
+                                                $scope.isloading = false;
+                                                deadlinedate = oldFormat;
+                                                $scope.selectedAccount.deadline = deadlinedate;
+                                            } else {
+                                           
+                                                if ($scope.selectedAccounts[recodeNo].referenceType != $scope.selectedAccount.referenceType) {
+                                                
+                                                    if ($scope.refTypeIdSet.indexOf($scope.selectedAccounts[recodeNo].referenceType) >= 0) {
+                                                        var index = $scope.refTypeIdSet.indexOf($scope.selectedAccounts[recodeNo].referenceType);
+                                                        $scope.refTypeIdSet.splice(index, 1);
+                                                    }
+                                                    
+                                                    if ($scope.refTypeMappingMap[$scope.selectedAccount.referenceType] > 0) {
+                                                        preRefCount = $scope.refTypeMappingMap[$scope.selectedAccount.referenceType] - 1;
+                                                        $scope.refTypeMappingMap[$scope.selectedAccount.referenceType] = preRefCount;
+                                                    }
+                                                }
+                                                
+                                                if ($scope.selectedAccount.accountName == '{!$Label.No_Account_Specified}') {
+                                                    $scope.showGenNotes = true;
+                                                    isUnspecifiedPresent = true;
+                                                }
+                                               
+                                                if (!isManaged) {
+                                                    isManaged = $scope.selectedAccount.isManaged;
+                                                    
+                                                    if (isManagedRefType) {
+                                                        isManaged = true;
+                                                    }
+                                                }
+                                                $scope.selectedAccounts[recodeNo] = $scope.selectedAccount;
+                                                $scope.selectedAccounts[recodeNo].deadLineDate = $scope.selectedAccount.deadline;
+                                                $scope.refTypeMappingMap[$scope.selectedAccount.referenceType] = refCount;
+                                                $scope.refTypeIdSet = [];                                            
+                                                angular.forEach($scope.selectedAccounts, function(account, key) {
+                                                 
+                                                    if (((account.isManaged && account.referenceType != null) || ($scope.refTypes[account.referenceType] != undefined 
+                                                                                && $scope.refTypes[account.referenceType].isManaged)) && $scope.refTypeIdSet.indexOf(account.referenceType) < 0) {
+                                                        $scope.refTypeIdSet.push(account.referenceType);
+                                                    }
+                                                });  
+                                                $scope.editDetail = false;
+                                                $scope.justEnter = false;
+                                                $scope.isloading = false;
+                                            }
+                                        } else if ($scope.applytoall == 'true') {
+                                        
+                                            angular.forEach($scope.selectedAccounts, function(account, key) {
+                                            
+                                                if (account.referenceType != $scope.selectedAccount.referenceType) {
+                                                    refCount += 1;
+                                                }
+                                            });
+                                            refCount = refCount + $scope.refTypeMappingMap[$scope.selectedAccount.referenceType];
+                                            
+                                            if ($scope.refTypes[$scope.selectedAccount.referenceType].maxRequest != undefined 
+                                                    && $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest > 0 
+                                                        && refCount > $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest) {
+                                                $scope.modalErrorMessage = $scope.parseResult('{!$Label.No_of_Accounts_Per_ReqType_Error}'.replace('@@@', '' + $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest).replace('@@@', '' + $scope.refTypes[$scope.selectedAccount.referenceType].maxRequest));
+                                                $scope.isModalError = true;
+                                                $scope.isloading = false;
+                                                deadlinedate = oldFormat;
+                                                $scope.selectedAccount.deadline = deadlinedate;
+                                            } else {
+                                                angular.forEach($scope.selectedAccounts, function(account, key) {
+                                                
+                                                    if (account.referenceType != $scope.selectedAccount.referenceType) {
+                                                    
+                                                        if ($scope.refTypeIdSet.indexOf(account.referenceType) >= 0) {
+                                                            var index = $scope.refTypeIdSet.indexOf(account.referenceType);
+                                                            $scope.refTypeIdSet.splice(index, 1);
+                                                        }
+                                                        
+                                                        if ($scope.refTypeMappingMap[account.referenceType] >= 0) {
+                                                            preRefCount = $scope.refTypeMappingMap[account.referenceType] - 1;
+                                                            $scope.refTypeMappingMap[account.referenceType] = preRefCount;
+                                                        }
+                                                    }
+                                                    
+                                                    if (account.accountName == '{!$Label.No_Account_Specified}') {
+                                                        $scope.showGenNotes = true;
+                                                        isUnspecifiedPresent = true;
+                                                    }
+                                                    
+                                                    if (!isManaged) {
+                                                        isManaged = account.isManaged;
+                                                        
+                                                        if (isManagedRefType) {
+                                                            isManaged = true;
+                                                        }
+                                                    }
+                                                    $scope.selectedAccounts[key].referenceTypeName = angular.copy($scope.selectedAccount.referenceTypeName);
+                                                    $scope.selectedAccounts[key].referenceType = angular.copy($scope.selectedAccount.referenceType);
+                                                    $scope.selectedAccounts[key].deadline = angular.copy($scope.selectedAccount.deadline);
+                                                    $scope.selectedAccounts[key].deadLineDate = angular.copy($scope.selectedAccount.deadline);
+                                                    $scope.selectedAccounts[key].notes = angular.copy($scope.selectedAccount.notes);
+                                                    
+                                                    if ((account.isManaged || isManagedRefType) && $scope.refTypeIdSet.indexOf($scope.selectedAccounts[key].referenceType) < 0 
+                                                                && $scope.selectedAccounts[key].referenceType != null) {
+                                                        $scope.refTypeIdSet.push($scope.selectedAccounts[key].referenceType);
+                                                    } 
+                                                });
+                                                 
+                                                if (!isManaged && !isUnspecifiedPresent) {
+                                                    $scope.editDetail = false;
+                                                    $scope.isloading = false;
+                                                    $scope.justEnter = false;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (!$scope.isModalError) {
+                                            $scope.isP2PRequest = false;
+                                            isP2PRequest = false; 
+                                            $scope.showFilter = false;
+                                            angular.forEach($scope.selectedAccounts, function(account,key) {
+                                                
+                                                if (!account.isManaged && account.accountName != '{!$Label.No_Account_Specified}' && ($scope.refTypes == null || account.referenceType == null || $scope.refTypes[account.referenceType] == null || !$scope.refTypes[account.referenceType].isManaged)) {
+                                                    $scope.isP2PRequest = true;
+                                                    isP2PRequest = true;
+                                                } else if (!$scope.showFilter) { 
+                                                    $scope.showFilter = true;
+                                                }
+                                            });
+                                            
+                                            if ((!$scope.isBasic || $scope.isBasic == 'false') && ($scope.isAdvRouting == 'true' || $scope.showFilter)) {
+                                                $scope.showGenNotes = true; 
+                                                var fieldMapJson = angular.toJson($scope.fieldMap);
+                                                var accounts = angular.toJson($scope.selectedAccounts);
+                                                var refNoteSet = angular.toJson($scope.refNoteSet);
+                                                 
+                                                $scope.getRefTypeFields(fieldMapJson, accounts, refNoteSet).then(function(fieldResult) {
+                                                
+                                                    if (fieldResult != null && fieldResult != '') { 
+                                                        var tempMap = angular.copy($scope.refTypeFieldMap);
+                                                        $scope.refTypeFieldMap = fieldResult;
+                                                        isRefTypeExist = true;
+
+                                                        angular.forEach(tempMap, function(obj, key) {
+                                                        
+                                                            if ($scope.refTypeFieldMap[key] != undefined && $scope.refTypeFieldMap[key] != '') {
+                                                                $scope.refTypeFieldMap[key] = obj;
+                                                            }
+                                                        });
+                                                    } else {
+                                                        isRefTypeExist = false;
+                                                    }
+                                                });
+                    
+                                                var refTypeIdSet = angular.toJson($scope.refTypeIdSet);
+                                                
+                                                $scope.getFilters(refTypeIdSet, $scope.isP2PRequest).then(function(filterResult) {
+                                                
+                                                    if (filterResult != null && filterResult != '') {
+                                                        var tempMap = angular.copy($scope.filterMap);
+                                                        $scope.filterMap = angular.copy(filterResult);
+                                                        $scope.isFilterPresent = (Object.keys($scope.filterMap).length > 0);
+                                                        isFilter = $scope.isFilterPresent;
+                                                        angular.forEach(tempMap, function(obj, key) {
+                                                        
+                                                            if ($scope.filterMap[key] != undefined && $scope.filterMap[key] != '') {
+                                                                $scope.filterMap[key].selectedAttributes = angular.copy(obj.selectedAttributes);
+                                                                $scope.filterMap[key].selectedAttIds = angular.copy(obj.selectedAttIds);
+                                                            } else {
+                                                                $scope.filterMap[key] = angular.copy(obj);
+                                                                $scope.filterMap[key].visible = false;
+                                                            }
+                                                        });
+                                                    }
+                                                    $scope.editDetail = false;
+                                                    $scope.isloading = false;
+                                                    $scope.justEnter = false;
+                                                });
+                                            } else {
+                                                $scope.editDetail = false;
+                                                $scope.isloading = false;
+                                                $scope.justEnter = false;
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                
+                    $scope.openFilterModal = function() {
+                        $scope.isloading = true;
+                        $scope.isModalError = false;
+                        $scope.isError = false;
+                        var filterIdSet = angular.toJson(Object.keys($scope.filterMap));
+                        
+                        $scope.getAllFilterAttributes(filterIdSet).then(function(filterAttResult) {
+                        
+                            if (filterAttResult != null && filterAttResult != '') {
+                                var tempMap = angular.copy($scope.filterAttMap);
+                                $scope.filterAttMap = angular.copy(filterAttResult);
+                                angular.forEach(tempMap, function(obj, key) {
+                                
+                                    if ($scope.filterAttMap[key] != undefined && $scope.filterAttMap[key] != '') {
+                                        $scope.filterAttMap[key] = obj;
+                                    }
+                                });
+                                $scope.isloading = false;
+                                $scope.editFilter = true;
+                            }
+                        });
+                    }
+                
+                    $scope.$watch('selectedRoutingGrp', function() { 
+                       grpNames = ''; 
+                        
+                        for (var i = 0; i < $scope.selectedRoutingGrp.length; i++) {
+                        
+                            if (i == 0) {
+                                grpNames = $scope.selectedRoutingGrp[i].value;
+                            } else {
+                                grpNames += ',' + $scope.selectedRoutingGrp[i].value;
+                            } 
+                        }
+                        var refTypeIdSet = angular.toJson($scope.refTypeIdSet);
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.getFilters1}', refTypeIdSet + '@@' + grpNames + '@@' + $scope.isP2PRequest,
+                                function(result, event) {
+                                    result = $scope.parseResult(result);
+                                    result = JSON.parse(result);
+                                    $scope.filterMap = angular.copy(result);
+                                    
+                                    if ($scope.filterMap != null ) {
+                                        $scope.isFilterPresent = (Object.keys($scope.filterMap).length > 0);
+                                    }
+                                    angular.forEach($scope.filterAttMap, function(atts, key) {
+                                        
+                                        if ($scope.filterMap[key] != null) {
+                                            var selectedAtt = '';
+                                            var selectedAttIds = [];
+                                            
+                                            for (var i = 0; i < atts.length; i++) {
+                                            
+                                                if (atts[i].isSelected) {
+                                                    selectedAttIds.push(atts[i].attId);
+                                                    
+                                                    if (selectedAtt == '') {
+                                                        selectedAtt = atts[i].attName;
+                                                    } else if (selectedAtt.indexOf(atts[i].attName) < 0) {
+                                                        selectedAtt += ', ' + atts[i].attName;
+                                                    }
+                                                }
+                                            }
+                                            $scope.filterMap[key].selectedAttributes = angular.copy(selectedAtt);
+                                            $scope.filterMap[key].selectedAttIds = angular.copy(selectedAttIds);
+                                        }
+                                    });
+                                    $scope.$apply();
+                                }, {
+                                escape: true
+                            }
+                        ); 
+                    });
+                    
+                    $scope.closeFilterModal = function() {
+                        $scope.modalErrorMessage = '';
+                        $scope.isModalError = false;
+                        $scope.isError = false;
+                        
+                        angular.forEach($scope.filterAttMap, function(atts, key) {
+                            var selectedAtt = '';
+                            var selectedAttIds = [];
+                            
+                            for (var i = 0; i < atts.length; i++) {
+                            
+                                if (atts[i].isSelected) {
+                                    selectedAttIds.push(atts[i].attId);
+                                    
+                                    if (selectedAtt == '') {
+                                        selectedAtt = atts[i].attName;
+                                    } else if (selectedAtt.indexOf(atts[i].attName) < 0) {
+                                        selectedAtt += ', ' + atts[i].attName;
+                                    }
+                                }
+                            }
+                            
+                            if (selectedAttIds.length == 0 && $scope.filterMap[key].required && $scope.filterMap[key].visible) {
+                                $scope.modalErrorMessage = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+                                $scope.isModalError = true;
+                            }
+                            $scope.filterMap[key].selectedAttributes = angular.copy(selectedAtt);
+                            $scope.filterMap[key].selectedAttIds = angular.copy(selectedAttIds);
+                        });
+                        
+                        if (!$scope.isModalError) {
+                            $scope.editFilter = false;
+                        }
+                    }
+                    
+                    $scope.addRequest = function() {
+                        $scope.isError = false;
+                        var previousListSize = parseInt(Object.keys($scope.selectedAccounts).length);
+                        
+                        if (previousListSize < parseInt($scope.noOfAccounts)) {
+                        
+                            for (var i = previousListSize; i < parseInt($scope.noOfAccounts); i++) {
+                                $scope.lastNo = $scope.lastNo + 1;
+                                $scope.selectedAccounts[$scope.lastNo] = {
+                                    "rbi": {},
+                                    "accountName": "{!$Label.No_Account_Specified}",
+                                    "isManaged": true,
+                                    "isSelected": false,
+                                    "recordCount": $scope.lastNo,
+                                    "referenceTypeName": "",
+                                    'deadline': $filter('date')($scope.defaultDate, $scope.userDateFormat),
+                                    "isCollapsed": true,
+                                    "isRequestCreatedForAccount" : false
+                                };
+                            }
+                        } else {
+                        
+                            for (var i = 1; i <= parseInt(Object.keys($scope.selectedAccounts).length); i++) {
+                                $scope.noOfAccounts = '' + i;
+                            }
+                        }
+                
+                    }
+                    $scope.selectAll = function(filterId) {
+                        angular.forEach($scope.filterAttMap[filterId], function(att) {
+                            att.isSelected = true;
+                        });
+                    }
+                
+                    $scope.clearAll = function(filterId) {
+                        angular.forEach($scope.filterAttMap[filterId], function(att) {
+                            att.isSelected = false;
+                        });
+                    }
+                    $scope.changeRefType = function() {
+                        $scope.isloading = true;
+                        var refId = $scope.selectedAccount.referenceType;
+                        $scope.isModalError = false;
+                        $scope.isError = false;
+                        
+                        if (refId != '') {
+                            var minDeadlinetemp = $scope.refTypes[refId].minDeadline;
+                            $scope.minDeadlineLabel = '{!$Label.Min_deadline_days}'.replace('@@@', minDeadlinetemp);
+                            var dateWrapper = '{"deadLineDate":"' + new Date().toJSON().slice(0, 10) + '","days":' + minDeadlinetemp + '}';
+                            $scope.selectedAccount.referenceTypeName = $scope.refTypes[refId].name;
+                            
+                            $scope.calculateDate(dateWrapper).then(function(dateResult) {
+                                dateResult = new Date(dateResult).getTime();
+                                $scope.selectedAccount.deadline = $filter('date')(dateResult, $scope.userDateFormat);
+                                $scope.isloading = false;
+                            });
+                        } else {
+                            $scope.isloading = false;
+                        }
+                    }
+
+                     $scope.tourHelpoverlay = function() {
+                       $scope.editDetail = true; 
+                       setTimeout(tourHelpoverlay, 500);
+                    }
+                    $scope.submitRequest = function(isUploadFiles) {
+                        $scope.isUploadFiles = isUploadFiles;
+                        $scope.isError = false;
+                        $scope.isloading = true;
+                        $scope.errorMessage = '';
+                        
+                        if (Object.keys($scope.selectedAccounts).length == 0) {
+                            $scope.errorMessage = $scope.parseResult('{!$Label.submit_atleast_one_request}');
+                            $scope.isError = true;
+                            $scope.isloading = false;
+                        } else {
+                            
+                            if ($scope.isFilterPresent && ($scope.showFilter || ($scope.isAdvRouting == 'true' && $scope.isP2PRequest))) {
+                                angular.forEach($scope.filterMap, function(obj, key) {
+                                
+                                    if (obj.required && obj.selectedAttIds.length == 0 && obj.visible) {
+                                        $scope.errorMessage = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+                                        $scope.isError = true;
+                                        $scope.isloading = false;
+                                    }
+                                });
+                            }
+                            
+                            if (!$scope.isError) {
+                                    
+                                angular.forEach($scope.selectedAccounts, function(obj, key) {
+                                
+                                    if (obj.deadline == undefined || obj.referenceType == undefined || obj.deadline == '' || obj.referenceType == '') {
+                                        $scope.errorMessage = '{!$Label.Submit_Request_all_fields_must_filled_out}';
+                                        $scope.isError = true;
+                                        $scope.isloading = false;
+                                    } else {
+                                        //check if date is in correct format : #1070
+                                        var dateString = $scope.convertToDate(obj.deadline);
+                                        
+                                        if (dateString != null) {
+                                            obj.deadline = dateString;
+                                        } else {
+                                            $scope.isError = true;
+                                            $scope.isloading = false;
+                                            $scope.errorMessage = '{!$Label.Date_Invalid}' + obj.deadline; 
+                                        }
+                                    }
+                                });
+                                
+                                
+                                if (!$scope.isError) {
+                                    
+                                    if ($scope.showFilter) {
+                                        angular.forEach($scope.refTypeFieldMap, function(obj, key) {
+                                        
+                                            for (var i = 0; i < obj.referNamesOfFields.length; i++) {
+                                            
+                                                if (obj.referNamesOfFields[i].visible && obj.referNamesOfFields[i].required &&
+                                                    (obj.addInfo[$scope.fieldMap[obj.referNamesOfFields[i].name].name] == null ||
+                                                        obj.addInfo[$scope.fieldMap[obj.referNamesOfFields[i].name].name] == '')) {
+                                                    $scope.errorMessage = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+                                                    $scope.isError = true;
+                                                    $scope.isloading = false;
+                                                } else { 
+                                                    if ($scope.fieldMap[obj.referNamesOfFields[i].name].type == 'DATE') { 
+                                                        var dateVal = angular.copy(obj.addInfo[$scope.fieldMap[obj.referNamesOfFields[i].name].name]);
+                                                        //check if date is in correct format : #1070
+                                                        var dateString = $scope.convertToDate(dateVal);
+                                            
+                                                        if (dateString != null) {
+                                                            obj.addInfo[$scope.fieldMap[obj.referNamesOfFields[i].name].name] = dateString;
+                                                        } else {
+                                                            $scope.isError = true;
+                                                            $scope.errorMessage = '{!$Label.Date_Invalid}' + dateVal; 
+                                                            $scope.isloading = false;
+                                                        }
+                                                    }   
+                                                }
+                                            }
+                                        });
+                                    }
+
+                                    if (!$scope.isError) {
+                                    
+                                        if ($scope.isAdvRouting == 'true' && $scope.isMandatory == 'true' && $scope.isP2PRequest && $scope.avilableRoutingGrp.length > 0 && $scope.selectedRoutingGrp.length == 0 && (!$scope.isBasic || $scope.isBasic == 'false')) {
+                                            $scope.errorMessage = '{!$Label.SELECT_ASSOCIATED_FILTER}';
+                                            $scope.errorMessage = $scope.errorMessage.replace('@@@', $scope.businessGrpName);
+                                            $scope.isError = true;
+                                            $scope.isloading = false;
+                                        }
+                                    }
+                                   
+                                    if (!$scope.isError) {
+                                        $scope.selectedRoutingGrpNames = ''
+                                        //Getting Routing guoup Name
+                                        if ($scope.selectedRoutingGrp.length > 0) {
+                        
+                                            for (var i = 0; i < $scope.selectedRoutingGrp.length; i++) {
+                                            
+                                                if (i == 0) {
+                                                    $scope.selectedRoutingGrpNames = $scope.selectedRoutingGrp[i].value;
+                                                } else {
+                                                    $scope.selectedRoutingGrpNames += ',' + $scope.selectedRoutingGrp[i].value;
+                                                }  
+                                            }
+                                        }
+                                        var accountsJSON = angular.toJson($scope.selectedAccounts);
+                                        if (!$scope.showFilter && ($scope.isAdvRouting == 'false' || !$scope.isP2PRequest)) {
+                                            angular.forEach($scope.filterMap, function(obj, key) {
+                                                obj.visible = false;
+                                            });
+                                        }
+                                        if (!$scope.showFilter) {
+                                            $scope.refTypeFieldMap = {}
+                                        }
+                                        var filterJSON = angular.toJson($scope.filterMap);
+                                        var fieldMapJSON = angular.toJson($scope.refTypeFieldMap);
+                                        var refTypeIdSet = angular.toJson($scope.refTypeIdSet);
+                                        var refTypesJson = angular.toJson($scope.refTypes);
+                                        
+                                        Visualforce.remoting.Manager.invokeAction(
+                                            '{!$RemoteAction.ReferenceUseRequestSLDS.submitRequest}',
+                                            accountsJSON, fieldMapJSON, filterJSON, refTypeIdSet, refTypesJson,
+                                            $scope.refUse.oppId, ($scope.refUse.caseId != '' ? $scope.refUse.caseId : $scope.refUse.leadId),
+                                            $scope.isBasic+'@@'+$scope.selectedRoutingGrpNames,
+                                            function(result, event) {
+                                                $scope.$apply(function() {
+                                                    //REF-2132
+                                                	$scope.points = [];
+                                                    
+                                                    if (result.indexOf('success') >= 0) {
+                                                        $scope.isRequestSubmitted = true;
+                                                        $scope.isloading = false;
+                                                        $scope.points = result.split(':');
+                
+                                                        if ($scope.points[2] != undefined && $scope.points[2] != '') {
+                                                            $scope.showInfoToast = true;
+                                                            $scope.infoMessage = $scope.points[2];
+                                                            $scope.isShowRequestSubmittedToast = false;
+                                                        } else {
+                                                            $scope.showInfoToast = false;
+                                                            $scope.isShowRequestSubmittedToast = true;
+                                                        }
+                                                        
+                                                        //REF-2132
+                                                        if ($scope.isUploadFiles == false && $scope.points.length > 1 && parseInt($scope.points[1]) > 0) {
+                                                            showDisolvingAlert(parseInt($scope.points[1]), '{!salesRewardMsg}');
+                                                        }
+                                                        console.log('success');
+                                                        
+                                                        //REF-2132
+                                                        if ($scope.isUploadFiles == true && $scope.points[3] != undefined && $scope.points[3] != '') {
+                                                            $scope.referenceRequestId = $scope.points[3];
+                                                            $scope.isRequestSubmittedUploadFiles = true;
+                                                        } 
+                                                    } else if (result != null && result != '' && result.indexOf('success') < 0) {
+                                                        $scope.errorMessage = result;
+                                                        $scope.isError = true;
+                                                        $scope.isloading = false;
+                                                    } else {
+                                                        $scope.isloading = false;
+                                                    }
+                                                });
+                                            }, {
+                                                escape: true
+                                            }
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $scope.changeView = function(isTile) {
+                        $scope.isTileView = (isTile ? true : false);  
+                        isTileView = $scope.isTileView;
+                    }
+                    
+                    //REF-2132
+                    $scope.fileList = [];
+                    $scope.filesElement = {};
+                    
+                    $scope.openInputFile = function(e) {
+                        filesElement = document.getElementById('multiFiles');
+                        filesElement.click();
+                    }
+                    
+                    $scope.handleFiles = function(e) {
+                        
+                        if (e.files.length > 0) {
+                            $scope.$apply();
+                            $scope.isloading = true;
+                            $scope.$apply();
+                            $scope.fileList = [];
+                            for (var i = 0; i < e.files.length; i++) {
+                                $scope.fileList.push(e.files[i])
+                            }
+                            $scope.uploadMultipleFiles();
+                        }
+                    }
+                    
+                    $scope.uploadMultipleFiles = function() {
+                        var exitCount = 0;
+                           
+                        for (let i=0;i<$scope.fileList.length;i++) {
+                            var file = $scope.fileList[i];
+                            var fileReader = new FileReader();
+                            fileReader.file = file;
+                            
+                            fileReader.onloadend = function(e) {
+                                exitCount ++;
+                                var cv = new sforce.SObject("ContentVersion");
+                                cv.Title = this.file.name;
+                                cv.PathOnClient = this.file.name;
+                                cv.FirstPublishLocationId = '{!JSENCODE(firstPublishLocationIdForCV)}';
+                                console.log("userid: " + cv.FirstPublishLocationId);
+                                cv.ContentLocation = 'S';
+                                
+                                var binary = "";
+                                var bytes = new Uint8Array(e.target.result);
+                                var length = bytes.byteLength;
+                                
+                                for (var i = 0; i < length; i++) {
+                                    binary += String.fromCharCode(bytes[i]);
+                                }
+                                cv.VersionData = new sforce.Base64Binary(binary);
+                                
+                                var result = sforce.connection.create([cv]);
+                                
+                                if (result[0].getBoolean("success")) {
+                                    console.log("new CV created with id " + result[0].id);
+                                    console.log(result[0]);
+                                    var tempList = [];
+                                    tempList.push(result[0].id);
+                                    var queryResult = sforce.connection.query('SELECT Id,ContentDocumentId FROM ContentVersion WHERE Id = \'' + result[0].id + '\'');
+                                    var records = queryResult.getArray("records");
+                                    console.log(records);
+                                    var cdl = new sforce.SObject("ContentDocumentLink");
+                                    console.log("docid: " + records[0].ContentDocumentId);
+                                    cdl.ContentDocumentId = records[0].ContentDocumentId;
+                                    cdl.LinkedEntityId = $scope.referenceRequestId;
+                                    cdl.ShareType = 'V';
+                                    cdl.Visibility = 'AllUsers';
+                                    
+                                    var result2 = sforce.connection.create([cdl]);
+                                    
+                                    if (result2[0].getBoolean("success")) {
+                                        console.log("new CDL created with id " + result2[0].id);
+                                    } else {
+                                        console.log("failed to create CDL " + result2[0]);
+                                    }
+                                } else {
+                                    console.log("failed to create CV " + result[0]);
+                                }
+                                
+                                if(exitCount == $scope.fileList.length) {
+                                    $scope.getFilesAssociatedWithReferenceRequest($scope.referenceRequestId).then(function(result) {
+                                        console.log(JSON.parse(result));
+                                        if (result != null && result != '') {
+                                            $scope.listOfUploadedFile = JSON.parse(result)
+                                        }
+                                        $scope.isloading = false;
+                                    });
+                                }
+                            };
+                            
+                            fileReader.readAsArrayBuffer(file);
+                        }
+                    }
+                    
+                    $scope.uploadAndSubmit = function() {
+                        $scope.isRequestSubmittedUploadFiles = false;
+                        
+                        if ($scope.points.length > 1 && parseInt($scope.points[1]) > 0) {
+                            showDisolvingAlert(parseInt($scope.points[1]), '{!salesRewardMsg}');
+                        }
+                    }
+                    
+                    $scope.getFilesAssociatedWithReferenceRequest = function(requestId) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceUseRequestSLDS.getFilesAssociatedWithReferenceRequest}',
+                            requestId,
+                            function(result,event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            } 
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    //REF-2366
+                    $scope.openShowAllAttributesModal = function(labelId) {
+                    	$scope.editFilter = false;
+                        $scope.filterAttMapForSeeAllModal = angular.copy($scope.filterAttMap);
+                        $scope.filterIdForShowAllAttributesModal = labelId;
+                        $scope.filterNameForShowAllAttributesModal = $scope.filterMap[labelId].labelName;
+                        $scope.seeAllAttributesModalList = $scope.filterAttMapForSeeAllModal[labelId];
+                        $scope.hasBulkAttributeRecords = true;
+                        $scope.showAllAttributes = true;
+                    }
+                    
+                    $scope.closeShowAllAttributesModal = function() {
+                        $scope.showAllModalErrorMessage = '';
+                        $scope.isShowAllModalError = false;
+                        $scope.isShowAllError = false;
+                        
+                        var selectedAtt = '';
+                        var selectedAttIds = [];
+                        var mapSelectedAttIdAttributeWrapper = {};
+                        var labelId = $scope.filterIdForShowAllAttributesModal;
+                        
+                        for (var i = 0; i < $scope.filterAttMapForSeeAllModal[labelId].length; i++) {
+                            
+                            if ($scope.filterAttMapForSeeAllModal[labelId][i].isSelected) {
+                                selectedAttIds.push($scope.filterAttMapForSeeAllModal[labelId][i].attId);
+                                mapSelectedAttIdAttributeWrapper[$scope.filterAttMapForSeeAllModal[labelId][i].attId] = $scope.filterAttMapForSeeAllModal[labelId][i];
+                                
+                                if (selectedAtt == '') {
+                                    selectedAtt = $scope.filterAttMapForSeeAllModal[labelId][i].attName;
+                                    
+                                } else if (selectedAtt.indexOf($scope.filterAttMapForSeeAllModal[labelId][i].attName) < 0) {
+                                    selectedAtt += ', ' + $scope.filterAttMapForSeeAllModal[labelId][i].attName;
+                                }
+                            }
+                        }
+                        
+                        if (selectedAttIds.length == 0 && 
+                            $scope.filterMap[labelId].required && 
+                            $scope.filterMap[labelId].visible) {
+                            $scope.showAllModalErrorMessage = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+                            $scope.isShowAllModalError = true;
+                        }
+                        $scope.filterMap[labelId].selectedAttributes = angular.copy(selectedAtt);
+                        $scope.filterMap[labelId].selectedAttIds = angular.copy(selectedAttIds);
+                        
+                        if (!$scope.isShowAllModalError) {
+                            
+                            $scope.filterAttMap[labelId] = $scope.filterAttMap[labelId].map(function(ele) {
+                                
+                                if (selectedAttIds.includes(ele.attId)) {
+                                    selectedAttIds.splice(selectedAttIds.indexOf(ele.attId),1);
+                                    ele.isSelected = true;
+                                    return ele;
+                                } else {
+                                    ele.isSelected = false;
+                                    return ele;
+                                }
+                            });
+                            
+                            if (selectedAttIds.length > 0) {
+                                
+                                for (var i=0; i<selectedAttIds.length; i++) {
+                                	$scope.filterAttMap[labelId].push(mapSelectedAttIdAttributeWrapper[selectedAttIds[i]]);
+                                }
+                            }
+                            
+                            $scope.showAllAttributes = false;
+                            $scope.editFilter = true;
+                        }
+                    }
+                    
+                    $scope.storeSelectedValuesForShowAllAtrributes = function (labelId) {
+                        //storing selected attributes
+                        var tempAttList = [];
+                        
+                        if ($scope.seeAllAttributesModalList.length > 0 && $scope.filterAttMapForSeeAllModal[labelId].length > 0) {
+                        	tempAttList = angular.copy($scope.seeAllAttributesModalList);
+                            
+                            for (var i = $scope.seeAllAttributesModalList.length - 1; i >= 0; i--) {
+                                
+                                for (var j = $scope.filterAttMapForSeeAllModal[labelId].length - 1; j >= 0; j--) {
+                                    
+                                    if ($scope.filterAttMapForSeeAllModal[labelId][j].attId == $scope.seeAllAttributesModalList[i].attId) {
+                                        tempAttList.splice(i,1);
+                                        
+                                        if ($scope.seeAllAttributesModalList[i].isSelected) {
+                                            $scope.filterAttMapForSeeAllModal[labelId][j].isSelected = true;
+                                        } else {
+                                            $scope.filterAttMapForSeeAllModal[labelId][j].isSelected = false;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            //Adding remaining selected attributes
+                            if (tempAttList.length > 0) {
+                                
+                                for (var i = 0; i < tempAttList.length; i++) {
+                                    
+                                    if (tempAttList[i].isSelected) {
+                                        $scope.filterAttMapForSeeAllModal[labelId].push(tempAttList[i]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    $scope.showAllAttributesOnModal = function() {
+                        $scope.seeAllAttributesModalList = [];
+                        $scope.seeAllAttributesModalList = $scope.filterAttMapForSeeAllModal[$scope.filterIdForShowAllAttributesModal];
+                    	$scope.hasBulkAttributeRecords = true;
+                    } 
+                    
+                    $scope.searchAttributesByName = function($event) {
+                     var keyCode = $event.which || $event.keyCode;
+                        
+                        if (keyCode === 13) {
+                        	
+                            if ($scope.searchAttText.length > 1 ) {
+                            	$scope.isloading = true;
+                                $scope.isSearchTextError = false;
+                                
+                                var labelId = $scope.filterIdForShowAllAttributesModal;
+                                
+                                //storing selected attributes
+                                $scope.storeSelectedValuesForShowAllAtrributes(labelId);
+                                
+                                Visualforce.remoting.Manager.invokeAction(
+                                    '{!$RemoteAction.ReferenceUseRequestSLDS.getFilterAttributesByName}',
+                                    labelId,$scope.searchAttText,
+                                    function(result, event) {
+                                        $scope.$apply(function () {
+                                            result = $scope.parseResult(result);
+                                            result = JSON.parse(result);
+                                            
+                                            if (result[labelId].length > 0) {
+                                                $scope.seeAllAttributesModalList = [];
+                                                var tempModalList = angular.copy(result[labelId]);
+                                                //including only new attributes
+                                                for (var i = result[labelId].length - 1; i >= 0; i--) {
+                                                    
+                                                    for (var j = $scope.filterAttMapForSeeAllModal[labelId].length -1; j >= 0; j--) {
+                                                        
+                                                        if (result[labelId][i].attId == $scope.filterAttMapForSeeAllModal[labelId][j].attId) {
+                                                        	tempModalList.splice(i,1);
+                                                            $scope.seeAllAttributesModalList.push($scope.filterAttMapForSeeAllModal[labelId][j]);
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                if (tempModalList.length > 0) {
+                                                    $scope.seeAllAttributesModalList.push(...tempModalList);
+                                                }
+                                                
+                                                $scope.hasBulkAttributeRecords = false;
+                                                if ($scope.seeAllAttributesModalList.length > 200) {
+                                                	$scope.hasBulkAttributeRecords = true;
+                                                }
+                                                
+                                                //set selected attributes
+                                                for (var i=0; i<$scope.seeAllAttributesModalList.length; i++) {
+                                                    
+                                                    for (var j=0; j<$scope.filterAttMapForSeeAllModal[labelId].length; j++) {
+                                                        
+                                                        if (($scope.filterAttMapForSeeAllModal[labelId][j].attId == $scope.seeAllAttributesModalList[i].attId) &&
+                                                            $scope.filterAttMapForSeeAllModal[labelId][j].isSelected) {
+                                                            $scope.seeAllAttributesModalList[i].isSelected = true;
+                                                        }
+                                                    }
+                                                }
+                                                
+                                            } else {
+                                                $scope.seeAllAttributesModalList = [];
+                                                $scope.hasBulkAttributeRecords = false;
+                                            }
+                                            $scope.searchAttText = '';
+                                            $scope.isloading = false;
+                                        });
+                                    },
+                                    {escape: true}
+                                );
+                                
+                                
+                            } else {
+                            	$scope.isSearchTextError = true;
+                            }
+                        }
+                    }
+                    
+                    
+                    $scope.selectAllFromModal = function() {
+                        var selectedAttIds = [];
+                        var labelId = $scope.filterIdForShowAllAttributesModal;
+                        
+                        angular.forEach($scope.seeAllAttributesModalList, function(att) {
+                            att.isSelected = true;
+                            selectedAttIds.push(att.attId);
+                        });
+                        $scope.filterAttMapForSeeAllModal[labelId] = $scope.filterAttMapForSeeAllModal[labelId].map(function(ele) {
+                            
+                            if (selectedAttIds.includes(ele.attId)) {
+                                ele.isSelected = true;
+                                return ele;
+                            } else {
+                                return ele;
+                            }
+                        });
+                    }
+                
+                    $scope.clearAllFromModal = function() {
+                        var selectedAttIds = [];
+                        var labelId = $scope.filterIdForShowAllAttributesModal;
+                        
+                        angular.forEach($scope.seeAllAttributesModalList, function(att) {
+                            att.isSelected = false;
+                        });
+                        
+                        $scope.filterAttMapForSeeAllModal[labelId] = $scope.filterAttMapForSeeAllModal[labelId].map(function(ele) {
+                            
+                            if (selectedAttIds.includes(ele.attId)) {
+                                ele.isSelected = false;
+                                return ele;
+                            } else {
+                                return ele;
+                            }
+                        });
+                    }
+                       
+                });
+                
+                function showDisolvingAlert(points, message) {
+                
+                    if (typeof points != 'undefined' && points != '' && points != '0') {
+                        notification(points, message);
+                    }
+                }
+                
+                function redirectToBack() {}
+            </script>
+        </head>
+        <body class="slds" ng-app="referenceRequest">
+            <form id="frmId" class="slds-m-left--small" ng-controller="referenceRequestCon" ng-init="intialFunction();" ng-cloak="ng-cloak" >
+                <div ng-show="isRequestSubmitted">
+                    <c:RewardNotification />
+                </div>
+                <c:HelpOverlays />  
+                <div ng-show="isFullLicenseAccessible == 'false'">
+                    <svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+                        <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                    </svg>
+                    {!$Label.User_License}
+                </div>
+                <div ng-show="isFullLicenseAccessible == 'true'">
+                    
+                    <div class="slds-notify_container" ng-show="showInfoToast">
+                        <div class="slds-notify slds-notify--toast" role="alert" style="width: 50%; left: 17%; margin-left: -25%;">
+                            <span class="slds-assistive-text">Info</span>
+                            <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" ng-click="showInfoToast = false">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Close</span>
+                            </button>
+                            <div class="slds-notify__content">
+                                <h2 class="slds-text-heading--small" style="font-size: 14px">{{infoMessage}}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- related to #803 -->
+                    <div id="toast-msg" ng-show="noOfAccounts == '0'" class="slds-notify_container">
+                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                            <span class="slds-assistive-text">{!$Label.Error}</span>
+<!--                             <button class="slds-button slds-button--icon-inverse slds-notify__close"> -->
+<!--                                 <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" style="cursor:pointer"> -->
+<!--                                     <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use> -->
+<!--                                 </svg> -->
+<!--                                 <span class="slds-assistive-text">{!$Label.Close}</span> -->
+<!--                             </button> -->
+                            <div class="slds-notify__content slds-grid">
+                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+                                </svg>
+                                <div class="slds-col slds-align-middle">
+                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{!$Label.Reference_Use_Request_select_Account}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- related to #803 REF-2132 -->
+                    <div id="toast-msg" ng-show="isShowRequestSubmittedToast && !isRequestSubmittedUploadFiles" class="slds-notify_container">
+                        <div class="slds-notify slds-notify--toast slds-theme--success" role="alert">
+                            <span class="slds-assistive-text">{!$Label.Error}</span>
+                            <button class="slds-button slds-button--icon-inverse slds-notify__close" title="Close" ng-click="isShowRequestSubmittedToast = false">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" style="cursor:pointer">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">{!$Label.Close}</span>
+                            </button>
+                            <div class="slds-notify__content slds-grid">
+                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+                                </svg>
+                                <div class="slds-col slds-align-middle">
+                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{!$Label.Request_submitted}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="toast-msg" ng-show="isError || isModalError" class="slds-notify_container">
+                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                            <span class="slds-assistive-text">{!$Label.Error}</span>
+                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;isModalError=false;" style="cursor:pointer">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">{!$Label.Close}</span>
+                            </button>
+                            <div class="slds-notify__content slds-grid">
+                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+                                </svg>
+                                <div class="slds-col slds-align-middle">
+                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;" ng-show="isModalError">{{modalErrorMessage}}</h2>
+                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;" ng-show="isError">{{errorMessage}}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-page-header" role="banner">
+                        <div class="slds-grid">
+                            <div class="slds-col slds-has-flexi-truncate">
+                                <div class="slds-media">
+                                    <div class="slds-media__figure">
+                                        <svg aria-hidden="true" class="slds-icon slds-icon--large" style="background-color: #2291F1;">
+                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#chat')}"></use>
+                                        </svg>
+                                    </div>
+                                    <div class="slds-grid" style="margin-top: 1%;">
+                                        <div class="slds-grid slds-type-focus slds-no-space">
+                                            <h1 class="slds-text-heading--medium slds-align-middle" title="{!$Label.Request_Details}">{!$Label.Request_Details}</h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-no-flex slds-align-bottom">
+                                <div class="slds-grid">
+                                    <div class="slds-button-space-left">
+                                        <div class="slds-dropdown-trigger slds-is-open" ng-show="!isRequestSubmitted" >
+                                            <button class="slds-button slds-button--icon-more slds-shrink-none slds-m-left--large" aria-haspopup="true">
+                                                <svg aria-hidden="true" class="slds-button__icon">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#settings')}"></use>
+                                                </svg>
+                                                <span class="slds-assistive-text">{!$Label.Settings}</span>
+                                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--x-small">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                                </svg>
+                                            </button>
+                                            <div class="slds-dropdown slds-dropdown--right">
+                                                <ul class="dropdown__list">
+                                                    <li class="slds-dropdown__item">
+                                                        <div class="slds-text-heading--label" style="padding:8px 8px;">{!$Label.Display_as}</div>
+                                                    </li>
+                                                    <li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="changeView(false);">
+                                                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--small" ng-show="!isTileView">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+                                                        </svg>
+                                                        {!$Label.Grid}
+                                                        <svg aria-hidden="true" class="slds-button__icon">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#table')}"></use>
+                                                        </svg>
+                                                    </a></li>
+                                                    <li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="changeView(true);">
+                                                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--small" ng-show="isTileView">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+                                                        </svg>
+                                                        {!$Label.Tiles}
+                                                        <svg aria-hidden="true" class="slds-button__icon">
+                                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#kanban')}"></use>
+                                                        </svg>
+                                                    </a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <button class="slds-button slds-button--neutral" ng-show="!isRequestSubmitted" ng-click="cancel();">{!$Label.Back}</button>
+                                        <!-- REF-2132 -->
+                                        <button id="btnSubmitUpload" class="slds-button slds-button--neutral" ng-show="attachSupportingDocuments && !isRequestSubmitted"
+                                                ng-click="submitRequest(true);">
+                                            Submit and Upload Files
+                                        </button>
+                                        <button id="btnSubmit" class="slds-button slds-button--brand" ng-show="!isRequestSubmitted" ng-click="submitRequest(false);">{!$Label.Submit}</button>
+                                        <!-- REF-2132 -->
+                                        <a ng-show="refUse.oppId != '' && isRequestSubmitted && !isRequestSubmittedUploadFiles" class="slds-button slds-button--neutral" style="cursor: pointer;" href="/{{refUse.oppId}}" target="_top">{!$Label.Back_to_Opportunity}</a>
+                                        <a ng-show="refUse.caseId != '' && isRequestSubmitted && !isRequestSubmittedUploadFiles" class="slds-button slds-button--neutral" style="cursor: pointer;" href="/{{refUse.caseId}}" target="_top">{!$Label.Back_to_Case}</a>
+                                        <a ng-show="refUse.leadId != '' && isRequestSubmitted && !isRequestSubmittedUploadFiles" class="slds-button slds-button--neutral" style="cursor: pointer;" href="/{{refUse.leadId}}" target="_top">{!$Label.Back_to_SearchLead}</a>
+                                        <button ng-show="refUse.oppId == '' && refUse.caseId == '' && refUse.leadId == '' && isRequestSubmitted && !isRequestSubmittedUploadFiles" class="slds-button slds-button--neutral" ng-click="cancel();">{!$Label.Back_to_RF_Search}</button>
+                                        <div ng-show="!isRequestSubmitted" ng-click="tourHelpoverlay();" id="helpoverlayId" style="cursor: pointer; float: right;">
+                                            <span class="slds-icon_container" title="Help for the page">
+                                                <svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon_x-small" style="width: 30px;margin-left: 1px;height: 23px;fill:#ff9900;">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3,'/assets/icons/utility-sprite/svg/symbols.svg#question_mark')}"></use>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        <ul class="slds-grid slds-page-header__detail-row" ng-show="!isRequestSubmitted">
+                            <li class="slds-col--padded slds-size--1-of-4 remove-flex" ng-show="isBasic == 'false'">
+                                <p class="slds-text-heading--label slds-truncate" title="{!$Label.References_Needed}">{!$Label.References_Needed}</p>
+                                <div id="ddlAcc"  class="slds-form-element__control">
+                                    <select class="slds-select slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" ng-change="addRequest();" ng-model="noOfAccounts" style="width: 50px;">
+                                        <option ng-repeat="option in requestedAccounts" value="{{option}}" ng-selected="option == noOfAccounts">{{option}}</option>
+                                    </select>
+                                </div>
+                            </li>
+                            <li class="slds-col--padded slds-size--1-of-4 remove-flex" ng-show="refUse.oppId != ''">
+                                <p class="slds-text-heading--label slds-truncate" title="{!$Label.Opportunity_Account}">{!$Label.Opportunity_Account}</p>
+                                <div class="slds-form-element__control">
+                                    <a style="cursor: pointer;" href="/{{refUse.accId}}" target="_blank">{{parseResult(oppAccName)}}</a>
+                                </div>
+                            </li>
+                            <li class="slds-col--padded slds-size--1-of-4 remove-flex" ng-show="refUse.oppId != ''">
+                                <p class="slds-text-heading--label slds-truncate" title="{!$Label.Opportunity_Name}">{!$Label.Opportunity_Name}</p>
+                                <div class="slds-form-element__control">
+                                    <a style="cursor: pointer;" href="/{{refUse.oppId}}" target="_blank">{{parseResult(oppName)}}</a>
+                                </div>
+                            </li>
+                            <li class="slds-col--padded slds-size--1-of-4 remove-flex" ng-show="refUse.caseId != ''">
+                                <p class="slds-text-heading--label slds-truncate" title="{!$Label.Case_Account}">{!$Label.Case_Account}</p>
+                                <div class="slds-form-element__control">
+                                    <a style="cursor: pointer;" href="/{{refUse.accId}}" target="_blank">{{parseResult(caseAccName)}}</a>
+                                </div>
+                            </li>
+                            <li class="slds-col--padded slds-size--1-of-4 remove-flex" ng-show="refUse.caseId != ''">
+                                <p class="slds-text-heading--label slds-truncate" title="{!$ObjectType.Case.fields.CaseNumber.Label}">{!$ObjectType.Case.fields.CaseNumber.Label}</p>
+                                <div class="slds-form-element__control">
+                                    <a style="cursor: pointer;" href="/{{refUse.caseId}}" target="_blank">{{parseResult(caseName)}}</a>
+                                </div>
+                            </li>
+                            <li class="slds-col--padded slds-size--1-of-4 remove-flex" ng-show="refUse.leadId != ''">
+                                <p class="slds-text-heading--label slds-truncate" title="{!$ObjectType.Lead.fields.Company.Label}">{!$ObjectType.Lead.fields.Company.Label}</p>
+                                <div class="slds-form-element__control">
+                                    {{parseResult(leadCompany)}}
+                                </div>
+                            </li>
+                            <li class="slds-col--padded slds-size--1-of-4 remove-flex" ng-show="refUse.leadId != ''">
+                                <p class="slds-text-heading--label slds-truncate" title="{!$Label.Lead_Name}">{!$Label.Lead_Name}</p>
+                                <div class="slds-form-element__control">
+                                    <a style="cursor: pointer;" href="/{{refUse.leadId}}" target="_blank">{{parseResult(leadName)}}</a>
+                                </div>
+                            </li>
+                        </ul>
+                        <div ng-show="!isRequestSubmitted"> 
+                            <div ng-show="isBasic == 'false'"> 
+                                <div ng-show="isAdvRouting == 'true' && (avilableRoutingGrp.length + selectedRoutingGrp.length) > 0 && isP2PRequest"> 
+                                <div class="slds-col--padded slds-size--1-of-4 remove-flex slds-form-element is-required" >  
+                                        <p class="slds-text-heading--label slds-truncate" title="{{businessGrpName}}"><div ng-show ="isMandatory == 'true'" class="slds-required" style="font-weight:bold;color:red;display: inline;" title="required">*</div>{{businessGrpName}} 
+                                    </p>
+                                </div>
+                                    <multi-select ng-model="selectedRoutingGrp"
+                                                      available="avilableRoutingGrp"
+                                                      selected-label="{!$Label.Selected_Routing_Group}"
+                                                      available-label="{!$Label.Available_Routing_Group}" 
+                                                      display-attr="name">
+                                    </multi-select> 
+                           </div>
+                       </div>  
+                    </div>
+                    </div>
+                    <!-- related to #803 -->
+<!--                     <div ng-show="isRequestSubmitted" > -->
+<!--                         <div style="padding: 6px; color: #109877;"> -->
+<!--                             <svg class="slds-icon slds-icon-action-call slds-icon--medium slds-p-around--x-medium"> -->
+<!--                                 <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use> -->
+<!--                             </svg> -->
+<!--                             {!$Label.Request_submitted} -->
+<!--                         </div> -->
+<!--                     </div> -->
+<!--                     <div ng-show="noOfAccounts == '0'"> -->
+<!--                         {!$Label.Reference_Use_Request_select_Account} -->
+<!--                     </div> -->
+                    
+                    <div id="divGrid" class="slds-grid slds-wrap" ng-show="!isTileView && noOfAccounts != null && noOfAccounts != '0' && !isRequestSubmitted" style="margin-bottom: 20px;">
+                        <table class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal">
+                            <thead>
+                                <tr class="slds-text-heading--label">
+                                    <th scope="col">
+                                        <span class="slds-truncate">{!$Label.Account_Requested}</span>
+                                    </th>
+                                    <th scope="col">
+                                        <span class="slds-truncate">{!$Label.Reference_Type_Needed}<div style="font-weight:bold;color:red;display: inline;">*</div></span>
+                                    </th>
+                                    <th scope="col">
+                                        <span class="slds-truncate">{!$Label.Deadline}<div style="font-weight:bold;color:red;display: inline;">*</div></span>
+                                    </th>
+                                    <th scope="col">
+                                        <span class="slds-truncate">{!$Label.Request_Notes}</span>
+                                    </th>
+                                    <th scope="col" style="text-align: center;">
+                                        <span id="lblAction" class="slds-truncate" style="text-align:center;">{!$Label.Action}</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="slds-hint-parent" ng-repeat="(key,value) in selectedAccounts">
+                                    <td data-label="{!$Label.Account_Requested}" role="row">
+                                        <a style="cursor: pointer;" href="/{{value.rbi[nameSpace+Account]}}" target="_blank">{{parseResult(value.accountName)}}</a>
+                                    </td>
+                                    <td data-label="{!$Label.Reference_Type_Needed}" role="row">
+                                        <span class="slds-truncate">{{parseResult(value.referenceTypeName)}}</span>
+                                    </td>
+                                    <td data-label="{!$Label.Deadline}" role="row">
+                                        <span class="slds-truncate">{{value.deadLineDate}}</span>
+                                    </td>
+                                    <td data-label="{!$Label.Request_Notes}" role="row" style="max-width:500px">
+                                        <span class="slds-truncate">{{parseResult(value.notes)}}</span>
+                                    </td>
+                                    <td style="text-align:center;" data-label="{!$Label.Action}">
+                                        <div class="slds-no-flex">
+                                            <div class="slds-dropdown-trigger slds-is-open">
+                                                <button class="slds-button slds-button--icon-border-filled slds-button--icon-x-small">
+                                                    <svg class="slds-button__icon slds-button__icon--hint">
+                                                        <use xlink:href="{{'{!URLFOR($Resource.LightningCSS)}' + '/assets/icons/utility-sprite/svg/symbols.svg#down'}}"></use>
+                                                    </svg>
+                                                </button>
+                                                <div class="slds-dropdown slds-dropdown--right">
+                                                    <ul class="dropdown__list">
+                                                        <li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="edit(key);">
+                                                            {!$Label.Edit}
+                                                        </a></li>
+                                                        <li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="deleteReq(key);">
+                                                            {!$Label.Delete}
+                                                        </a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table> 
+                    </div>
+                    <div class="slds-grid slds-wrap" ng-show="isTileView && noOfAccounts != null && noOfAccounts != '0' && !isRequestSubmitted">
+                        <div id="divRepeat" ng-repeat="(key,value) in selectedAccounts" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-3 slds-large-size--1-of-4 remove-flex">
+                            <div id ="tile-{{$index}}" class="slds-card container" style="background-color:transparent !important;margin: 12px;">
+                                <div class="slds-grid expandcollapse-item" style="padding: 12px 12px 5px;">
+                                    <div class="slds-media slds-media--center slds-has-flexi-truncate" style="display:block;cursor:pointer;" ng-click="value.isCollapsed = !value.isCollapsed">
+                                        <div style="margin-left: 12px;">{{parseResult(value.accountName)}}</div>
+                                        <div ng-show="value.referenceTypeName == ''" style="color:red;margin-left: 12px;margin-top:5px;">
+                                            {!$Label.No_Reference_Type_Specified}
+                                        </div>
+                                        <div ng-show="value.referenceTypeName != ''" style="margin-left: 12px;margin-top:5px;">
+                                            {{parseResult(value.referenceTypeName)}}
+                                        </div>
+                                    </div>
+                                    <div class="slds-no-flex">
+                                        <div class="slds-dropdown-trigger slds-is-open">
+                                            <button class="slds-button slds-button--icon-border-filled slds-button--icon-x-small">
+                                                <svg class="slds-button__icon slds-button__icon--hint">
+                                                    <use xlink:href="{{'{!URLFOR($Resource.LightningCSS)}' + '/assets/icons/utility-sprite/svg/symbols.svg#down'}}"></use>
+                                                </svg>
+                                            </button>
+                                            <div class="slds-dropdown slds-dropdown--right">
+                                                <ul class="dropdown__list">
+                                                    <li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="edit(key);">
+                                                        {!$Label.Edit}
+                                                    </a></li>
+                                                    <li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="deleteReq(key);">
+                                                        {!$Label.Delete}
+                                                    </a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div ng-hide="value.isCollapsed" ng-click="value.isCollapsed = !value.isCollapsed">
+                                    <div style="padding: 0 12px 5px;">
+                                        <div style="margin-left: 12px;">
+                                            {!$Label.Deadline}<div style="font-weight:bold;color:red;display: inline;">*</div>
+                                        </div>
+                                        <div style="margin-left: 12px;margin-top:5px;">
+                                            {{value.deadLineDate}}
+                                        </div>
+                                        <div style="margin-left: 12px;margin-top:5px;">
+                                            {!$Label.Request_Notes}
+                                        </div>
+                                        <div style="margin-left: 12px;margin-top:5px;">
+                                            {{parseResult(value.notes)}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr ng-show="isTileView"/>
+                    
+                
+                <!-- REF-2132 Upload Files Block-->
+                <div id="uploadFiles" ng-show="isRequestSubmittedUploadFiles">
+                    <input id="multiFiles" type="file" multiple="true" onchange="angular.element(this).scope().handleFiles(this);" style="display:none;"/>
+                    <button onclick="angular.element(this).scope().openInputFile(this);" class="slds-button slds-button_neutral">Upload Files</button>
+                    <button class="slds-button slds-button--neutral" ng-click="uploadAndSubmit();">{!$Label.Done}</button>
+                    <div ng-show="listOfUploadedFile.length > 0">
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate">Title</div>
+                                    </th>
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate">Type</div>
+                                    </th>
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate">Size</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody ng-repeat="file in listOfUploadedFile">
+                                <tr class="slds-hint-parent">
+                                    <th scope="row">
+                                        <div class="slds-truncate">
+                                            <a href="/{{file.Id}}" tabindex="-1">{{file.Title}}</a>
+                                        </div>
+                                    </th>
+                                    <td>
+                                        <div class="slds-truncate">{{file.FileType}}</div>
+                                    </td>
+                                    <td>
+                                        <div class="slds-truncate">{{file.ContentSize}}</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                    <!-- Filter Block --> 
+                    <div ng-show="isFilterPresent && isBasic == 'false' && !isRequestSubmitted && (showFilter || (isAdvRouting == 'true' && isP2PRequest))">
+                        <div class="slds-grid slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+                            <div id="divGenInfo" class="slds-section-title slds-p-around--xx-small slds-has-flexi-truncate">{!$Label.General_information}</div>
+                            <div class="slds-no-flex" style="padding-top: 1%;">
+                                <div class="slds-dropdown-trigger slds-is-open">
+                                    <button class="slds-button slds-button--icon-border-filled slds-button--icon-x-small">
+                                        <svg class="slds-button__icon slds-button__icon--hint">
+                                            <use xlink:href="{{'{!URLFOR($Resource.LightningCSS)}' + '/assets/icons/utility-sprite/svg/symbols.svg#down'}}"></use>
+                                        </svg>
+                                    </button>
+                                    <div class="slds-dropdown slds-dropdown--right">
+                                        <ul class="dropdown__list">
+                                            <li class="slds-dropdown__item"><a style="color: #005fb2 !important;" ng-click="openFilterModal();">
+                                                {!$Label.Edit}
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form-element" ng-repeat="(key,value) in filterMap">
+                            <div ng-show="value.visible">
+                                <label class="slds-form-element__label ">{{value.labelName}}<div ng-show="value.required" style="font-weight:bold;color:red;display: inline;">*</div></label>
+                                <div class="slds-form-element__control" >
+                                    <span class="">{{value.selectedAttributes}}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <hr/>
+                    </div>
+                    <!-- Field Block -->
+                    <div ng-repeat="(key,value) in refTypeFieldMap" ng-show="isBasic == 'false' && !isRequestSubmitted && showFilter">
+                        <div class="slds-section-title slds-p-around--xx-small">{{'{!$Label.Specific_Information}'.replace('@@@',refTypes[key].name)}}</div>
+                        <div >{{refTypes[key].note}}</div>
+                        <div class="slds-wrap">
+                            <div class="slds-form-element" ng-repeat="field in value.referNamesOfFields" ng-show="field.visible">
+                                <label class="slds-form-element__label" style="margin-right: 0;">{{fieldMap[field.name].label}}<div ng-show="field.visible && field.required" style="color:red;display: inline;">*</div></label>
+                                <div style="display: inline-flex;margin-left: -10px;" class="tooltip" ng-show="fieldMap[field.name].inlineHelpText != '' && fieldMap[field.name].inlineHelpText != null">
+                                    <div class="slds-form-element ">
+                                        <div class="slds-form-element__icon slds-align-middle" style="margin-left: 10px;">
+                                        <p style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </p>
+                                        </div>
+                                    </div>
+                                    <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+                                        <div class="slds-popover__body" style="padding: 0.5rem;">{{fieldMap[field.name].inlineHelpText}}</div>
+                                    </div>
+                                    <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                        <div class="slds-popover__body" style="padding: 0.5rem;">{{fieldMap[field.name].inlineHelpText}}</div>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element__control" ng-show="fieldMap[field.name].type != 'DATE' && fieldMap[field.name].type != 'PICKLIST' && fieldMap[field.name].type != 'TEXTAREA' && fieldMap[field.name].type != 'BOOLEAN'">
+                                    <input class="slds-input slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" ng-model="value.addInfo[fieldMap[field.name].name]"/>
+                                </div>
+                                <div class="slds-form-element__control" ng-show="fieldMap[field.name].type == 'DATE'">
+                                    <input class="slds-input slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" ng-model="value.addInfo[fieldMap[field.name].name]" placeholder="{{userDateFormat.toLowerCase()}}" date-format="{{userDateFormat}}" datetime-picker="datetime-picker" />
+                                </div>
+                                <div class="slds-form-element__control" ng-show="fieldMap[field.name].type == 'PICKLIST'">
+                                    <select class="slds-select slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" ng-model="value.addInfo[fieldMap[field.name].name]">
+                                        <option ng-repeat="option in fieldMap[field.name].picklistValues" value="{{option}}">{{option}}</option>
+                                    </select>
+                                </div>
+                                <div class="slds-form-element__control" ng-show="fieldMap[field.name].type == 'TEXTAREA'">
+                                    <textarea ng-model="value.addInfo[fieldMap[field.name].name]" class="slds-textarea slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" rows="3"></textarea>
+                                </div>
+                                <div class="slds-form-element__control" ng-show="fieldMap[field.name].type == 'BOOLEAN'">
+                                    <span class="slds-form-element__static">
+                                        <label class="slds-checkbox">
+                                            <input type="checkbox" ng-model="value.addInfo[fieldMap[field.name].name]"/>
+                                            <span class="slds-checkbox--faux"></span>
+                                        </label>
+                                    </span>
+                                </div>
+                           </div>
+                       </div>
+                       <hr/>
+                    </div>
+
+                    <div ng-show="editFilter">
+                        <div class="slds-modal slds-fade-in-open slds-modal--large" aria-hidden="false" role="dialog">
+                            <div class="slds-modal__container">
+                                <div class="slds-modal__header">
+                                    <button class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="editFilter = false">
+                                        <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+                                        <span class="slds-assistive-text">{!$Label.Close}</span>
+                                    </button>
+                                    <h2 class="slds-text-heading--medium">{!$Label.RF_Filters}</h2>
+                                </div>
+                                <div class="slds-modal__content slds-p-around--medium slds-scrollable--y">
+                                    <div id="error-block" ng-show="false" class="slds-p-around--small">
+                                        <strong>
+                                            {!$Label.Please_review_the_following_errors}
+                                        </strong>
+                                        <p>
+                                            {{modalErrorMessage}}
+                                        </p>
+                                    </div>
+                                    <div ng-repeat="(key,value) in filterMap" style="padding:10px;">
+                                        <div ng-show="value.visible"> 
+                                            <div style="float:left;width:100%;">
+                                                <div style="display: inline !important;" class="slds-badge slds-theme--shade" >{{parseResult(value.labelName)}}<div ng-show="value.required" style="font-weight:bold;color:red;display: inline;">*</div></div>
+                                            </div>
+                                            <div class="slds-grid slds-wrap" style="width:83%;float:left;margin:2% 0 2% 2%;">
+                                                <!-- REF-2366 -->
+                                                <div style="cursor: pointer;" ng-repeat="attribute in filterAttMap[key]"  class="slds-col slds-size--1-of-1 slds-medium-size--1-of-3 slds-large-size--1-of-3 remove-flex"
+                                                     ng-show="filterAttMap[key].length > 0 && filterAttMap[key].length <= 200">
+                                                    <img src="{!$Resource.GreenCheck}" style="width:15px !important;float:left;margin:1%;" ng-show="attribute.isSelected == true"/>
+                                                    <div style="margin-left:25px;" ng-click="attribute.isSelected = !attribute.isSelected">
+                                                        {{parseResult(attribute.attName)}}
+                                                    </div>
+                                                </div>
+                                                <!-- REF-2366 -->
+                                                <div ng-show="filterAttMap[key].length > 0 && filterAttMap[key].length > 200">
+                                                     <a style="cursor:pointer;" ng-click="openShowAllAttributesModal(key);">{!$Label.See_All}</a>
+                                                    <div ng-show="filterMap[key] != null && filterMap[key].selectedAttributes != ''" style="margin-top: 2px;">
+                                                        <p>{{filterMap[key].selectedAttributes}}</p>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="filterAttMap[key].length == 0">
+                                                    {!$Label.No_Data_Found}
+                                                </div>
+                                            </div>
+                                            <div style="width:15%;float:left;text-align: right;padding: 1% 1% 1% 0;" class="slds-form-element"
+                                                 ng-show="filterAttMap[key].length > 0 && filterAttMap[key].length <= 200">
+                                                
+                                                <div style="margin-top:2%;">
+                                                    <a style="cursor:pointer;" ng-click="selectAll(key);">{!$Label.Select_All}</a>
+                                                    <a style="margin-left:10px;cursor:pointer;" ng-click="clearAll(key);">{!$Label.Clear_All}</a>
+                                                </div>
+                                            </div>
+                                            <hr />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-modal__footer">
+                                    <button class="slds-button slds-button--neutral" ng-click="closeFilterModal();">{!$Label.Done}</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                
+                    <div id="divDetails" ng-show="editDetail">
+                        <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+                            <div class="slds-modal__container">
+                                <div class="slds-modal__header">
+                                    <button class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="editDetail = false;justEnter = false;">
+                                        <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+                                        <span class="slds-assistive-text">{!$Label.Close}</span>
+                                    </button>
+                                    <h2 class="slds-text-heading--medium">{!$Label.Edit_Request_Details}</h2>
+                                </div>
+                                <div class="slds-modal__content slds-p-around--medium slds-scrollable--y">
+                                    <div id="error-block" ng-show="false" class="slds-p-around--small">
+                                        <strong>
+                                            {!$Label.Please_review_the_following_errors}
+                                        </strong>
+                                        <p>
+                                            {{modalErrorMessage}}
+                                        </p>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">{!$Label.Apply_changes_to}</label>
+                                        <div class="slds-form-element__control">
+                                            <label class="slds-radio">
+                                                <span class="slds-form-element__label">{!$Label.All_Cards}</span>
+                                                <input type="radio" name="options{{selectedAccount.recordCount}}" value="true" ng-checked="applytoall == 'true'" ng-model="applytoall"/>
+                                                <span class="slds-radio--faux"></span>
+                                            </label>
+                                            <div ng-show="!justEnter" style="display: inline;">
+                                                <label class="slds-radio">
+                                                    <span class="slds-form-element__label">{!$Label.This_card_only}</span>
+                                                    <input type="radio" name="options{{selectedAccount.recordCount}}" value="false" ng-checked="applytoall == 'false'" ng-model="applytoall"/>
+                                                    <span class="slds-radio--faux"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="divRefType" class="slds-form-element">
+                                        <label class="slds-form-element__label">{!$Label.Reference_Type_Needed}<div style="font-weight:bold;color:red;display: inline;">*</div></label>
+                                        <div class="slds-form-element__control">
+                                            <select class="slds-select slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2" ng-change="changeRefType()" ng-model="selectedAccount.referenceType">
+                                                <option ng-repeat="(key,value) in refTypes" value="{{key}}" ng-selected="(key == selectedAccount.referenceType?true:key=='')">{{parseResult(value.name)}}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">{!$Label.Deadline}<div style="font-weight:bold;color:red;display: inline;">* </div> {{minDeadlineLabel}}</label>
+                                        <div class="slds-form-element__control">
+                                            <input class="slds-input slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2" ng-model="selectedAccount.deadline" placeholder="{{userDateFormat.toLowerCase()}}" date-format="{{userDateFormat}}" datetime-picker="datetime-picker" />
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" style="margin-right: 0;">{!$Label.Request_Notes}<div style="font-weight:bold;color:red; {!IF(cs.Request_Notes_Required__c, 'display: inline', 'display:none')}">*</div></label>
+                                        <div style="display: inline-flex; margin-left: -10px;" class="tooltip">
+                                            <div class="slds-form-element ">
+                                                <div class="slds-form-element__icon slds-align-middle" style="margin-left: 10px;">
+                                                <p style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                    </svg>
+                                                </p>
+                                                </div>
+                                            </div>
+                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpShow" role="tooltip" id="help">
+                                                <div class="slds-popover__body" style="padding: 0.5rem;">{!$Label.Request_Notes_helpText}</div>
+                                            </div>
+                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" role="tooltip" id="help">
+                                                <div class="slds-popover__body" style="padding: 0.5rem;">{!$Label.Request_Notes_helpText}</div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__control">
+                                            <textarea ng-model="selectedAccount.notes" class="slds-textarea slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-modal__footer">
+                                    <a ng-click="deleteReq(selectedAccount.recordCount);" ng-show="!justEnter">
+                                        <img id="close-Image" src="{!$Resource.delete_icon}" alt="{!$Label.Delete}" height="30" width="30"/>
+                                    </a>
+                                    <button class="slds-button slds-button--neutral" ng-click="editDetail = false;justEnter = false;">{!$Label.Cancel}</button>
+                                    <button class="slds-button slds-button--brand" ng-click="saveDetails(selectedAccount.recordCount);">{!$Label.Save}</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                
+                <!-- REF-2366 Modal to select attributes if there are more than 200 of them --> 
+                <div ng-show="showAllAttributes">
+                    <div class="slds-modal slds-fade-in-open slds-modal--large" aria-hidden="false" role="dialog">
+                        <div class="slds-modal__container">
+                            <div class="slds-modal__header">
+                                <button class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showAllAttributes = false;editFilter = true;">
+                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+                                    <span class="slds-assistive-text">{!$Label.Close}</span>
+                                </button>
+                                <h2 class="slds-text-heading--medium">
+                                    {{filterNameForShowAllAttributesModal}}<div ng-show="isFilterRequiredForShowAllAttributesModal" style="font-weight:bold;color:red;display: inline;">*</div>
+                                </h2>
+                            </div>
+                            <div class="slds-modal__content slds-p-around--medium slds-scrollable--y">
+                                <div id="error-block" ng-show="false" class="slds-p-around--small">
+                                    <strong>
+                                        {!$Label.Please_review_the_following_errors}
+                                    </strong>
+                                    <p>
+                                        {{showAllModalErrorMessage}}
+                                    </p>
+                                </div>
+                                
+                                
+                                <div style="float:left;width:100%;">
+                                    
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                                        <input id="serachAtt" aria-describedby="errorSample3" class="slds-input addSearchIcon" ng-class="{'' : !isSearchTextError,'errorClass':isSearchTextError}" 
+                                               ng-init="isSearchTextError = false" type="text" ng-model="searchAttText" style="width:70%;"
+                                               ng-keypress="searchAttributesByName($event);"/>
+                                        <span id="errorSample3" ng-show="isSearchTextError == true" style="color: #c23934 !important;" class="slds-form-element__help">
+                                            {!$Label.Atleast_two_characters}
+                                        </span>
+                                        <span id="errorSample2" ng-show="isSearchTextError == false && hasBulkAttributeRecords" style="color: #c23934 !important;" class="slds-form-element__help">
+                                            {!$Label.BulkRecords}
+                                        </span>
+                                    </div> 
+                                </div>
+                                <div class="slds-grid slds-wrap" style="width:83%;float:left;margin:2% 0 2% 2%;">
+                                    <div style="cursor: pointer;" ng-repeat="attribute in seeAllAttributesModalList" 
+                                         class="slds-col slds-size--1-of-1 slds-medium-size--1-of-3 slds-large-size--1-of-3 remove-flex" 
+                                         ng-show="seeAllAttributesModalList.length > 0">
+                                        <img src="{!$Resource.GreenCheck}" style="width:15px !important;float:left;margin:1%;" ng-show="attribute.isSelected == true"/>
+                                        <div style="margin-left:25px;" 
+                                             ng-click="attribute.isSelected = !attribute.isSelected;storeSelectedValuesForShowAllAtrributes(filterIdForShowAllAttributesModal);">
+                                            {{parseResult(attribute.attName)}}
+                                        </div>
+                                    </div>
+                                    <div ng-show="seeAllAttributesModalList.length == 0"  
+                                         class="slds-col slds-size--1-of-1 slds-medium-size--1-of-3 slds-large-size--1-of-3 remove-flex" >
+                                        {!$Label.No_Data_Found}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-modal__footer">
+                                <button class="slds-button slds-button--neutral" ng-click="closeShowAllAttributesModal();">{!$Label.Done}</button>
+                                <button class="slds-button slds-button--neutral" ng-click="showAllAttributesOnModal();" ng-show="!hasBulkAttributeRecords">
+                                    {!$Label.Show_All}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-backdrop slds-backdrop--open"></div>
+                </div>
+                
+                </div>
+                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+                   <img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                </div>
+            </form>
+            
+            <style>
+                .overlay {
+                    z-index : 100000;
+                    width: 22rem;
+                }
+                .overlay_body-cls {
+                 min-height: 20vh 
+                }
+
+                .btn-next {
+                    padding-right :2.5rem;
+                    padding-left: 0.8rem;
+                 }
+
+                .modal-backdrop.in {
+                    z-index:99999 !important;
+                }
+            </style>
+        </body>
+    </html>
+    
+</apex:page>

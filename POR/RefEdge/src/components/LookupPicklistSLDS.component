@@ -1,0 +1,292 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:component controller="LookupPicklistController">
+	<style>
+		.addSearchIcon {
+			background-image: url({!URLFOR($Resource.LightningCSS, '/assets/icons/utility/search_60.png')});
+			background-repeat: no-repeat;
+			background-size: 22px;
+			background-position-x: 1%;
+			background-position-y: 50%;
+		}
+		.slds .slds-pill.removeBorder {
+			border: none;
+		}
+		.slds-pill {
+			padding: 10px;
+		}
+		.highlight {
+			font-weight: bold;
+		}
+		.errorClass {
+			background-color: #fff !important;
+			border-color: #c23934 !important;
+			box-shadow: #c23934 0 0 3px !important;
+			background-clip: padding-box !important;
+		}
+				
+	</style>
+	<script> 
+		var lookupPicklistApp = angular.module('lookupPicklistApp', []);
+		//directive to show values for lookup field
+		lookupPicklistApp.directive("lookupPicklist", function($q, $sce, $compile) {
+		    return {
+		        restrict: "E",
+		        scope: {
+		            selectedId: "=?",
+		            selectedName: "=?",
+					selectedItem: "=?",
+		            objectName: "=",
+		            objectApiName: "=",
+		            extendedScope: "=?",
+					disableInlineEdit: "&?"
+		        },
+		        //create html for lookup
+		        template:'<div id="lookup-block">' +
+				            '<input id="lookupValue-User" class="slds-input" type="hidden" ng-value="lookupValue.Id" />' +
+				                '<div class="slds-lookup" data-select="multi" data-scope="single" data-typeahead="true" ng-show="lookupValue.id == \'\'">' +
+				                    '<div class="slds-form-element">' +
+				                        '<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left" style="width: 100% !important;">' +
+				                            '<input id="lookup-Input-Block{{objectApiName}}" class="slds-input addSearchIcon" type="text" ng-class="{\'errorClass\': !isCorrectRecordSelected}" ng-model="lookupValue.name" ng-change="fetchRecords()" ng-focus="fetchRecords()" ng-blur="loseFocus()"/>' +
+				                        	'<div class="slds-form-element__help" ng-show="!isCorrectRecordSelected" style="color: #c23934">{!$Label.Invalid_option}</div>' +
+				                        '</div>' +
+				                    '</div>' +
+				                    '<div class="slds-lookup__menu" role="listbox" style="z-index: 99" ng-show="showValues">' +
+				                        '<div class="slds-lookup__item" ng-show="lookupValue.name.length > 0">' +
+				                            '<button class="slds-button">"{{lookupValue.name}}" in {{objectName}}</button>' +
+				                        '</div>' +
+				                        '<ul class="slds-lookup__list" role="presentation" ng-show="recordList.length != 0">' +
+				                            '<li class="slds-lookup__item" ng-repeat="obj in recordList">' +
+				                                '<a id="s{{$index}}" role="option" ng-click="selectLookup(obj);">' +
+				                                    //chnages regarding #860
+				                                    '<span ng-show="objectApiName != \'Reference_Content__c\'" ng-bind-html="highlight(obj.name)"></span>' +
+				                                    '<div ng-show="objectApiName == \'Reference_Content__c\'" class="slds-m-left--smalllabels slds-truncate slds-media__body">' +
+														'<div class="primaryLabel slds-truncate slds-lookup__result-text" ng-bind-html="highlight(obj.title)"></div>' +
+														'<div class="slds-lookup__result-meta secondaryLabel slds-truncate slds-text-body--small">' +
+															'<span ng-bind-html="highlight(obj.name)"></span>' +
+															' (<span ng-bind-html="highlight(obj.conType)"></span>)' +
+														'</div>' +
+													'</div>' +
+				                                '</a>' +
+				                            '</li>' +
+				                        '</ul>' +
+				                        '<ul class="slds-lookup__list" role="presentation" ng-show="lookupValue.name.length > 0 && recordList.length == 0">' +
+				                            '<li class="slds-lookup__item" style="color: #c23934;padding-left: 8px;">' +
+				                                'No records found!' +
+				                            '</li>' +
+				                        '</ul>' +
+				                    '</div>' +
+				                '</div>' +
+				                '<div class="slds-lookup slds-has-selection" data-select="single" data-scope="single" data-typeahead="false" ng-show="lookupValue.id != null && lookupValue.id != \'\'">' +
+				                    '<div class="slds-form-element">' +
+				                        '<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right" style="width: 100% !important;" id="testDom">' +
+				                            '<div class="slds-pill__container slds-show">' +
+				                                '<a class="slds-pill removeBorder">' +
+				                                    '<span class="slds-pill__label" ng-bind-html="htmlbinding(lookupValue.name)" style="white-space: normal"></span>' +
+				                                    '<button class="slds-button slds-button--icon-bare slds-pill__remove" ng-click="removeSelection();">' +
+				                                        '<img id="close-Image" src="{!URLFOR($Resource.LightningCSS, "/assets/icons/utility/close_60.png")}" alt="close" height="20" width="20"/>' +
+				                                        '<span class="slds-assistive-text">Remove</span>' +
+				                                    '</button>' +
+				                                '</a>' +
+				                            '</div>' +
+				                        '</div>' +
+				                    '</div>' +
+				                '</div>' +
+			              	'</div>',
+		        link: function(scope, elm, attrs) {
+		            scope.isFocus = false;
+		            scope.showValues = false;
+		            scope.isCorrectRecordSelected = true;
+		            scope.recordList = {};
+		            scope.lookupValue = {
+		                id: '',
+		                name: ''
+		            };
+		            scope.extendedScope = {};
+		            
+		            // added for #1035 - Gaurav Saini (21 Dec, 2017)
+		            angular.extend(scope.extendedScope, {
+						removeSelectedValue : function() {
+							scope.removeSelection();
+						}
+					});
+		            
+		            var dataLoading = function(scopeAttr) {
+		                var loading = $q.defer();
+		
+		                if (scope[scopeAttr]) {
+		                    loading.resolve(scope[scopeAttr]);
+		                } else {
+		                    scope.$watch(
+		                        scopeAttr,
+		                        
+		                        function(newValue, oldValue) {
+		                        
+		                            if (newValue !== undefined) {
+		                                loading.resolve(newValue);
+		                            }
+		                        }
+		                    );
+		                }
+		                return loading.promise;
+		            };
+		
+		            $q.all([dataLoading("selectedId")]).then(
+		                function(results) {
+		                    
+		                    if (scope.selectedId != null && scope.selectedId != '') {
+		                        scope.lookupValue.name = scope.selectedName;
+		                        scope.lookupValue.id = scope.selectedId;
+		                    } 
+		                }
+		            );
+					$q.all([dataLoading("selectedItem")]).then(
+		                function(results) {
+		                    
+		                    if (scope.selectedItem != null && scope.selectedItem['id'] != null &&  scope.selectedItem['id'] != '') {
+								scope.lookupValue.id = scope.selectedItem['id'];
+		                        scope.lookupValue.name = scope.selectedItem['name'];
+							}
+		                }
+		            );
+		            scope.htmlbinding = function(value) {
+		                return $sce.trustAsHtml(value);
+		            }
+		            
+		            scope.loseFocus = function() {
+	            		scope.isFocus = false;
+		            }
+		
+		            //function to highlight the input box and show an error msg when searched value is not a valid input
+		            scope.hideValues = function() {
+		                scope.isCorrectRecordSelected = true;
+		
+		                if ((scope.lookupValue.id == null || scope.lookupValue.id == '') && scope.lookupValue.name != '') {
+		                    scope.isCorrectRecordSelected = false;
+		                    scope.showValues = false;
+		                } else if ((scope.lookupValue.id == null || scope.lookupValue.id == '') &&
+		                    (scope.lookupValue.name == null || scope.lookupValue.name == '')) {
+		                    scope.showValues = false;
+		                    scope.isCorrectRecordSelected = true;
+		                }
+		            }
+		            //to hide values on click of outer div
+		            jQuery('html').click(function() {
+		
+		                if (!scope.isFocus) {
+		                    scope.hideValues();
+		                    scope.$apply();
+		                }
+		            });
+		
+		            jQuery('#lookup-block').click(function() {
+		                scope.showValues = true;
+		                scope.$apply();
+		            });
+		            
+		            //function to highlight the text
+		            scope.highlight = function(innerHTML) {
+		            	
+		            	if (innerHTML != null && searchTxt != null) {
+			                var searchTxt = scope.lookupValue.name;
+			                var index = innerHTML.indexOf(searchTxt);
+
+			                if (index < 0) {
+			                    index = innerHTML.toLowerCase().indexOf(searchTxt.toLowerCase());
+			                }
+			
+			                if (index >= 0) {
+			                    innerHTML = innerHTML.substring(0, index) + "<span class='highlight'>" +
+			                        innerHTML.substring(index, index + searchTxt.length) + "</span>" +
+			                        innerHTML.substring(index + searchTxt.length);
+			                }
+		                }
+		                return $sce.trustAsHtml(innerHTML);
+		            };
+		
+		            //function called when you search for any text value
+		            scope.fetchRecords = function() {
+		                scope.showValues = true;
+		                scope.isCorrectRecordSelected = true;
+		                scope.isFocus = true;
+		
+		                if (scope.lookupValue.name != null && scope.lookupValue.name != '' && scope.lookupValue.name.length > 1) {
+		                    scope.getData().then(function(result) {
+		                        scope.recordList = result;
+		                    });
+		                } else {
+		                    scope.getData().then(function(result) {
+		                        scope.recordList = result;
+		                        //angular.element(jQuery(elm).find('input[id="lookup-Input-Block'+scope.objectApiName+'"]')[0]).focus();
+		                    });
+		                }
+		            }
+		            //when click on any value
+		            scope.selectLookup = function(value) {
+						scope.lookupValue = value;
+							scope.selectedId = scope.lookupValue.id;
+							scope.selectedName = scope.lookupValue.name; 
+						
+						if (scope.selectedItem != null && scope.selectedItem != ''){
+							scope.selectedItem['id'] = scope.lookupValue.id;
+							scope.selectedItem['name'] = scope.lookupValue.name; 
+						}
+		                scope.isCorrectRecordSelected = true;
+						
+						if (scope.disableInlineEdit != null) {
+							scope.disableInlineEdit();
+						}
+		            }
+		            //when clear the selected value
+		            scope.removeSelection = function() {
+		                scope.lookupValue = {
+		                    id: '',
+		                    name: ''
+		                };
+		                
+						scope.selectedId = scope.lookupValue.id;
+						if (scope.selectedItem != null && scope.selectedItem != ''){
+							scope.selectedItem['id'] = scope.lookupValue.id;
+						}
+		                scope.isCorrectRecordSelected = true;
+		                scope.fetchRecords();
+		                scope.isFocus = false;
+		            }
+		
+		            //remoteAction called
+		            scope.getData = function() {
+		                var deferred = $q.defer();
+		                Visualforce.remoting.Manager.invokeAction(
+		                    '{!$RemoteAction.LookupPicklistController.fetchData}',
+		                    scope.lookupValue.name, scope.objectApiName,
+		                    function(result, event) {
+		                        deferred.resolve(result);
+		                    }, {
+		                        escape: true
+		                    }
+		                );
+		                return deferred.promise;
+		            }
+		        }
+		    }
+		});
+				
+	</script>
+</apex:component>

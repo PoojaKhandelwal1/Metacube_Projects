@@ -1,0 +1,534 @@
+<!-- 
+ * ReferenceEdge
+ *
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page standardController="Case"  sidebar="false" id="pageId" extensions="AccountLevelRULController" standardStylesheets="true" showHeader="false">
+    
+    <!-- Message -->
+    <apex:pageMessages id="pgmsgId"/>
+    <c:POR_ModalLoader id="PORLoader"/>
+    <apex:stylesheet value="{!URLFOR($Resource.JqueryFiles, 'jquery-ui-1.9.2.custom.min.css')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+    <script>
+    		// Edited to remove duplicate entries 1106 
+     	var topId = '';
+		var redirectToRefType = false;
+		var redirectToAttribute = false;
+		
+        function validate(compValue) {
+            if (compValue.checked) {
+                var result = confirm("{!$Label.AccountLevelRUL_Checked_Msg}");
+                if (result) {
+                    updateAccountLevelRUL('true');
+                } else {
+                    document.getElementById('pageId:frmId:accLevelRul').value = false;
+                    window.top.location = '/{!JSENCODE(caseId)}';
+                }
+            } else {
+                var result = confirm("{!$Label.AccountLevelRUL_UnChecked_Msg}");
+                if (result) {
+                    updateAccountLevelRUL('false');
+                } else {
+                    document.getElementById('pageId:frmId:accLevelRul').value = true;
+                    window.top.location = '/{!JSENCODE(caseId)}';
+                }
+            }
+        }
+        function checkStatusChange (item) {
+            var typeOld = '{!RBI.Is_Referenceable__c}' == 'true' ? 'Member' : '{!RBI.Reference_Program_Candidate__c}' == 'true' ? 'Candidate' : '';
+            
+            var isCandidate = document.getElementById('pageId:frmId:pageblockId:pbsecId3:repeadID4:0:pbsec12:rbiId5').checked;
+            var isMember = document.getElementById('pageId:frmId:pageblockId:pbsecId3:repeadID4:2:pbsec12:rbiId5').checked;
+            var type = isMember ? 'Member' : isCandidate ? 'Candidate' : '';
+            
+            if ((!(isMember && isCandidate)) && typeOld != '' && type != '' && type != typeOld && typeOld == 'Member' ) {//Member to candidate
+                jQuery("#dialogBoxDiv3").dialog({
+                    width: '400px',
+                    modal: true,
+                    resizable: false,
+                    draggable: false,
+                    buttons: [{
+                            text: "{!$Label.Yes}",
+                            "class": "dialogButtonClass",
+                            click: function() {
+                                jQuery(this).dialog("close");
+                                saveJs();
+                            }
+                        },
+                        {
+                            text: "{!$Label.No}",
+                            "class": "dialogButtonClass",
+                            click: function() {
+                                jQuery(this).dialog("close");
+                                item.disabled = false;
+                            }
+                        }
+                    ]
+                });
+                jQuery(".ui-dialog-titlebar").hide();
+                jQuery(".ui-dialog-content ui-widget-content").css("height", "auto");
+                return false;
+            } else if ((!(isMember && isCandidate)) && typeOld != '' && type != '' && type != typeOld && typeOld == 'Candidate' ) {//candidate to Member
+                jQuery("#dialogBoxDiv4").dialog({
+                    width: '400px',
+                    modal: true,
+                    resizable: false,
+                    draggable: false,
+                    buttons: [{
+                            text: "{!$Label.Yes}",
+                            "class": "dialogButtonClass",
+                            click: function() {
+                                jQuery(this).dialog("close");
+                                saveJs();
+                            }
+                        },
+                        {
+                            text: "{!$Label.No}",
+                            "class": "dialogButtonClass",
+                            click: function() {
+                                jQuery(this).dialog("close");
+                                item.disabled = false;
+                            }
+                        }
+                    ]
+                });
+                jQuery(".ui-dialog-titlebar").hide();
+                jQuery(".ui-dialog-content ui-widget-content").css("height", "auto");
+                return false;
+            } else {
+                saveJs();
+            }
+        }
+        function CheckRefStatus(isRefereshPage) {
+			
+		    if (jQuery('[id$=accRefStatus]').val() == "Inactive") {
+		        jQuery('[id$=accInactiveReason]').show();
+		        jQuery('[id$=accInactiveReason]').parent().parent().find(".labelCol:first-child").find("label").show();
+		        jQuery('[id$=accInactiveReason]').parent().parent().find(".labelCol:first-child").find("img").show();
+                jQuery('[id$=accInactiveReason]').parent().parent().find(".labelCol:first-child").find("label").parent().css('padding-right', '30px');
+		    } else {
+		        jQuery('[id$=accInactiveReason]').hide();
+		        jQuery('[id$=accInactiveReason]').parent().parent().find(".labelCol:first-child").find("label").hide();
+		        jQuery('[id$=accInactiveReason]').parent().parent().find(".labelCol:first-child").find("img").hide();
+		    }
+		}
+    </script>
+    
+    <style type="text/css">
+        .bPageHeader {
+            display:none;
+        }
+        .visible { 
+        display:block;
+        }
+        .hidden { 
+        display:none; 
+        }
+        .ui-widget-content{
+        min-height: 45px !important;
+        }
+        .ui-widget-header{
+        display : none !important;
+        }
+        .dialogButtonClass{
+            margin-left: 3px !important;
+            margin-right: 3px !important;
+            color: #333 !important;
+            border: 1px solid #b5b5b5 !important;
+            border-bottom-color: #7f7f7f !important;
+            background: #e8e8e9 url('/img/alohaSkin/btn_sprite.png') repeat-x right top !important;
+            font-weight: bold !important;
+            font-size: .9em !important;
+            -moz-border-radius: 3px !important;
+            -webkit-border-radius: 3px !important;
+            border-radius: 3px !important;
+            font-family : arial !important;
+        }
+        .ui-button-text-only .ui-button-text {
+            padding: .2em 1em !important;
+        }
+        
+        .ui-dialog .ui-dialog-buttonpane {
+            text-align: left;
+            border-width: 1px 0 0 0;
+            /* background-image: none; */
+            margin: .5em 0 0 0;
+            padding: 0em 1em 0em .4em;
+            background: #eeeeee;
+        }
+
+        .ui-widget {
+            font-family: Arial;
+            font-size: 1.1em;
+        }
+
+        .ui-dialog .ui-dialog-content {
+            position: relative;
+            border: 0;
+            padding: .5em 1em;
+            background: #f8f8f8;
+            overflow: auto;
+            zoom: 1;
+        }
+        .ui-widget-content {
+            border: 1px solid #ddd0; 
+            background: #eee url(images/ui-bg_highlight-soft_100_eeeeee_1x100.png) 50% top repeat-x;
+            color: #333;
+        }
+        .ui-dialog {
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 0em;
+            width: 300px;
+            overflow: hidden;
+        }
+
+        .ui-dialog .ui-dialog-buttonpane {
+            text-align: left;
+            border-width: 1px 0 0 0;
+            /* background-image: none; */
+            margin: .5em 0 0 0;
+            padding: 0em 1em 0em .4em;
+            background: #eeeeee;
+            border-top: 1px solid #DDDDDD;
+            margin-top: 0;
+        }
+        .ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+            float: right;
+            margin-right: 3px;
+            margin-top: 5px;
+        }
+    </style>
+    
+    <apex:outputPanel id="JSPanel" >
+        <script>
+            function refreshPage() {
+                if('{!isError}' == 'false' && (document.getElementById('pageId:pgmsgId').innerHTML == '')){
+                    window.top.location = '/{!JSENCODE(caseId)}';
+                } else {
+                    return false;
+                }
+            }
+        </script>
+    </apex:outputPanel>
+    <apex:pageMessage summary="{!$Label.Insufficient_Privileges}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+    <apex:form id="frmId" rendered="{!And(isFullLicenseAccessible,NOT(isSLDS))}">
+        <style>
+            .left-select {
+                float: left; min-width: 150px; height: 80px;
+            }
+            .add-remove-container {
+                float: left; text-align: center;
+            }
+            .right-select {
+                float: left; min-width: 150px; height: 80px;
+            }
+            div.tooltip {
+                width: 20px;
+                float: right;
+                display:inline;
+                left:0;
+                opacity : 0.25;
+            }
+            div.tooltip:hover {
+                opacity : 1; 
+            }
+            div.tooltip span {
+                display: none;
+            }
+            .bPageBlock .detailList .dataCol {
+                width: 25%!important;
+            }
+            div.tooltip:hover span {
+                display: inline;
+                position: absolute;
+                width: 15em;
+                z-index: 12;
+                background-color: #fefdb9;
+                font-size: 109%;
+                padding: 2px 5px;
+                opacity : 1; 
+                border: 1px solid orange;
+                text-align: left;
+                white-space: normal;
+                font-weight: normal;
+                color: #000;
+                top: 20px;
+                right: 0;
+            }
+            .labelCol {
+                right: -20px!important;
+            }
+            .bPageBlock .detailList .dataCol {
+                width: 25%!important;
+            }
+        </style>
+        <apex:actionFunction name="updateAccountLevelRUL" reRender="pgmsgId"  action="{!updateAccount}" oncomplete="window.top.location = '/{!JSENCODE(caseId)}';">
+            <apex:param name="rulValue" value="" assignTo="{!accountLevelRULValue}"/>
+        </apex:actionFunction>
+        <apex:actionFunction name="saveJs" reRender="Block,pageblockId,pgmsgId,JSPanel,editBlock" action="{!saveRBI}" oncomplete="return CheckRefStatus(true);"/>
+        <apex:pageBlock mode="Detail" id="pageblockId" rendered="{!AND(isAccountExist,OR(isInformationSection, isUseLimitSection, isRewardSection))}">
+            <apex:pageBlockButtons id="buttons" location="top">
+                <apex:commandButton value="{!$Label.Edit}" action="{!editRBI}" oncomplete="CheckRefStatus(false);" reRender="Block,pageblockId,pgmsgId" rendered="{!!isEdit}"/>
+                <apex:commandButton value="{!$Label.Save}" onclick="this.disabled = true; checkStatusChange(this); return false;" reRender="Block,pageblockId,pgmsgId,JSPanel"  oncomplete="CheckRefStatus(false);return refreshPage();" rendered="{!isEdit}"/>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancelRBI}" immediate="true" reRender="Block,pageblockId,pgmsgId" rendered="{!isEdit}"/>
+            </apex:pageBlockButtons>
+                        
+            <apex:outputPanel id="Block" >
+                <apex:outputPanel id="detailBlock" rendered="{!!isEdit}" >
+                    <apex:pageBlockSection title="{!$Label.Reference_Information}" collapsible="false" rendered="{!isInformationSection}">
+                        <apex:repeat value="{!informationFields}" var="field">
+                            <!-- Edited to remove duplicate entries 1106 -->
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!AND(field != '', field != 'Reference_Program_Candidate__c',field != 'ACV_Influenced__c', field != 'Is_Referenceable__c',field != 'Referenceability_Status__c',field != 'Managed_Reference_Account__c',field != 'Reference_Owner__c',field != 'Profile_Update_Owner__c', field != 'Generic_Account__c',field != 'Inactive_Reason__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}" >
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField id="rbiId11"  value="{!RBI[field]}" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" id="pbsec12" rendered="{!AND(field != '',field != 'Total_Reference_Use_f__c',field != 'Referenceability__c',field != 'Attributes__c',field != 'Joined_Reference_Program__c',field != 'Referenceability_Status__c' , field != 'Inactive_Reason__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn"  value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField id="rbiId12" value="{!RBI[field]}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field == 'Referenceability_Status__c'}">
+                                <apex:outputLabel styleClass="helpButtonOn"  value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField value="{!RBI.Referenceability_Status__c}"  id="accRefStatus" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field == 'Inactive_Reason__c'}">
+                                <apex:outputLabel styleClass="helpButtonOn" id="accInactiveReasonText" style="padding-right: 20px" rendered="{!isRefStatusInActive}" value="{!$ObjectType.Reference_Basic_Information__c.fields.Inactive_Reason__c.Label}" />
+                                <apex:outputField value="{!RBI.Inactive_Reason__c}" style="width: 250px; !important;"  id="accInactiveReason" rendered="{!isRefStatusInActive}"  styleClass="{!inputCSSClass}" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem rendered="{!field == ''}">
+                                <apex:outputLabel value=" "/>
+                                <apex:outputText value=""/>
+                            </apex:pageBlockSectionItem>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection title="{!$Label.Reference_Use_Limits}" collapsible="false" rendered="{!isUseLimitSection}">
+                        <apex:repeat value="{!limitFields}" var="field">
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!AND(field != '', field != 'Account_Level_RUL__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField value="{!RBI[field]}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field == 'Account_Level_RUL__c'}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:inputField value="{!RBI.Account_Level_RUL__c}" onclick="validate(this);" id="accLevelRul"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem rendered="{!field == ''}">
+                                <apex:outputLabel value=" "/>
+                                <apex:outputText value=""/>
+                            </apex:pageBlockSectionItem>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection title="{!$Label.Rewards_Status}" collapsible="false" rendered="{!AND(NOT(isthisBasic), isRewardSection)}">
+                        <apex:repeat value="{!rewardFields}" var="field">
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field != ''}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField value="{!RBI[field]}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem rendered="{!field == ''}">
+                                <apex:outputLabel value=" "/>
+                                <apex:outputText value=""/>
+                            </apex:pageBlockSectionItem>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <apex:outputPanel id="editBlock" rendered="{!isEdit}">
+                    <apex:pageBlockSection id="pbsecId3" title="{!$Label.Reference_Information}" collapsible="false" rendered="{!isInformationSection}">
+                        <apex:repeat value="{!informationFields}" var="field" id="repeadID4">
+                            <!-- Edited to remove duplicate entries 1106 -->
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!AND(field != '', field != 'Reference_Program_Candidate__c', field != 'Is_Referenceable__c',field != 'Referenceability_Status__c',field != 'Managed_Reference_Account__c',field != 'Reference_Owner__c',field != 'Profile_Update_Owner__c', field != 'Generic_Account__c',field != 'Inactive_Reason__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField id="rbiId4" value="{!RBI[field]}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" id="pbsec12" rendered="{!AND(field != '',field != 'Total_Reference_Use_f__c',field != 'Referenceability__c',field != 'Attributes__c',field != 'ACV_Influenced__c',field != 'Joined_Reference_Program__c',field != 'Referenceability_Status__c' , field != 'Inactive_Reason__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:inputField id="rbiId5" value="{!RBI[field]}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field == 'Referenceability_Status__c'}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:inputField value="{!RBI.Referenceability_Status__c}" onchange="CheckRefStatus(false);" id="accRefStatus"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field == 'Inactive_Reason__c'}">
+                                <apex:outputLabel id="accInactiveReasontext" value="{!$Label.Inactive_Reason}" styleClass="{!inputCSSClass}"/>
+                                <apex:inputField value="{!RBI.Inactive_Reason__c}"  style="width: 250px; !important; border-left-color: #c00; border-left-width: 3px;" id="accInactiveReason" rendered="{!field == 'Inactive_Reason__c'}"  styleClass="{!inputCSSClass}" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem rendered="{!field == ''}">
+                                <apex:outputLabel value=" "/>
+                                <apex:outputText value=""/>
+                            </apex:pageBlockSectionItem>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection title="{!$Label.Reference_Use_Limits}" collapsible="false" rendered="{!isUseLimitSection}">
+                        <apex:repeat value="{!limitFields}" var="field">
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!AND(field != '', field != 'Account_Level_RUL__c',field != 'RUL_Activities_will_do__c',field != 'RUL_Period__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField value="{!RBI[field]}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field == 'Account_Level_RUL__c'}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:inputField value="{!RBI.Account_Level_RUL__c}" onclick="validate(this);" id="accLevelRul"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem rendered="{!field == ''}">
+                                <apex:outputLabel value=" "/>
+                                <apex:outputText value=""/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" helpText="{!$ObjectType.Reference_Basic_Information__c.fields.RUL_Period__c.InlineHelpText}" rendered="{!AND($ObjectType.Reference_Basic_Information__c.fields.RUL_Period__c.updateable, field == 'RUL_Period__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!$ObjectType.Reference_Basic_Information__c.fields.RUL_Period__c.Label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}" >
+                                        <span>
+                                        {!$ObjectType.Reference_Basic_Information__c.fields.RUL_Period__c.InlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:inputText value="{!RUL_Period}" size="3" maxlength="3" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!AND(!$ObjectType.Reference_Basic_Information__c.fields.RUL_Period__c.updateable, field == 'RUL_Period__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!$ObjectType.Reference_Basic_Information__c.fields.RUL_Period__c.Label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!$ObjectType.Reference_Basic_Information__c.fields.RUL_Period__c.InlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField value="{!RBI.RUL_Period__c}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" helpText="{!$ObjectType.Reference_Basic_Information__c.fields.RUL_Activities_will_do__c.InlineHelpText}" rendered="{!AND($ObjectType.Reference_Basic_Information__c.fields.RUL_Activities_will_do__c.updateable, field == 'RUL_Activities_will_do__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!$ObjectType.Reference_Basic_Information__c.fields.RUL_Activities_will_do__c.Label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}" >
+                                        <span>
+                                        {!$ObjectType.Reference_Basic_Information__c.fields.RUL_Activities_will_do__c.InlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:inputText value="{!RUL_Activities_will_do}" size="3" maxlength="3" />
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!AND(!$ObjectType.Reference_Basic_Information__c.fields.RUL_Activities_will_do__c.updateable, field == 'RUL_Activities_will_do__c')}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!$ObjectType.Reference_Basic_Information__c.fields.RUL_Activities_will_do__c.Label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}" >
+                                        <span>
+                                        {!$ObjectType.Reference_Basic_Information__c.fields.RUL_Activities_will_do__c.InlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField value="{!RBI.RUL_Activities_will_do__c}"/>
+                            </apex:pageBlockSectionItem>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection title="{!$Label.Rewards_Status}" collapsible="false" rendered="{!AND(NOT(isthisBasic), isRewardSection)}">
+                        <apex:repeat value="{!rewardFields}" var="field">
+                            <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!field != ''}">
+                                <apex:outputLabel styleClass="helpButtonOn" value="{!labelMap[LOWER(field)].label}" style="{!if(OR(labelMap[LOWER(field)].inlineHelpText == null ,labelMap[LOWER(field)].inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+                                    <apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND(labelMap[LOWER(field)].inlineHelpText != null ,labelMap[LOWER(field)].inlineHelpText != '')}">
+                                        <span>
+                                        {!labelMap[LOWER(field)].inlineHelpText}
+                                        </span>
+                                    </apex:outputPanel>
+                                </apex:outputLabel>
+                                <apex:outputField value="{!RBI[field]}"/>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem rendered="{!field == ''}">
+                                <apex:outputLabel value=" "/>
+                                <apex:outputText value=""/>
+                            </apex:pageBlockSectionItem>
+                        </apex:repeat>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        <apex:pageBlock rendered="{!NOT(isAccountExist)}">
+            <apex:pageMessage summary="{!$Label.Account_Not_Found}" severity="Info" strength="3" />
+        </apex:pageBlock>
+        <apex:pageBlock rendered="{!NOT(OR(isInformationSection, isUseLimitSection, isRewardSection))}">
+            <apex:pageMessage summary="{!$Label.NopermissionRBIFields}" severity="Info" strength="3" />
+        </apex:pageBlock>
+        <apex:outputPanel >
+            <div id="dialogBoxDiv3" title="{!$Label.Send_notification}" style="display:none;font-size: 12px;height: 50px; !important;">
+                <apex:outPutText value="{!$Label.Member_to_Candidate_confirm}" escape="false"/>
+            </div>
+            <div id="dialogBoxDiv4" title="{!$Label.Send_notification}" style="display:none;font-size: 12px;height: 50px; !important;">
+                <apex:outPutText value="{!$Label.Candidate_to_Member_confirm}" escape="false"/>
+            </div>
+        </apex:outputPanel>
+    </apex:form>
+    <apex:include pageName="CaseAccountInlinePageSLDS" rendered="{!isSLDS}"/>
+</apex:page>

@@ -1,0 +1,164 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ --> 
+    <apex:page standardController="Custom_Settings__c"
+           extensions="ContentIntegrationController" lightningStylesheets="true"
+           sidebar="false" tabStyle="Custom_Settings__c" standardStylesheets="true" showHeader="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0">
+
+		<apex:pageMessages id="pgmsgId"/>
+		<style> 
+			div.tooltip {
+				float: right;
+				display:inline;
+				left:0;
+				opacity : 0.25;
+			}
+			div.tooltip:hover {
+				opacity : 1; 
+			}
+			div.tooltip span {
+				display: none;
+			}
+			.bPageBlock .detailList .labelCol {
+				width: 21%;
+			}
+			div.tooltip:hover span {
+				display: inline;
+				position: absolute;
+				width: 15em;
+				z-index: 12;
+				background-color: #fefdb9;
+				font-size: 109%;
+				padding: 2px 5px;
+				opacity : 1; 
+				border: 1px solid orange;
+				text-align: left;
+				white-space: normal;
+				font-weight: normal;
+				color: #000;
+				top: 20px;
+				right: 0;
+			}
+		</style>
+	    <apex:form >
+	        <apex:pageBlock id="outer-block" mode="{!IF(isEdit,'edit','maindetail')}">
+	            <apex:pageBlockButtons id="buttons" location="top" rendered="{!$ObjectType.Custom_Settings__c.updateable}">
+	                <apex:commandButton value="{!$Label.Edit}" action="{!editForm}" rendered="{!!isEdit}" reRender="outer-block,pgmsgId"/>
+	                <apex:commandButton value="{!$Label.Save}" action="{!saveForm}" reRender="outer-block,pgmsgId" rendered="{!isEdit}" />
+	                <apex:commandButton value="{!$Label.Cancel}" action="{!cancelForm}" reRender="outer-block,pgmsgId" rendered="{!isEdit}" />
+	            </apex:pageBlockButtons> 
+	            <apex:pageBlockSection columns="2" rendered="{!!isEdit}">
+					<apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.Enabled_Content_Integration__c}" /> 
+					</apex:pageBlockSectionItem>
+                    <div></div>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Default_Library__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+	                    <apex:outputLabel value="{!selectedLibraryName}" /> 
+	                </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+	                    <apex:outputLabel value="{!selectedRefContnetTypeName}" /> 
+	                </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+	                    <apex:outputField value="{!cs.Content_import_API_reporting_email__c}" />
+	                </apex:pageBlockSectionItem>
+	            </apex:pageBlockSection>
+	            <apex:pageBlockSection columns="2" rendered="{!isEdit}">
+					<apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Enabled_Content_Integration__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField value="{!cs.Enabled_Content_Integration__c}" />
+					</apex:pageBlockSectionItem>
+                    <div></div>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Default_Library__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Default_Library__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+	                    <apex:outputPanel styleClass="requiredInput" layout="block" >
+	                    <div class="requiredBlock"></div>
+	                        <apex:selectList value="{!selectedLibrary}" size="1"> 
+	                            <apex:selectOptions value="{!libraryList}"></apex:selectOptions>
+	                        </apex:selectList>
+	                    </apex:outputPanel>
+	                </apex:pageBlockSectionItem> 
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Default_Reference_Content_Type__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+	                    <apex:outputPanel styleClass="requiredInput" layout="block" >
+	                    	<div class="requiredBlock"></div>
+	                        <apex:selectList value="{!selectedRefContnetType}" size="1"> 
+	                            <apex:selectOptions value="{!contnetTypeList}"></apex:selectOptions>
+	                        </apex:selectList>
+	                    </apex:outputPanel>
+	                </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem labelStyleClass="{!if(isSLDS,'','helpButtonOn')}" labelStyle="{!if(isSLDS,'', if(OR($ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText == null, $ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText == ''),'padding-right: 20px;right: -10px!important;', 'padding-right: 0px;right: -10px!important;'))}">
+                    	<apex:outputLabel styleClass="helpButtonOn" style="display: inline;" value="{!$ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.Label}">
+							<apex:outputPanel layout="block" styleClass="helpOrb tooltip" rendered="{!AND($ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText != null, $ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText != '')}" style="{!if(isSLDS,'position:relative;opacity: 0.45;margin-top:0;width: 0.9rem;','position:relative;')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.Content_import_API_reporting_email__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+	                    <apex:inputField value="{!cs.Content_import_API_reporting_email__c}" />
+	                </apex:pageBlockSectionItem>
+	            </apex:pageBlockSection>
+	        </apex:pageBlock>
+	    </apex:form>
+    </apex:page>

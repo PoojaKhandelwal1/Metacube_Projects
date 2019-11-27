@@ -1,0 +1,1471 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com 
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Referenceability__c"
+            extensions="AddNewReferenceabilitySLDS"
+            showHeader="false"
+            sidebar="false"
+            standardstylesheets="false"
+            applyHtmlTag="false"
+            applyBodyTag="false"
+            docType="html-5.0">
+    
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+            <script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script>
+            <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+            <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+            <apex:includeScript value="/support/console/44.0/integration.js" />
+            
+            <style>
+                #error-block {
+                    background-color: #A60000;
+                    color: WHITE;
+                    font-size: 15px;
+                    border-radius: 5px;
+                }
+                a {
+                	cursor: pointer;
+                }
+                #loading-image {
+					position: fixed;
+					top: 40%;
+					left: 47%;
+					width: 4%;
+				}
+				#loading-div {
+					position: absolute;
+					background-color: rgba(255, 255, 255, 1) !important;
+					top: 0;
+					left: 0;
+					bottom: 0;
+					right: 0;
+					display: block;
+					text-align: center;
+					z-index: 9005;
+					width: 100%;
+					height: 100%;
+				}
+				.form-element-label {
+					line-height: 200% !important;
+				}
+				.ref-type-multi-select #multiSelectBox .slds-form-element,
+				.ref-type-multi-select #multiSelectBox .slds-form-element Select {
+				    width: 208px !important;
+				    
+				}
+            </style>
+            
+            <script>
+            var addReferenceability = angular.module('addReferenceability', ['angularMultiSelectList', 'angularjs-datetime-picker']);
+            
+            addReferenceability.controller('addReferenceabilityCtrl', function($scope, $q, $window, $location, $filter) {
+                $scope.showDiv = false;
+                $scope.makeAccountMember = false;
+                $scope.makeAccountCandidate = false;
+                $scope.makeContactCandidate = false;
+                $scope.makeContactMember = false;
+                $scope.isAccountReferenceableStatus = false;
+                $scope.isContactReferenceableStatus = false;
+                $scope.isAccountCandidate = false;
+                $scope.isContactCandidate = false;
+                $scope.createdFromAccount = false;
+                $scope.createdFromContact = false;
+                $scope.isRefEdit = false;
+                $scope.createdFromRefTab = false;
+                $scope.isContactSelected = false;
+                $scope.isContactCandidate = false;
+                $scope.contacRBIStatus = false;
+                
+                $scope.isError = false;
+                $scope.errorMessage = '';
+                $scope.isLoading = false;
+                $scope.nameSpace = '{!nameSpace}';
+                $scope.Verified = 'Verified__c';
+                $scope.Comment = 'Comment__c';
+                $scope.Referenceability_Type = 'Referenceability_Type__c';
+                
+                $scope.isOnlySave = false;
+                $scope.showContactMemberCandidateModal = false;
+                $scope.showChangeContactCandidateToMemberModal = false;
+                $scope.showAccountMemberCandidateModal = false;
+                $scope.showAccountCandidateMessageModal = false;
+                $scope.showAccountMemberMessageModal = false;
+                $scope.showChangeAccountCandidateToMemberModal = false;
+                
+                $scope.referenceabilityId = '{!Referenceability__c.Id}';
+                $scope.refContactId = '{!JSENCODE(existingContactId)}';
+                $scope.refAccountId = '{!JSENCODE(existingAccountId)}';
+                $scope.refAccountName = '';
+                $scope.isAccountMember = 'false';
+                $scope.isAccountCandidate = 'false';
+                $scope.refContactName = '';
+                $scope.isContactMember = 'false';
+                $scope.isContactCandidate = 'false';
+				
+				$scope.addNew = {};
+                $scope.accountWrapList;
+                $scope.addNew.selectedAccounts = [];
+                $scope.contactWrapList = [];
+                $scope.addNew.selectedContact = '';
+                $scope.refTypeWrapperList;
+                $scope.allRefTypeWrapperList = [];
+                $scope.addNew.selectedRefTypes = [];
+                $scope.statusPicklist = [];
+                $scope.refStatus = 'Approved';
+                $scope.verifiedDate = '{!JSENCODE(dateString)}';
+                $scope.dateFormat = 'yyyy-MM-dd';
+                $scope.comments = '';
+                $scope.refTypeWrapperObject = [];
+                $scope.referenceabilityObject = {};
+                $scope.accModalStr = '';	//string varible for deciding which modal to show for selected accounts
+                $scope.contactRBI = '{!JSENCODE(contactRBI)}';
+                $scope.accountRBI = '{!JSENCODE(accountRBI)}';
+                $scope.showAttMsg = false;
+                
+                $scope.isFromProfileUpdate = false;
+                $scope.showReferenceabilityForAccount = false;
+                $scope.showReferenceabilityForContact = false;
+                $scope.accRefRefreshId = '{!JSENCODE(accRefRefreshId)}';
+                $scope.conRefRefreshId = '{!JSENCODE(conRefRefreshId)}';
+                $scope.PUMAccountId = '{!JSENCODE(PUMAccountId)}';
+                $scope.pageNo = '{!JSENCODE(pageNo)}';
+                $scope.returnId = '{!JSENCODE(returnId)}';
+                $scope.alreadyCreatedPURef = [];
+                $scope.profileUpdateRecord = {};
+                $scope.profileUpdateRefIds = [];
+                $scope.referenceabilitiesPresent = [];
+                
+                //Method to set Ref Types according to account and contact
+                //Created By: Rekha @21 April 2017 regarding #570 
+                $scope.setRefTypes = function() {
+                    $scope.refTypeWrapperList = [];
+                    var selectedIds = [];
+                    //store selected values
+                    angular.forEach(
+                    	$scope.addNew.selectedRefTypes,
+                    	
+                    	function(item) {
+                    		selectedIds.push(item.id);
+                    	}
+                    );
+                    //reset selectoption also
+                    $scope.addNew.selectedRefTypes = [];
+
+                    angular.forEach(
+                    	$scope.allRefTypeWrapperList,
+                    	
+                    	function(item) {
+
+                    		if ($scope.addNew.selectedContact != null && $scope.addNew.selectedContact != '') {
+			                	
+			                	//if reftype available for contact only
+			                	if (item.avaliableForContact) {
+			                		
+			                		if (selectedIds.indexOf(item.id) >= 0) {
+			                			$scope.addNew.selectedRefTypes.push(item);
+			                		} else {
+			                			$scope.refTypeWrapperList.push(item);
+			                		}
+			                	}
+			                } else if ($scope.refAccountId != null && $scope.refAccountId != '') {
+			                	
+			                	//if reftype available only for account
+			                	if (item.avaliableForAccount) {
+			                		
+			                		if (selectedIds.indexOf(item.id) >= 0) {
+			                			$scope.addNew.selectedRefTypes.push(item);
+			                		} else {
+			                			$scope.refTypeWrapperList.push(item);
+			                		}
+			                	}
+			                }
+                    	}
+                    );
+                }
+                
+                $scope.getDateFormat = function () {
+					var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+		               '{!$RemoteAction.AddNewReferenceabilitySLDS.getDateFormat}', 
+		               function(result, event) {
+		                   deferred.resolve(result);
+		               },
+		               {escape: true}
+		             );
+                     return deferred.promise;
+				}
+				
+                $scope.init = function() { 
+                    
+                    //re #859
+                    if (($scope.refContactId == null || $scope.refContactId == '') && 
+                    		($scope.contactRBI != null && $scope.contactRBI != '')) {
+                    	$scope.refContactId = $scope.contactRBI;
+                    }
+                    
+                    if (($scope.refAccountId == null || $scope.refAccountId == '') &&
+                    		($scope.accountRBI != null && $scope.accountRBI != '')) {
+                    	$scope.refAccountId = $scope.accountRBI;
+                    }
+                    
+                    // changed for #919
+                    if ($scope.returnId != '' && $scope.returnId.startsWith('/003')) {
+                    	$scope.refContactId = $scope.returnId.substring(1);
+                    	$scope.refAccountId = $scope.PUMAccountId;
+                   	} else if ($scope.returnId != '' && $scope.returnId.startsWith('/001')) {
+                    	$scope.refContactId = '';
+                    	$scope.refAccountId = $scope.returnId.substring(1);
+                   	}
+                    
+                    if ($scope.accRefRefreshId != '' || $scope.conRefRefreshId != '') {
+                    	$scope.isFromProfileUpdate = true;
+                    	$scope.addNew.selectedContact = $scope.refContactId;
+                    } else if ($scope.referenceabilityId != null && $scope.referenceabilityId != '') {
+                    	$scope.isRefEdit = true;
+                    	$scope.addNew.selectedContact = $scope.refContactId;
+                    } else if (($scope.refContactId == null || $scope.refContactId == '') &&
+                            ($scope.refAccountId != null && $scope.refAccountId != '')) {
+                        $scope.createdFromAccount = true;
+                    } else if (($scope.refContactId != null && $scope.refContactId != '') &&
+                            ($scope.refAccountId == null || $scope.refAccountId == '')) {
+                        $scope.createdFromContact = true;
+                        $scope.addNew.selectedContact = $scope.refContactId;
+                    }
+                    
+                    if (($scope.refContactId == null || $scope.refContactId == '') &&
+                            ($scope.refAccountId == null || $scope.refAccountId == '')) {
+                        $scope.createdFromRefTab = true;
+                    }
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getPermissionsMessage}',
+                        $scope.isFromProfileUpdate,
+                        $scope.isRefEdit,
+                        function(result, event) {                            
+                            if (result != null && result != '') { 
+                                result = result.replace(/&#39/g, '\'');
+                                $scope.errorMessage = result.substring(5);
+                                $scope.isError = true;
+                          		$scope.isLoading = false; 
+                            } else {
+                         		$scope.isError = false;
+                         	}                         
+                        },
+                        {escape: true}
+                    );
+                    
+                    // added for #919 - 6 Sep, 2017
+                    $scope.getProfileUpdateRecord();
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getRefTypeWrapperList}', 
+                        function(result, event) {
+                            
+                            if (result != null && result != '') {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {
+                                    $scope.allRefTypeWrapperList = JSON.parse(result);
+                                    $scope.setRefTypes();
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getAccountReferenceStatus}', 
+                        $scope.refAccountId,
+                        function(result, event) {
+                            
+                            if (result != null && result != '') {
+                                result = result.split(',');
+                                $scope.$apply(function () {
+                                	$scope.isAccountMember = result[0];
+                					$scope.isAccountCandidate = result[1];
+                                    $scope.refAccountName = result[2];
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getContactReferenceStatus}',
+                        $scope.refContactId,
+                        function(result, event) {
+                           
+                            if (result != null) {
+                                result = result.split(',');
+                                $scope.$apply(function () {
+                                    $scope.isContactMember = result[0];
+                					$scope.isContactCandidate = result[1];
+                                    $scope.refContactName = result[2];
+                                    if (!$scope.createdFromAccount && !$scope.isRefEdit && !$scope.isFromProfileUpdate) {
+	                                    $scope.refAccountName = result[3];
+                                    }
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                   	
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getAccountWrapperList}', 
+                        $scope.refContactId, $scope.refAccountId,
+                        function(result, event) {
+                        	result = $scope.parseResult(result);
+                            $scope.accountWrapList = JSON.parse(result);
+                            
+                            if ($scope.accountWrapList.length == 0) {
+                            	
+                            	if ($scope.createdFromAccount || $scope.isRefEdit || $scope.isFromProfileUpdate) {
+									var tempMemberFlag = false;
+									var tempCandidateFlag = false;
+									
+									if ($scope.isAccountMember == 'true') {
+										tempMemberFlag = true;
+									}
+									
+									if ($scope.isAccountCandidate == 'true') {
+										tempCandidateFlag = true;
+									}
+									$scope.accountWrapList = [
+										{
+											id: $scope.refAccountId,
+											name: $scope.refAccountName,
+											refProgramMember: tempMemberFlag,
+											refProgramCandidate: tempCandidateFlag
+										}
+									];
+								}
+                            }
+                            
+                            if ($scope.accountWrapList.length > 0) {
+                                
+                                if ($scope.createdFromAccount) {
+                                	var tempMemberFlag = false;
+                                	var tempCandidateFlag = false;
+                                	
+                                	if ($scope.isAccountMember == 'true') {
+                                		tempMemberFlag = true;
+                                	}
+                                	
+                                	if ($scope.isAccountCandidate == 'true') {
+                                		tempCandidateFlag = true;
+                                	}
+                                	$scope.accountWrapList = [
+                                		{
+                                			id: $scope.refAccountId,
+                                			name: $scope.refAccountName,
+                                			refProgramMember: tempMemberFlag,
+                                			refProgramCandidate: tempCandidateFlag
+                               			}
+                                	];
+                                }
+                            }
+                            
+                            if ($scope.accountWrapList != null && $scope.accountWrapList.length == 1) {
+                            	$scope.addNew.selectedAccounts = $scope.accountWrapList;
+                            }
+                            $scope.$apply();
+                        },
+                        {escape: true}
+                    );
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getContactWrapperList}', 
+                        $scope.refContactId, $scope.refAccountId,
+                        function(result, event) {
+                            
+                            if (result != null && result != '') {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {
+                                    $scope.contactWrapList = JSON.parse(result);
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                   
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getStatusPickList}', 
+                        function(result, event) {
+                            
+                            if (result != null) {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function () {
+                                    $scope.statusPicklist = JSON.parse(result);
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                   	
+                   	Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getReferenceabilityObj}', 
+                        $scope.referenceabilityId,
+                        function(result, event) {
+                             
+                            if (result != '') {
+                            	result = $scope.parseResult(result);
+                               	$scope.referenceabilityObject = JSON.parse(result);
+                               	$scope.verifiedDate = $scope.referenceabilityObject[$scope.nameSpace + $scope.Verified];
+                               	$scope.verifiedDate = $filter('date')($scope.verifiedDate, $scope.dateFormat);
+                               	$scope.comments = $scope.referenceabilityObject[$scope.nameSpace + $scope.Comment];
+                               	
+                               	angular.forEach(
+                               		$scope.refTypeWrapperList,
+                               		function(item) {
+                               			
+                               			if (item.id == $scope.referenceabilityObject[$scope.nameSpace + $scope.Referenceability_Type]) {
+                               				$scope.addNew.selectedRefTypes.push(item);
+                               				var index = $scope.refTypeWrapperList.indexOf(item);
+                               				$scope.refTypeWrapperList.splice(index, 1);
+                               			}
+                               		}
+                               	);
+                            }
+                            $scope.$apply();
+                        },
+                        {escape: true}
+                    );
+                }
+                
+                $scope.getProfileUpdateRecord = function() {
+                	var refRefreshId = '';
+                	
+                	if ($scope.accRefRefreshId != '' && $scope.conRefRefreshId == '') {
+                		refRefreshId = $scope.accRefRefreshId;
+                	} else if ($scope.accRefRefreshId == '' && $scope.conRefRefreshId != '') {
+                		refRefreshId = $scope.conRefRefreshId;
+                	}
+                	
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.getProfileUpdateRecord}', 
+                        refRefreshId,
+                        function(result, event) {
+		                	result = $scope.parseResult(result);
+		                	result = JSON.parse(result);
+		                	
+		                	if (result.length > 0) {
+		                		$scope.profileUpdateRecord = result[0];
+			                	
+	                			if ($scope.profileUpdateRecord['isQuarantined']) {
+	                				
+	                				angular.forEach(
+	                					$scope.profileUpdateRecord['profileUpdateDetailList'],
+	                					function(profileUpdateDetail) {
+	                						
+	                						if (profileUpdateDetail['isRemoved']) {
+	                							
+	                							if ($scope.profileUpdateRefIds.indexOf(profileUpdateDetail['recordToBeDeletedId']) == -1) {
+	                								$scope.profileUpdateRefIds.push(profileUpdateDetail['recordToBeDeletedId']);
+	                							}
+	                						}
+	                						
+	                						if (profileUpdateDetail['contactId'] != '' && profileUpdateDetail['isAdded']) {
+	                							
+	                							if ($scope.alreadyCreatedPURef.indexOf(profileUpdateDetail['recordsToBeInsertedId']) == -1) {
+	                								$scope.alreadyCreatedPURef.push(profileUpdateDetail['recordsToBeInsertedId']);
+	                							}
+	                						} else if (profileUpdateDetail['contactId'] == '' && profileUpdateDetail['accountId'] != '' && profileUpdateDetail['isAdded']) {
+	                							
+	                							if ($scope.alreadyCreatedPURef.indexOf(profileUpdateDetail['recordsToBeInsertedId']) == -1) {
+	                								$scope.alreadyCreatedPURef.push(profileUpdateDetail['recordsToBeInsertedId']);
+	                							}
+	                						}
+	                					}
+	                				);
+	                			}
+	                			
+	                            if ($scope.accRefRefreshId != '' && $scope.conRefRefreshId == '') {
+	                            	$scope.showReferenceabilityForAccount = true;
+					                $scope.getTheDataForReferenceabilityAccount();
+			                	} else if ($scope.accRefRefreshId == '' && $scope.conRefRefreshId != '') {
+		                			$scope.showReferenceabilityForContact = true;
+		                			$scope.getTheDataForReferenceabilityContact();
+			                	}
+		                	}
+                        },
+                        {escape: true}
+                    );
+                }
+                
+                $scope.getTheDataForReferenceabilityAccount = function() {
+                	Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.AddNewReferenceabilitySLDS.getProfileUpdateRefData}',
+						$scope.profileUpdateRefIds,
+						$scope.refAccountId,
+						'',
+						function(result, event) {
+							result = $scope.parseResult(result);
+							$scope.referenceabilitiesPresent = JSON.parse(result);
+							$scope.$apply();
+						}
+					);
+                }
+                
+                $scope.getTheDataForReferenceabilityContact = function() {
+                	Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.AddNewReferenceabilitySLDS.getProfileUpdateRefData}',
+						$scope.profileUpdateRefIds,
+						'',
+						$scope.refContactId,
+						function(result, event) {
+							result = $scope.parseResult(result);
+							$scope.referenceabilitiesPresent = JSON.parse(result);
+							$scope.$apply();
+						}
+					);
+                }
+               
+                $scope.updateSelectedContact = function() {
+                	if ($scope.addNew.selectedContact == '') {
+                		$scope.isContactMember = 'false';
+                		$scope.isContactCandidate = 'false';
+                	} else {
+                		angular.forEach(
+	                       	$scope.contactWrapList,
+	                       	function (item) {
+	                       		
+	                       		if (item.id == $scope.addNew.selectedContact) {
+	                       			$scope.isContactMember = item.refProgramMember.toString();
+                					$scope.isContactCandidate = item.refProgramCandidate.toString();
+	                       		}
+	                       	}
+	                    );
+                	}
+                	$scope.setRefTypes();
+                }
+                
+                $scope.parseResult = function(result) {
+                    
+                    if (result != null) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        return result;
+                    }
+                }
+                
+                $scope.saveReferenceability = function() {
+                    $scope.isLoading = true;
+                    var referenceabilityWrapper = {
+                        'selectedContact': $scope.addNew.selectedContact,
+                        'selectedAccounts': $scope.addNew.selectedAccounts,
+                        'selectedRefTypes': $scope.addNew.selectedRefTypes,
+                        'refStatus': $scope.refStatus,
+                        'comments': $scope.comments,
+                        'verifiedDate': $scope.verifiedDate
+                    }
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddNewReferenceabilitySLDS.saveReferenceability}',
+                            JSON.stringify(referenceabilityWrapper),
+                            $scope.makeAccountMember,
+                            $scope.makeAccountCandidate,
+                            $scope.makeContactMember,
+                            $scope.makeContactCandidate,
+                            angular.toJson($scope.referenceabilityObject),
+                            '',
+                            '',
+	                        $scope.isFromProfileUpdate,
+	                        $scope.isRefEdit,
+                        function(result, event) {
+                           
+                            if (result != null) {
+                                $scope.$apply(function () {
+                                   
+                                    if (result.startsWith('Error') == false) {
+                                        $scope.isError = false;
+                                        
+                                        if (($scope.contactRBI != null && $scope.contactRBI != '') || 
+                                        		($scope.accountRBI != null && $scope.accountRBI != '')) {
+                                        	$scope.showAttMsg = true;
+                                        	$scope.isLoading = false;
+                                        } else {
+	                                        $scope.afterSave();                                        	
+                                        }
+                                    } else {
+                                        result = result.replace(/&#39/g, '\'');
+                                        $scope.errorMessage = result.substring(5);
+                                        $scope.isError = true;
+		                                $scope.isLoading = false;
+                                    }
+                                });
+                            }
+                        },
+                        {escape: true}
+                    );
+                }
+               	
+               	
+                //re #859 to redirecting to add attribute page
+                $scope.gotoAttPage = function() {
+
+                	if ($scope.contactRBI != null && $scope.contactRBI != '') {
+                    	redirectToURL($scope.contactRBI);
+                    } else if ($scope.accountRBI != null && $scope.accountRBI != '') {
+                    	redirectToURL($scope.accountRBI);
+                    }
+                }
+               	
+               	$scope.afterSave = function() {
+                	
+		            if ($scope.isOnlySave) {
+		            	$scope.isLoading = false;
+		            	//regarding #840
+		           		if ($scope.isRefEdit) {
+		            		
+		            		if ($scope.refContactId != '') {
+		            			redirectToBack($scope.refContactId);
+		            		} else {
+		            			redirectToBack($scope.refAccountId);
+		            		}
+		            	} else if ($scope.createdFromAccount) {
+		            		redirectToBack($scope.refAccountId);
+		            	} else if ($scope.createdFromContact) {
+		            		redirectToBack($scope.refContactId);
+		            	}
+		            } else {
+		            	$scope.isLoading = false;
+		            	$window.location.reload();
+		            }
+                }
+                
+                $scope.cancelModal = function() {
+                	$scope.showContactMemberCandidateModal = false;
+	                $scope.showChangeContactCandidateToMemberModal = false;
+	                $scope.showAccountMemberCandidateModal = false;
+	                $scope.showAccountCandidateMessageModal = false;
+	                $scope.showAccountMemberMessageModal = false;
+	                $scope.showChangeAccountCandidateToMemberModal = false;
+                }
+                
+                /************************************************/
+                
+                $scope.showPopup = function(isOnlySave) {
+                	
+                	if ($scope.addNew.selectedAccounts != null && $scope.addNew.selectedAccounts.length > 0) {
+                		angular.forEach(
+	                       	$scope.addNew.selectedAccounts,
+	                       	function (item) {
+	                       		
+	                       		if (!item.refProgramMember && !item.refProgramCandidate) {
+	                       			$scope.accModalStr += 'b';
+	                       		} else if (!item.refProgramMember && item.refProgramCandidate) {
+	                       			$scope.accModalStr += 'c';
+	                       		} else if (item.refProgramMember && !item.refProgramCandidate) {
+	                       			$scope.accModalStr += 'm';
+	                       		}
+	                       	}
+	                    );
+                	}
+                    $scope.isOnlySave = isOnlySave;
+                    $scope.isError = false;
+                    
+                    if ($scope.verifiedDate == null || $scope.verifiedDate.trim() == '') {
+               			$scope.isError = true;
+						$scope.errorMessage = 'Verified : {!$Label.REQUIRED_VALUES}';
+         			} else {
+                    		var dateString = $scope.convertToDate($scope.verifiedDate);
+	             		
+	             		if (dateString != null) {
+	             			$scope.verifiedDate = dateString;
+	             		} else {
+	             			$scope.isError = true;
+	    						$scope.errorMessage = '{!$Label.Date_Invalid}' + $scope.verifiedDate; 
+	             		}
+             		}
+             		
+                    if ($scope.addNew.selectedRefTypes.length == 0) {
+                        $scope.isError = true;
+                        $scope.errorMessage = '{!$Label.SELECT_REFERENCEABILITY}';
+                    } 
+                    
+                    if (!$scope.isError) {
+	                    
+	                    if ($scope.addNew.selectedContact != '' && $scope.isContactMember == 'false' && $scope.isContactCandidate == 'false') {
+	                        $scope.showContactMemberCandidateModal = true;
+	                    } else if ($scope.addNew.selectedContact != '' && $scope.isContactMember == 'false' && $scope.isContactCandidate == 'true') {
+	                        $scope.showChangeContactCandidateToMemberModal = true;
+	                    } else if ($scope.addNew.selectedContact != '' && $scope.isContactMember == 'true' && $scope.isContactCandidate == 'false') {
+				            $scope.makeContactMember = true;
+				            $scope.makeContactCandidate = false;
+	                    	
+	                    	if ($scope.accModalStr.indexOf('b') > -1) {
+		                    	$scope.showAccountMemberCandidateMessageModal = true;
+		                    } else if ($scope.accModalStr.indexOf('c') > -1) {
+		                    	$scope.showChangeAccountCandidateToMemberModal = true;
+		                    } else {
+		                    	$scope.makeAccountMember = true;
+					            $scope.makeAccountCandidate = false;
+					            $scope.saveReferenceability();
+		                    }
+	                    } else if ($scope.addNew.selectedContact == '') {
+		                    
+		                    if ($scope.accModalStr.indexOf('b') > -1) {
+		                    	$scope.showAccountMemberCandidateMessageModal = true;
+		                    } else if ($scope.accModalStr.indexOf('c') > -1) {
+		                    	$scope.showChangeAccountCandidateToMemberModal = true;
+		                    } else {
+		                    	$scope.makeAccountMember = true;
+					            $scope.makeAccountCandidate = false;
+					            $scope.makeContactMember = false;
+					            $scope.makeContactCandidate = false;
+					            $scope.saveReferenceability();
+		                    }
+	                    }
+                    }
+                }
+                
+                /************************************************/
+                
+                $scope.Contact_Member_Candidate_popup_CandidateAction = function() {
+                	$scope.showContactMemberCandidateModal = false;
+                	
+                	if ($scope.accModalStr.indexOf('b') > -1) {
+                    	$scope.showAccountCandidateMessageModal = true;
+                    } else if ($scope.accModalStr.indexOf('c') > -1) {
+                    	$scope.makeAccountMember = false;
+			            $scope.makeAccountCandidate = true;
+			            $scope.makeContactMember = false;
+			            $scope.makeContactCandidate = true;
+			            $scope.saveReferenceability();
+                    } else {
+                    	$scope.makeAccountMember = true;
+			            $scope.makeAccountCandidate = false;
+			            $scope.makeContactMember = false;
+			            $scope.makeContactCandidate = true;
+			            $scope.saveReferenceability();
+                    }
+                }
+               
+                $scope.Contact_Member_Candidate_popup_MemberAction = function() {
+                	$scope.showContactMemberCandidateModal = false;
+                	
+                	if ($scope.accModalStr.indexOf('b') > -1) {
+                    	$scope.showAccountCandidateMessageModal = true;
+                    } else if ($scope.accModalStr.indexOf('c') > -1) {
+                    	$scope.makeAccountMember = false;
+			            $scope.makeAccountCandidate = true;
+			            $scope.makeContactMember = true;
+			            $scope.makeContactCandidate = false;
+			            $scope.saveReferenceability();
+                    } else {
+                    	$scope.makeAccountMember = true;
+			            $scope.makeAccountCandidate = false;
+			            $scope.makeContactMember = true;
+			            $scope.makeContactCandidate = false;
+			            $scope.saveReferenceability();
+                    }
+                }
+                $scope.Contact_Member_Candidate_popup_CancelAction = function() {
+                	$scope.showContactMemberCandidateModal = false;
+                	$scope.accModalStr = '';
+                }
+                
+                /************************************************/
+                
+                $scope.Contact_Candidate_To_Member_popup_CandidateAction = function() {
+                	$scope.showChangeContactCandidateToMemberModal = false;
+                	
+                	if ($scope.accModalStr.indexOf('b') > -1) {
+                    	$scope.showAccountCandidateMessageModal = true;
+                    } else if ($scope.accModalStr.indexOf('c') > -1) {
+                    	$scope.makeAccountMember = false;
+			            $scope.makeAccountCandidate = true;
+			            $scope.makeContactMember = false;
+			            $scope.makeContactCandidate = true;
+			            $scope.saveReferenceability();
+                    } else {
+                    	$scope.makeAccountMember = true;
+			            $scope.makeAccountCandidate = false;
+			            $scope.makeContactMember = false;
+			            $scope.makeContactCandidate = true;
+			            $scope.saveReferenceability();
+                    }
+                }
+               
+                $scope.Contact_Candidate_To_Member_popup_MemberAction = function() {
+                	$scope.showChangeContactCandidateToMemberModal = false;
+                	
+                	if ($scope.accModalStr.indexOf('b') > -1) {
+                    	$scope.showAccountMemberMessageModal = true;
+                    } else if ($scope.accModalStr.indexOf('c') > -1) {
+                    	$scope.makeAccountMember = false;
+			            $scope.makeAccountCandidate = true;
+			            $scope.makeContactMember = true;
+			            $scope.makeContactCandidate = false;
+			            $scope.saveReferenceability();
+                    } else {
+                    	$scope.makeAccountMember = true;
+			            $scope.makeAccountCandidate = false;
+			            $scope.makeContactMember = true;
+			            $scope.makeContactCandidate = false;
+			            $scope.saveReferenceability();
+                    }
+                }
+                
+                $scope.Contact_Candidate_To_Member_popup_CancelAction = function() {
+                	$scope.showChangeContactCandidateToMemberModal = false;
+                	$scope.accModalStr = '';
+                }
+                
+                $scope.Account_Member_Candidate_Message_popup_CandidateAction = function() {
+                	$scope.showAccountMemberCandidateMessageModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+			            $scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = false;
+		            $scope.makeAccountCandidate = true;
+		            $scope.saveReferenceability();
+                }
+               
+                $scope.Account_Member_Candidate_Message_popup_MemberAction = function() {
+                	$scope.showAccountMemberCandidateMessageModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+			            $scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = true;
+		            $scope.makeAccountCandidate = false;
+		            $scope.saveReferenceability();
+                }
+                
+                $scope.Account_Member_Candidate_Message_popup_CancelAction = function() {
+                	$scope.showAccountMemberCandidateMessageModal = false;
+                	$scope.accModalStr = '';
+                }
+                
+                $scope.Account_Candidate_Message_popup_YesAction = function() {
+                	$scope.showAccountCandidateMessageModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+                		$scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = false;
+		            $scope.makeAccountCandidate = true;
+		            $scope.saveReferenceability();
+                }
+                
+                $scope.Account_Candidate_Message_popup_NoAction = function() {
+                	$scope.showAccountCandidateMessageModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+                		$scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = false;
+		            $scope.makeAccountCandidate = false;
+		            $scope.saveReferenceability();
+                }
+               
+                $scope.Account_Candidate_Message_popup_CancelAction = function() {
+                	$scope.showAccountCandidateMessageModal = false;
+                	$scope.accModalStr = '';
+                }
+                 
+                $scope.Account_Member_Message_popup_YesAction = function() {
+                	$scope.showAccountMemberMessageModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+                		$scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = true;
+		            $scope.makeAccountCandidate = false;
+		            $scope.saveReferenceability();
+                }
+               
+                $scope.Account_Member_Message_popup_NoAction = function() {
+                	$scope.showAccountMemberMessageModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+                		$scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = false;
+		            $scope.saveReferenceability();
+                }
+                
+                $scope.Account_Member_Message_popup_CancelAction = function() {
+                	$scope.showAccountMemberMessageModal = false;
+                	$scope.accModalStr = '';
+                }
+                
+                /************************************************/
+                
+                $scope.Account_Candidate_To_Member_popup_CandidateAction = function() {
+                	$scope.showChangeAccountCandidateToMemberModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+                		$scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = false;
+		            $scope.makeAccountCandidate = true;
+		            $scope.saveReferenceability();
+                }
+                
+                $scope.Account_Candidate_To_Member_popup_MemberAction = function() {
+                	$scope.showChangeAccountCandidateToMemberModal = false;
+                	
+                	if ($scope.addNew.selectedContact == '') {
+                		$scope.makeContactMember = false;
+			            $scope.makeContactCandidate = false;
+                	}
+                	$scope.makeAccountMember = true;
+		            $scope.makeAccountCandidate = false;
+		            $scope.saveReferenceability();
+                }
+                
+                $scope.Account_Candidate_To_Member_popup_CancelAction = function() {
+                	$scope.showChangeAccountCandidateToMemberModal = false;
+                	$scope.accModalStr = '';
+                }
+                
+                $scope.deleteReferenceability = function(refIdToDelete) {
+                	var refRefreshId = '';
+                	$scope.isLoading = true;
+                	
+                	if ($scope.accRefRefreshId != '' && $scope.conRefRefreshId == '') {
+                		refRefreshId = $scope.accRefRefreshId;
+                	} else if ($scope.accRefRefreshId == '' && $scope.conRefRefreshId != '') {
+                		refRefreshId = $scope.conRefRefreshId;
+                	}
+                	
+                	Visualforce.remoting.Manager.invokeAction(
+						'{!$RemoteAction.AddNewReferenceabilitySLDS.deleteReferenceability}',
+						refIdToDelete,
+						angular.toJson($scope.referenceabilitiesPresent),
+						$scope.profileUpdateRecord['isQuarantined'],
+						refRefreshId,
+						function(result, event) {
+							
+							if (result == '') {
+								console.log('success');
+								var tempRefs = angular.copy($scope.referenceabilitiesPresent);
+								
+								angular.forEach(
+									tempRefs,
+									function(refWrapper) {
+										
+										if (refWrapper['refId'] == refIdToDelete) {
+											$scope.referenceabilitiesPresent.splice(tempRefs.indexOf(refWrapper), 1);
+										}
+									}
+								);
+							}
+							$scope.isLoading = false;
+							$scope.$apply();
+						}
+					);
+                }
+                
+                $scope.load  = function() {
+					$scope.getDateFormat().then(function(result) {
+						
+						if (result != null) {  
+	                   	   $scope.dateFormat = result;
+			            }
+			            $scope.verifiedDate = $filter('date')($scope.verifiedDate, $scope.dateFormat); 
+					    $scope.init(); 
+	                });
+				}
+				
+				//#1070 : convert date to yyyy-MM-dd format befor sending to controller
+                $scope.convertToDate = function (date) {
+                		date = (date == null) ? '' : date;
+                		var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+                		
+                		if (date == null || date == '') {
+                			return '';
+                		}
+                		
+                		if (date.match(regEx))  { 
+                			tempDF = date.split('-');
+                			if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+                				return null;
+                			}
+                			return date; 
+					}
+					 
+               		try {
+               			var tempDF = $scope.dateFormat;
+               			var tempDate = date + '';
+               			tempDF = tempDF.split(/[./-]/g);
+               			tempDate = tempDate.split(/[./-]/g);
+               			var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+               			var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+               			var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+               			var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+	              	 	
+              	 		if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+              	 			
+              	 			if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+	              	 			return null;
+	              	 		}
+     				 		return dateString;
+     				 	} else {
+     				 		return null;
+     				 	}
+     				} catch (e) {
+     					return null;
+     				}
+                }
+                
+                $scope.checkDate = function (day, month, year){
+                	var returnval = true;
+                		if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == '' ||
+                			parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+                			returnval = false;
+            			} else {
+            				day = parseInt(day);
+            				month = parseInt(month);
+            				year = parseInt(year);
+            			}
+				    returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+				    var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+				    				: (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+				    returnval = (day > days) ? false : returnval;
+			        return returnval;
+                }
+                
+                $scope.saveProfileUpdate = function() {
+                	
+                    if ($scope.addNew.selectedRefTypes.length == 0) {
+                        $scope.isError = true;
+                        $scope.errorMessage = '{!$Label.SELECT_REFERENCEABILITY}';
+                    } else { 
+                    	$scope.isError = false;
+                    }
+                	
+                	if (!$scope.isError) {
+                		
+                		if ($scope.addNew.selectedContact != '') {
+	                		$scope.makeContactMember = true;
+				            $scope.makeContactCandidate = false;
+				            $scope.makeAccountMember = true;
+				            $scope.makeAccountCandidate = false;
+                		} else {
+                			$scope.makeContactMember = false;
+				            $scope.makeContactCandidate = false;
+				            $scope.makeAccountMember = true;
+				            $scope.makeAccountCandidate = false;
+                		}
+                		var referenceabilityWrapper = {
+	                        'selectedContact' : $scope.addNew.selectedContact,
+	                        'selectedAccounts' : $scope.addNew.selectedAccounts,
+	                        'selectedRefTypes' : $scope.addNew.selectedRefTypes,
+	                        'refStatus' : 'Approved',
+	                        'comments' : $scope.comments,
+	                        'verifiedDate' : null
+	                    }
+	                    
+	                    Visualforce.remoting.Manager.invokeAction(
+	                        '{!$RemoteAction.AddNewReferenceabilitySLDS.saveReferenceability}',
+	                            JSON.stringify(referenceabilityWrapper),
+	                            $scope.makeAccountMember,
+	                            $scope.makeAccountCandidate,
+	                            $scope.makeContactMember,
+	                            $scope.makeContactCandidate,
+	                            angular.toJson($scope.referenceabilityObject),
+	                            angular.toJson($scope.profileUpdateRecord),
+	                            angular.toJson($scope.alreadyCreatedPURef),
+		                        $scope.isFromProfileUpdate,
+		                        $scope.isRefEdit,
+	                        function(result, event) {
+	                            
+	                            if (result != null) {
+                                    
+                                    if (result.startsWith('Error') == false) {
+                                        $scope.isError = false;
+                                        var url = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+													+ '?userId=' + $scope.profileUpdateRecord['ownerId']
+		       										+ '&accountId=' + $scope.refAccountId
+													+ '&helpoverlay=false'
+		       										+ '&pageno=' + $scope.pageNo;
+					                	
+                                        if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                                            sforce.console.openPrimaryTab(null, url, true, null, null, null);
+                                            sforce.console.fireEvent('closeTab', 'closeTab', $scope.getPTabId);
+                                        } else if ((typeof sforce != 'undefined') && sforce != null && !sforce.console.isInConsole()) {
+                                            sforce.one.navigateToURL(url, true);
+                                        }
+                                    } else {
+                                        result = result.replace(/&#39/g, '\'');
+                                        $scope.errorMessage = result.substring(5);
+                                        $scope.isError = true;
+		                                $scope.isLoading = false;
+                                    }
+	                            }
+	                            $scope.$apply();
+	                        },
+	                        {escape: true}
+	                    );
+                	}
+                }
+
+                $scope.cancelProfileUpdate = function() {
+                    var url = '{!URLFOR($Page.ReferenceRefreshPageSLDS)}'
+                                + '&userId=' + $scope.profileUpdateRecord['ownerId']
+                                + '&accountId=' + $scope.refAccountId
+                                + '&helpoverlay=false'
+                                + '&pageno=' + $scope.pageNo;
+                	
+                    if ((typeof sforce != 'undefined') && sforce != null && sforce.console.isInConsole()) {
+                        sforce.console.openPrimaryTab(null, url, true, null, null, null);
+                        sforce.console.fireEvent('closeTab', 'closeTab', $scope.getPTabId);
+                    } else if ((typeof sforce != 'undefined') && sforce != null && !sforce.console.isInConsole()) {
+                        sforce.one.navigateToURL(url, true);
+                    }
+                }
+
+                $scope.getPTabId = function() {
+                    sforce.console.getEnclosingPrimaryTabId($scope.closePTab);
+                }
+
+                $scope.closePTab = function(result) {
+                    sforce.console.closeTab(result.id);
+                }
+            });
+            //regarding #840
+            function redirectToBack(recordId) {
+      			sforce.one.navigateToSObject(recordId, 'detail');
+            }
+            //re #859
+            function redirectToURL(id) {
+                sforce.one.navigateToURL('{!$Page.AddLabelAttributesPage}?Id=' + id, true);
+            }
+            </script>
+        </head>
+        
+        <body class="slds">
+            <form id="frmId" class="slds-m-left--small">
+                <div ng-app="addReferenceability" ng-controller="addReferenceabilityCtrl" ng-cloak="ng-cloak" ng-init="load();">
+                    <div class="slds-spinner--medium" id="loading-div" ng-if="isLoading">
+						<img ng-show="isLoading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+					</div>
+                    <div id="error-block" ng-show="isError" class="slds-p-around--small">
+                        <strong>
+                            {!$Label.Please_review_the_following_errors}
+                        </strong>
+                        <p>
+                            {{errorMessage}}
+                        </p>
+                    </div>
+                    <div class="slds-page-header__detail-row" style="margin:0;padding:10px" role="banner">
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size--1-of-2 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+                                <h1 class="slds-text-heading--medium" title="Referenceability Edit">
+                                    <span class="slds-type-focus">{!$Label.Referencibility_Edit}</span>
+                                </h1>
+                            </div>
+                            <div class="slds-col slds-size--1-of-2 slds-medium-size--1-of-2 slds-large-size--1-of-2 slds-align-middle slds-clearfix">
+                               	<a href="#" ng-click="cancelProfileUpdate()" ng-show="isFromProfileUpdate" style="cursor: pointer;" class="slds-button slds-button--neutral slds-float--right slds-m-horizontal--xxx-small">
+                                	{!$Label.Done}
+                               	</a>
+                                <input type="button" ng-show="!isFromProfileUpdate" ng-click="showPopup(false)" value="{!$Label.Save_and_New}" class="slds-button slds-button--brand slds-float--right slds-m-horizontal--xxx-small" />
+                                <input type="button" ng-show="!isFromProfileUpdate" ng-click="showPopup(true)" value="{!$Label.Save}" class="slds-button slds-button--brand slds-float--right slds-m-horizontal--xxx-small" />
+                                <!-- <input type="button" ng-click="cancelReferenceability()" value="{!$Label.Cancel}" class="slds-button slds-button--neutral slds-float--right slds-m-horizontal--xxx-small" /> -->
+                                <a href="/{{refAccountId}}" ng-show="createdFromAccount" style="cursor: pointer;" class="slds-button slds-button--neutral slds-float--right slds-m-horizontal--xxx-small">
+                                	{!$Label.Cancel}
+                               	</a>
+                               	<a href="/{{refContactId}}" ng-show="createdFromContact" style="cursor: pointer;" class="slds-button slds-button--neutral slds-float--right slds-m-horizontal--xxx-small">
+                                	{!$Label.Cancel}
+                               	</a>
+                               	<a href="/{{refContactId}}" ng-show="isRefEdit && refContactId != ''" style="cursor: pointer;" class="slds-button slds-button--neutral slds-float--right slds-m-horizontal--xxx-small">
+                                	{!$Label.Cancel}
+                               	</a>
+                               	<a href="/{{refAccountId}}" ng-show="isRefEdit && refContactId == ''" style="cursor: pointer;" class="slds-button slds-button--neutral slds-float--right slds-m-horizontal--xxx-small">
+                                	{!$Label.Cancel}
+                               	</a>
+                               	<a href="#" ng-click="saveProfileUpdate()" ng-show="isFromProfileUpdate" style="cursor: pointer;" class="slds-button slds-button--brand slds-float--right slds-m-horizontal--xxx-small">
+                                	{!$Label.Save}
+                               	</a>
+                               	<a href="#" ng-click="cancelProfileUpdate()" ng-show="isFromProfileUpdate" style="cursor: pointer;" class="slds-button slds-button--neutral slds-float--right slds-m-horizontal--xxx-small">
+                                	{!$Label.Cancel}
+                               	</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div ng-show="(showReferenceabilityForAccount || showReferenceabilityForContact) && referenceabilitiesPresent.length > 0">
+                    	<div class="slds-section-title slds-p-around--xx-small" style="font-size: 14px !important">
+							{!$Label.Existing_Referenceability}
+                        </div>
+						<div ng-repeat="ref in referenceabilitiesPresent" class="slds-col remove-flex" style="display: inline;">
+							<div class="slds-pill">
+								<span class="slds-pill__label">{{ref['refTypeName']}}</span>
+								<a class="slds-button slds-button--icon-bare slds-pill__remove" ng-click="deleteReferenceability(ref['refId'])">
+									<img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility/close_60.png')}" alt="close" height="20" width="20"/>
+									<span class="slds-assistive-text">Remove</span>
+								</a>
+							</div>
+						</div>
+					</div>
+					<div ng-show="(showReferenceabilityForAccount || showReferenceabilityForContact) && referenceabilitiesPresent.length == 0">
+						<div class="slds-section-title slds-p-around--xx-small" style="font-size: 14px !important">
+							{!$Label.No_Associated_Referenceability_found}
+                        </div>
+					</div>
+                    <div class="slds-form--horizontal">
+                        <div class="slds-form-element">
+                            <label class="slds-form-element__label form-element-label">{!$Label.Account}</label>
+                            <div class="slds-form-element__control" ng-if="createdFromAccount || isRefEdit || (accountWrapList.length == 1)">
+                                <a href="/{{refAccountId}}" target="_blank">
+                                    <span class="slds-form-element__static">{{refAccountName}}</span>
+                                </a>
+                            </div>
+                            <div class="slds-form-element__control" ng-if="createdFromRefTab">
+                                <span class="slds-form-element__static"></span>
+                            </div>
+                            <div class="slds-form-element__control" ng-if="(isFromProfileUpdate && (accountWrapList.length > 1)) || (createdFromContact && (accountWrapList.length > 1))">
+                                <multi-select ng-model="addNew.selectedAccounts"
+                                                available="accountWrapList"
+                                                selected-label="{!$Label.Selected_Accounts}"
+                                                available-label="{!$Label.Available_Accounts}"
+                                                display-attr="name">
+                                </multi-select>
+                            </div>
+                        </div>
+                        <div class="slds-form-element">
+                            <label class="slds-form-element__label form-element-label">{!$Label.Contact}</label>
+                            <div class="slds-form-element__control" ng-if="createdFromContact || isRefEdit || (isFromProfileUpdate && refContactId != '')">
+                                <a href="/{{refContactId}}" target="_blank">
+                                    <span class="slds-form-element__static">{{refContactName}}</span>
+                                </a>
+                            </div>
+                            <div class="slds-form-element__control" ng-if="createdFromRefTab">
+                                <span class="slds-form-element__static"></span>
+                            </div>
+                            <div class="slds-form-element__control" ng-if="(createdFromAccount && !isRefEdit) || (isFromProfileUpdate && refContactId == '')">
+                                <select class="slds-select slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" ng-model="addNew.selectedContact" ng-change="updateSelectedContact()">
+                                    <option ng-repeat="option in contactWrapList" value="{{option.id}}">{{option.name}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="slds-form-element">
+                            <label style="line-height: 150% !important" class="slds-form-element__label form-element-label">{!$Label.Referenceability_Type}</label>
+                            <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3 ref-type-multi-select">
+                                <multi-select ng-model="addNew.selectedRefTypes"
+                                                available="refTypeWrapperList"
+                                                selected-label="{!$Label.Selected_Reference_Types}"
+                                                available-label="{!$Label.Available_Reference_Types}"
+                                                display-attr="name">
+                                </multi-select>
+                            </div>
+                        </div>
+                        <div class="slds-form-element" ng-show="!showReferenceabilityForAccount && !showReferenceabilityForContact">
+                            <label class="slds-form-element__label form-element-label">{!$Label.Status}</label>
+                            <div class="slds-form-element__control">
+                                <select class="slds-select slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" ng-model="refStatus">
+                                    <option ng-repeat="option in statusPicklist" value="{{option}}">{{option}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="slds-form-element">
+                            <label class="slds-form-element__label form-element-label">{!$Label.Comments}</label>
+                            <div class="slds-form-element__control">
+                                <textarea ng-model="comments" class="slds-textarea slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="slds-form-element" ng-show="!showReferenceabilityForAccount && !showReferenceabilityForContact">
+                            <label class="slds-form-element__label form-element-label">{!$ObjectType.Referenceability__c.fields.Verified__c.Label}</label>
+                            <div class="slds-form-element__control">
+                                <input class="slds-input slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3" ng-model="verifiedDate" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+                            </div>
+                        </div>
+                    </div>
+                    <div ng-show="showContactMemberCandidateModal">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+	                        <div class="slds-modal__container">
+	                            <div class="slds-modal__header">
+	                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancelModal()">
+	                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+	                                    <span class="slds-assistive-text">Close</span>
+	                                </a>
+	                            </div>
+	                            <div class="slds-modal__content slds-p-around--medium">
+	                                <div>
+	                                    {!$Label.Contact_Member_Candidate_Message}
+	                                </div>
+	                            </div>
+	                            <div class="slds-modal__footer">
+	                                <a class="slds-button slds-button--brand" ng-click="Contact_Member_Candidate_popup_CandidateAction()">{!$Label.Candidate}</a>
+                                    <a class="slds-button slds-button--brand" ng-click="Contact_Member_Candidate_popup_MemberAction()">{!$Label.Member}</a>
+                                    <a class="slds-button slds-button--neutral" ng-click="Contact_Member_Candidate_popup_CancelAction()">{!$Label.Cancel}</a>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                    <div ng-show="showChangeContactCandidateToMemberModal">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+	                        <div class="slds-modal__container">
+	                            <div class="slds-modal__header">
+	                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancelModal()">
+	                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+	                                    <span class="slds-assistive-text">Close</span>
+	                                </a>
+	                            </div>
+	                            <div class="slds-modal__content slds-p-around--medium">
+	                                <div>
+	                                    {!$Label.Change_Contact_Candidate_to_Member}
+	                                </div>
+	                            </div>
+	                            <div class="slds-modal__footer">
+	                                <a class="slds-button slds-button--brand" ng-click="Contact_Candidate_To_Member_popup_CandidateAction()">{!$Label.Candidate}</a>
+                                    <a class="slds-button slds-button--brand" ng-click="Contact_Candidate_To_Member_popup_MemberAction()">{!$Label.Member}</a>
+                                    <a class="slds-button slds-button--neutral" ng-click="Contact_Candidate_To_Member_popup_CancelAction()">{!$Label.Cancel}</a>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                    <div ng-show="showAccountMemberCandidateMessageModal">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+	                        <div class="slds-modal__container">
+	                            <div class="slds-modal__header">
+	                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancelModal()">
+	                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+	                                    <span class="slds-assistive-text">Close</span>
+	                                </a>
+	                            </div>
+	                            <div class="slds-modal__content slds-p-around--medium">
+	                                <div>
+	                                    {!$Label.Account_Member_Candidate_Message}
+	                                </div>
+	                            </div>
+	                            <div class="slds-modal__footer">
+	                                <a class="slds-button slds-button--brand" ng-click="Account_Member_Candidate_Message_popup_CandidateAction()">{!$Label.Candidate}</a>
+                                    <a class="slds-button slds-button--brand" ng-click="Account_Member_Candidate_Message_popup_MemberAction()">{!$Label.Member}</a>
+                                    <a class="slds-button slds-button--neutral" ng-click="Account_Member_Candidate_Message_popup_CancelAction()">{!$Label.Cancel}</a>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                    <div ng-show="showAccountCandidateMessageModal">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+	                        <div class="slds-modal__container">
+	                            <div class="slds-modal__header">
+	                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancelModal()">
+	                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+	                                    <span class="slds-assistive-text">Close</span>
+	                                </a>
+	                            </div>
+	                            <div class="slds-modal__content slds-p-around--medium">
+	                                <div>
+	                                    {!$Label.Account_Candidate_Message}
+	                                </div>
+	                            </div>
+	                            <div class="slds-modal__footer">
+	                                <a class="slds-button slds-button--brand" ng-click="Account_Candidate_Message_popup_YesAction()">{!$Label.Yes}</a>
+                                    <a class="slds-button slds-button--brand" ng-click="Account_Candidate_Message_popup_NoAction()">{!$Label.No}</a>
+                                    <a class="slds-button slds-button--neutral" ng-click="Account_Candidate_Message_popup_CancelAction()">{!$Label.Cancel}</a>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                    <div ng-show="showAccountMemberMessageModal">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+	                        <div class="slds-modal__container">
+	                            <div class="slds-modal__header">
+	                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancelModal()">
+	                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+	                                    <span class="slds-assistive-text">Close</span>
+	                                </a>
+	                            </div>
+	                            <div class="slds-modal__content slds-p-around--medium">
+	                                <div>
+	                                    {!$Label.Account_Member_Message}
+	                                </div>
+	                            </div>
+	                            <div class="slds-modal__footer">
+	                                <a class="slds-button slds-button--brand" ng-click="Account_Member_Message_popup_YesAction()">{!$Label.Yes}</a>
+                                    <a class="slds-button slds-button--brand" ng-click="Account_Member_Message_popup_NoAction()">{!$Label.No}</a>
+                                    <a class="slds-button slds-button--neutral" ng-click="Account_Member_Message_popup_CancelAction()">{!$Label.Cancel}</a>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                    <div ng-show="showChangeAccountCandidateToMemberModal">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+	                        <div class="slds-modal__container">
+	                            <div class="slds-modal__header">
+	                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="cancelModal()">
+	                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+	                                    <span class="slds-assistive-text">Close</span>
+	                                </a>
+	                            </div>
+	                            <div class="slds-modal__content slds-p-around--medium">
+	                                <div>
+	                                    {!$Label.Change_Account_Candidate_to_Member}
+	                                </div>
+	                            </div>
+	                            <div class="slds-modal__footer">
+	                                <a class="slds-button slds-button--brand" ng-click="Account_Candidate_To_Member_popup_CandidateAction()">{!$Label.Candidate}</a>
+                                    <a class="slds-button slds-button--brand" ng-click="Account_Candidate_To_Member_popup_MemberAction()">{!$Label.Member}</a>
+                                    <a class="slds-button slds-button--neutral" ng-click="Account_Candidate_To_Member_popup_CancelAction()">{!$Label.Cancel}</a>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                    <div ng-show="showAttMsg">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+	                        <div class="slds-modal__container">
+	                            <div class="slds-modal__header">
+	                                <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showAttMsg = false;">
+	                                    <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+	                                    <span class="slds-assistive-text">Close</span>
+	                                </a>
+	                            </div>
+	                            <div class="slds-modal__content slds-p-around--medium">
+	                                <div>
+	                                    {!$Label.Add_Attributes}
+	                                </div>
+	                            </div>
+	                            <div class="slds-modal__footer">
+                                    <a class="slds-button slds-button--brand" ng-click="gotoAttPage()">{!$Label.Yes}</a>
+                                    <a class="slds-button slds-button--neutral" ng-click="afterSave()">{!$Label.No}</a>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="slds-backdrop slds-backdrop--open"></div>
+                    </div>
+                </div>
+            </form>
+        </body>
+    </html>
+</apex:page>

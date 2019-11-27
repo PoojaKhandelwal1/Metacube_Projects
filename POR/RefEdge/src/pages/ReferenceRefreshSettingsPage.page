@@ -1,0 +1,97 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.  
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page StandardController="Custom_Settings__c" tabStyle="Custom_Settings__c"  sidebar="false" extensions="ReferenceRefreshSettings" lightningStylesheets="true">
+    <apex:pageMessages id="pgMsg"/>
+    <c:POR_ModalLoader id="loadingModalId"/>
+    <script>
+        PORShowLoading();
+        jQuery(document).ready(function(){
+            PORHideLoading();
+        });
+        
+        function jsLaunch() {
+            var islaunch = confirm("{!$Label.Are_you_sure}");
+            PORShowLoading();
+            if(islaunch)
+                launch();
+            else
+                PORHideLoading();
+        }
+    </script> 
+    <apex:form >
+        <apex:actionFunction name="jsChangeLaunchProcess" action="{!changeLaunchProcess}" oncomplete="PORHideLoading();" rerender="pbId, pgMsg"/>
+        <apex:actionFunction name="launch" action="{!launchReferenceRefresh}" oncomplete="PORHideLoading();" rerender="pbId, pgMsg"/>
+        <apex:actionFunction name="jsLaunchLink" action="{!launchLink}" oncomplete="PORHideLoading();" rerender="pbId, pgMsg"/>        
+
+        <div style="float:left ; width: 40%;">
+            <apex:commandLink style="color:#5C95C4;" value="{!$Label.Back_to_the_Custom_Setting_Page}" action="{!returnCustomSettings}"/><br/>
+        </div>
+        <apex:pageBlock id="pbId">
+            <apex:actionStatus onstart="PORShowLoading();" onstop="PORHideLoading()" id="porStatus"/>
+            <apex:actionPoller rendered="{!NOT(isEdit)}" action="{!refresh}" interval="60" oncomplete="PORShowLoading();PORHideLoading();" reRender="pbId, pgMsg" />
+            
+            <apex:pageBlockButtons >
+                <apex:commandButton value="{!$Label.Edit}" rendered="{!!isEdit}" status="porStatus" action="{!editTheSettings}" rerender="pbId"/>
+                <apex:commandButton value="{!$Label.Launch}" onclick="jsLaunch();return false;" rendered="{!AND(NOT(isEdit), customSetting.Manual_Automatic_Launch__c = 'Manual', customSetting.Reviewed_and_Ready_to_Launch__c)}" title="{!$Label.Launch_help_text}" />
+                <apex:commandButton value="{!$Label.Launch}" rendered="{!AND(NOT(isEdit), customSetting.Manual_Automatic_Launch__c = 'Manual', NOT(customSetting.Reviewed_and_Ready_to_Launch__c))}" title="{!$Label.Launch_help_text}" disabled="true" />
+                <apex:commandButton value="{!$Label.Save}" rendered="{!isEdit}" status="porStatus" action="{!saveTheSettings}" rerender="pbId,pgMsg"/>
+                <apex:commandButton value="{!$Label.Cancel}" rendered="{!isEdit}" status="porStatus" action="{!cancel}" rerender="pbId,pgMsg"/>
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection columns="1" rendered="{!!isEdit}">
+                <apex:outputField value="{!customSetting.Enable_Reference_Refresh__c}"/>
+                <apex:outputField value="{!customSetting.Manual_Automatic_Launch__c}"/>
+                <apex:outputField value="{!customSetting.Launch_Frequency__c}" rendered="{!customSetting.Manual_Automatic_Launch__c = 'Automatic'}"/>
+                <apex:outputField value="{!customSetting.Refresh_Wait_Days__c}" style="width: 55px;"/>
+                <apex:outputField value="{!customSetting.Next_Refresh_launch_Date__c}" rendered="{!customSetting.Manual_Automatic_Launch__c = 'Automatic'}"/>
+                <apex:outputField value="{!customSetting.Last_Refresh_Date__c}"/>
+                
+                <apex:pageBlockSectionItem rendered="{!customSetting.Manual_Automatic_Launch__c = 'Manual'}">
+                    <apex:outputPanel >
+                        <apex:commandLink rendered="{!AND(isMatched, NOT(isBatchProcess))}" style="color:#5C95C4;" onclick="PORShowLoading();jsLaunchLink();return false;" value="{!$Label.Generate_Profile_Updates}" />
+                        <apex:commandLink rendered="{!OR(NOT(isMatched), isBatchProcess)}" style="pointer-events: none;color: #78787d;" value="{!$Label.Generate_Profile_Updates}"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel >
+                        <apex:outputText rendered="{!AND(isMatched, NOT(isBatchProcess))}" style="font-weight: bold;color:#ff0000;" value="{!$Label.To_Be_Done}"/> 
+                        <apex:outputText rendered="{!isBatchProcess}" style="font-weight: bold;color:#dac210;" value="{!$Label.In_Progress}"/>
+                        <apex:outputLink rendered="{!AND(NOT(isMatched), NOT(isBatchProcess))}" style="font-weight: bold;color:#00b050;" value="/{!rrKeyPerfix}" target="_blank">
+                        <apex:outputLabel value="{!$Label.Complete_Review_Profile_Updates}" rendered="{!isLaunchClicked}" />
+                        <apex:outputLabel value="{!$Label.Review_Profile_Updates_Complete}" rendered="{!NOT(isLaunchClicked)}" />
+                        </apex:outputLink>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem> 
+                
+                <apex:outputField value="{!customSetting.Quarantine_updates__c}"/>
+                <apex:outputField value="{!customSetting.Reviewed_and_Ready_to_Launch__c}" rendered="{!customSetting.Manual_Automatic_Launch__c = 'Manual'}"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="1" rendered="{!isEdit}">
+                <apex:inputField value="{!customSetting.Enable_Reference_Refresh__c}"/>
+                <apex:inputField value="{!customSetting.Manual_Automatic_Launch__c}" onchange="PORShowLoading();jsChangeLaunchProcess();return false;"/>
+                <apex:inputField value="{!customSetting.Launch_Frequency__c}" rendered="{!customSetting.Manual_Automatic_Launch__c = 'Automatic'}"/>
+                <apex:inputField value="{!customSetting.Refresh_Wait_Days__c}" style="width: 55px;"/>
+                <apex:inputField value="{!customSetting.Next_Refresh_launch_Date__c}" rendered="{!customSetting.Manual_Automatic_Launch__c = 'Automatic'}"/>
+                <apex:outputField value="{!customSetting.Last_Refresh_Date__c}"/>
+                <apex:inputField value="{!customSetting.Quarantine_updates__c}"/>
+                <apex:inputField value="{!customSetting.Reviewed_and_Ready_to_Launch__c}" rendered="{!customSetting.Manual_Automatic_Launch__c = 'Manual'}"/>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

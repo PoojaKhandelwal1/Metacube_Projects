@@ -1,0 +1,401 @@
+<!-- 
+* ReferenceEdge
+* 
+* Point of Reference, Inc. - Copyright 2014 All rights reserved.
+*
+* @company : Point of Reference, Inc.
+* @website : www.point-of-reference.com
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+* WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+* POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+* MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+* AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF  
+* ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+* WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS  
+* WRITTEN CONSENT FROM COMPANY. 
+--> 
+<apex:page id="pageId" controller="AddAssociatedRefContentController" sidebar="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0"> 
+    <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-ui-1.9.2.custom.min.js')}"/>
+    <apex:outputPanel rendered="{!!isSLDS}">
+    	<c:POR_ModalLoader id="PORLoader"/>
+        <apex:pageMessages id="pgmsgId"/> 
+       
+        <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+        <style>
+            .pbSubheader {
+            background-image : none !important;
+            }
+            .legend-type {
+            border-top: 1px solid #ccc;
+            height: 20px;
+            position: relative;
+            width: 90%;
+            margin: 27px auto 0 auto;
+            }
+            .legend-heading {
+            display: block;
+            position: absolute;
+            left: 124px;
+            top: -20px;
+            height: 30px;
+            background: #f8f8f8;
+            text-align: center;
+            padding-top: 12px;
+            box-sizing: border-box;
+            font-weight: bold;
+            padding-left: 4px;
+            padding-right: 4px;
+            }
+            th {
+            text-align: center;
+            }
+            h3 {
+   			color: white;
+			} 
+			div#pageId:formId:pageBlockId:pageBlockSectionParent:pageBlockSectionId2 {
+   			margin-bottom: -20px;
+			}
+			#editPage .pbSubsection, .editPage .pbSubsection {
+			margin-top: 0px;
+			}
+			.homeTab .tertiaryPalette {
+			    background-color: #79b4cd;
+			    border-color: #79b4cd;
+			}
+			
+			.pbSubheader {
+			margin-top: 0px;
+			}
+        </style>
+        <script>
+	        var lookUpWindowOpen = false;
+	        var newWin = null;
+	        var popupflag = false;
+	        var currentPgName = '';
+	        var isNameChanged = false;
+	        var selectedAccountIds;
+	        var selectedContactIds;
+	        
+	        /*Method call from Account lookup to close opened popup*/
+	        function closeAccontPopup(accountIds) {
+	            if (null != newWin){  
+	                newWin.close(); 
+	                document.getElementById('pageId:formId:pageBlockId:pageBlockSectionParent:pageBlockSectionId2:pbsAccountId:searchAccount').value = '';
+	                
+	                if (typeof accountIds != 'undefined') { 
+	                	PORShowLoading(); 
+	                    selectedAccountIds = accountIds.split(",");
+	                    bindList(accountIds); 
+	                }
+	            }  
+	        }
+	        
+	        /*Save method used to save Assocation*/
+	        function saveAssociations(isSaveAndNew) {  
+	            var account = '';
+	            var contact = '';
+	            var table = jQuery("#tblRepetAcc");
+	            table.find('tr').each(function (i, el) {
+	                var $tds = jQuery(this).find('td');
+	                
+	                if ($tds.eq(1).text().trim() == 'true') { 
+	                    
+	                    if (account == '') {
+	                        account = $tds.eq(0).text().trim();
+	                    } else {
+	                        account +=','+ $tds.eq(0).text().trim();
+	                    }
+	                }
+	            });
+	            
+	            table = jQuery("#tblRepetCon");
+	            table.find('tr').each(function (i, el) {
+	                var $tds = jQuery(this).find('td'); 
+	                
+	                if ($tds.eq(1).text().trim() == 'true') { 
+	                    
+	                    if (contact == '') {
+	                        contact = $tds.eq(0).text().trim();
+	                    } else {
+	                        contact +=','+ $tds.eq(0).text().trim();
+	                    }
+	                }
+	            });
+	            
+	            save(account,contact,isSaveAndNew); 
+	        }
+	        
+	        /*Method call from Contact lookup to close opened popup*/
+	        function closePopupWithContacts(contactIds) {
+	            
+	            if (null != newWin) {  
+	                newWin.close(); 
+	                document.getElementById('pageId:formId:pageBlockId:pageBlockSectionParent:pageBlockSectionId2:pbsContactId:searchContact').value = '';
+	                
+	                if (typeof contactIds != 'undefined') {
+	                	PORShowLoading();
+	                    selectedContactIds = contactIds.split(",");
+	                    bindContactList(contactIds);
+	                }
+	            }  
+	        }
+	        
+	        /*Method used to open popup*/
+	        function ShowLookup(currentPageName) {
+	            
+	            if (!lookUpWindowOpen) {
+	                lookUpWindowOpen = true;
+	                popupflag = true;
+	                currentPgName = currentPageName;
+	                
+	                if (currentPageName == '{!$Page.AddRequestAccountLookup}') {
+	                    var accName = document.getElementById('pageId:formId:pageBlockId:pageBlockSectionParent:pageBlockSectionId2:pbsAccountId:searchAccount').value;
+	                    var accountId;
+	                    var table = jQuery("#tblRepetAcc");
+	                    var existingAccounts;
+	           			table.find('tr').each(function (i, el) {
+		                	var $tds = jQuery(this).find('td'); 
+			               
+		                    if (accountId == '') { 
+		                        accountId = $tds.eq(0).text().trim();
+		                    } else {
+		                        accountId +=','+ $tds.eq(0).text().trim();	
+		                    } 
+		                    
+		                    if (existingAccounts == '' && $tds.eq(1).text().trim() == 'false') { 
+		                        existingAccounts = $tds.eq(0).text().trim();
+		                    } else if ($tds.eq(1).text().trim() == 'false') {
+		                        existingAccounts +=','+ $tds.eq(0).text().trim();	
+		                    }
+	            		}); 
+	            		document.getElementById('pageId:formId:pageBlockId:pageBlockSectionParent:pageBlockSectionId2:pbsAccountId:searchAccount').value = '';
+	                    newWin = window.open(encodeURI('{!$Page.AddRequestAccountLookup}?strText=' + accName+'&multiselect=true&selectedAccounts='+accountId+'&existingAccounts='+existingAccounts)+'&all=true', 'Popup', 'height=500,width=700,left=100,top=100,resizable=no,scrollbars=yes,toolbar=no,status=no');
+	                } else if (currentPageName == '{!$Page.AddContactLookup}') {
+	                    var conName = document.getElementById('pageId:formId:pageBlockId:pageBlockSectionParent:pageBlockSectionId2:pbsContactId:searchContact').value;
+	                    var contactId;
+	                    var existingContacts;
+	                    var table = jQuery("#tblRepetCon");
+	                    
+	           			table.find('tr').each(function (i, el) {
+		                	var $tds = jQuery(this).find('td'); 
+			                
+		                    if (contactId == '' && $tds.eq(1).text().trim() == 'true') { 
+		                        contactId = $tds.eq(0).text().trim();
+		                    } else if ($tds.eq(1).text().trim() == 'true') {
+		                        contactId +=','+ $tds.eq(0).text().trim();	
+		                    } 
+		                    
+		                    if (existingContacts == '' && $tds.eq(1).text().trim() == 'false') { 
+		                        existingContacts = $tds.eq(0).text().trim();
+		                    } else if ($tds.eq(1).text().trim() == 'false') {
+		                        existingContacts +=','+ $tds.eq(0).text().trim();	
+		                    }
+	            		}); 
+	            		document.getElementById('pageId:formId:pageBlockId:pageBlockSectionParent:pageBlockSectionId2:pbsContactId:searchContact').value = '';
+	                    newWin = window.open(encodeURI('{!$Page.AddContactLookup}?strText=' + conName+'&multiselect=true&selectedContacts='+contactId+'&existingContacts='+existingContacts)+'&all=true', 'Popup', 'height=500,width=700,left=100,top=100,resizable=no,scrollbars=yes,toolbar=no,status=no');
+	                }
+	                lookUpWindowOpen = false;
+	            }
+	        }  
+	        
+	        /*Method used to remove account*/ 
+	        function removeAccount(accId, isNew) {  
+	       		PORShowLoading();
+	       		
+				if (isNew == 'false') {
+					var confirm = window.confirm('{!$Label.Delete_Account}');  
+					
+					if (confirm == true) { 
+					    removeAccountList(accId, isNew);
+					} else {
+						PORHideLoading();
+					    return true;
+					} 
+				} else { 
+					removeAccountList(accId, isNew);
+				}
+	          
+	        }
+	        
+	        /*Method used to remove Contact*/ 
+	        function removeContact(conId, isNew) { 
+	        	PORShowLoading();
+	        	
+	        	if (isNew == 'false') {
+					var confirm = window.confirm('{!$Label.Delete_Contact}');
+					
+					if (confirm == true) { 
+					    removeContactList(conId, isNew);
+					} else {
+						PORHideLoading();
+					    return false;
+					} 
+				} else {
+					removeContactList(conId, isNew);
+				}  
+	            
+	        }
+	        // re #1068 - Change header icon 
+	        jQuery(document).ready(function() { 
+	        	jQuery(".pageTitleIcon").attr("src","{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}"); 
+			});
+        </script>
+        <!-- Form -->
+        <apex:form id="formId" rendered="{!isFullLicenseAccessible}"> 
+         <!-- Section Header-->
+        <apex:sectionHeader title="{!$Label.Associated_Accounts_Contacts}"/>
+            <apex:pageBlock id="pageBlockId"  mode="edit">	            
+                <apex:pageBlockButtons >
+                    <apex:commandButton value="{!$Label.Save}" onclick="saveAssociations(false); return false;"/> 
+                    <apex:commandButton value="{!$Label.Cancel}" action="{!redirectBack}"/>
+                </apex:pageBlockButtons>
+                <apex:pageBlockSection columns="1" id="pageBlockSectionParent"> 
+	                <apex:pageBlockSection id="pageBlockSectionId2" title="{!$Label.Add_New_Associations}" collapsible="false" columns="1">	  
+	                <div class ="divPopup">           
+	                    <apex:pageBlockSectionitem id="pbsAccountId">
+	                        <apex:outputLabel value="{!$ObjectType.Account_Reference_Content__c.fields.Account__c.label}"/>
+	                        <apex:outputPanel id="opAccountId">
+	                            <apex:actionRegion >
+	                                <div style="float:left" class="requiredInput"> 
+	                                    <apex:inputText id="searchAccount" value="{!accName}"  style="margin-left:0px;width:200px;"/>
+	                                    &nbsp;&nbsp;
+	                                </div>
+	                                <div style="float:left">
+	                                    <apex:image url="{!$Resource.lookupIconImage}" height="16px" width="16px" style="cursor:pointer;" onclick="ShowLookup('{!$Page.AddRequestAccountLookup}');"/>
+	                                </div>
+	                            </apex:actionRegion>
+	                        </apex:outputPanel>
+	                    </apex:pageBlockSectionitem>
+	                    <apex:pageBlockSection id="pageBlockSectionId3" columns="1">	
+	                    </apex:pageBlockSection>
+	                    <apex:pageBlockSectionitem id="pbsContactId">
+	                        <apex:outputLabel value="{!$ObjectType.Contact_Reference_Content__c.fields.Contact__c.label}"/>
+	                        <apex:outputPanel id="opAccountId">
+	                            <apex:actionRegion >
+	                                <div style="float:left" class="requiredInput"> 
+	                                    <apex:inputText id="searchContact" value="{!conName}" style="margin-left:0px;width:200px;" onchange="changeName();return false;"/>
+	                                    &nbsp;&nbsp;
+	                                </div>
+	                                <div style="float:left">
+	                                    <apex:image url="{!$Resource.lookupIconImage}" height="16px" width="16px" style="cursor:pointer;" onclick="ShowLookup('{!$Page.AddContactLookup}');"/>
+	                                </div>
+	                            </apex:actionRegion>
+	                        </apex:outputPanel>
+	                    </apex:pageBlockSectionitem>
+	                </div>
+	                </apex:pageBlockSection>
+	                <apex:PageBlockSection id="sectionId"  title="{!$Label.Current_Associations}" collapsible="false" columns="1"> 
+                    <apex:pageBlockSection columns="2">
+                        <apex:outputPanel styleClass="divClass" layout="block" style="width:95%;float:left;" >
+                            <div>
+                                <table style="width:100%;" cellspacing="10px">
+                                    <thead>
+                                        <tr>
+                                        <th style="width:10%;display:none;">  
+                                            </th>
+                                            <th style="width:10%;display:none;">  
+                                            </th>
+                                            <th>   
+                                            </th>
+                                            <th style="text-align:left;width:97%;">
+                                              {!$Label.Associated_Accounts} 
+                                            </th> 
+                                        </tr>
+                                    </thead> 
+                                    <tbody id="tblRepetAcc">
+                                        <apex:repeat value="{!accountList}" var="acc" >
+                                            <tr style="border-bottom:1px solid rgb(221, 221, 221);">
+                                                <td style="width:10%;display:none;"> 
+                                                        {!acc.id} 
+                                                </td>
+                                                <td style="width:10%;display:none;"> 
+                                                       {!acc.isNewAdded} 
+                                                </td>
+                                                <td>   
+                                                 <a style="color: #015bb9 !important;cursor:pointer; margin-right: 2px;" onclick="removeAccount('{!acc.id}','{!acc.isNewAdded}')">{!$Label.Delete}</a>
+                                                 </td>  
+                                                <td style="text-align:left;width:97%;"> 
+                                                    {!acc.name} 
+                                                </td> 
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody> 
+                                </table>
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel styleClass="divClass" layout="block" style="width:95%;float:right;" >
+                            <div>
+                                <table style="width:100%;" cellspacing="10px">
+                                    <thead>
+                                        <tr>
+                                        	<th style="width:10%;display:none;">  
+                                            </th>
+                                            <th style="width:10%;display:none;">  
+                                            </th>
+                                            <th>   
+                                            </th>
+                                            <th style="text-align:left;width:97%;">
+                                              {!$Label.Associated_Contact_with_Accounts}
+                                            </th>
+                                            
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tblRepetCon">
+                                        <apex:repeat value="{!contactList}" var="con" >
+                                            <tr style="border-bottom:1px solid rgb(221, 221, 221);">
+                                                <td style="width:10%;display:none;"> 
+                                                    {!con.Id} 
+                                                </td>
+                                                <td style="width:10%;display:none;"> 
+                                                    {!con.isNewAdded} 
+                                                </td>
+                                                <td>
+                                                <a style="color: #015bb9 !important;cursor:pointer; margin-right: 2px;" onclick="removeContact('{!con.id}','{!con.isNewAdded}')">{!$Label.Delete}</a>
+                                                </td>
+                                                <td style="width:97%;"> 
+                                                    {!con.Name} (<span style="font-style:italic;">{!con.ContactAccount}</span>) 
+                                                 </td>  
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSection> 
+                </apex:PageBlockSection>
+                 </apex:pageBlockSection>
+            </apex:pageBlock>   
+			<apex:outputPanel id="render"> 
+				<script>
+					jQuery('.requiredLegend').hide();
+				 </script>
+			</apex:outputPanel>
+            <apex:actionFunction action="{!reBindAccount}" name="bindList" oncomplete="PORHideLoading();" rerender="sectionId,pgmsgId,render"> 
+                <apex:param name="firstParam" assignTo="{!accountIds}" value=""/> 
+            </apex:actionFunction>
+            
+            <apex:actionFunction action="{!removeAssociatedAccount}" name="removeAccountList" oncomplete="PORHideLoading();" rerender="sectionId,pgmsgId,render"> 
+                <apex:param name="firstParam" assignTo="{!selectedAccountId}" value=""/> 
+                <apex:param name="secondParam" assignTo="{!isNewAccount}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction action="{!removeAssociatedContact}" name="removeContactList" oncomplete="PORHideLoading();" rerender="sectionId,pgmsgId,render"> 
+                <apex:param name="firstParam" assignTo="{!selectedContactId}" value=""/> 
+                <apex:param name="secondParam" assignTo="{!isNewContact}" value=""/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction action="{!save}" name="save" rerender="sectionId,pgmsgId"> 
+                <apex:param name="acc" assignTo="{!accountIds}" value=""/> 
+                <apex:param name="con" assignTo="{!contactIds}" value=""/> 
+                <apex:param name="saveAndNew" assignTo="{!isSaveAndNew}" value=""/> 
+            </apex:actionFunction> 
+            <apex:actionFunction action="{!reBindContact}" name="bindContactList" oncomplete="PORHideLoading();" rerender="sectionId,pgmsgId"> 
+                <apex:param name="firstParam" assignTo="{!contactIds}" value=""/> 
+            </apex:actionFunction> 
+        </apex:form>
+    </apex:outputPanel> 
+</apex:page>

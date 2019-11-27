@@ -1,0 +1,341 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reference_Lead__c" id="pageId" extensions="ReferenceLeadFormController" sideBar="false"> 
+    <!-- Add POR_ModalLoader Component-->
+    <c:POR_ModalLoader id="PORLoader"/>
+    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.JqueryFiles, 'jquery-ui-1.9.2.custom.min.css')}"/>
+    <style>
+        .pbSubheader
+        {
+            background-image : none !important;
+            color:white !important;
+        }
+        
+        .ui-widget-content {
+            border : none !important;
+        }
+        .ui-widget-header {
+            background : none !important;
+            border : none !important;
+            color : black !important;
+        } 
+        
+        .dialogButtonClass {
+            margin-left: 3px !important;
+            margin-right: 3px !important;
+            color: #333 !important;
+            border: 1px solid #b5b5b5 !important;
+            border-bottom-color: #7f7f7f !important;
+            background: #e8e8e9 url('/img/alohaSkin/btn_sprite.png') repeat-x right top !important;
+            font-weight: bold !important;
+            font-size: .9em !important;
+            -moz-border-radius: 3px !important;
+            -webkit-border-radius: 3px !important;
+            border-radius: 3px !important;
+         }
+         
+        .ui-button-text-only .ui-button-text {
+           padding: .2em 1em !important;
+        }
+        /* Css override for make font consistent over  Request Detail modal - Re REF-1191   */
+        .dialogButtonClass{
+	        margin-left: 3px !important;
+	        margin-right: 3px !important;
+	        color: #333 !important;
+	        border: 1px solid #b5b5b5 !important;
+	        border-bottom-color: #7f7f7f !important;
+	        background: #e8e8e9 url('/img/alohaSkin/btn_sprite.png') repeat-x right top !important;
+	        font-weight: bold !important;
+	        font-size: .9em !important;
+	        -moz-border-radius: 3px !important;
+	        -webkit-border-radius: 3px !important;
+	        border-radius: 3px !important;
+	        font-family : arial !important;
+        }
+        .ui-button-text-only .ui-button-text {
+        padding: .2em 1em !important;
+        }
+        
+        .ui-dialog .ui-dialog-buttonpane {
+			    text-align: left;
+			    border-width: 1px 0 0 0;
+			    /* background-image: none; */
+			    margin: .5em 0 0 0;
+			    padding: 0em 1em 0em .4em;
+			    background: #eeeeee;
+			}
+
+			.ui-widget {
+			    font-family: Arial;
+			    font-size: 1.1em;
+			}
+
+			.ui-dialog .ui-dialog-content {
+			    position: relative;
+			    border: 0;
+			    padding: .5em 1em;
+			    background: #f8f8f8;
+			    overflow: auto;
+			    zoom: 1;
+			}
+			.ui-widget-content {
+			    border: 1px solid #ddd0; 
+			    background: #eee url(images/ui-bg_highlight-soft_100_eeeeee_1x100.png) 50% top repeat-x;
+			    color: #333;
+			}
+			.ui-dialog {
+			    position: absolute;
+			    top: 0;
+			    left: 0;
+			    padding: 0em;
+			    width: 300px;
+			    overflow: hidden;
+			}
+
+			.ui-dialog .ui-dialog-buttonpane {
+			    text-align: left;
+			    border-width: 1px 0 0 0;
+			    /* background-image: none; */
+			    margin: .5em 0 0 0;
+			    padding: 0em 1em 0.5em .4em;
+			    background: #eeeeee;
+			    border-top: 1px solid #dddddd !important;
+			    margin-top: 0;
+			}
+			.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+			    float: right;
+			    margin-right: 3px;
+			    margin-top: 5px;
+			}
+    </style>
+	<apex:outputPanel id="disolvingAlert">
+		<script>
+			PORShowLoading();
+			jQuery(window).load(function() {
+				PORHideLoading();
+			});
+			//re #119 This function will show Disolving Alert for sales reward
+			function showDisolvingAlert() {
+				//	REF-2008	Disolving Aleert w.r.t User_Reward_Onscreen_Notification__c
+				if({!isScreenNotification} == true) {
+					var points = jQuery("input[id*='rewardPoints']").val();
+					var message = jQuery("input[id*='actionMessage']").val(); 
+					if(typeof points !='undefined' && points!='' && points!='0')  
+						notification(points,message); 
+				}
+			}
+			function redirectToBack() {}
+		</script>
+	</apex:outputPanel>
+	<script type="text/javascript">
+        window.onload = function(e){ 
+			document.getElementById("pageId:formId:pageBlockSection3:pbsecOwnerField:leadOwnerField:leadOwnerId_mlktp").disabled = true;
+		}
+	</script>
+    <apex:outputPanel id="panelId">
+    	<script>
+    		function changeContactJS() {
+    		
+				jQuery("#dialogBoxDiv").dialog({
+				    width: '400px',
+				    modal: true,
+				    resizable: false,
+				    draggable: false,
+				    buttons: [{
+				            text: "{!$Label.Yes}",
+				            "class": "dialogButtonClass",
+				            click: function() {
+				                jQuery(this).dialog("close");
+				                PORShowLoading();
+				                changeContact();
+				            }
+				        },
+				        {
+				            text: "{!$Label.Cancel}",
+				            "class": "dialogButtonClass",
+				            click: function() {
+				                jQuery(this).dialog("close");
+				                document.getElementById('pageId:formId:pageblockId:accConId:reqDetailItemId:conId').value = '{!JSENCODE(selectedContact)}';
+				            }
+				        }
+				    ]
+				});
+				jQuery(".ui-dialog-titlebar").hide();
+				jQuery(".ui-dialog-content ui-widget-content").css("height", "auto");
+				return false;
+			}
+    	</script>
+    </apex:outputPanel>
+    <!-- Message -->
+    <apex:pageMessages id="pgmsgId"/>
+	<html>
+	    <body> 
+		    <apex:form id="formId" rendered="{!isFullLicenseAccessible}">
+		        <c:RewardNotification /> 
+		        <apex:inputHidden value="{!rewardPoints}" id="rewardPoints"/>
+		        <apex:inputHidden value="{!actionMessage}" id="actionMessage"/>
+		        <apex:sectionHeader title="{!header.Field_API_Name__c}" rendered="{!AND(header.Visible__c)}"/>
+		        <apex:outputLabel style="margin-left:43px;font-size:12pt;" value="{!subHeader.Field_API_Name__c}"  rendered="{!AND(subHeader.Visible__c)}"/>
+		        <apex:pageMessage summary="There are more than 1000 records to display in the Contact picklist, first 1000 records are displayed." strength="3" severity="Info" rendered="{!AND(isLimitExceeded,!showMessage)}" />
+		        <apex:pageBlock rendered="{!showMessage}">
+		            <apex:pageMessage severity="INFO" strength="3" summary="{!$Label.Thank_Note_for_Lead}"/>
+		            <apex:outputPanel >
+		                <apex:commandButton value="{!$Label.Back_to_Home}" action="{!cancel}" />
+		            </apex:outputPanel>
+		        </apex:pageBlock>
+		        <apex:outputPanel rendered="{!!showMessage}">
+		        
+		            <apex:outputPanel rendered="{!answerChoice = '1'}">
+		            
+		                <apex:pageBlock id="pageblockId" mode="Edit">
+		                	<apex:actionFunction name="changeContact" action="{!setRefTypeAndAttribute}" oncomplete="PORHideLoading();" reRender="pgmsgId,formId,panelId"/>
+		                    <apex:outputpanel layout="block" style="text-align: center;margin-bottom: 10px;margin-top: 10px;">
+		                        <apex:commandButton value="{!$Label.Submit}" onclick="PORShowLoading();" action="{!saveRecord}" oncomplete="PORHideLoading();showDisolvingAlert();" reRender="pgmsgId,formId,disolvingAlert"/>
+		                        <apex:commandButton value="{!$Label.Cancel}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" immediate="true" action="{!cancel}"/>
+		                    </apex:outputpanel>
+		                    <apex:pageBlockSection title="{!$Label.Account_Contact_Information}" id="accConId">
+		                        <apex:outputField value="{!referenceLead.Reference_Lead_Account__c}"/>
+		                        <apex:pageBlockSectionItem id="reqDetailItemId" rendered="{!referenceLead.Contact__c == null}">
+		                            <apex:outputLabel value="{!$Label.Contact}"/>
+		                            <apex:selectList value="{!selectedContact}"  size="1" id="conId" onChange="changeContactJS();"> 
+		                                <apex:selectOptions value="{!ContactList}"/>
+		                            </apex:selectList> 
+		                        </apex:pageBlockSectionItem>
+		                        <apex:outputField value="{!referenceLead.Contact__c}" rendered="{!referenceLead.Contact__c != null}"/>
+		                    </apex:pageBlockSection>
+		                   
+		                    <apex:repeat id="headerId" value="{!referenceLeadHeaders}" var="header">
+		                        <apex:pageBlockSection columns="1" title="{!header.Field_API_Name__c}" rendered="{!AND(refUseAttr.AttributeLabels.size > 0, header.Visible__c, header.Name = 'Section 3 – Attributes')}">
+		                            <apex:pageBlockSectionItem id="filterId">
+		                                <apex:outputLabel >&nbsp;</apex:outputLabel>
+		                                <apex:actionRegion >
+		                                    <apex:commandLink style="color:#1797C0" action="{!selectRefUseAttr}" value="{!$Label.Select_And_Edit}" id="theCommandLink" />
+		                                </apex:actionRegion>
+		                            </apex:pageBlockSectionItem>
+		                            <apex:repeat value="{!refUseAttr.AttributeLabels}" var="label">
+		                                <apex:pageBlockSectionItem >
+		                                    <apex:outputLabel >{!label.Name} <apex:outputText style="color : #CC0000;" value="{!IF(refUseAttr.mapRequiredLabel[label.Id],' | ','')}"/> </apex:outputLabel>
+		                                    <apex:outputPanel >
+		                                        <apex:variable value="0" var="rowOrder"/>
+		                                        <apex:repeat value="{!refUseAttr.mapAttributesLabels[label]}" var="attr">
+		                                        <apex:outputText rendered="{!VALUE(rowOrder) > 0}">, </apex:outputText> {!attr.attributeLabel.Attribute__r.Name} 
+		                                        <apex:variable value="{!VALUE(rowOrder)+1}" var="rowOrder"/>
+		                                        </apex:repeat>
+		                                    </apex:outputPanel>
+		                                </apex:pageBlockSectionItem>
+		                            </apex:repeat>
+		                        </apex:pageBlockSection>
+		                        
+		                        <apex:pageBlockSection columns="1" title="{!header.Field_API_Name__c}" rendered="{!AND(fieldMappings.size > 0, header.Visible__c, header.Name='Section 4 – Custom Fields')}">
+		                            <apex:repeat value="{!fieldMappings}" var="f">
+		                                <apex:pageblockSectionItem helpText="{!$ObjectType.Reference_Lead__c.Fields[f.Field_API_Name__c].inlineHelpText}" rendered="{!f.Required__c}">
+		                                    <apex:outputLabel value="{!f.name}" />
+		                                    <apex:outputPanel layout="block" styleClass="requiredInput" >
+		                                    <div class="requiredBlock"></div>
+		                                        <apex:inputField value="{!referenceLead[f.Field_API_Name__c]}" />
+		                                    </apex:outputPanel>
+		                                </apex:pageblockSectionItem>
+		                                <apex:inputField value="{!referenceLead[f.Field_API_Name__c]}" rendered="{!NOT(f.Required__c)}" />
+		                            </apex:repeat>
+		                        </apex:pageBlockSection>
+		        
+		                        <apex:pageBlockSection id="outerSection" columns="3" title="{!header.Field_API_Name__c}" rendered="{!AND(refTypeWrapperList.size > 0, header.Visible__c, header.Name = 'Section 5 – Reference Activities')}">
+		                            <apex:repeat id="loopId" value="{!refTypeWrapperList}" var="ref">
+		                                <apex:outputPanel id="innerSection">
+		                                    <apex:pageblockSectionItem id="sectionItem"> 
+		                                        <apex:outputPanel layout="block" style="width: 5%; float:left;margin-right: 10px;">
+		                                            <apex:inputCheckBox id="checkboxId" value="{!ref.isSelected}"/>
+		                                        </apex:outputPanel>
+		                                        
+		                                        <apex:outputPanel layout="block" style="width:90%; float:left;margin-top: 2px;">
+		                                            <apex:outputLabel value="{!ref.refType.Name}"/>
+		                                        </apex:outputPanel> 
+		                                    </apex:pageblockSectionItem>
+		                                </apex:outputPanel>
+		                            </apex:repeat>
+		                        </apex:pageBlockSection>
+		                       <apex:pageBlockSection columns="1" title="{!header.Field_API_Name__c}" rendered="{!AND(header.Visible__c, header.Name = 'Section 6 – Free Form Text')}">
+		                            <apex:pageblockSectionItem rendered="{!header.Required__c}">
+		                                    <apex:outputLabel value="{!$Label.Comments}" />
+		                                    <apex:outputPanel layout="block" styleClass="requiredInput" >
+		                                        <div class="requiredBlock"></div>
+		                                        <apex:inputField style="width:60%;" value="{!referenceLead.Other_Info__c}" />
+		                                    </apex:outputPanel>
+		                                </apex:pageblockSectionItem>
+		                                <apex:inputField style="width:60%;" value="{!referenceLead.Other_Info__c}" rendered="{!NOT(header.Required__c)}" />
+		                        </apex:pageBlockSection>
+		                    </apex:repeat>
+		                    
+		                    <apex:outputpanel layout="block" style="text-align: center;">
+		                        <apex:commandButton value="{!$Label.Submit}" onclick="PORShowLoading();" action="{!saveRecord}" oncomplete="PORHideLoading();showDisolvingAlert();" reRender="pgmsgId,formId,disolvingAlert"/>
+		                        <apex:commandButton value="{!$Label.Cancel}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" immediate="true" action="{!cancel}"/>
+		                    </apex:outputpanel>
+		                </apex:pageBlock>
+		             </apex:outputPanel>
+		             
+		             <apex:outputPanel rendered="{!answerChoice = '2'}">
+		                <apex:pageBlock id="pageblockId1" mode="Edit">
+		                    <apex:outputpanel layout="block" style="text-align: center;margin-bottom: 10px;margin-top: 10px;">
+		                    
+		                        <apex:commandButton value="{!$Label.Submit}" onclick="PORShowLoading();" action="{!saveRefLeadRecord}" oncomplete="PORHideLoading();" reRender="pgmsgId,formId"/>
+		                        <apex:commandButton value="{!$Label.Cancel}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" immediate="true" action="{!cancel}"/>
+		                    </apex:outputpanel>
+		                    <apex:pageBlockSection title="{!$Label.Reference_Status_Follow_Up}"  columns="1">
+		                        <apex:outputLabel value="{!refLeadMessage}"/>
+		                        <apex:pageBlockSectionItem >
+		                            <apex:outputLabel value="{!$Label.Check_back_with_me_in}"/>
+		                            <apex:inputField value="{!referenceLead.Follow_Up_Timeframe__c}"/>
+		                        </apex:pageBlockSectionItem>
+		                    </apex:pageBlockSection>
+		                    <apex:outputpanel layout="block" style="text-align: center;">
+		                        <apex:commandButton value="{!$Label.Submit}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" action="{!saveRefLeadRecord}" reRender="pgmsgId,formId"/>
+		                        <apex:commandButton value="{!$Label.Cancel}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" action="{!cancel}" immediate="true"/>
+		                    </apex:outputpanel>
+		                </apex:pageBlock>
+		             </apex:outputPanel> 
+		             
+		             <apex:outputPanel rendered="{!answerChoice = '3'}">
+		                 <apex:pageBlock mode="Edit" id='pageBlockSection3'>
+		                    <apex:outputpanel layout="block" style="text-align: center;margin-bottom: 10px;margin-top: 10px;">
+		                        <apex:commandButton value="{!$Label.Submit}" onclick="PORShowLoading();" action="{!saveRefLeadRecord}" oncomplete="PORHideLoading();showDisolvingAlert();" reRender="pgmsgId,formId,disolvingAlert"/>
+		                        <apex:commandButton value="{!$Label.Cancel}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" immediate="true" action="{!cancel}"/>
+		                    </apex:outputpanel>
+		                    <apex:pageBlockSection title="{!$Label.Reference_Owner_Update}"  columns="1" id='pbsecOwnerField'>
+		                        <apex:outputLabel value="{!refLeadMessage}"/>
+		                        <apex:pageBlockSectionItem id='leadOwnerField'>
+		                            <apex:outputLabel value="{!$Label.Reference_Lead_Owner}"/>
+		                            <apex:inputField value="{!referenceLead.Reference_Lead_Owner__c}" id='leadOwnerId'/>
+		                        </apex:pageBlockSectionItem>
+		                    </apex:pageBlockSection>
+		                    <apex:outputpanel layout="block" style="text-align: center;">
+		                        <apex:commandButton value="{!$Label.Submit}" onclick="PORShowLoading();" action="{!saveRefLeadRecord}" oncomplete="PORHideLoading();showDisolvingAlert();" reRender="pgmsgId,formId,disolvingAlert"/>
+		                        <apex:commandButton value="{!$Label.Cancel}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" immediate="true" action="{!cancel}"/>
+		                    </apex:outputpanel>
+		                 </apex:pageBlock>
+		             </apex:outputPanel>
+		        </apex:outputPanel>
+		        <div id="dialogBoxDiv" style="display:none;font-size: 12px;height: 60px; !important;">
+		            {!$Label.Add_Remove_Contact}
+		        </div>
+		    </apex:form>
+	    </body>
+    </html>
+</apex:page>

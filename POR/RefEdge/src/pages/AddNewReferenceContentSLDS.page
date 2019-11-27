@@ -1,0 +1,1873 @@
+<!--
+ * ReferenceEdge 
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardcontroller="Reference_Content__c"  id="pageId" 
+            sidebar="false" extensions="AddNewReferenceContentControllerSLDS"
+            standardstylesheets="false"
+            applyHtmlTag="true"
+            applyBodyTag="false"
+            docType="html-5.0"> 
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+			<apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+			<apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+            <script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script> 
+			<apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}"/>
+			<c:LookupPicklistSLDS id="picklistId"/>
+            <style>
+            	.top-padding {
+            		padding-top: 1.75rem;
+            	}
+                .required{
+                	color:red;
+                	display: inline;
+                	font-weight:bold;
+                }
+                #loading-image {
+                   position: fixed;
+                   top: 40%;
+                   left: 47%;
+                   width:4%;
+                } 
+                       
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.5;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.5;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .remove-flex{
+                    flex:none !important;
+                    webkit-flex:none !important;
+                }
+                #toast-msg {
+                    position: fixed;
+                    top: 10px;
+                    left: 0;
+                    right: 0;
+                    width: 50%;
+                    margin: 0 auto;
+                    z-index: 1100000;
+                }
+                .panalHader {
+    				background-color: #F3F5F8;
+    				width: 98% !important; 
+    				padding: 10px 24px 10px; 
+    				margin-top: 10px;
+    				margin-left: 10px;
+    				margin-right: 10px;
+    				border-radius: 5px;
+    				
+				}
+				.modal__assocation_container {
+				    margin: 0 auto;
+				    width: 80% !important;
+				    max-width: 900px !important;
+				    min-width: 520px !important;
+				}
+				
+				.headerLabel {
+				    display: inline-block;
+				    color: #54698d;
+				    font-size: 15px !important;
+				    line-height: 1.5;
+				    font-style: italic;
+				    margin-right: 12px;
+				    margin-bottom: 4px;
+				    }
+				    
+				    .slds-lookup__menu {
+    					/*bottom: 37px;*/
+					}
+
+					.slds .slds-modal__content.lookup {
+ 				    overflow: visible;  
+ 				    overflow-y: visible; 
+					}
+					.slds-fade-in-open.modal-2 {
+    					background: rgba(0,0,0,0.5);
+					}
+					.label-title{
+					    margin-bottom: 10px;
+					}
+					.label-title label {
+					    font-size: 12px;
+					    color: #808080;
+					}
+					.margin-zero {
+						margin-left: 0px !important;
+					}
+					
+					.slds .slds-button--brand:hover, .slds .slds-button--brand:focus {
+					    background-color: #005fb2;
+					    color: white;
+					    cursor: pointer;
+					} 
+					.slds .slds-button + .slds-button {
+					    margin-left: 4px;
+					    cursor: pointer;
+					}
+					.slds .slds-form-element__label { 
+						width: 600px;
+					}	
+					
+					@media (min-width: 1020px) {
+						.location-title-container > div {
+							width: 50%;
+						}
+					}
+            </style>
+            <script>
+            	var isFileSelected = false; 
+                var refContentApp = angular.module('refContentApp', ['angularjs-datetime-picker','lookupPicklistApp','angularMultiSelectList']);
+                var referenceContent = refContentApp.controller('referenceContent', function($scope, $location, $q, $filter) {
+					$scope.refContentId = '{!JSENCODE(refContentId)}';   
+					$scope.isClone = '{!isReferenceContentClone}'; 
+					$scope.isNewRecord = '{!isNewRecord}'; 
+					$scope.allowContnetVersionField = '{!allowContnetVersionField}';
+					$scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+					$scope.associatedAccount = []; 
+					$scope.associatedAccountIds = '';
+					$scope.associatedContactIds = '';
+					$scope.info; 
+					$scope.customFields;
+					$scope.isError = false;
+					$scope.errorMsg = '';
+					$scope.showModal = false;
+					$scope.showDeleteMsg = false;
+					$scope.status = '';
+					$scope.isSuccess = false;
+					$scope.dateFormat = 'yyyy-MM-dd';
+					$scope.successMsg = 'successfully.';
+					$scope.associatedAccountId;
+					$scope.associatedContactId;
+					$scope.associatedAccountName;
+					$scope.associatedContact = [];
+					$scope.isWarning = false;   
+					$scope.selectedRefContent = '--None--';    
+					$scope.selectedRefLibrary = '--None--';
+					//REF-2289
+					$scope.publishDate = '';
+					$scope.isShowRefContents = true;                    
+					$scope.isShowContentURL = true;
+					$scope.isContentAllow = true;
+					$scope.isShowContentText = true;
+					$scope.contentTitlePart = '';
+					$scope.pageContentDetails = [];
+					$scope.showRefMsg = ('{!allowAssociation}' == 'true') ? true : false;;
+					$scope.showAssocation = false; //'{!allowAssociation}';
+					$scope.fileName ='';
+					$scope.fileContent='';
+					$scope.isShowLibrary = true;
+					$scope.isShowSave = true;
+					$scope.isSelectExistingTitle = false;
+					$scope.isFileChanged = false;
+					$scope.allowBrowser = false;
+					$scope.showFileUpload = true;
+					$scope.isInterviewType = false;
+					$scope.lookupPicklistScope = {};
+					$scope.lookupPicklistScopeContact = {};
+					$scope.lookupExistingContact = {};
+					$scope.isCustomContent = false; 
+					$scope.isChangedforContnetVersion = false;
+					$scope.allowContentFieldsPanal = false;
+					$scope.isAlreadyExist = false;
+					$scope.refContentListClone = [];
+					$scope.showConfirmCustomContentModal = false
+					//initial function which is called on page load
+					$scope.load  = function() {
+						
+						if ('{!isError}' == 'true') { 
+							$scope.isError = true;
+                        		$scope.errorMsg = '{!errorMsg}';  
+						} else {
+							$scope.getDateFormat().then(function(result) {
+								
+								if (result != null) {  
+			                   	   $scope.dateFormat = result;
+			                   	}
+	  		                 	$scope.intialFunction();
+	                         });
+						}
+					}
+					
+					//Cast date format according to locale
+					$scope.getDateFormat = function () {
+						var deferred = $q.defer();
+                       	Visualforce.remoting.Manager.invokeAction(
+			               '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getDateFormat}', 
+			               function(result, event) {
+			                   deferred.resolve(result);
+			               },
+			               {escape: true}
+			            );
+                        return deferred.promise;
+					}
+					
+                    $scope.intialFunction = function() { 
+                    		$scope.isShowSave = true;
+                    	    
+                    	    if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+                          	$scope.callLoading(true); 
+	                      	 //check for CRUD and FLS permissions
+	                         $scope.checkPermission().then(function(result) {
+	                             
+	                             if (result != '') {
+	                                 $scope.isError = true;
+	                                 $scope.errorMsg = result;
+	                                 $scope.isShowSave = false;
+	                             } else {
+	                                 $scope.isError = false;
+	                             }
+	                         });
+                             
+                         } else {
+                        		$scope.isShowSave = false;
+                        		$scope.isError = true;
+                        		$scope.errorMsg = '{!$Label.User_License}'; 
+                        	}
+                         
+                                               
+						                            
+                        if (!$scope.isError) {  
+                        
+				            Visualforce.remoting.Manager.invokeAction(
+				               '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getReferenceContentType}', 
+				               function(result, event) {
+				                   if (result != null) {  
+				                       $scope.refContentList = result ; 
+				                       $scope.refContentListClone = result ;
+				                       $scope.$apply();  
+				                   }
+				               },
+				               {escape: true}
+				           );
+				           
+				           Visualforce.remoting.Manager.invokeAction(
+				               '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getReferenceLibrary}', 
+				               function(result, event) {
+				                   if (result != null) {  
+				                       $scope.refLibraryList = result ; 
+				                       $scope.$apply();  
+				                   }
+				               },
+				               {escape: true}
+				           );
+				           
+			            	Visualforce.remoting.Manager.invokeAction(
+				               '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getLanguage}', 
+				               function(result, event) {
+				                   if (result != null) {  
+				                       $scope.refLanguageList = result ; 
+				                       $scope.$apply();  
+				                   }
+				               },
+				               {escape: true}
+				           );
+				           
+				           Visualforce.remoting.Manager.invokeAction(
+				               '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getStatus}', 
+				               function(result, event) {
+				                   if (result != null) {  
+				                       $scope.refStatusList = result ; 
+				                       $scope.$apply();  
+				                   }
+				               },
+				               {escape: true}
+				           ); 
+				           $scope.getPageRecords();
+				           $scope.isShowContentVersionFields(); 
+	                    }
+                    } 
+                    
+                    $scope.getContentVersionDetails = function() {
+                        var deferred = $q.defer();
+                        
+                        if ($scope.info.NativeContentType == null) {
+                        	$scope.info.NativeContentType ='';
+                        }
+                        Visualforce.remoting.Manager.invokeAction( 
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getContentVersionDetails}', $scope.info.NativeContentType,
+                            function(result, event) { 
+                            	result = $scope.parseResult(result);
+                                result = JSON.parse(result);  
+                               
+                             	if (result != null) {  
+	                              	$scope.contentVersionFields = result; 
+	                              	$scope.contentVersionFields.forEach(function (val) {
+			                        	
+			                        	if (val.fieldType == 'BOOLEAN') {
+				                            val.fieldValue = (val.fieldValue == 'true') ? true : false; 
+			                            } else if (val.fieldType == 'DATE' || val.fieldType == 'DATETIME') {  
+			                            	val.fieldValue =  $filter('date')(val.fieldValue, $scope.dateFormat); 
+			                            }			                           
+			                            
+			                        });
+			                       	$scope.$apply();
+		                       	}  
+                            },
+                            {escape: true}
+                        );
+                       
+                        return deferred.promise;
+                    } 
+                    
+                   // re #11
+                   $scope.getCustomFields = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction( 
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getCustomContent}', $scope.refContentId, $scope.info.ContentType,
+                            function(result, event) { 
+                            	result = $scope.parseResult(result);
+                                result = JSON.parse(result); 
+                             	if (result != null) {  
+	                              	$scope.customFields = result;  
+			                       	$scope.$apply();
+		                       	}  
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    } 
+                    
+                    //to parse any string
+                    $scope.parseResult = function(result) {
+                    
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                            return result;
+                        }
+                    } 
+                    
+                    $scope.addAccount = function() {  
+                    	var index = $scope.isExists($scope.associatedAccountId, 'account');
+							
+						if (index == -1) {
+	                     	$scope.associatedAccount.push({'Id': angular.copy($scope.associatedAccountId), 'Name': $scope.parseResult(angular.copy($scope.associatedAccountName)),'isNewItem':'true'});
+	                     	$scope.associatedAccountId = '';
+	                     	$scope.associatedAccountName = '';
+	                     	$scope.lookupPicklistScope.removeSelectedValue();
+                     	}
+                     	 
+                    }
+                    
+                    $scope.addContact = function() {
+                     	var index = $scope.isExists($scope.associatedContactId , 'contact');
+                     	$scope.associatedContactAccountName = '';
+                     	
+                     	if (index == -1) {   
+                     		
+                     		Visualforce.remoting.Manager.invokeAction(
+			               '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getAccountName}', $scope.associatedContactId, 
+				               function(result, event) {
+				               
+				                   if (result != null) { 
+				                       $scope.associatedContactAccountName = result ; 
+				                       $scope.associatedContact.push({'Id': angular.copy($scope.associatedContactId), 'Name': $scope.parseResult(angular.copy($scope.associatedContactName)),'AccountName':$scope.parseResult(angular.copy($scope.associatedContactAccountName)),'isNewItem':'true'});
+	                     			   $scope.associatedContactId = '';
+	                     			   $scope.associatedContactName = '';
+	                     				$scope.lookupPicklistScopeContact.removeSelectedValue();
+				                       $scope.$apply();
+				                   }
+				               },
+				               {escape: true}
+				           	);
+                     	}
+                    }
+                    $scope.Upload = function (id) {  
+                    	uploadFile(id);
+                    }
+                    $scope.isExists = function (id, obj) {
+                    	var index = -1;
+                    	var val = -1;
+                    	 
+                    	if (obj == 'account') { 
+	    					$scope.associatedAccount.forEach(function (arr) {
+					        	index +=1; 
+					        	
+					        	if (arr.Id === id) {  
+					            	val = index;
+					            }
+					    	});
+				    	} else { 
+				    		$scope.associatedContact.forEach(function (arr) {
+					        	index +=1; 
+					        	
+					        	if (arr.Id === id) {  
+					            	val = index;
+					            }
+					    	});
+				    	} 
+    					return val;
+					}
+				
+					$scope.removeExistingItem = function () {
+						 
+						if ($scope.itemId != '' && $scope.objectType != '') {  
+							var index = $scope.isExists($scope.itemId, $scope.objectType);
+							 
+							if (index != -1) {
+							 	Visualforce.remoting.Manager.invokeAction( 
+		                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.deleteRecord}', $scope.itemId, $scope.objectType, 
+		                             function(result, event) {
+			                              	if (result != null) { 
+						                       $scope.$apply(function () {
+							                       if (result.startsWith('Error') == true) {  
+							                       		result = $scope.parseResult(result);
+							                            $scope.errorMsg = result.substring(5);
+							                            $scope.isError = true;
+						                       		} else {
+						                       			$scope.showDeleteMsg = false;
+						                       		}
+						                       });
+						                   }
+			                            },
+		                            {escape: true}
+		                        );
+		                        
+		                        if (!$scope.isError) { 
+								 	
+								 	if ($scope.objectType == 'account') {
+			                      	
+				                      	if (index != -1) {  
+				                     		$scope.associatedAccount.splice(index, 1); 
+				                     	}
+			                     	} else {
+			                     		if (index != -1) {  
+				                     		$scope.associatedContact.splice(index, 1); 
+				                     	}
+			                     	}
+		                     	}
+	                        }
+	                        $scope.itemId = '';
+	                        $scope.objectType = '';
+                        }
+					}
+                     
+                    $scope.removeItem = function(item, obj, isNew) {
+                    	
+                    	if (obj == 'Account') {     
+                    		$scope.removeMsg = '{!$Label.Delete_Account}';    
+                    	} else {
+                    		$scope.removeMsg = '{!$Label.Delete_Contact}'; 
+                    	}
+                    	var index = $scope.isExists(item, obj);
+                    	 
+                    	if (!isNew) {
+                    		$scope.itemId = item;
+                    		$scope.objectType = obj;
+                    		$scope.showDeleteMsg = true;
+                    	} else { 
+							 	if (obj == 'account') {
+		                      	
+			                      	if (index != -1) {  
+			                     		$scope.associatedAccount.splice(index, 1); 
+			                     	}
+		                     	} else {
+		                     		if (index != -1) {  
+			                     		$scope.associatedContact.splice(index, 1); 
+			                     	}
+		                     	}
+	                     		  
+                    		$scope.showDeleteMsg = false;
+                    	}    
+                        
+                    }
+                    
+                    //Check Premission
+                    $scope.checkPermission = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getPermissionsMessage}', 
+                            function(result, event) {  
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    //Check Premission
+                    $scope.getAssociationPermissions = function(obj, action) {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getAssociationPermissions}', obj, action,  
+                            function(result, event) {  
+                                if (result.startsWith('Error') == true) {  
+	                       		result = $scope.parseResult(result);
+	                            $scope.errorMsg = result.substring(5); 
+	                            $scope.isError = true;
+	                       		} else { 
+	                       			$scope.isError = false;
+	                       		}
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+					$scope.parseResult = function(result) {
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/;/g, '');
+                            result = result.replace(/&#39/g, '\'');
+                            return result;
+                        }
+                    }
+
+                    //to parse any string
+                    $scope.saveRefContent = function() {  
+                    	var e = document.getElementById("ddlRefType"); 
+						var refTypeName = e.options[e.selectedIndex].text;
+					
+						if ($scope.customFields == null) { 
+							$scope.customFields = [];
+						}
+	                	 Visualforce.remoting.Manager.invokeAction( 
+		                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.saveReferenceContent}', angular.toJson($scope.info), $scope.isClone,$scope.refContentId, refTypeName, isFileSelected,angular.toJson($scope.customFields), 
+		                             function(result, event) {
+			                              	if (result != null) { 
+												result = $scope.parseResult(result);
+						                       $scope.$apply(function () {  	
+							                       if (result.includes('@@') == true) {  
+							                       		result = $scope.parseResult(result);
+							                            $scope.errorMsg = result.split("@@")[1]; 
+							                            $scope.isError = true;
+														$scope.callLoading(false);
+						                       		} else { 
+					                       			 	jQuery("input[id$=hiddenContentId]").prop('value', result);
+					                       			 	jQuery("input[id$=hiddensSelectedExistingTitle]").prop('value', $scope.contentTitlePart);
+					                       			 	jQuery("input[id$=hiddensContentVersionFields]").prop('value', JSON.stringify($scope.contentVersionFields));
+					                       			 	jQuery("input[id$=hiddensContentURL]").prop('value', $scope.info.ContentURL); 
+						                       			Upload(result);
+						                       		}
+						                       });
+						                   }
+			                            },
+	                            	{escape: true}
+	                        ); 
+                    }  
+                    
+                    //#1070 : convert date to yyyy-MM-dd format befor sending to controller
+	                $scope.convertToDate = function (date) {
+	                		date = (date == null) ? '' : date;
+	                		var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+	                		
+	                		if (date == null || date == '') {
+	                			return '';
+	                		}
+	                		
+	                		if (date.match(regEx))  { 
+	                			tempDF = date.split('-');
+	                			if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+	                				return null;
+	                			}
+	                			return date; 
+						}
+						
+	               		try {
+	               			var tempDF = $scope.dateFormat;
+	               			var tempDate = date + '';
+	               			tempDF = tempDF.split(/[./-]/g);
+	               			tempDate = tempDate.split(/[./-]/g);
+	               			var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+	               			var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+	               			var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+	               			var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+		              	 	
+	              	 		if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+	              	 			
+	              	 			if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+		              	 			return null;
+		              	 		}
+	     				 		return dateString;
+	     				 	} else {
+	     				 		return null;
+	     				 	}
+	     				} catch (e) {
+	     					return null;
+	     				}
+	                }
+	                
+	                $scope.checkDate = function (day, month, year){
+	                		var returnval = true;
+	                		if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == '' ||
+	                			parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+	                			returnval = false;
+	            			} else {
+	            				day = parseInt(day);
+	            				month = parseInt(month);
+	            				year = parseInt(year);
+	            			}
+					    returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+					    var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+					    				: (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+					    returnval = (day > days) ? false : returnval;
+				        return returnval;
+	                }
+                    
+                    $scope.getPageRecords = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction( 
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getPageRecords}', $scope.refContentId, $scope.isClone,
+                            function(result, event) { 
+                            	
+                            	if (result != null) { 
+	                              	$scope.info = result[0]; 
+	                              	
+	                              	if ($scope.info.IsCustomContentType == true) {  
+	                              		$scope.showHideSections('CUSTOM');
+	                              		$scope.getCustomFields();
+										  $scope.isCustomContent = true;
+										  //REF-2289 
+	                              	} else if (($scope.info.ContentURL == null || $scope.info.ContentURL == '') && $scope.info.IsCustomContentType == false) {   
+										$scope.showHideSections('BROWSER');
+	                              	} else if ($scope.info.ContentURL != null && $scope.info.ContentURL != '') {   
+										$scope.showHideSections('URL');
+	                              	}
+								 	
+									if ($scope.info.ReviewDate != null && $scope.info.ReviewDate != '') { 
+										$scope.info.ReviewDate = $filter('date')(new Date($scope.info.ReviewDate), $scope.dateFormat);
+									} 
+									if ($scope.info.ExpirationDate != null && $scope.info.ExpirationDate != '') {
+										$scope.info.ExpirationDate =  $filter('date')(new Date($scope.info.ExpirationDate), $scope.dateFormat);  
+									}
+									 
+									if ($scope.info.ArticalPublishDate != null && $scope.info.ArticalPublishDate != '') { 
+										$scope.info.ArticalPublishDate = $filter('date')(new Date($scope.info.ArticalPublishDate), $scope.dateFormat);  
+									} 
+									
+									// Check for non interview type Reference Content 
+								  	if ($scope.info.IsReferenceType == false && $scope.isNewRecord == 'false') { 
+								  		$scope.isInterviewType = false;
+						           		$scope.removeReferenceType($scope.isInterviewType);
+					           		} else if ($scope.info.IsReferenceType == true && $scope.isNewRecord == 'false') { 
+					           			$scope.isInterviewType = true;
+						           		$scope.removeReferenceType($scope.isInterviewType);
+					           			$scope.isShowRefContents = false;
+					           		} else {
+					           			$scope.isShowRefContents = true;
+					           		} 
+					           		$scope.getContentVersionDetails();
+					           	 	$scope.callLoading(false);
+					           	 	$scope.isShowContentVersionFields();
+			                       	$scope.$apply();  
+		                       	} else {
+		                       		$scope.callLoading(false);
+		                       	} 
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    /* Method used to remove Interview type Ref Content Type - #1086 */
+                    $scope.removeReferenceType = function(isInterview) {
+                    
+                    	angular.forEach($scope.refContentList, function(value, index) {
+							
+							if (!isInterview) {		   
+							   	
+							   	if (value.IsReferenceType) {
+							    	$scope.refContentList.splice(index, 1);
+							    	$scope.removeReferenceType(isInterview);
+							    }
+						    } else {
+						    
+						    	if (!value.IsReferenceType) {
+							    	$scope.refContentList.splice(index, 1);
+							    	$scope.removeReferenceType(isInterview);
+							    }
+						    }
+						});
+                    }
+                    $scope.saveAssociations = function(isSaveAndNew) {
+                    	var deferred = $q.defer();
+                    	
+                    	$scope.getAssociationPermissions('ACCOUNT','INSERT');
+                    	 
+                    	if ($scope.validate() && !$scope.isError) {  
+                        	$scope.isError = false;
+	                        Visualforce.remoting.Manager.invokeAction( 
+	                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.saveAssociations}', $scope.associatedAccountIds, $scope.associatedContactIds, $scope.refContentId, 
+	                            function(result, event) {
+	                              	if (result != null) {
+				                       $scope.$apply(function () {
+					                       if (result.startsWith('Error') == false) {
+					                             $scope.isError = false; 
+					                             
+					                             if (isSaveAndNew) {
+					                             	sforce.one.navigateToURL('{!$Page.AddNewReferenceContentSLDS}', true);
+					                             } else {
+					                             	$scope.redirectToURL($scope.refContentId);
+					                             }
+					                           } else {   
+						                       		result = $scope.parseResult(result);
+						                            $scope.errorMsg = result.substring(5);
+						                            $scope.isError = true;													
+				                       		} 
+				                       });
+				                   }
+	                            },
+	                            {escape: true}
+	                        );
+                        } else {
+                        	$scope.isError = true;
+                        }
+                        return deferred.promise;
+                    }
+                     
+                   $scope.redirectToURL = function(url) {
+ 				   	 	if (url != '') {
+                        	sforce.one.navigateToSObject(url, 'detail');
+                    	} else {
+                      		sforce.one.navigateToURL('#/sObject/{!nameSpace}Reference_Content__c/home'); 
+                    	} 
+            		}
+            
+                    $scope.validate = function() {
+	                    $scope.associatedAccountIds = '';
+	                    $scope.associatedContactIds = '';
+                    	$scope.associatedAccount.forEach(function (arr) {
+				         
+				        	if (arr.isNewItem === 'true') {  
+				        		   
+				        		if ($scope.associatedAccountIds == '') {
+				            		$scope.associatedAccountIds += arr.Id;
+				            	} else {
+				            		$scope.associatedAccountIds += ','+arr.Id;
+				            	}
+				            }
+				    	});
+				    	
+				    	$scope.associatedContact.forEach(function (arr) {  
+				    	
+				        	if (arr.isNewItem === 'true') {  
+				        		
+				        		if ($scope.associatedContactIds == '') {
+				            		$scope.associatedContactIds += arr.Id;
+				            	} else {
+				            		$scope.associatedContactIds += ','+arr.Id;
+				            	}
+				            }
+				    	});
+				    	
+				    	if ($scope.associatedAccountIds == '' && $scope.associatedContactIds == '') {
+				    		$scope.isError = true;
+				    		$scope.errorMsg = '{!$Label.Add_Account_and_Contact}';
+				    		return false;
+				    	}
+				    	
+				    	return true;
+                    }
+                    
+                    $scope.getAssociatedAccounts = function() { 
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction( 
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getAssociatedAccounts}', $scope.refContentId,
+                            function(result, event) {
+                              	$scope.associatedAccount = result ; 
+		                       	$scope.$apply();
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getAssociatedContacts = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction( 
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getAssociatedContacts}', $scope.refContentId,
+                            function(result, event) {
+                              	$scope.associatedContact = result ; 
+		                       	$scope.$apply();
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.setContent = function(isRfContent) {   
+                     	 
+                     	if ($scope.isSelectExistingTitle == false) {
+	                    	
+	                    	for (var i = 0; i < $scope.refContentList.length; i++) {
+	  							   
+	  							if ($scope.refContentList[i].Id == isRfContent && $scope.refContentList[i].IsReferenceType == true) {
+	  								$scope.info.IsReferenceType = true; 
+	  								$scope.isInterviewType = true;
+	  								$scope.contentURL = '';
+									$scope.contents = '';
+									$scope.info.LibraryID = '--None--';
+									$scope.isContentAllow = false;
+									$scope.isShowContentText = false;
+									$scope.isShowContentURL = false;
+									$scope.isShowRefContents = false; 
+									$scope.isShowLibrary = false;
+									$scope.info.IsCustomContentType = false;
+									$scope.isCustomContent = false; 
+									$scope.isShowContentVersionFields();
+									break;
+	  							} else if ($scope.isNewRecord == 'true') {
+	  								$scope.isInterviewType = false;
+	  								$scope.info.IsReferenceType = false;
+	  								$scope.isContentAllow = true;
+									$scope.isShowContentText = true;
+									$scope.isShowContentURL = true;
+									$scope.isShowRefContents = true; 
+									$scope.isShowLibrary = true;
+									$scope.isCustomContent = false;
+	  							}
+	  							
+	  							if ($scope.info.IsCustomContentType) { 
+									$scope.isShowContentText = false;
+									$scope.isShowContentURL = false;
+									$scope.isShowRefContents = false; 
+									$scope.isShowLibrary = false;
+									$scope.isCustomContent = true;
+									$scope.info.IsInternalUse = true;
+	  							}
+	  							$scope.isShowContentVersionFields();
+							} 
+						} 
+                    }
+                    
+                    $scope.checkInterviewTopics = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction( 
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.checkInterviewTopics}',$scope.refContentId, 
+                            function(result, event) {
+                              	return result;
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    } 
+                    
+                    $scope.ContentAlreadyExist = function(id) { 
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction( 
+                            '{!$RemoteAction.AddNewReferenceContentControllerSLDS.isContentAlreadyExist}', id, 
+                            function(result, event) {  
+                              	$scope.isAlreadyExist = result;  
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    } 
+                    
+                    //to validate all data
+                    $scope.validateContent = function() {  
+	                    	$scope.isError = false;
+	                    	$scope.callLoading(true); 
+	                    	 
+	                    	if ($scope.info.ContentType == '--None--') {
+	                    		$scope.isError = true;
+	                    		$scope.errorMsg = '{!$Label.SELECT_REFERENCE_CONTENT_TYPE}';
+	                    	} if ($scope.info.ContentStatus == '--None--') {
+	                    		$scope.isError = true;
+	                    		$scope.errorMsg = 'Please select Reference Status.'; 
+	                    	} else if ($scope.info.Title == null || $scope.info.Title === "") {
+	                    		$scope.isError = true;
+	                    		$scope.errorMsg = '{!$Label.CONTENT_TITLE}';
+	                    	} else if (($scope.info.LibraryID == null || $scope.info.LibraryID === "" || $scope.info.LibraryID === '--None--') && !$scope.info.IsReferenceType && !$scope.info.IsCustomContentType) {
+	                    		$scope.isError = true;
+	                    		$scope.errorMsg = '{!$Label.SELECT_LIBRARY}';
+	                    	} else if ((!isFileSelected && ($scope.isNewRecord == 'true' || $scope.info.NativeContentType == null || $scope.info.NativeContentType == '')) && $scope.info.IsReferenceType == false && ($scope.info.ContentURL == null || $scope.info.ContentURL === "") && ($scope.info.IsCustomContentType == 'false' || $scope.info.IsCustomContentType == false || $scope.info.IsCustomContentType == null)) {
+	                    		$scope.isError = true;
+	                    		$scope.errorMsg = '{!$Label.UPLOAD_CONTENT_OR_URL}'; 
+	                    	} else if ($scope.info.ContentStatus =='Active' && $scope.info.IsReferenceType == true && ($scope.isNewRecord == 'false' || $scope.checkInterviewTopics())) {
+	                    		$scope.isError = true;
+	                    		$scope.errorMsg = '{!$Label.Restrict_Ref_Interview_Record_Without_Video}';
+	                    	} else if(($scope.isSelectExistingTitle == 'true' || $scope.isSelectExistingTitle == true) && $scope.isAlreadyExist == true) {  
+                          		$scope.isError = true;
+                  				$scope.errorMsg = '{!$Label.Select_Another_Content}'; 
+                  				$scope.lookupExistingContact.removeSelectedValue();
+	                    	} else if ($scope.info.ContentURL != null && $scope.info.ContentURL != "" && $scope.info.ContentURL.length >= 510) {
+								$scope.isError = true;
+	                    		$scope.errorMsg = 'Content URL too long : data value too large(Max length = 510)';
+							}
+							 
+	                    	if ($scope.info.IsCustomContentType && $scope.customFields.length > 0 && $scope.isError == false) {  
+	                    		
+	                    		$scope.customFields.forEach(function (val) {
+	                    		
+	                    		   	if (val.isRequired == true && (val.fieldValue == null || (val.fieldValue == '' || val.fieldValue =='--None--'))){
+			                        		$scope.isError = true;
+	                    					$scope.errorMsg = 'You must enter ' + val.label + ' values. '; 
+		                             } else if (val.fieldType == 'DATE' || val.fieldType == 'DATETIME') {
+		                            		var dateString = $scope.convertToDate(val.fieldValue);
+		                            		
+		                            		if (dateString != null) {
+		                            			val.fieldValue = dateString;
+		                            		} else {
+		                            			$scope.isError = true;
+	                    						$scope.errorMsg = '{!$Label.Date_Invalid}' + val.fieldValue; 
+		                            		}
+		                            }
+		                        }); 
+	                    	}
+	                    	
+	                    	if ($scope.allowContentFieldsPanal && $scope.contentVersionFields != null && $scope.contentVersionFields.length > 0 && $scope.isError == false) {  
+	                    		
+	                    		$scope.contentVersionFields.forEach(function (val) {
+	                    		 	
+	                    			if (val.isRequired == true && (val.fieldValue == null || (val.fieldValue.trim() == '' || val.fieldValue == null))){
+		                        		$scope.isError = true;
+                    					$scope.errorMsg = 'You must enter ' + val.label + ' values. '; 
+		                             }  else if (val.fieldType == 'DATE' || val.fieldType == 'DATETIME') {
+		                            		var dateString = $scope.convertToDate(val.fieldValue);
+		                            		
+		                            		if (dateString != null) {
+		                            			val.fieldValue = dateString;
+		                            		} else {
+		                            			$scope.isError = true;
+	                    						$scope.errorMsg = '{!$Label.Date_Invalid}' + val.fieldValue; 
+		                            		}
+		                            }
+		                        }); 
+	                    	}
+	                    	
+	                    	
+						if ($scope.info.PublishedDate != undefined && $scope.info.PublishedDate != null && $scope.info.PublishedDate != '') { 
+							var dateString = $scope.convertToDate($scope.info.PublishedDate);
+	                 		
+	                 		if (dateString != null) {
+	                 			$scope.info.PublishedDate = dateString;
+	                 		} else {
+	                 			$scope.isError = true;
+	        						$scope.errorMsg = '{!$Label.Date_Invalid}' + $scope.info.PublishedDate; 
+	                 		}
+	                     }
+	                    	
+	                    	if ($scope.info.ReviewDate != undefined && $scope.info.ReviewDate != null && $scope.info.ReviewDate != '') { 
+							var dateString = $scope.convertToDate($scope.info.ReviewDate);
+	                 		
+	                 		if (dateString != null) {
+	                 			$scope.info.ReviewDate = dateString;
+	                 		} else {
+	                 			$scope.isError = true;
+	        						$scope.errorMsg = '{!$Label.Date_Invalid}' + $scope.info.ReviewDate;
+	                 		}
+						} 
+						
+						if ($scope.info.ExpirationDate != undefined && $scope.info.ExpirationDate != null && $scope.info.ExpirationDate != '') { 
+							var dateString = $scope.convertToDate($scope.info.ExpirationDate);
+	                 		
+	                 		if (dateString != null) {
+	                 			$scope.info.ExpirationDate = dateString;
+	                 		} else {
+	                 			$scope.isError = true;
+	        						$scope.errorMsg = '{!$Label.Date_Invalid}' + $scope.info.ExpirationDate;
+	                 		}
+						}
+						 
+						if ($scope.info.ArticalPublishDate != undefined && $scope.info.ArticalPublishDate != null && $scope.info.ArticalPublishDate != '') { 
+							var dateString = $scope.convertToDate($scope.info.ArticalPublishDate);
+	                 		
+	                 		if (dateString != null) {
+	                 			$scope.info.ArticalPublishDate = dateString;
+	                 		} else {
+	                 			$scope.isError = true;
+	        						$scope.errorMsg = '{!$Label.Date_Invalid}' + $scope.info.ArticalPublishDate;
+	                 		}
+						} 
+						if (!$scope.isError && $scope.info.Summery != null && $scope.info.Summery.length > 4000) {
+							$scope.info.ExpirationDate = dateString;
+							$scope.isError = true;
+							$scope.errorMsg = JSON.stringify("{!$Label.Summary_Limit}");
+						} 
+                   			
+                    	if (!$scope.isError) {
+                    		$scope.saveRefContent();
+                    	} else {
+                    		$scope.callLoading(false); 	
+                    	}
+	                    	
+                    } 
+                    
+                    $scope.$watch('contentTitlePart', function() {
+                    	 
+                    	if ($scope.contentTitlePart != '') { 
+					        Visualforce.remoting.Manager.invokeAction(
+				               '{!$RemoteAction.AddNewReferenceContentControllerSLDS.getContentDetails}',$scope.contentTitlePart, 
+				               function(result, event) {
+				                   
+				                   if (result != null) { 
+				                      	$scope.info.Title = result[0].Title ;
+	                          			$scope.info.ContentStatus = result[0].ContentStatus; 
+		                          		$scope.info.Language = result[0].Language;  
+		                          		$scope.info.NativeContentType = result[0].ContentType; 
+		                          		$scope.info.ContentType = result[0].RefContent;
+		                          		$scope.info.LibraryID = result[0].LibraryID;  
+		                          		$scope.isSelectExistingTitle = true; 
+				                       	$scope.showHideSections('CUSTOMTEXT');
+				                        $scope.refContentListClone = $scope.refContentList;
+				                        $scope.info.ContentURL = result[0].ContentUrl;
+				                       	
+				                       	if ($scope.info.ContentType == null) { 
+				                       		$scope.info.ContentType = '--None--';  
+				                       	} 
+				                       	
+				                       	$scope.getContentVersionDetails();
+				                       	$scope.removeReferenceType(false); 
+				                       	if ($scope.info.NativeContentType != null) {
+				                       		$scope.ContentAlreadyExist($scope.info.NativeContentType);
+			                       		}
+				                       	$scope.$apply();
+				                   }
+				               },
+				               {escape: true}
+				           ); 
+				         
+			        } else {
+			           			$scope.Title = '';
+                       			$scope.selectedRefStatus = '--None--'; 
+                          		$scope.selectedRefLanguage = '--None--';  
+                          		$scope.selectedRefContent = '--None--';   
+								$scope.isShowContentText = true;
+								$scope.isShowContentURL = true;
+								$scope.isShowRefContents = true;
+								$scope.isSelectExistingTitle = false;
+								$scope.refContentList = $scope.refContentListClone;
+			           }   
+			    	});
+			    	
+			    	$scope.$watch('associatedAccountId', function() { 
+                     	
+                     	if ($scope.associatedAccountId != null && $scope.associatedAccountId != '') { 
+                     		$scope.addAccount();  
+                     	}   
+			    	});
+				    
+				    $scope.$watch('associatedContactId', function() {
+                     	
+                     	if ($scope.associatedContactId != null && $scope.associatedContactId != '') { 
+                     		$scope.addContact();
+                     	}
+			    	});
+			    	
+			    	$scope.validateForURL = function(value) {  
+			    		regexp =  /^(?:(?:https?|ftp):\/\/)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:\/\S*)?$/;
+						return regexp.test(value);
+					}  
+					
+					$scope.confirmCustomContent = function(value) {  
+						if (!value && ($scope.info.IsCustomContentType || $scope.isCustomContent)) {
+							$scope.showConfirmCustomContentModal = true;
+						}
+					}
+
+					$scope.customContentResponse = function (response) {
+						$scope.info.IsInternalUse = !response;
+						$scope.showConfirmCustomContentModal = false;
+					}
+			    	 
+				    $scope.checkForURL = function(value) {  
+						$scope.isError = false;
+						if (value.length > 0) {
+						
+							if ($scope.validateForURL(value)) { 
+								$scope.showHideSections('URL');
+							} else {
+								$scope.isError = true;
+								$scope.errorMsg = 'Please enter valid Website link';
+							}
+						} else if ($scope.isNewRecord ==  false) {
+							$scope.showHideSections('ALL');
+						}
+                   	}
+
+				   	$scope.removeContent = function(isShow) { 
+                    	 
+                    	if ($scope.info.ContentType == '--None--' && isShow) {
+                    		$scope.isError = true;
+                    		$scope.info.IsCustomContentType = false;
+                    		$scope.isCustomContent = false;
+                    		$scope.errorMsg = '{!$Label.SELECT_REFERENCE_CONTENT_TYPE}';
+                    	} else {
+                    		$scope.isError = false;
+                    		$scope.info.IsCustomContentType = isShow;
+                    		$scope.isCustomContent = isShow;
+                    		if (isShow) {
+	                    	 	$scope.getCustomFields();
+	                    	}  
+	                    	
+	                    	$scope.isShowLibrary = !isShow;
+	                    	
+		                   	$scope.isShowContentURL = !isShow; 
+		                   	$scope.contentURL = '';
+							$scope.contents = '';
+							$scope.isShowContentText = !isShow; 
+							$scope.isShowRefContents = !isShow;
+							$scope.info.IsInternalUse = isShow;
+						}
+						$scope.isShowContentVersionFields();
+                    } 
+                   
+                   $scope.showHideSections = function(item) { 
+                    	$scope.isContentAllow = false;
+						$scope.isShowContentText = false;
+						$scope.isShowContentURL = false;
+						$scope.isShowRefContents = false;
+						
+						if (item == 'BROWSER') {
+							$scope.isShowRefContents = true;
+						} else if (item == 'URL') {
+							$scope.isShowContentURL = true;
+						} else if (item == 'CUSTOM') {
+							$scope.isContentAllow = true;
+						} else if (item == 'CUSTOMTEXT') {
+							$scope.isShowContentText = true;
+						} else {
+							$scope.isContentAllow = true;
+							$scope.isShowContentText = true;
+							$scope.isShowContentURL = true;
+							$scope.isShowRefContents = true;
+						}
+                   }  
+                                      
+                   $scope.back = function() {
+                   	//sforce.one.navigateToSObject(accId, 'detail');
+                   }
+                   
+                   $scope.showAssocationModel = function() { 
+	                   	$scope.showRefMsg = false;
+	                   	$scope.showAssocation=true
+	                   	$scope.getAssociatedContacts();
+	                   	$scope.getAssociatedAccounts();
+                   }
+                    
+                   $scope.callLoading = function(value){
+      					$scope.isloading = value;
+	    			}
+	    			
+	    			$scope.isShowContentVersionFields = function () {  
+				    	   
+				    	if ($scope.allowContnetVersionField == 'true' && $scope.isCustomContent == false && $scope.isInterviewType == false) {  
+				    		$scope.allowContentFieldsPanal = true; 
+				    	} else {  
+				    		$scope.allowContentFieldsPanal = false; 
+				    	}
+					} 
+
+					//	For testing purpose
+					$scope.SelectedValue = '';
+                }); 
+                
+                function Upload(id)  {  
+                   	uploadFile(id);
+                 }
+                function selectFile(fileName) { 
+                	document.getElementById("txtWebSite").value = ''; 
+                	document.getElementById("divWebsite_Link").style.display = 'none'; 
+                	document.getElementById("txtContent").value = ''; 
+                	//document.getElementById("divFile_msg").style.display = 'none';
+                	document.getElementById("chkCustom").value = false; 
+                	document.getElementById("chkCustom").style.display = 'none'; 
+                	document.getElementById("divUpload").style.display = 'none';
+                	 
+                	isFileSelected = true;  
+				}
+                    
+            </script>
+        </head>
+     
+        <body ng-app="refContentApp" class="slds">
+            <form class="slds-m-left--small margin-zero" ng-controller="referenceContent" ng-cloak="ng-cloak" >
+                <div ng-show="isFullLicenseAccessible == 'false'">
+                    <svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+                        <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                    </svg>
+                    {!$Label.User_License}
+                </div>
+                <div ng-init="load();">
+                	<!-- header -->
+                    <div class="slds-page-header" role="banner">
+                        <div class="slds-grid">
+                            <div class="slds-col slds-has-flexi-truncate">
+                                <div class="slds-media">
+                                    <div class="slds-media__figure">
+                                       <div class="slds-media__figure">
+					                    <img class="slds-icon slds-icon--large" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+				                	   </div>
+                                    </div>
+                                    <div class="slds-grid" style="margin-top: 1%;">
+                                        <div>
+                                            <h1 class="slds-text-heading--medium" >{!$Label.T_New_Reference_Content}</h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-no-flex slds-align-bottom">
+                                <div class="slds-grid">
+                                    <div class="slds-button-space-left">
+                                        <button class="slds-button slds-button--neutral" style="cursor: pointer;" ng-click="redirectToURL(refContentId)">{!$Label.Cancel}</button>
+                                        <button ng-show="isShowSave" class="slds-button slds-button--brand" style="cursor: pointer;" ng-click="validateContent()">{!$Label.Save}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> 
+                    </div> 
+                     <!-- toast msg block --> 
+					<div ng-show="showConfirmCustomContentModal">
+						<div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+						<div class="slds-modal__container">
+							<div class="slds-modal__header">
+								<a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="customContentResponse(false);">
+									<img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+								</a>
+								<h2 class="slds-text-heading--medium">{!$Label.Are_you_sure_you_want_to_do_this}</h2>
+							</div>
+							<div class="slds-modal__content slds-p-around--medium">
+								<div>
+									By unchecking the internal checkbox this content can be shared externally and displayed in a Microsite.
+								</div>
+							</div>
+							<div class="slds-modal__footer">
+									<a class="slds-button slds-button--neutral" ng-click="customContentResponse(false)">{!$Label.Cancel}</a> 
+									<a class="slds-button slds-button--brand" ng-click="customContentResponse(true)">{!$Label.Ok}</a>
+							</div>
+						</div>
+						</div>
+						<div class="slds-backdrop slds-backdrop--open"></div>
+                 	</div>
+					<div id="toast-msg" ng-show="isError" class="slds-notify_container">
+                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert"> 
+                            <span class="slds-assistive-text">{!$Label.Error}</span>
+                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;" style="cursor:pointer">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">{!$Label.Close}</span>
+                            </button>
+                            <div class="slds-notify__content slds-grid">
+                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+                                </svg>
+                                <div class="slds-col slds-align-middle">
+                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{errorMsg}}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- main block -->
+                    <div class="slds-grid slds-wrap">
+                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$Label.T_Reference_Content_Type}<div class="required">*</div></label>  
+                               	<div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">  
+									 <select id = "ddlRefType" class="slds-select" ng-model="info.ContentType" ng-change = "setContent(info.ContentType)">
+                                        <option ng-repeat="option in refContentList" value="{{option.Id}}">{{option.Name}}</option>
+                                    </select>  
+                                </div>	
+                          	</div>
+                    	</div> 
+                    	<div id="divFile_msg" ng-show ="isShowRefContents" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$Label.RefContent_File_msg}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3"> 
+	                                <div id="divfile" >
+	                                
+	                                </div>  
+                                </div>	
+                           	</div>
+                    	</div>
+                     
+                    	<div id="divWebsite_Link"  ng-show ="isShowContentURL" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$Label.Add_Website_Link}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+	                               <input type="text"  ng-blur="checkForURL(info.ContentURL);" id="txtWebSite" ng-model="info.ContentURL" class="slds-input"></input>
+                                </div>	
+                           	</div>
+                    	</div> 
+                    	<div  id="divUpload" ng-show ="isShowContentText" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$Label.RefContent_Content_msg}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3"> 
+	                                <lookup-picklist extended-scope="lookupExistingContact"  object-Name="'ContentDocument'" id="txtContent"  object-Api-Name="'ContentDocument'" selected-Name ="contentTitlePart" selected-Id="contents" ></lookup-picklist>
+                                </div>	
+                           	</div>
+                    	</div> 
+                    	<div id="chkCustom" ng-show ="isContentAllow" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$Label.Create_a_custom_content}</label> 
+                                <div> 
+                                 <label class="slds-checkbox"> 
+	                                <input ng-model="info.IsCustomContentType" id="chkCustom" type="checkbox"  ng-change = 'removeContent(info.IsCustomContentType)' />
+                                    <span class="slds-checkbox--faux"></span>
+                                  </label>
+                                </div>
+                           	</div>
+                    	</div> 
+                    	<div ng-repeat="field in customFields" style="padding-right:90%;" ng-show = "info.IsCustomContentType"> 
+                    		<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element"> 
+	                          		<label class="slds-form-element__label">{{field.label}}<div class="required" ng-show="field.isRequired == true">*</div></label> 
+	                               
+								    <div ng-show="field.fieldType == 'BOOLEAN'">
+                                      <div class="slds-form-element__control">
+                                          <span class="slds-form-element__static">
+                                              <label class="slds-checkbox">
+                                                  <input type="checkbox" ng-model="field.fieldValue" />
+                                                  <span class="slds-checkbox--faux"></span>
+                                              </label>
+                                          </span>
+           							</div>
+	                           	</div> 
+	                           	 <div ng-show="field.fieldType == 'STRING' || field.fieldType == 'EMAIL' || field.fieldType == 'URL' || field.fieldType == 'CURRENCY' || field.fieldType == 'PHONE' || field.fieldType == 'PERCENT'">
+                                      <div class="slds-form-element__control">
+                                          <span class="slds-form-element__static"> 
+                                                  <input style ="width: 450px !important;" ng-model="field.fieldValue" class="slds-input ng-pristine ng-valid ng-empty ng-touched"  /> 
+  											</span>
+           							</div>
+	                           	</div>
+	                           	
+	                           	<div ng-if="field.fieldType == 'TEXTAREA'" >
+                                      <div class="slds-form-element__control">
+                                          <span class="slds-form-element__static"> 
+                                             <textarea rows="3" style ="width: 450px !important;line-height: normal;" cols="50" class="slds-input" ng-model="field.fieldValue"></textarea>
+  										</span>
+           							</div>
+	                           	</div>
+
+								<div ng-if="field.fieldType == 'DOUBLE'">
+									<div class="slds-form-element__control">
+										<span class="slds-form-element__static"></span>
+										<input style="width:450px" type="number" class="slds-input" ng-model="field.fieldValue"/>
+									</div>
+								</div>
+
+	                           	 <div ng-if="field.fieldType == 'DATE' || field.fieldType == 'DATETIME'">
+	                           	  	<div class="slds-form-element__control">
+                                          <span class="slds-form-element__static">  
+	                               			<input class="slds-input" style ="width: 450px !important;"  ng-model="field.fieldValue" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+                                 		  </span>
+           							</div>
+	                           	 </div>
+
+	                           	<div ng-if="field.fieldType == 'PICKLIST'">
+                                   <div class="slds-form-element__control">
+                                       <select style ="width: 450px !important;"  ng-model="field.fieldValue" class="slds-select ng-pristine ng-valid ng-not-empty ng-touched" >
+                                           <option label="--None--" value=""></option> 
+                                           <option ng-repeat="option in field.referenceValue" ng-selected="option == field.fieldValue"  value="{{option}}">{{option}}</option>
+                                       </select> 
+                                   </div>
+                               </div>
+
+							   	<div ng-if="field.fieldType == 'REFERENCE'" style="width: 84%;">
+									<lookup-picklist object-Name="field.objectName" object-Api-Name="field.objectLabel"  selected-Id="field.fieldValue" selected-Name="field.dateValue" style="width:350px"></lookup-picklist>    
+								</div>
+
+								<div ng-if="field.fieldType == 'MULTIPICKLIST'">
+									<div class="slds-form-element__control">									
+										<multi-select ng-model="field.multiPickAvailOptions"
+												available="field.multiPickOptions"
+												selected-label="Selected"
+												available-label="Available" 
+												display-attr="name">
+												</multi-select>
+																							
+									</div>
+								</div>
+                    		</div>
+                    	</div>
+                    </div> </div>
+                    <div class="panalHader">
+                   		<div class="slds-form-element">
+                   			<h2 class="slds-text-heading--small slds-truncate">{!$Label.Location_and_Title}</h2>  
+                       	</div>
+                   	</div>
+               		 <div class="demo-only demo-only--sizing slds-grid slds-wrap location-title-container" >
+					  	<div class="slds-size_1-of-2">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding" >
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$Label.RefContent_Library_msg}<div class="required">*</div></label> 
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;"	> 
+									<select class="slds-select" ng-model="info.LibraryID"  ng-disabled="isNewRecord == 'false' || isInterviewType == true || !isShowLibrary">
+                                        <option ng-repeat="option in refLibraryList" value="{{option.Id}}">{{option.Name}}</option>
+                                    </select>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div> 
+			  		  <div class="slds-size_1-of-2">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding" >
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$Label.RefContent_Title_msg}<div class="required">*</div></label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:70%;" >
+	                               <input type="text" ng-model="info.Title" class="slds-input"></input>
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+					</div>
+					<div class="panalHader">
+                   		<div class="slds-form-element">
+                   			<h2 class="slds-text-heading--small slds-truncate">{!$Label.Details}</h2> 
+                       	</div>
+                   	</div>
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Content_Status__c.Label}<div class="required">*</div></label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;">
+	                               <select class="slds-select" ng-model="info.ContentStatus">
+                                        <option ng-repeat="option in refStatusList" value="{{option.Value}}">{{option.Name}}</option>
+                                    </select>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:50%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Language__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:70%;">
+	                               <select class="slds-select" ng-model="info.Language" ng-show="true">
+                                        <option ng-repeat="option in refLanguageList" value="{{option.Value}}">{{option.Name}}</option>
+                                    </select>
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+					</div>
+					
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Substitute_Account_Name__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;"> 
+	                                 <input class="slds-input" ng-model="info.SubAccount"/>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:40%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label"> </label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+	                             
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+				</div>
+				<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;" >
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element"  ng-show ="!info.IsAllowingSharing">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Internal_Use__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;">  
+	                             	<label class="slds-checkbox"> 
+		                                <input ng-model="info.IsInternalUse" type="checkbox" ng-change='confirmCustomContent(info.IsInternalUse)'/>
+	                                    <span class="slds-checkbox--faux"></span>
+                                  	</label>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:50%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Publish_date__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:70%;"> 
+	                               <input class="slds-input" ng-model="info.PublishedDate" placeholder="{{dateFormat.toLowerCase()}}" id="txtpublishDate" date-format="{{dateFormat}}"  datetime-picker="datetime-picker" />
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+					</div>
+					
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element" ng-show ="!info.IsInternalUse">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Allow_Social_Sharing__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;">  
+	                             	<label class="slds-checkbox"> 
+		                                <input ng-model="info.IsAllowingSharing" type="checkbox" />
+	                                    <span class="slds-checkbox--faux"></span>
+                                  	</label>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:50%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Review_Date__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:70%;"> 
+	                               <input class="slds-input" ng-model="info.ReviewDate" placeholder="{{dateFormat.toLowerCase()}}" id="txtreviewDate" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+					</div>
+					
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Featured_Content__c.Label} </label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;"> 
+	                             	<label class="slds-checkbox"> 
+		                                <input  ng-model="info.IsFeatureContent" type="checkbox" />
+	                                    <span class="slds-checkbox--faux"></span>
+                                  	</label>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:50%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Expiration_Date__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:70%;"> 
+	                               <input class="slds-input" ng-model="info.ExpirationDate" placeholder="{{dateFormat.toLowerCase()}}" id="txtexpirationDate" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+					</div>
+					
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Publication_name__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;"> 
+	                             	<input class="slds-input" ng-model="info.PublicationName" id="txtexpirationDate"/>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:50%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Author__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:70%;">
+	                               <input type="text" ng-model="info.Author"  class="slds-input"></input>
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+					</div>
+					
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Article_publication_date__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;"> 
+	                             	<input class="slds-input" ng-model="info.ArticalPublishDate" placeholder="{{dateFormat.toLowerCase()}}" id="txtarticleDate" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:40%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label"> </label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1"> 
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+					</div>
+					
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Search_Terms_keywords__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:88%;">
+	                               <textarea id="txtKeywords" class="slds-textarea" rows="4"  ng-model="info.SearchItem" ></textarea>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div> 
+					</div> 
+					<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+					  	<div class="slds-size_1-of-2" style="width:50%;">
+						    <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.Summary__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:88%;">
+	                               <textarea id="txtSummery" class="slds-textarea"  rows="4" ng-model="info.Summery"></textarea>
+                                </div>	
+                           	</div>
+                    	</div>
+					  </div>
+			  		  <div class="slds-size_1-of-2" style="width:50%;">
+						   <div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+                    		<div class="slds-form-element">
+                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Content__c.Fields.External_Summary__c.Label}</label>
+                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:88%;">
+	                              	<textarea id="textarea-id-02" class="slds-textarea" rows="4" ng-model="info.ExternalSummery"></textarea>
+                                </div>	
+                           	</div>
+                    	</div>
+				  	</div> 
+				  	<div ng-show="allowContentFieldsPanal" class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding" style="padding-left:  0px;">
+					  	<div class="panalHader">
+	                   		<div class="slds-form-element">
+	                   			<h2 class="slds-text-heading--small slds-truncate">{!$Label.Content_Additional_Fields}</h2> 
+	                       	</div>
+	                   	</div> 
+					  	<div ng-repeat="field in contentVersionFields" style="padding-right:90%;" > 
+	                    		<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<div class="slds-form-element"> 
+		                          		<label class="slds-form-element__label">{{field.label}}<div class="required" ng-show="field.isRequired == true">*</div></label> 
+		                                <div ng-show="field.fieldType == 'BOOLEAN'">
+	                                      <div class="slds-form-element__control">
+	                                          <span class="slds-form-element__static">
+	                                              <label class="slds-checkbox"> 
+	                                                  <input  ng-model="field.fieldValue" type="checkbox" />
+	                                                  <span class="slds-checkbox--faux"></span>
+	                                              </label>
+	                                          </span>
+	           							</div>
+		                           	</div> 
+		                           	 <div ng-show="field.fieldType == 'STRING'">
+	                                      <div class="slds-form-element__control">
+	                                          <span class="slds-form-element__static"> 
+	                                                  <input style ="width: 450px !important;" ng-model="field.fieldValue" class="slds-input ng-pristine ng-valid ng-empty ng-touched"  /> 
+	  											</span>
+	           							</div>
+		                           	</div>
+		                           	
+		                           	<div ng-if="field.fieldType == 'TEXTAREA' || field.fieldType == 'DOUBLE'" >
+	                                      <div class="slds-form-element__control">
+	                                          <span class="slds-form-element__static"> 
+	                                             <textarea rows="3" style ="width: 450px !important;line-height: normal;" cols="50" class="slds-input" ng-model="field.fieldValue"></textarea>
+	  										</span>
+	           							</div>
+		                           	</div>
+		                           	 <div ng-if="field.fieldType == 'DATE' || field.fieldType == 'DATETIME'">
+		                           	  	<div class="slds-form-element__control">
+	                                          <span class="slds-form-element__static">  
+		                               			<input class="slds-input" style ="width: 450px !important;"  ng-model="field.fieldValue" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker" />
+	                                 		  </span>
+	           							</div>
+		                           	 </div>
+		                           	<div ng-if="field.fieldType == 'PICKLIST'">
+	                                   <div class="slds-form-element__control">
+	                                       <select style ="width: 450px !important;"  ng-model="field.fieldValue" class="slds-select ng-pristine ng-valid ng-not-empty ng-touched" >
+	                                           <option label="--None--" value=""></option> 
+	                                           <option ng-repeat="option in field.referenceValue" ng-selected="option == field.fieldValue"  value="{{option}}">{{option}}</option>
+	                                       </select> 
+	                                   </div>
+	                               </div>
+	                    		</div>
+	                    	</div>
+	                    </div>
+                    </div>
+				  	 <div>
+				  	 </div>
+					</div> 
+               	</div>
+               	<div ng-show="showRefMsg">
+					<div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+                       <div class="slds-modal__container">
+                           <div class="slds-modal__header">
+                               <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="redirectToURL(refContentId);">
+                                   <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+                                   <span class="slds-assistive-text">Close</span>
+                               </a>
+                           </div>
+                           <div class="slds-modal__content slds-p-around--medium">
+                               <div>
+                                   {!$Label.Associate_Accounts_And_Contact}
+                               </div>
+                           </div>
+                           <div class="slds-modal__footer">
+                                  <a class="slds-button slds-button--brand" ng-click="showAssocationModel();">{!$Label.Yes}</a>
+                                  <a class="slds-button slds-button--neutral" ng-click="redirectToURL(refContentId);">{!$Label.No}</a> 
+                           </div>
+                       </div>
+                   </div>
+                   <div class="slds-backdrop slds-backdrop--open"></div>
+                 </div> 
+                 <div ng-show="showAssocation">
+	                    <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+                       <div class="slds-modal__container modal__assocation_container">
+                           <div class="slds-modal__header">
+                               <a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="redirectToURL(refContentId);">
+                                   <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+                                   <span class="slds-assistive-text">Close</span>
+                               </a>
+                               <h2 class="slds-text-heading--medium">{!$Label.Add_Associated_Accounts_And_Contacts}</h2>
+                           </div>
+                           
+                           
+                           <div style="overflow: auto;">
+                           <div class="slds-modal__content slds-p-around--medium lookup">
+                               	<div class="panalHader">
+									<div class="slds-form-element">
+										<h2 class="slds-text-heading--small slds-truncate">{!$Label.Add_New_Associations}</h2> 
+									</div>
+								</div> 
+								<div class="demo-only demo-only--sizing slds-grid slds-wrap" style="height: 50px;">
+									<div class="slds-size_1-of-2" style="width:50%;">
+										<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex ">
+				                    		<div class="slds-form-element">
+				                          		<label class="slds-form-element__label">{!$Label.Accounts}</label>
+				                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;">
+					                               <lookup-picklist extended-scope="lookupPicklistScope" object-Name="'Account'"  object-Api-Name="'Account'"  selected-Id="associatedAccountId" selected-Name="associatedAccountName"></lookup-picklist>
+				                                </div>	
+				                           	</div>
+				                    	</div>
+									</div>
+									<div class="slds-size_1-of-2" style="width:50%;">
+										<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex ">
+				                    		<div class="slds-form-element">
+				                          		<label class="slds-form-element__label">{!$Label.Contact}</label>
+				                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:70%;">
+													<lookup-picklist extended-scope="lookupPicklistScopeContact" object-Name="'Contact'"  object-Api-Name="'Contact'" selected-Name ="associatedContactName" selected-Id="associatedContactId" ></lookup-picklist>
+				                                </div>	
+				                           	</div>
+				                    	</div>
+									</div>
+								</div>
+                           </div>
+                           
+                           <div class="slds-modal__content slds-p-around--medium">
+                               	<div class="panalHader">
+									<div class="slds-form-element">
+										<h2 class="slds-text-heading--small slds-truncate">{!$Label.Current_Associations}</h2> 
+									</div>
+								</div>
+								<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+									<div class="slds-size_1-of-2" style="width:50%;">
+										<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+				                    		<div class="slds-form-element">
+				                          		<label class="slds-form-element__label headerLabel">{!$Label.Associated_Accounts} </label>
+				                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="width:68%;">
+				                                	<div  ng-repeat="lstAcc in associatedAccount" class="label-title">
+						                               <label>{{parseResult(lstAcc.Name)}}</label>
+						                               <img src="{!$Resource.RedCrossMark}" style="cursor:pointer;" height="15px" ng-click="removeItem(lstAcc.Id,'account',lstAcc.isNewItem);" title="Remove" size="15px" alt="Delete"/>
+					                               	</div>
+				                                </div>	
+				                           	</div>
+				                    	</div>
+									</div>
+									<div class="slds-size_1-of-2" style="width:50%;">
+										<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+				                    		<div class="slds-form-element">
+				                          		<label class="slds-form-element__label headerLabel">{!$Label.Associated_Contact_with_Accounts}</label>
+				                               		<div ng-repeat="lstCon in associatedContact" class="label-title">
+						                               <label>{{parseResult(lstCon.Name)}}</label> <label style="font-style: italic;"> ({{parseResult(lstCon.AccountName)}})</label>
+						                               <img src="{!$Resource.RedCrossMark}" style="cursor:pointer;" height="15px" ng-click="removeItem(lstCon.Id,'contact',lstCon.isNewItem);" title="Remove" size="15px" alt="Delete"/>
+					                               	</div>	
+				                           	</div>
+				                    	</div>
+									</div>
+								</div>
+                           </div>
+                            </div>
+                           <div class="slds-modal__footer">
+                           		<a class="slds-button slds-button--neutral" style="cursor: pointer;" ng-click="redirectToURL(refContentId);">{!$Label.Cancel}</a> 
+                                <a class="slds-button slds-button--brand" style="cursor: pointer;" ng-click="saveAssociations(false);">{!$Label.Save}</a>
+                                  
+                           </div>
+                          
+                       </div>
+                   </div>
+                   <div class="slds-backdrop slds-backdrop--open"></div>
+                 </div>
+                 <div ng-show="showDeleteMsg">
+					<div class="slds-modal slds-fade-in-open modal-2" aria-hidden="false" role="dialog">
+						<div class="slds-modal__container">
+							<div class="slds-modal__header">
+								<a class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="showDeleteMsg = false;">
+									<img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/action/close_120.png')}" alt="close" height="20" width="20"/>
+									<span class="slds-assistive-text">Close</span>
+								</a>
+							</div>
+							<div class="slds-modal__content slds-p-around--medium">
+								<div>
+									{{removeMsg}}
+								</div>
+							</div>
+							<div class="slds-modal__footer">
+							   <a class="slds-button slds-button--brand" style="cursor: pointer;" ng-click="removeExistingItem()">{!$Label.Yes}</a>
+							   <a class="slds-button slds-button--neutral" style="cursor: pointer;" ng-click="showDeleteMsg = false;">{!$Label.No}</a>
+								    
+							</div>
+						</div>
+					</div>
+					<div class="slds-backdrop slds-backdrop--open"></div>
+				</div>
+                 
+                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+                	<img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                </div>
+            </form>
+            <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+				<img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+			</div>
+			 <script>
+			    $(window).load(function(){ 
+			    	$("#divbrowse").appendTo('#divfile');
+			    });
+			 </script>
+        </body>  
+        
+    </html>
+    <div id ="divbrowse" ng-non-bindable="ng-non-bindable">
+	    <apex:form >
+	    	<apex:inputFile value="{!newfile}" onchange="selectFile(this)"  style="margin-left: 0px;" filename="{!newFileName}" id="file"/>   
+	        <apex:actionFunction name="uploadFile" action="{!createContentVersion}">  
+	      	</apex:actionFunction> 
+	       
+	      	
+	      	<apex:inputHidden value="{!refContentId}" id="hiddenContentId"/>
+	      	<apex:inputHidden value="{!isNewRecord}" id="hiddensNewRecord"/>
+	      	<apex:inputHidden value="{!isReferenceContentClone}" id="hiddenReferenceContentClone"/>
+	      	<apex:inputHidden value="{!selectedExistingTitle}" id="hiddensSelectedExistingTitle"/>
+	      	<apex:inputHidden value="{!contentVersionFields}" id="hiddensContentVersionFields"/>
+	      	<apex:inputHidden value="{!contentURL}" id="hiddensContentURL"/> 
+	   	</apex:form>
+   	</div>   
+</apex:page>

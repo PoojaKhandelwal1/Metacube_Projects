@@ -1,0 +1,46 @@
+/**
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ */ 
+@isTest(seeAllData = false)
+public class TestBatch_ResetRBIRewardsPoint {
+    
+    static testmethod void myUnitTest01() {
+        POR_App_Configuration__c cs = ConstantsController.setEditionCustomSetting();
+        insert cs;
+        Custom_Settings__c customSetting = TestDataFactory.createCustomSetting();
+        List < Referenceability_Type__c > refTypes = TestDataFactory.createReferenceabilityType();
+        insert refTypes;
+        List < Account > accounts = TestDataFactory.createAccounts();
+        insert accounts;
+        TestDataFactory.setUpAccountRBI(accounts);
+        List < Contact > contacts = TestDataFactory.createContacts(accounts);
+        insert contacts;
+        TestDataFactory.setUpContactRBI(contacts);
+        list<Reward__c> rewards = new list<Reward__c>();
+        rewards.add(new Reward__c(Account__c = accounts[0].Id, Contact__c = contacts[0].Id, Referenceability_Type__c = refTypes[0].Id, Amount__c = 50, Transaction__c = ConstantsController.ISSUE, Expiration_Date__c = Date.today() - 1, Available_Points__c = 10));
+        rewards.add(new Reward__c(Account__c = accounts[0].Id, Contact__c = contacts[0].Id, Referenceability_Type__c = refTypes[0].Id, Amount__c = 50, Transaction__c = ConstantsController.ISSUE, Expiration_Date__c = Date.today() - 1, Available_Points__c = 10));
+        insert rewards;
+        test.startTest();
+            Batch_ResetRBIRewardsPoint batchPoints = new Batch_ResetRBIRewardsPoint();
+            ID batchprocessid = database.executebatch(batchPoints);
+        test.stopTest();
+        List < Account > accList = [select Id from Account where Id = : accounts[0].Id];
+        system.assert(accList.size() > 0);
+    }
+}

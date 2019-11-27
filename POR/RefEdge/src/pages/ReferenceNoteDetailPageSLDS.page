@@ -1,0 +1,320 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reference_Note__c" sidebar="false" 
+			extensions="ReferenceNoteDetailController" 
+			id="pageId" standardstylesheets="false"
+            applyHtmlTag="false"
+            showHeader="false"
+            applyBodyTag="false"
+            docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            
+            <style>
+            	.top-padding {
+            		padding-top: 1.75rem;
+            	}
+                .slds {
+                	background: white !important;
+                }
+                @media only screen and (max-width: 500px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    //width: 90%;
+	                    max-width: 380px;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	width: 115px;
+    					margin: 10px auto 0 auto;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 42%;
+	                   width:15%;
+	                }
+				}
+				@media only screen and (min-width: 501px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    width: 50%;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	float: right;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 47%;
+	                   width:4%;
+	                }
+				}
+				.slds-notify--toast {
+                	min-width: auto !important;
+                	padding: 15px 12px;
+                }  
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.7;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.7;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .remove-flex{
+                    flex:none !important;
+                    webkit-flex:none !important;
+                }
+                .container {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+                function redirectToList() {
+                    sforce.one.navigateToURL('#/sObject/{!nameSpace}Reference_Note__c/home');
+                }
+                
+                function redirectToEdit() {
+                    sforce.one.navigateToURL('{!$Page.AddReferenceNoteSLDS}?Id={!refNote.Id}&fromDetail=true', true);
+                }
+                var viewNotesApp = angular.module('viewNotesApp', []);
+                var viewNotesCon = viewNotesApp.controller('viewNotesCon', function($scope, $location, $q) {
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.isloading = true;
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    //initial function which is called on page load
+                    $scope.intialFunction = function() {
+                    	$scope.isloading = false;
+                    }
+                    
+                    $scope.deleteRef = function() {
+                    	$scope.isloading = true;
+                    	
+                    	$scope.deleteRefNote().then(function(result) {
+                           	$scope.isloading = false;
+                           	
+                           	if (result != '') {
+                           		$scope.isError = true;
+                  				$scope.errorMsg = result;
+                           	} else {
+                           		redirectToList();
+                      		}
+                    	});
+                    }
+                    
+                    $scope.editRef = function() {
+                    	$scope.isloading = true;
+                    	
+                    	$scope.editRefNote().then(function(result) {
+                           	$scope.isloading = false;
+                           	
+                           	if (result != '') {
+                           		$scope.isError = true;
+                  				$scope.errorMsg = result;
+                           	} else {
+                           		redirectToEdit();
+                      		}
+                    	});
+                    }
+                    
+                    // method to delete refNote
+                    $scope.deleteRefNote = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceNoteDetailController.deleteRefNote}',
+                            '{!refNote.Id}', 
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    // method to edit refNote
+                    $scope.editRefNote = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ReferenceNoteDetailController.editRefNote}',
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                });
+            </script>
+        </head>
+        
+        <body ng-app="viewNotesApp" class="slds">
+        	<div class="container">
+	            <form id="frmId" ng-controller="viewNotesCon" ng-cloak="ng-cloak" >
+	                <div ng-show="isFullLicenseAccessible == 'false'">
+	                    <svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+	                        <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	                    </svg>
+	                    {!$Label.User_License}
+	                </div>
+	                <div ng-init="intialFunction();" ng-show="isFullLicenseAccessible == 'true'">
+	                    <!-- header -->
+	                    <div class="slds-page-header" role="banner">
+						    <div class="slds-grid slds-wrap">
+						        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-media">
+						                <div class="slds-media__figure">
+						                    <img class="slds-icon slds-icon--large" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+						                </div>
+						                <div class="slds-grid">
+	                                        <div>
+	                                            <h1 class="slds-text-heading--medium" title="{!refNote.Name}">{!refNote.Name}</h1>
+	                                            <p class="slds-text-body_small slds-line-height_reset">{!$Label.Reference_Note}</p>
+	                                        </div>
+	                                    </div>
+						            </div>
+						        </div>
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-button-group buttonStyle" role="group">
+						                <button class="slds-button slds-button--neutral" ng-click="editRef();">{!$Label.Edit}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="deleteRef();">{!$Label.Delete}</button>
+						            </div>
+						        </div>
+						    </div>
+						</div>
+	                    <!-- toast msg block -->
+	                    <div id="toast-msg" ng-show="isError" class="slds-notify_container">
+	                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+	                            <span class="slds-assistive-text">{!$Label.Error}</span>
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{errorMsg}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <!-- main block -->
+	                    <div style="padding: 12px;">
+	                   		<div class="slds-grid slds-wrap">
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<apex:outputPanel layout="block" styleClass="slds-form-element" rendered="{!NOT(ISBLANK(refNote.Account__c))}">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Account__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+			                                <apex:outputField value="{!refNote.Account__c}"/>
+		                                </div>	
+		                           	</apex:outputPanel>
+		                           	<apex:outputPanel layout="block" styleClass="slds-form-element" rendered="{!NOT(ISBLANK(refNote.Contact__c))}">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Contact__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+						                    <apex:outputField value="{!refNote.Contact__c}"/>
+		                                </div>	
+		                           	</apex:outputPanel>
+		                           	<apex:outputPanel layout="block" styleClass="slds-form-element" rendered="{!NOT(ISBLANK(refNote.Reference_Content__c))}">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Reference_Content__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+						                    <apex:outputField value="{!refNote.Reference_Content__c}"/>
+		                                </div>	
+		                           	</apex:outputPanel>
+		                           	<apex:outputPanel layout="block" styleClass="slds-form-element" rendered="{!NOT(ISBLANK(refNote.Reference_Request__c))}">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Reference_Request__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+						                    <apex:outputField value="{!refNote.Reference_Request__c}"/>
+		                                </div>	
+		                           	</apex:outputPanel>
+		                           	<apex:outputPanel layout="block" styleClass="slds-form-element" rendered="{!NOT(ISBLANK(refNote.Account_Request__c))}">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Account_Request__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+						                    <apex:outputField value="{!refNote.Account_Request__c}"/>
+		                                </div>	
+		                           	</apex:outputPanel>
+		                           	<apex:outputPanel layout="block" styleClass="slds-form-element" rendered="{!NOT(ISBLANK(refNote.Unspecified_Request__c))}">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Unspecified_Request__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+						                    <apex:outputField value="{!refNote.Unspecified_Request__c}"/>
+		                                </div>	
+		                           	</apex:outputPanel>
+									<apex:outputPanel layout="block" styleClass="slds-form-element" rendered="{!NOT(ISBLANK(refNote.Nomination__c))}">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Nomination__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3">
+						                    <apex:outputField value="{!refNote.Nomination__c}"/>
+		                                </div>	
+		                           	</apex:outputPanel>
+		                    	</div>
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<div class="slds-form-element">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Note_Date__c.Label} </label>
+		                                <div class="slds-form-element__control">
+			                                <apex:outputField value="{!refNote.Note_Date__c}" />
+		                                </div>
+		                           	</div>
+		                    	</div>
+		                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+		                    		<div class="slds-form-element">
+		                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Note__c.Label} </label>
+		                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+			                                <apex:outputField value="{!refNote.Note__c}" />
+		                                </div>	
+		                           	</div>
+		                    	</div>
+	                    	</div>
+	                    </div>
+	                </div>
+	                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+	                	<img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

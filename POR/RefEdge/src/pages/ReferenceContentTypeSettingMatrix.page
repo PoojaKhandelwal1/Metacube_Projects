@@ -1,0 +1,167 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page controller="RequestSettingMatrixController" sideBar="false" id="pageId" tabStyle="Custom_Settings__c" lightningStylesheets="true">
+	<c:POR_ModalLoader id="loadingModalId"/>
+    <style>
+        body input[type="text"], .slds-vf-scope input[type="text"] {
+            padding: 0 .2rem 0 .25rem;
+        }
+        
+        .Col1,
+        .headCol1,
+        .headCol3 {
+        	width:200px;
+        	height:15px;
+            border-right: none !important; 
+            border-left: none !important;
+        }
+        
+        .headCol3 {
+        	width: 250px;
+        	text-align: center;
+        }
+        
+        .adjustment-col {
+        	width: calc(100% - 700px)); /* (100% - (200px + 250px + 250px)) */
+        	border-left: none !important;
+        }
+        
+        body .pbHeader, .slds-vf-scope .pbHeader {
+        	width: 100%;
+        }
+
+       .pbBody #divMain .list > tbody > tr > td {
+        	white-space: unset;
+        }
+        
+        body .pbBody, .slds-vf-scope .pbBody {
+        	overflow: unset;
+        }
+    </style>
+    <script>
+      	PORShowLoading();
+        jQuery(window).load(function() {
+            if(({!IsPageAccessible} || {!IsPageAccessible} == true) && ({!isFullLicenseAccessible} || {!isFullLicenseAccessible} == true)){
+            	deleteMapping(); 
+            }
+            else{
+            	PORHideLoading();
+            } 
+        });
+    </script>
+    <apex:pageMessages id="pgmsgId" />
+    <apex:pageMessage summary="{!$Label.Insufficient_Privileges}" strength="3" severity="Info" rendered="{!IF(isFullLicenseAccessible,NOT(IsPageAccessible),isFullLicenseAccessible)}" />
+    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+    <apex:form id="formId" rendered="{!AND(IsPageAccessible,isFullLicenseAccessible)}">
+        <apex:actionFunction action="{!deleteMappings}" name="deleteMapping" rerender="pgmsgId"  oncomplete="PORHideLoading();"/>
+        <div style="float:left ; width: 100%;">
+        	<apex:commandLink rendered="{!!isEdit}" style="color:#5C95C4; float: left;" action="{!backToCustomSetting}" value="{!$Label.Back_to_the_Custom_Setting_Page}"/>
+        	<apex:outputPanel rendered="{!AND(refContentTypes.size > 0, recordsPresent)}" 
+            	style="display: flex; align-items: center; justify-content: center; width: calc(100% - 200px); padding-bottom: 10px;">
+               <apex:outputPanel style="{!IF(!isEdit, 'margin-left: -353px;', '')}">
+                 <apex:outputLabel value="{!$Label.Select_Reference_Content_Types}"/>
+                 <apex:selectList id="refContentTypeId" value="{!SelectedReferenceContentTypeId}"  size="1" disabled="{!isEdit}">
+                     <apex:selectOptions value="{!ReferenceContentTypesPicklist}" id="selectedRefContentTypes"></apex:selectOptions>
+                     <apex:actionSupport event="onchange" reRender="blockId" action="{!passSelectedReferenceContentTypeToController}"/>
+                </apex:selectList>
+              </apex:outputPanel>
+            </apex:outputPanel>   
+        </div>
+        
+        <apex:pageBlock rendered="{!AND(refContentTypes.size == 0,isContentSetting == 'true')}">
+            <apex:pageMessage summary="{!$Label.Reference_Content_Type_message}" strength="3" severity="Info"/>
+        </apex:pageBlock>
+        
+        <apex:pageBlock id="blockId" rendered="{!AND(refContentTypes.size > 0, recordsPresent)}" >
+            <div id="divMain" style="overflow:auto">
+                <table cellpadding="1" class="list" cellspacing="1" width="100%" border="1" style="border-collapse:collapse; border-spacing:1px">
+                    <tr class="headerRow">
+                        <th class="headCol1"> {!$Label.Field_Label} </th>
+                        <th class="headCol3">Field Order</th>
+                        <th class="headCol3">{!$Label.Visible}</th>
+                        <th class="headCol3">{!$Label.Required}</th>
+                        <th class="adjustment-col"></th>
+                    </tr>    
+                    
+                    <apex:repeat value="{!contentFieldsMap}" var="fieldAPIName" rendered="{!isContentSetting == 'true'}">
+                        <tr>
+                            <td class="Col1"> {!contentFieldsMap[fieldAPIName]} </td>
+                            <apex:repeat value="{!SelectedReferenceContentTypesList}" var="refType"> <!-- it contains only single record -->
+                                <td class="headCol3">
+                                    <div id="checkBoxDiv1">
+                                    	 <apex:outputField style="margin-left: 10px;" value="{!matrixMap[fieldAPIName+''+refType.Id].Order__c}" rendered="{!!isEdit}"/>
+	                                	 <apex:inputField style="width:25px;margin-left: 7px;" value="{!matrixMap[fieldAPIName+''+refType.Id].Order__c}" rendered="{!isEdit}"/>
+                                    </div>
+                                </td>
+                                <td class="headCol3">
+                                	<div id="checkBoxDiv2">
+                                    	<apex:outputField value="{!matrixMap[fieldAPIName+''+refType.Id].Visible__c}" rendered="{!IF(OR(isEdit == false, contentRequiredFieldsMap[fieldAPIName] == true),true,false)}"/>
+	                                	<apex:inputField id="VisibleId" value="{!matrixMap[fieldAPIName+''+refType.Id].Visible__c}" onclick="checkForDependencyOfVisible(this.id);" rendered="{!IF(AND(isEdit == true, contentRequiredFieldsMap[fieldAPIName] == false),true,false)}"/>
+                                    </div>
+                                </td>
+                                 <td class="headCol3">
+                                	<div id="checkBoxDiv3">
+                                    	<apex:outputField value="{!matrixMap[fieldAPIName+''+refType.Id].Required__c}" rendered="{!IF(OR(isEdit == false, contentRequiredFieldsMap[fieldAPIName] == true),true,false)}"/>
+		                                <apex:inputField id="RequiredId" value="{!matrixMap[fieldAPIName+''+refType.Id].Required__c}" 
+		                                onclick="checkForDependencyOfRequired(this.id);" rendered="{!IF(AND(isEdit == true, contentRequiredFieldsMap[fieldAPIName] == false),true,false)}"/>  
+                                    </div>
+                                </td>
+                                <td class="adjustment-col"></td>
+                            </apex:repeat>
+                        </tr>
+                    </apex:repeat> 
+                </table>
+            </div>
+            
+            <apex:pageBlockButtons id="buttons">
+                <apex:commandButton value="{!$Label.Manage_Custom_Fields}" action="{!redirectFieldPage}" rendered="{!isContentSetting == 'false'}"/>
+                <apex:commandButton value="{!$Label.Save}" action="{!saveMatrix}" rendered="{!isEdit}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="formId,pgmsgId"/>
+                <apex:commandButton value="{!$Label.Edit}" action="{!editMatrix}" rendered="{!!isEdit}"  onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="formId"/>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancelMatrix}" rendered="{!isEdit}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="formId"/>
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+        <apex:outputPanel style="float:left;width:100%;" rendered="{!!recordsPresent}">
+            <apex:pageMessage summary="{!$Label.Reference_Content_message}" severity="Info" strength="3" />
+        </apex:outputPanel>
+        <script>
+        
+        function checkForDependencyOfRequired(requiredObj){
+            /* if required is checked then visible should automatically be checked */
+            if(document.getElementById(requiredObj).checked) {
+            	/** requiredObj(input(required checkbox)-#RequiredId) -> parent(div.checkBoxDiv3) -> parent(td.headCol3) -> 
+            	  * previousSibling(td.headCol3) -> firstChild(div.checkBoxDiv2) -> firstChild(input(visible checkbox)-#VisibleId)
+            	*/
+            	var parentId = document.getElementById(requiredObj).parentNode.parentNode.previousSibling.firstChild.firstChild; 
+            	parentId.checked = true; 
+            }            
+         }
+        function checkForDependencyOfVisible(requiredObj){
+            /* if visible is unChecked then required should automatically be unChecked */
+            if(!document.getElementById(requiredObj).checked){
+            	/** requiredObj(input(visible checkbox)-#VisibleId) -> parent(div.checkBoxDiv2) -> parent(td.headCol3) -> 
+            	  * nextSibling(td.headCol3) -> firstChild(div.checkBoxDiv3) -> firstChild(input(required checkbox)-#RequiredId)
+            	*/
+            	var parentId = document.getElementById(requiredObj).parentNode.parentNode.nextSibling.firstChild.firstChild; 
+            	parentId.checked=false; 
+            }
+        }
+    </script>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,198 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Custom_Settings__c" extensions="ChangeAllNLNRequestsController" tabStyle="Custom_Settings__c" sidebar="false" id="pageId"
+		 standardStylesheets="true" showHeader="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0">
+    <apex:outputPanel rendered="{!!isSLDS}">
+	    <apex:outputPanel id="JSPanelId">
+	        <script>
+	            function showAlert() {
+	                var isUpdateAccount = false;
+	                var isUpdateContact = false;
+	                var msg = '{!$Label.Update_Existing_Account_Contacts}';
+	                
+	                if (document.getElementById('pageId:formId:pbId:pbsAccountId:blockItem:accountId').value != {!cs.RUL_Period__c}) {
+	                    var result = window.confirm(msg.replace('@@@','{!$Label.Accounts}'));
+	                    
+	                    if (result) {
+	                        isUpdateAccount = true;
+	                    } else {
+	                        isUpdateAccount = false;
+	                    }
+	                }
+	                
+	                if (document.getElementById('pageId:formId:pbId:pbsContactId:blockItemCon:contactId').value != {!cs.RUL_Period_Contact__c}) {
+	                    result = window.confirm(msg.replace('@@@','{!$Label.Contacts}'));
+	                    
+	                    if (result) {
+	                        isUpdateContact = true;
+	                    } else {
+	                        isUpdateContact = false;
+	                    }
+	                }
+	                save(isUpdateAccount, isUpdateContact);
+	            }
+	            
+	        </script>
+			<style>
+				div.tooltip {
+					width: 20px;
+					float: right;
+					display:inline;
+					left:0;
+					opacity : 0.25;
+				}
+				div.tooltip:hover {
+					opacity : 1; 
+				}
+				div.tooltip span {
+					display: none;
+				}
+				.bPageBlock .detailList .dataCol {
+					width: 25%!important;
+				}
+				div.tooltip:hover span {
+					display: inline;
+					position: absolute;
+					width: 15em;
+					z-index: 12;
+					background-color: #fefdb9;
+					font-size: 109%;
+					padding: 2px 5px;
+					opacity : 1; 
+					border: 1px solid orange;
+					text-align: left;
+					white-space: normal;
+					font-weight: normal;
+					color: #000;
+					top: 20px;
+					right: 0;
+				}
+				.labelCol { 
+					right: -20px!important;
+				}
+				.bPageBlock .detailList .dataCol {
+					width: 25%!important;
+				}
+			</style>
+	    </apex:outputPanel>
+	    <apex:pageMessages id="msgId"/>
+	    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+	    <apex:form id="formId" rendered="{!isFullLicenseAccessible}">
+	        <apex:actionFunction action="{!saveChanges}" name="save" reRender="formId,JSPanelId,msgId">
+	            <apex:param value="" name="updateaccount" assignTo="{!updateAllAccount}"/>
+	            <apex:param value="" name="updatecontact" assignTo="{!updateAllContact}"/>
+	        </apex:actionFunction>
+	        <apex:pageBlock mode="{!IF(isEdit,'edit','maindetail')}" id="pbId">
+	            <apex:pageBlockButtons location="top">
+	                <apex:commandButton value="{!$Label.Edit}" action="{!edit}" reRender="formId" rendered="{!!isEdit}"/>
+					<apex:outputPanel rendered="{!isEdit}">
+	                	<a class="btn" onclick="showAlert();return false;" style="color: #333!important;text-align: center; text-decoration: none; padding: 4px 3px; vertical-align: middle;">{!$Label.Save}</a>
+					</apex:outputPanel>
+	                <apex:commandButton value="{!$Label.Cancel}" action="{!cancel}" reRender="formId,JSPanelId,msgId" rendered="{!isEdit}"/>
+	            </apex:pageBlockButtons>
+	            <apex:pageBlockSection id="pbsAccountId" title="{!SUBSTITUTE($Label.DefaultReferenceUseLimits,'@@@',$Label.Accounts)}">
+	                <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!isEdit}">
+						<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText != '')}">
+							<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField value="{!cs.RUL_Activities__c}" />
+					</apex:pageBlockSectionItem>
+					<apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!isEdit}" id="blockItem">
+					    <apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText != '')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField id="accountId" value="{!cs.RUL_Period__c}" rendered="{!isEdit}"/>
+					</apex:pageBlockSectionItem>
+					<apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!!isEdit}">
+					    <apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText != '')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Activities__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.RUL_Activities__c}" rendered="{!!isEdit}"/>
+					</apex:pageBlockSectionItem>
+					<apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!!isEdit}">
+					    <apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText != '')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Period__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.RUL_Period__c}" rendered="{!!isEdit}"/>
+					</apex:pageBlockSectionItem>
+	            </apex:pageBlockSection>
+	            <apex:pageBlockSection id="pbsContactId" title="{!SUBSTITUTE($Label.DefaultReferenceUseLimits,'@@@',$Label.Contacts)}">
+	                <apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!isEdit}">
+					    <apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText != '')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField value="{!cs.RUL_Activities_Contact__c}" />
+					</apex:pageBlockSectionItem>
+					<apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!isEdit}" id="blockItemCon">
+					    <apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText != '')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:inputField id="contactId" value="{!cs.RUL_Period_Contact__c}" rendered="{!isEdit}"/>
+					</apex:pageBlockSectionItem>
+					<apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!!isEdit}">
+					    <apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText != '')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Activities_Contact__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.RUL_Activities_Contact__c}" rendered="{!!isEdit}"/>
+					</apex:pageBlockSectionItem>
+					<apex:pageBlockSectionItem labelStyleClass="helpButtonOn" rendered="{!!isEdit}">
+					    <apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.Label}" style="{!if(OR($ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText == null ,$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText == ''),'padding-right: 20px','padding-right: 0')}">
+	                    	<apex:outputPanel layout="block" styleClass="helpOrb tooltip" style="position:relative;" rendered="{!AND($ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText != null ,$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText != '')}">
+								<span>
+								{!$ObjectType.Custom_Settings__c.fields.RUL_Period_Contact__c.inlineHelpText}
+								</span>
+							</apex:outputPanel>
+						</apex:outputLabel>
+						<apex:outputField value="{!cs.RUL_Period_Contact__c}" rendered="{!!isEdit}"/>
+					</apex:pageBlockSectionItem>
+	            </apex:pageBlockSection>
+	        </apex:pageBlock>
+	    </apex:form>
+    </apex:outputPanel>
+    <apex:include pageName="DefaultReferenceUseLimitsSLDS" rendered="{!isSLDS}"/>
+</apex:page>

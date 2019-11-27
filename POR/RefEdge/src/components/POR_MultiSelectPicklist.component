@@ -1,0 +1,181 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:component controller="MultiSelectPicklistController">
+    <apex:attribute name="leftLabel" description="Label on left listbox." type="String" required="true" />
+    <apex:attribute name="rightLabel" description="Label on right listbox." type="String" required="true" />
+    <apex:attribute name="size" description="Size of listboxes." type="Integer" required="true" />
+    <apex:attribute name="width" description="Width of listboxes." type="String" required="true" />
+    <apex:attribute name="leftSelOptions" description="Options list for left listbox." type="SelectOption[]" required="true" assignTo="{!leftOptions}" />
+    <apex:attribute name="rightSelOptions" description="Options list for right listbox." type="SelectOption[]" required="true" assignTo="{!rightOptions}" />
+
+    <apex:outputPanel id="multiselectPanel" layout="block" styleClass="duelingListBox">
+        <table class="layout">
+            <tbody>
+                <tr>
+                    <td class="selectCell">
+                        <apex:outputPanel layout="block" styleClass="selectTitle">
+                            <apex:outputLabel value="{!leftLabel}" for="multiselectPanel:leftList" />
+                        </apex:outputPanel>
+                        <select id="{!$Component.multiselectPanel}:leftList" class="multilist" multiple="multiple" size="{!size}" style="width: {!width}; height: 341px;">
+                            <apex:repeat value="{!leftOptions}" var="option">
+                                <option value="{!option.value}">{!option.label}</option>
+                            </apex:repeat>
+                        </select>
+                    </td>
+                    <td class="buttonCell">
+                        <apex:outputPanel layout="block" styleClass="text">{!$Label.Add}</apex:outputPanel>
+                            <apex:outputPanel layout="block" styleClass="text">
+                            <apex:outputLink value="javascript:moveSelectedOptions('{!$Component.multiselectPanel}:leftList', '{!$Component.multiselectPanel}:rightList', '{!$Component.leftHidden}', '{!$Component.rightHidden}');" id="btnRight">
+                                <apex:image url="{!URLFOR($Resource.DirectionalImages, 'right.gif')}" alt="{!$Label.Add}" styleClass="rightArrowIcon" title="Add" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block" styleClass="text">
+                            <apex:outputLink value="javascript:moveSelectedOptions('{!$Component.multiselectPanel}:rightList', '{!$Component.multiselectPanel}:leftList', '{!$Component.rightHidden}', '{!$Component.leftHidden}');" id="btnLeft">
+                                <apex:image url="{!URLFOR($Resource.DirectionalImages, 'left.gif')}" alt="{!$Label.Remove}" styleClass="leftArrowIcon" title="Remove" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block" styleClass="duelingText">{!$Label.Remove}</apex:outputPanel>
+                    </td>
+                    <td class="selectCell">
+                        <apex:outputPanel layout="block" styleClass="selectTitle">
+                            <apex:outputLabel value="{!rightLabel}" for="multiselectPanel:rightList" />
+                        </apex:outputPanel>
+                        <select id="{!$Component.multiselectPanel}:rightList" class="multilist" multiple="multiple" size="{!size}" style="width: {!width}; height: 341px;">
+                            <apex:repeat value="{!rightOptions}" var="option">
+                                <option value="{!option.value}">{!option.label}</option>
+                            </apex:repeat>
+                        </select>
+                    </td>
+                    <td class="buttonCell udArrows">
+                        <apex:outputPanel layout="block" styleClass="text upArrowLabel">{!$Label.Up}</apex:outputPanel>
+                            <apex:outputPanel layout="block" styleClass="text">
+                            <apex:outputLink value="javascript:slideSelectedOptionsUp('{!$Component.multiselectPanel}:rightList', '{!$Component.rightHidden}');" id="upBtn">
+                                <apex:image url="{!URLFOR($Resource.DirectionalImages, 'up.gif')}" alt="{!$Label.Up}" styleClass="upArrowIcon" title="Up" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block" styleClass="text">
+                            <apex:outputLink value="javascript:slideSelectedOptionsDown('{!$Component.multiselectPanel}:rightList', '{!$Component.rightHidden}');" id="downBtn">
+                                <apex:image url="{!URLFOR($Resource.DirectionalImages, 'down.gif')}" alt="{!$Label.Down}" styleClass="downArrowIcon" title="Down" />
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block" styleClass="text downArrowLabel">{!$Label.Down}</apex:outputPanel>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <apex:inputHidden value="{!leftOptionsHidden}" id="leftHidden" />
+        <apex:inputHidden value="{!rightOptionsHidden}" id="rightHidden" />
+    </apex:outputPanel>
+    
+    <script type="text/javascript">
+        if (!buildOutputString) {
+            // Create a string from the content of a listbox
+            var buildOutputString = function(listBox, hiddenInput) {
+                var str = '';
+                
+                for ( var x = 0; x < listBox.options.length; x++) {
+                    str += encodeURIComponent(listBox.options[x].value) + '&' + encodeURIComponent(listBox.options[x].text) + '&';
+                }
+                str.length--;
+                
+                hiddenInput.value = str.slice(0, -1);
+            }
+        }
+        
+        if (!moveSelectedOptions) {
+            // Move the selected options in the idFrom listbox to the idTo
+            // listbox, updating the corresponding strings in idHdnFrom and
+            // idHdnTo
+            var moveSelectedOptions = function(idFrom, idTo, idHdnFrom, idHdnTo) {
+                listFrom = document.getElementById(idFrom);
+                listTo = document.getElementById(idTo);
+                
+                for ( var x = 0; x < listTo.options.length; x++) {
+                    listTo.options[x].selected = false;
+                }
+                
+                for ( var x = 0; x < listFrom.options.length; x++) {
+                    if (listFrom.options[x].selected == true) {
+                        listTo.appendChild(listFrom.options[x]);
+                        x--;
+                    }
+                }
+                
+                listTo.focus();
+                
+                buildOutputString(listFrom, document.getElementById(idHdnFrom));
+                buildOutputString(listTo, document.getElementById(idHdnTo));
+            }
+        }
+        
+        if (!slideSelectedOptionsUp) {
+            // Slide the selected options in the idList listbox up by one position,
+            // updating the corresponding string in idHidden
+            var slideSelectedOptionsUp = function(idList, idHidden) {
+                listBox = document.getElementById(idList);
+                
+                var len = listBox.options.length;
+                
+                if (len > 0 && listBox.options[0].selected == true) {
+                    return;
+                }
+                
+                for ( var x = 1; x < len; x++) {
+                    if (listBox.options[x].selected == true) {
+                        listBox.insertBefore(listBox.options[x],
+                        listBox.options[x - 1]);
+                    }
+                }
+                listBox.focus();
+                buildOutputString(listBox, document.getElementById(idHidden));
+            }
+        }
+        
+        if (!slideSelectedOptionsDown) {
+            // Slide the selected options in the idList listbox down by one position,
+            // updating the corresponding string in idHidden
+            var slideSelectedOptionsDown = function(idList, idHidden) {
+                listBox = document.getElementById(idList);
+                
+                var len = listBox.options.length;
+                
+                if (len > 0 && listBox.options[len - 1].selected == true) {
+                    return;
+                }
+                
+                for ( var x = listBox.options.length - 2; x >= 0; x--) {
+                    if (listBox.options[x].selected == true) {
+                        listBox.insertBefore(listBox.options[x + 1],
+                        listBox.options[x]);
+                    }
+                }
+                
+                listBox.focus();
+                buildOutputString(listBox, document.getElementById(idHidden));
+            }
+        }
+        
+        // initialize the string representations
+        buildOutputString(document.getElementById('{!$Component.multiselectPanel}:leftList'), 
+        document.getElementById('{!$Component.leftHidden}'));
+        buildOutputString(document.getElementById('{!$Component.multiselectPanel}:rightList'), 
+        document.getElementById('{!$Component.rightHidden}'));
+    </script>
+</apex:component>

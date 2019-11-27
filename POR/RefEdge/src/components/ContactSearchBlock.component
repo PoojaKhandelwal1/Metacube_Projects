@@ -1,0 +1,1346 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:component controller="RefSearchBlockController">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">    
+        <head>
+            
+            <style>  
+                .slds .slds-truncate{
+                    white-space: normal !important;
+                }
+                .custom-ellipsis-class { 
+					max-width: 200px;
+					display: block;
+					word-wrap: break-word;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.contact-about-panel {
+                    position: absolute !important;
+                    min-width: 350px;
+                    left: 0;
+                    top: 0px;
+                }
+                .contact-about-panel .slds-text-heading--medium {
+                    overflow: hidden !important;
+                    white-space: nowrap !important;
+                    text-overflow: ellipsis !important;
+                    height: 30px;
+                    display: block;
+                    font-size: 17px;
+                     max-width: 94%;
+                }
+
+                .contact-Tags-panel {
+                    position: absolute !important;
+                    min-width: 350px;
+                    left: 0;
+                    top: 0px;
+                }
+                .contact-Tags-panel .slds-text-heading--medium {
+                    overflow: hidden !important;
+                    white-space: nowrap !important;
+                    text-overflow: ellipsis !important;
+                    height: 30px;
+                    display: block;
+                    font-size: 17px;
+                    max-width: 94%;
+                }
+
+                .tagReferencibilityCon, .tagAttributeCon { 
+                    width: 310px;
+                    max-height: 70px;
+                    word-wrap: break-word;
+                    overflow: auto !important;
+                }
+
+                .popoverContactBackdrop {
+                    position: fixed;
+                    left: 0;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    z-index: 999;
+                }
+                .leftPaddingCustom {
+                    padding-left: 0 !important;
+                }
+                .hitIcon {
+                    background-color: #00396b;
+                    color: white;
+                    font-size: 1.3rem;
+                    font-weight: bold;
+                    display: block;
+                    height: 2rem;
+                    border-radius: 1rem;
+                    text-align: center;
+                    margin-left: 1.5rem;
+                }
+                .minDivHeight {
+                    min-height : 330px !important;                    
+                }
+                .addOverflow {
+                    padding-bottom : 75px !important;
+                }
+                
+                /* Start: Columns sequencing and alignment issues fixed */
+				#contactTable thead th.selection-checkbox {
+					width: 90px;
+				}
+				#contactTable thead th.col-notice {
+					width: 130px;
+				}
+				#contactTable thead th.col-about {
+					width: 135px;
+				}
+				#contactTable thead th.col-tag {
+					width: 135px;
+				}
+				#contactTable thead th.col-assigned-count {
+					width: 137px;
+				}
+				#contactTable thead th.col-hitlist-count {
+					width: 115px;
+				}
+                #contactTable thead th.selection-checkbox {
+					width: 90px;
+				}
+                #contactTable thead th.col-owner {
+					width: 200px;
+				}
+				#contactTable thead th.acc-ref-content {
+					width: 200px;
+				}
+				
+				#contactTable thead th.col-notice {
+					width: 130px;
+				}
+				/* End: Columns sequencing and alignment issues fixed */
+            </style>
+            <script>
+                //var AccountBlock = angular.module("AccountBlock", []);
+                var ContactBlockCon = refSearch.controller('ContactBlockController',function($scope, productService, $q){
+                    $scope.activeContactRBIlist = [];
+                    $scope.filterContactAttributeMap = {};
+                    $scope.selectedContactRef = [];
+                    $scope.filterNoForContact = {};
+                    $scope.filterOperationMap = {};
+                    $scope.alreadyDisplayedContacts = [];
+                    $scope.hgt = window.innerHeight;
+                    $scope.pageIndex = 1;
+                    $scope.pageSize = 5;
+                    $scope.totalContacts = 0;
+                    $scope.showMoreContact = false;
+                    $scope.isMoreContactAvailable = false;
+                    $scope.contactIds = [];
+                    $scope.allActiveContactIds = [];
+                    $scope.contacts = [];
+                    $scope.searchResultContact = [];
+                    $scope.filterResultContact = [];
+                    $scope.Account = 'Account__c';
+                    $scope.Contact = 'Contact__c';
+                    $scope.Reference_Owner = 'Reference_Owner__c';
+                    $scope.Referenceability = 'Referenceability__c';
+                    $scope.Attributes = 'Attributes__c';
+                    $scope.Default_Period_Completed_Uses = 'Default_Period_Completed_Uses__c';
+                    $scope.Account_Level_RUL = 'Account_Level_RUL__c';
+                    $scope.RUL_Limit_Reached = 'RUL_Limit_Reached__c';
+                    $scope.Is_Contact_Limit_Reached = 'Is_Contact_Limit_Reached__c';
+                    $scope.Referenceability_no = 'Referenceability_no__c';
+                    $scope.Attribute_Ids = 'Attribute_Ids__c';
+                    $scope.Referenceability_Status = 'Referenceability_Status__c';
+                    $scope.nameSpace = '{!JSENCODE(nameSpace)}';
+                    $scope.searchText = '';
+                    $scope.orderByField = 'ContactName';
+                    $scope.reverseSort = false;
+                    $scope.isAnyFilterAppiled = false;
+                    $scope.isFilterAppiled = false;
+                    //  REF - 1377
+                    // variables for showing data in the About popup panel.
+                    $scope.rulPeriodLen = {!RULPeriodLengthContact};  
+                    $scope.showAboutPopup = false;                    
+                    $scope.contactAboutName = '';
+                    $scope.lastAboutNdays = '';
+                    $scope.lastAboutUsed = '';
+                    $scope.summary = '';
+                    // variables for showing data in the Tags popup panel.
+                    $scope.showTagsPopup = false;
+                    $scope.tagAttributes = '';
+                    $scope.tagReferencability = '';
+                    $scope.showBackContactDrop = false;
+
+					$scope.isRefMatch = {!isRefMatch};
+                    //REF-1964
+                    $scope.isHubMatch = {!isHubMatch};
+
+                    $scope.isAllContactSelected = false;
+                    $scope.selectedRefStatusContact = 'Active';
+                    $scope.refRequestId = '{!JSENCODE(refRequestId)}';
+                    $scope.accRequestId = '{!JSENCODE(accRequestId)}';
+                    $scope.unspecRequestId = '{!JSENCODE(unspecRequestId)}';
+                    $scope.projectType = '{!JSENCODE(projectType)}';
+                    $scope.refRequestWrapper = {};
+                    $scope.selectedRequestItem = {};
+                    $scope.requestRefTypeIds = [];
+                    $scope.selectedRequestId = '';
+                    $scope.isUr = false;
+                    $scope.isError = false;
+                    $scope.errorMessage = '';
+                    $scope.dateFormat = '{!JSENCODE(dateFormat)}';
+                    
+                    function getAllActiveContactIdsWithoutFilters(isReload) {
+                    	var defer = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getAllContactIds}',
+                            function(result, event) {   
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function() {
+                                    $scope.allActiveContactIds = JSON.parse(result); 
+                                    $scope.totalContacts = $scope.allActiveContactIds.length; 
+                                    if ((!$scope.isRefMatch || $scope.refRequestId == '') || !isReload) {
+                                        $scope.getContacts();
+                                    }
+                                    defer.resolve(); 
+                                });
+                            }
+                        );
+                        return defer.promise;
+                    }
+                    
+                    $scope.intialFunction = function() {
+                        getAllActiveContactIdsWithoutFilters();
+                    }
+
+					$scope.$on('requestData', function(event, requestWrapper) {
+                        $scope.refRequestWrapper = requestWrapper;
+
+                        if ($scope.refRequestWrapper['projectType'] == 'Candidate') {
+                            $scope.selectedRefStatusContact = 'Candidate';
+                        }
+
+                        if ($scope.accRequestId != '' && $scope.unspecRequestId == '') {
+                            $scope.isUr = false;
+
+                            angular.forEach(
+                                $scope.refRequestWrapper['accRequests'],
+                                function(ar) {
+
+                                    if (ar['accRequestId'] == $scope.accRequestId) {
+                                        $scope.selectedRequestItem = angular.copy(ar);
+                                        $scope.selectedRequestId = ar['accRequestId'];
+                                    }
+                                }
+                            );
+                        } else if ($scope.accRequestId == '' && $scope.unspecRequestId != '') {
+                            $scope.isUr = true;
+
+                            angular.forEach(
+                                $scope.refRequestWrapper['unspecRequests'],
+                                function(ur) {
+
+                                    if (ur['unspecRequestId'] == $scope.unspecRequestId) {
+                                        $scope.selectedRequestItem = angular.copy(ur);
+                                        $scope.selectedRequestId = ur['unspecRequestId'];
+                                    }
+                                }
+                            );
+                        }
+                    });
+
+					$scope.$on('referenceStatusChangeEvent', function(event, refStatus) {
+                        $scope.selectedRefStatusContact = refStatus;
+                        productService.isloading(true);
+                        $scope.filterContacts();
+                    });
+
+                    $scope.$on('SelectedColumnsList', function(event, accountColumns, contactColumns, contentColumns) {
+						$scope.columnsList = contactColumns;
+						
+						var columnDisplayOrder;
+                        for(var loop=0; loop<$scope.columnsList.length; loop++) {
+                        	
+                        	if($scope.columnsList[loop].name == 'ContactName') {
+                        		columnDisplayOrder = 1;
+                        	} else if($scope.columnsList[loop].name == 'AccountName') {
+                        		columnDisplayOrder = 2;
+                        	} else if($scope.columnsList[loop].name == 'Notice') {
+                        		columnDisplayOrder = 3;
+                        	} else if($scope.columnsList[loop].name == 'About') {
+                        		columnDisplayOrder = 4;
+                        	} else if($scope.columnsList[loop].name == 'Tags') {
+                        		columnDisplayOrder = 5;
+                        	} else if($scope.columnsList[loop].name == 'Owner') {
+                        		columnDisplayOrder = 6;
+                        	} 
+                        	$scope.columnsList[loop]['displayOrder'] = columnDisplayOrder;
+                        }
+                    });
+
+                    $scope.getTotalContacts = function() {
+                        $scope.alreadyDisplayedContactsJson = angular.toJson($scope.alreadyDisplayedContacts);
+                        $scope.contactIds = [];
+                        if ($scope.searchText != '') {
+                            if ($scope.searchResultContact.length > 0) {
+                                $scope.contactIds = $scope.searchResultContact;
+                            }
+                        } else {
+                            $scope.contactIds = [];
+                        }
+                        if ($scope.isFilterAppiled || $scope.selectedContactRef.length > 0) {
+                            if ($scope.filterResultContact.length > 0) {
+                                if ($scope.contactIds.length > 0) {
+                                    $scope.tempList = [];
+                                    for (var i = 0; i < $scope.contactIds.length; i++) {
+                                        if ($scope.filterResultContact.indexOf($scope.contactIds[i]) >= 0) {
+                                            $scope.tempList.push($scope.contactIds[i]);
+                                        }
+                                    }
+                                    $scope.contactIds = $scope.tempList;
+                                } else {
+                                    $scope.contactIds = $scope.filterResultContact;
+                                }
+                            } else {
+                                $scope.contactIds = [];
+                            }
+                        }
+                        if (contactmappingSelected) {
+                            if ($scope.relatedContactIds.length > 0) {
+                                if ($scope.contactIds.length > 0) {
+                                    $scope.tempList = [];
+                                    for (var i = 0; i < $scope.contactIds.length; i++) {
+                                        if ($scope.relatedContactIds.indexOf($scope.contactIds[i]) >= 0) {
+                                            $scope.tempList.push($scope.contactIds[i]);
+                                        }
+                                    }
+                                    $scope.contactIds = $scope.tempList;
+                                } else {
+                                    $scope.contactIds = $scope.relatedContactIds;
+                                }
+                            } else {
+                                $scope.contactIds = [];
+                            }
+                        }
+                        $scope.contactIdsJson = angular.toJson($scope.contactIds);
+                        $scope.isAnyFilterAppiled = false;
+                        if ($scope.isFilterAppiled ||
+                                $scope.searchText != '' ||
+                                $scope.selectedContactRef.length > 0 ||
+                                contactmappingSelected) {
+                            
+                            $scope.isAnyFilterAppiled = true;
+                        }
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getTotalContacts1}',
+                            $scope.isAnyFilterAppiled, $scope.alreadyDisplayedContactsJson, $scope.contactIdsJson, $scope.selectedRefStatusContact,
+                            function(result, event) {
+                                $scope.$apply(function() {
+                                    $scope.totalContacts = result; 
+                                    $scope.contacts = [];
+                                    $scope.activeContactRBIlist = [];
+                                    $scope.alreadyDisplayedContacts = [];
+                                    $scope.getContacts();
+                                });
+                            }
+                        );
+                    };
+
+                    $scope.getContacts = function() {
+                        $scope.alreadyDisplayedContactsJson = angular.toJson($scope.alreadyDisplayedContacts);
+                        $scope.contactIdsJson = angular.toJson($scope.contactIds);
+                        var refrequestId = $scope.refRequestWrapper['refRequestId'] != null ? $scope.refRequestWrapper['refRequestId'] : '';
+                            Visualforce.remoting.Manager.invokeAction(
+                                '{!$RemoteAction.RefSearchBlockController.getAllActiveContactRBIs2}',
+                                $scope.isAnyFilterAppiled, $scope.alreadyDisplayedContactsJson, $scope.contactIdsJson, 250,
+                                refrequestId, $scope.selectedRefStatusContact, $scope.isRefMatch,
+                                function(result, event) {
+                                    $scope.$apply(function() {
+                                        result = $scope.parseResult(result);
+                                        $scope.tempList = JSON.parse(result);
+                                        
+                                        if ($scope.tempList.length > 250) {
+                                            $scope.isMoreContactAvailable = true;
+                                            $scope.tempList.splice(250,1);
+                                        } else {
+                                            $scope.isMoreContactAvailable = false;
+                                        }
+                                        
+                                        if ($scope.pageSize == 5) {
+                                            $scope.showMoreContact = ($scope.tempList.length > $scope.pageSize ? true : false);
+                                        } else {
+                                            $scope.showMoreContact = false;
+                                        }
+                                        $scope.contacts = [];
+
+                                        for (var i = 0; i < $scope.tempList.length; i++) {
+                                            $scope.alreadyDisplayedContacts.push($scope.tempList[i].rbi[$scope.nameSpace + $scope.Contact]);
+                                            $scope.activeContactRBIlist.push($scope.tempList[i]);
+                                            if (i < $scope.pageSize) {
+                                                $scope.contacts.push($scope.tempList[i]);
+                                            }
+                                        }
+
+                                        if($scope.activeContactRBIlist.length > 0) {
+                                            $scope.checkContactLimit($scope.activeContactRBIlist);
+                                        }
+
+                                        //REF-1964
+                                        $scope.presetSelectedAdvocates();
+
+                                        if ($scope.isHubMatch == true || $scope.isHubMatch == 'true') {
+                                            productService.isloading(false);
+                                        }
+                                    });
+                                }
+                            );
+                    }
+                    $scope.relatedContactIds = [];
+                    var contactmappingSelected = false;
+                    $scope.$on('filter', function(e,myMap,operationMap,accountMappedIds,accountmappingSelected,contactMappedIds,contactmapping,relatedFilterMapContent,abc1,mappedFilterIds, stageFilterId) { 
+                        $scope.filterContactAttributeMap = {};
+                        $scope.filterNoForContact = {};
+                        $scope.filterOperationMap = operationMap;
+                        $scope.relatedContactIds = contactMappedIds;
+                        contactmappingSelected = contactmapping;
+                        $scope.isFilterAppiled = false;
+                        $scope.selectedContactRef = [];
+                        
+                        angular.forEach(
+                            myMap,
+                            function(itm, key) {
+                                $scope.tempList = [];
+                                if (key == 'Referenceability') {
+                                    for (var i = 0; i < itm.length; i++) {
+                                        if (itm[i].isSelected && itm[i].refType[$scope.nameSpace + $scope.Referenceability_no] != null) {
+                                            $scope.tempList.push(itm[i].refType[$scope.nameSpace + $scope.Referenceability_no]);
+                                        }
+                                    }
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.selectedContactRef = $scope.tempList;
+                                    }
+                                } else if (key != stageFilterId && key != 'Content Types' && key != 'Content Language' && mappedFilterIds.indexOf(key) < 0) {
+                                    var filterNo = '';
+                                    for (var i = 0; i < itm.length; i++) {
+                                        if (itm[i].isSelected) {
+                                            $scope.tempList.push(itm[i].attId);
+                                            filterNo = itm[i].filterNo;
+                                        }
+                                    }
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.filterContactAttributeMap[key] = $scope.tempList;
+                                        $scope.filterNoForContact[key] = filterNo;
+                                        $scope.isFilterAppiled = true;
+                                    }
+                                }
+                            }
+                        );
+                        $scope.alreadyDisplayedContacts = [];
+                        $scope.filterContacts();
+                    });
+
+                    $scope.filterContacts = function() {
+                        $scope.alreadyDisplayedContactsJson = angular.toJson($scope.alreadyDisplayedContacts);
+                        $scope.contactIdsJson = angular.toJson($scope.allActiveContactIds);
+                        $scope.selectedRefJson = angular.toJson($scope.selectedContactRef);
+                        $scope.filterNospJson = angular.toJson($scope.filterNoForContact);
+                        $scope.filterOperationMapJson  = angular.toJson($scope.filterOperationMap);
+
+                        Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.RefSearchBlockController.filterContactsByRefAttributes1}',
+                        $scope.selectedRefJson, $scope.filterNospJson, $scope.alreadyDisplayedContactsJson, $scope.contactIdsJson,
+                        $scope.filterOperationMapJson, $scope.selectedRefStatusContact,
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            $scope.$apply(function() {
+                                $scope.tempList = JSON.parse(result); 
+                                $scope.labelLogicMap = {};
+                                $scope.filterResultContact = [];
+                                
+                                for (var i = 0; i < $scope.tempList.length; i++) {
+                                    if ($scope.isFilterAppiled) {
+                                        if ($scope.tempList[i][$scope.nameSpace + $scope.Attribute_Ids] != null
+                                                && $scope.tempList[i][$scope.nameSpace + $scope.Attribute_Ids] != '') {
+                                            
+                                            $scope.setAttribute = $scope.tempList[i][$scope.nameSpace + $scope.Attribute_Ids].split(",");
+                                            $scope.selectedlabelCount = 0;
+                                            $scope.recordMatchCount = 0;
+                                            angular.forEach(
+                                                $scope.filterContactAttributeMap,
+                                                function(array, labelId) {
+                                                    $scope.labelLogicMap[labelId] = false;
+                                                    $scope.selectedlabelCount = $scope.selectedlabelCount+1;
+                                                    if ($scope.filterOperationMap[labelId] == 'and') {
+                                                        $scope.notMatched = false;
+                                                        for (var j = 0; j < array.length; j++) {
+                                                            if ($scope.setAttribute.indexOf(array[j]) < 0) {
+                                                                $scope.notMatched = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                        if (!$scope.notMatched) {
+                                                            $scope.recordMatchCount = $scope.recordMatchCount + 1;
+                                                            $scope.labelLogicMap[labelId] = true;
+                                                        }
+                                                    } else {
+                                                        for (var j = 0; j < array.length; j++) {
+                                                            if ($scope.setAttribute.indexOf(array[j]) >= 0) {
+                                                                $scope.recordMatchCount = $scope.recordMatchCount + 1;
+                                                                $scope.labelLogicMap[labelId] = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            );
+                                            if ($scope.selectedlabelCount != 0) {
+                                                //if advance filter has AND logic
+                                                $scope.checkResult = true;
+                                                angular.forEach(
+                                                    $scope.labelLogicMap,
+                                                    function(flag, labelId) {
+                                                        $scope.checkResult = ($scope.checkResult && flag);
+                                                    }
+                                                );
+                                                if ($scope.checkResult) {
+                                                    $scope.filterResultContact.push($scope.tempList[i][$scope.nameSpace + $scope.Contact]);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        $scope.filterResultContact.push($scope.tempList[i][$scope.nameSpace + $scope.Contact]);
+                                    }
+                                }
+                                $scope.getTotalContacts();
+                            });
+                        }); 
+                    }
+                    $scope.$on('searchTextContact', function(e, value, filterdaccounts) { 
+                        $scope.searchText = value;
+                        $scope.alreadyDisplayedContacts = [];
+                        $scope.search(filterdaccounts);
+                    });
+
+                    $scope.$on('clearAllFiltersAndSearchText', function(event, value) { 
+                        //Reset to initial defualt data
+                        $scope.alreadyDisplayedContacts = [];
+                        $scope.contacts = [];
+                        $scope.activeContactRBIlist = [];
+                        
+                        //Reset Search text data
+                        $scope.searchText = value;
+                        
+                        //Reset Filters defualt data
+                        $scope.isAnyFilterAppiled = false; 
+                        contactmappingSelected = false;
+                        $scope.relatedContactIds = [];
+                        $scope.isFilterAppiled = false;
+                        $scope.selectedContactRef = [];
+
+                        getAllActiveContactIdsWithoutFilters(false);
+                    });
+
+                    $scope.search = function(filterdaccounts) {
+                        $scope.alreadyDisplayedContactsJson = angular.toJson($scope.alreadyDisplayedContacts);
+                        $scope.contactIdsJson = angular.toJson($scope.allActiveContactIds);
+                        $scope.filterdaccountsJson = angular.toJson(filterdaccounts);
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterContactsBySearchText1}',
+                            $scope.searchText,
+                            $scope.alreadyDisplayedContactsJson,
+                            $scope.contactIdsJson,
+                            $scope.filterdaccountsJson,
+                            $scope.selectedRefStatusContact,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                $scope.$apply(function() {
+                                    $scope.searchResultContact = JSON.parse(result); 
+                                    $scope.getTotalContacts();
+                                });
+                            }
+                        );
+                    }
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+
+                    $scope.showMoreContacts = function(){
+                        $scope.pageSize = 25;
+                        $scope.showMoreContact = false;
+                        
+                        for (var i = 5; i < $scope.activeContactRBIlist.length; i++) {
+                            
+                            if (i < $scope.pageSize) {
+                                $scope.contacts.push($scope.activeContactRBIlist[i]);
+                                $scope.isAllContactSelected = false;
+                            }
+                        }
+                        //REF-2304
+                        $scope.presetSelectedAdvocates();
+                        showMoreSectionView(false,  true, false, true);
+                        $scope.$parent.showMoreRecordsView = true;
+                    }
+
+                    $scope.more = function() {
+                        
+                        if ($scope.showMoreContact == false) {
+							
+                            if ($scope.contacts.length < $scope.activeContactRBIlist.length) {
+								var size = (parseInt($scope.contacts.length) + parseInt($scope.pageSize));
+								
+                                for (var i = $scope.contacts.length; i < $scope.activeContactRBIlist.length; i++) {
+
+									if (i < size) {
+										$scope.contacts.push($scope.activeContactRBIlist[i]);
+									}
+								}
+							} else if ($scope.isMoreContactAvailable) {
+                                $scope.getContacts();
+							}
+                        }
+                        //REF-2304
+                        $scope.presetSelectedAdvocates();
+                    };
+
+                    //  REF-1970    Rajneesh Raj(Nov 14,2018)
+                    $scope.backToRefsearchPage = function() {
+                        $scope.contacts.splice(5, ($scope.activeContactRBIlist.length - 5));
+                        $scope.showMoreContact = true;
+                        $scope.pageSize = 5;
+                        showMoreSectionView(true,  true, true, true);
+                        $scope.$parent.showMoreRecordsView = false;
+                    }
+
+                    $scope.selectAll = function() {
+                        var toggleStatus = $scope.isAllAccountSelected;
+                        angular.forEach(
+                        	$scope.contacts,
+                        	function(itm) {
+                        		itm.isSelected = toggleStatus;
+                       		}
+                   		);
+                    }
+                    $scope.selectDeselect = function() {
+                        $scope.isAllAccountSelected = $scope.contacts.every(
+                            function(itm) { 
+                                return itm.isSelected; 
+                            }
+                        )
+                    }
+                    
+                    $scope.exportData = function() {
+                    	
+                    	if ($scope.totalContacts > 0 && ($scope.filterResultContact.length > 0 || $scope.searchResultContact.length > 0)) {
+	                    	var contactIdsToExport = [];
+                            
+                            if ($scope.filterResultContact.length > 0 && $scope.searchResultContact.length > 0) {
+                            	contactIdsToExport = $scope.filterResultContact.filter((n) => $scope.searchResultContact.includes(n));
+                            } else if ($scope.filterResultContact.length > 0 && $scope.searchResultContact.length == 0) {
+                            	contactIdsToExport = $scope.filterResultContact;
+                            } else if ($scope.filterResultContact.length == 0 && $scope.searchResultContact.length > 0) {
+                            	contactIdsToExport = $scope.searchResultContact;
+                            }
+	                    	var form = document.createElement('form');
+							form.setAttribute('method', 'POST');
+							form.setAttribute('action', '{!URLFOR($Page.ExportPage)}');
+							form.setAttribute('target', '_self');
+							var hiddenField = document.createElement('input');
+							hiddenField.setAttribute('type', 'hidden');
+							hiddenField.setAttribute('name', 'allContactIds');
+							hiddenField.setAttribute('value', contactIdsToExport.join(','));
+							form.appendChild(hiddenField);
+							var hiddenField1 = document.createElement('input');
+							hiddenField1.setAttribute('type', 'hidden');
+							hiddenField1.setAttribute('name', 'exportObjectName');
+							hiddenField1.setAttribute('value', 'SearchedContacts');
+							form.appendChild(hiddenField1);
+                            
+                            if ($scope.opportunityId != '' || $scope.leadId != '') {
+                                var hiddenField2 = document.createElement('input');
+                                hiddenField2.setAttribute('type', 'hidden');
+                                if ($scope.opportunityId != '') {
+                                    hiddenField2.setAttribute('name', 'opportunityId');
+                                    hiddenField2.setAttribute('value', $scope.opportunityId);
+                                } else {
+                                    hiddenField2.setAttribute('name', 'leadId');
+                                    hiddenField2.setAttribute('value', $scope.leadId);
+                                } 
+                                form.appendChild(hiddenField2);
+                                var hiddenField3 = document.createElement('input');
+                                hiddenField3.setAttribute('type', 'hidden');
+                                hiddenField3.setAttribute('name', 'forAccount');
+                                hiddenField3.setAttribute('value', $scope.forAccount);
+                                form.appendChild(hiddenField3);
+                                var hiddenField4 = document.createElement('input');
+                                hiddenField4.setAttribute('type', 'hidden');
+                                hiddenField4.setAttribute('name', 'forContent');
+                                hiddenField4.setAttribute('value', $scope.forContent);
+                                form.appendChild(hiddenField4);
+                            }
+                            var hiddenField5 = document.createElement('input');
+                            hiddenField5.setAttribute('type', 'hidden');
+                            hiddenField5.setAttribute('name', 'isSLDS');
+                            hiddenField5.setAttribute('value', 'true');
+                            form.appendChild(hiddenField5);
+							document.body.appendChild(form);
+							form.submit();
+                    	} else if ($scope.totalContacts > 0 && $scope.filterResultContact.length == 0) {
+                    		
+                    		$scope.getAllContactsForExport().then(function(result) {
+                    			var form = document.createElement('form');
+								form.setAttribute('method', 'POST');
+								form.setAttribute('action', '{!URLFOR($Page.ExportPage)}');
+								form.setAttribute('target', '_self');
+								var hiddenField = document.createElement('input');
+								hiddenField.setAttribute('type', 'hidden');
+								hiddenField.setAttribute('name', 'allContactIds');
+								hiddenField.setAttribute('value', result.join(','));
+								form.appendChild(hiddenField);
+								var hiddenField1 = document.createElement('input');
+								hiddenField1.setAttribute('type', 'hidden');
+								hiddenField1.setAttribute('name', 'exportObjectName');
+								hiddenField1.setAttribute('value', 'SearchedContacts');
+								form.appendChild(hiddenField1);
+                                
+                                if ($scope.opportunityId != '' || $scope.leadId != '') {
+                                    var hiddenField2 = document.createElement('input');
+                                    hiddenField2.setAttribute('type', 'hidden');
+                                    if ($scope.opportunityId != '') {
+                                        hiddenField2.setAttribute('name', 'opportunityId');
+                                        hiddenField2.setAttribute('value', $scope.opportunityId);
+                                    } else {
+                                        hiddenField2.setAttribute('name', 'leadId');
+                                        hiddenField2.setAttribute('value', $scope.leadId);
+                                    } 
+                                    form.appendChild(hiddenField2);
+                                    var hiddenField3 = document.createElement('input');
+                                    hiddenField3.setAttribute('type', 'hidden');
+                                    hiddenField3.setAttribute('name', 'forAccount');
+                                    hiddenField3.setAttribute('value', $scope.forAccount);
+                                    form.appendChild(hiddenField3);
+                                    var hiddenField4 = document.createElement('input');
+                                    hiddenField4.setAttribute('type', 'hidden');
+                                    hiddenField4.setAttribute('name', 'forContent');
+                                    hiddenField4.setAttribute('value', $scope.forContent);
+                                    form.appendChild(hiddenField4);
+                                }
+                                var hiddenField5 = document.createElement('input');
+                                hiddenField5.setAttribute('type', 'hidden');
+                                hiddenField5.setAttribute('name', 'isSLDS');
+                                hiddenField5.setAttribute('value', 'true');
+                                form.appendChild(hiddenField5);
+								document.body.appendChild(form);
+								form.submit();
+                    		});
+                    	}
+                    }
+                    
+                    $scope.getAllContactsForExport = function() {
+                    	var deferred = $q.defer();
+						
+						Visualforce.remoting.Manager.invokeAction(
+							'{!$RemoteAction.RefSearchBlockController.getAllRecordsForExport}',
+							'contact',
+							function(result, event) {
+								result = $scope.parseResult(result);
+								deferred.resolve(JSON.parse(result));
+							}
+						);
+						return deferred.promise;
+                    }
+
+					// REF - 1377
+                    $scope.openAboutPopup = function(conWrap, $event) {  
+						$scope.contactAboutName = conWrap.ContactName;
+                        $scope.lastAboutUsed = conWrap.LastUsed;
+                        $scope.summary = conWrap.summary;
+                        $scope.lastAboutNdays = conWrap.rbi[$scope.nameSpace + $scope.Default_Period_Completed_Uses];
+                        $scope.showAboutPopup = true;
+                        $scope.showBackContactDrop = true;
+                        $(".contact-about-panel").css("top", $($event.target).offset().top - 20);
+			            $(".contact-about-panel").css("left", $($event.target).offset().left - 368);
+                    }
+
+                    $scope.openTagsPopup = function(conWrap, $event) { 
+                    	$scope.contactAboutName = conWrap.ContactName;
+                        
+                        $scope.tagReferencability = conWrap.rbi[$scope.nameSpace + $scope.Referenceability];
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.rollUpAttribute}',
+                            conWrap.rbi[$scope.nameSpace + $scope.Contact],
+                            false,
+                            conWrap.rbi[$scope.nameSpace + $scope.Account],
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                if(typeof(conWrap.rbi[$scope.nameSpace + $scope.Attributes]) != "undefined" && result != '') {
+                                    $scope.tagAttributes = conWrap.rbi[$scope.nameSpace + $scope.Attributes] + ', '+result;
+                                } else if(typeof(conWrap.rbi[$scope.nameSpace + $scope.Attributes]) == "undefined" && result != '') {
+                                    $scope.tagAttributes = result;
+                                } else if(typeof(conWrap.rbi[$scope.nameSpace + $scope.Attributes]) != "undefined" && result == '') {
+                                    $scope.tagAttributes = conWrap.rbi[$scope.nameSpace + $scope.Attributes];
+                                }
+                                $scope.showTagsPopup = true;
+                                $scope.showBackContactDrop = true;
+                                $(".contact-Tags-panel").css("top", $($event.target).offset().top - 23);
+                                $(".contact-Tags-panel").css("left", $($event.target).offset().left - 368);
+                                $scope.$apply();
+                            }
+                        );
+                    } 
+                    $scope.showBackContactDropPopover = function() { 
+                        $scope.showAboutPopup = false;
+                        $scope.showTagsPopup = false;
+                        $scope.showBackContactDrop = false;                                       
+                    }
+
+                    $scope.createHitListRecord = function(accId, conId) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.createHitListRecord}',
+                            accId, conId, $scope.refRequestWrapper['refRequestId'],
+                            $scope.refRequestWrapper['oppId'], $scope.refRequestWrapper['projectType'],
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.assignContactToRequest = function(accId, conId) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.assignAccountContact}',
+                            $scope.isUr, accId, conId, angular.toJson($scope.selectedRequestItem),
+                            $scope.refRequestWrapper['refRequestId'], $scope.refRequestWrapper['requesterId'],
+                            $scope.refRequestWrapper['projectType'],
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.hitContact = function(conWrapper) {
+                        productService.isloading(true);
+                        
+                        $scope.createHitListRecord('', conWrapper.rbi[$scope.nameSpace + $scope.Contact]).then(function(result) {
+                            
+                            if (result == 'success') {
+                                conWrapper.isAlreadyHit = true;
+                                conWrapper.hitCount += 1;
+                            } else {
+                                $scope.isError = true;
+                                $scope.errorMessage = result;
+                            }
+                            productService.isloading(false);
+                        });
+                    }
+
+                    $scope.assignContact = function(conWrapper) {
+                        $scope.isError = false;
+                        $scope.errorMessage = '';
+
+                        if (conWrapper.rbi[$scope.nameSpace + $scope.Contact] == $scope.selectedRequestItem['contactId']) {
+                            $scope.isError = true;
+                            $scope.errorMessage = 'Please select a different Contact.';
+                        } else {
+                            productService.isloading(true);
+                            $scope.selectedRequestItem['deadline'] = $scope.convertToDate($scope.selectedRequestItem['deadline']);
+                        
+                            $scope.assignContactToRequest(conWrapper.rbi[$scope.nameSpace + $scope.Account], conWrapper.rbi[$scope.nameSpace + $scope.Contact]).then(function(result) {
+                                console.log('----' + result);
+                                
+                                if (result.startsWith('success')) {
+                                    var data = {};
+                                    var tempMsg = '{!$Label.Assign_Hit_List_Msg}';
+                                    data['successMessage'] = '{!$Label.Contact}' + ' "' + conWrapper['ContactName'] + '" with '
+                                                            + tempMsg.replace('@@@', conWrapper['AccountName']);
+                                    data['newRRAId'] = result.split('##')[1];
+                                    window.parent.postMessage(data, window.parent.location.origin);
+                                } else {
+                                    $scope.isError = true;
+                                    $scope.errorMessage = result;
+                                }
+                                productService.isloading(false);
+                            });
+                        }
+                    }
+
+                    $scope.convertToDate = function(date) {
+                        date = (date == null) ? '' : date;
+                        var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+                        var tempDF;
+                        
+                        if (date == null || date == '') {
+                            return '';
+                        }
+                        
+                        if (date.match(regEx)) {
+                            tempDF = date.split('-');
+
+                            if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+                                return null;
+                            }
+                            return date;
+						}
+
+	               		try {
+	               			var tempDF = $scope.dateFormat;
+	               			var tempDate = date + '';
+	               			tempDF = tempDF.split(/[./-]/g);
+	               			tempDate = tempDate.split(/[./-]/g);
+	               			var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+	               			var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+	               			var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+	               			var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+		              	 	
+	              	 		if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+	              	 			
+	              	 			if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+		              	 			return null;
+		              	 		}
+	     				 		return dateString;
+	     				 	} else {
+	     				 		return null;
+	     				 	}
+	     				} catch (e) {
+	     					return null;
+	     				}
+	                }
+	                
+	                $scope.checkDate = function(day, month, year) {
+	                	var returnval = true;
+                        
+                        if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == ''
+                                || parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+                            returnval = false;
+                        } else {
+                            day = parseInt(day);
+                            month = parseInt(month);
+                            year = parseInt(year);
+                        }
+					    returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+					    var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) : (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31;
+					    returnval = (day > days) ? false : returnval;
+				        return returnval;
+	                }
+
+                    //  REF-1608
+                    $scope.accRBIWithLimitReach = '';
+                    $scope.checkContactLimit = function(accountRBIList) {
+                        var accountIds = [];
+
+                        angular.forEach(
+                        accountRBIList, 
+                        function(value, key) {
+                            accountIds.push(value.rbi[$scope.nameSpace + $scope.Account]);
+                        }                        
+                        );
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.accountRBIWithLimitCheck}',
+                            angular.toJson(accountIds),
+                            function(result, event) {
+                                $scope.$apply(function() {
+                                    result = $scope.parseResult(result);                                   
+                                    $scope.accRBIWithLimitReach = result;                                                            
+                                });
+                            }
+                        );
+                    }
+
+                    //REF-1964
+                    $scope.presetSelectedAdvocates = function() {
+                    	var selectedAdvocates = JSON.parse(localStorage.getItem("selectedAdvocates"));
+                        
+                        if (selectedAdvocates != null && selectedAdvocates.length > 0) {
+                            angular.forEach($scope.contacts,function(itm) {
+                                
+                                for (var i=0;i<selectedAdvocates.length;i++) {
+                                    
+                                    if (itm.rbi[$scope.nameSpace + $scope.Contact] == selectedAdvocates[i].contactId) {
+                                        itm.isSelected = true;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
+                    $scope.selectRow = function(col) {
+                        var advocateWrapperList = [];
+                        angular.forEach($scope.contacts,function(itm) {
+                            	if (itm.isSelected) {
+                                    advocateWrapperList.push({contactName: itm.ContactName, accountName:itm.AccountName, contactId:itm.rbi[$scope.nameSpace + $scope.Contact]});
+                                }
+                       	});
+                        localStorage.setItem("selectedAdvocates", JSON.stringify(advocateWrapperList));
+                        
+                        if (col.isSelected == false) {
+                        	$scope.isAllContactSelected = false;
+                        }
+                    }
+
+                    $scope.selectAllRows = function(col) {
+                        var advocateWrapperList = [];
+                    	console.log(col);
+                        angular.forEach($scope.contacts,function(itm) {
+                            	
+                            if (itm.rbi.Contact__r.Email != null && itm.rbi.Contact__r.Email != '') {
+                                itm.isSelected = $scope.isAllContactSelected;
+                            }                        		
+                       	});
+                        angular.forEach($scope.contacts,function(itm) {
+                            
+                            if (itm.isSelected) {
+                                advocateWrapperList.push({contactName: itm.ContactName, accountName:itm.AccountName, contactId:itm.rbi[$scope.nameSpace + $scope.Contact]});
+                            }
+                        });
+                        localStorage.setItem("selectedAdvocates", JSON.stringify(advocateWrapperList));
+                    }
+                
+                });
+            </script>
+        </head>    
+        <!-- Message --> 
+        <apex:pageMessages id="pgmsgId"/>
+        <body>   
+            <div class="slds">   
+                <div ng-controller="ContactBlockController" ng-init="intialFunction();" ng-cloak="ng-cloak"  
+                	ng-class="{'slds-ref-search-sticky-header-block' : showMoreRecordsView, 'slds-ref-search-contact-block' : showMoreRecordsView}">
+                	<div style="height: 65px" ng-show="scrolledBelowSLDS"></div>
+	                <div class="slds-page-header" role="banner">
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+								<h1 class="slds-text-heading--medium slds-align-middle" title="{!$Label.Contacts}">
+									{!$Label.Contacts}
+								</h1>
+							</div>
+							<div ng-show="!isRefMatch" class="slds-size--1-of-2 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+                                <a class="slds-button slds-button--neutral" style="float: right;" ng-click="backToRefsearchPage()" ng-show="!showMoreContact && contacts.length > 5">{!$Label.Back_to_RF_Search}</a>
+                            	<a class="slds-button slds-button--neutral" style="float: right;" ng-click="exportData()" ng-show="!isBasicEdition && showExportButton && contacts.length > 0">{!$Label.Export_Data}</a>                                
+                            </div>
+							<div class="slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+								<div class="slds-grid slds-wrap">
+									<div class="slds-size--1-of-5 slds-medium-size--1-of-8 slds-large-size--2-of-10">
+                                        <p class="slds-text-body--small slds-align-middle">
+                                            Showing {{contacts.length}} of {{totalContacts}} Results
+                                        </p>
+                                    </div>
+                                    <div class="slds-size--2-of-5 slds-medium-size--3-of-8 slds-large-size--2-of-10">
+                                        <a style="cursor: pointer; margin: 1%;" ng-show="showMoreContact" ng-click="showMoreContacts();">
+                                            <span id="contactShowMore">{!$Label.Show_More}</span>
+                                        </a>
+                                        <a style="cursor: pointer; margin: 1%;"
+                                                ng-show="!showMoreContact && contacts.length < totalContacts"
+                                                ng-click="more();"
+                                                ng-class="{disabledAnchorTag: fetchingData}">
+                                            {!$Label.View_More}
+                                        </a>
+                                        <a style="cursor: pointer; margin: 1%;" ng-click="backToRefsearchPage()" ng-show="!showMoreContact && contacts.length > 5 && isRefMatch">{!$Label.Back_to_RF_Search}</a>
+                                    </div>
+								</div>
+							</div>
+						</div>
+					</div>
+	                <div class="slds-notify slds-notify--alert slds-theme--inverse-text slds-theme--alert-texture" role="alert" ng-show="contacts.length == 0">
+	                    {!$Label.No_matches_found}
+	                </div>
+	                <div class="slds-scrollable--x slds-scrollable--y" ng-show="contacts.length > 0" style="max-height:auto;" ng-class="isRefMatch && !(contacts.length > 5) ? 'minDivHeight' :  isRefMatch && (contacts.length > 5) ? 'addOverflow':''">
+	                    <table id="contactTable" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal slds-ref-search-records-table">
+	                        <thead>
+	                            <tr class="slds-text-heading--label">
+	                                <th scope="col" ng-show="!isRefMatch && !isHubMatch" class="leftPaddingCustom"  style="min-width: 20px;">
+                                        <span class="slds-truncate">&nbsp;</span>
+                                    </th>
+	                                <th scope="col" ng-show="isRefMatch && !isHubMatch" class="leftPaddingCustom" style="min-width: 20px; max-width: 68px;">
+                                        <span class="slds-truncate">&nbsp;</span>
+                                    </th>
+                                    <!-- REF-1964 -->
+                                    <th class="slds-cell-shrink selection-checkbox" ng-show="isHubMatch">
+                                        <label class="slds-checkbox">
+                                            <input type="checkbox" name="options" ng-model="isAllContactSelected" ng-change="selectAllRows(contacts);"/>
+                                            <span class="slds-checkbox--faux"></span>
+                                            <span class="slds-assistive-text">Select All</span>
+                                        </label>
+                                    </th>
+                                    <th class="contact-email" ng-show="isHubMatch">
+                                        <div style="min-width: 50px;">
+                                            Contact Email
+                                        </div>
+                                    </th>
+                                    <th scope="col" ng-repeat="column in columnsList | orderBy:'displayOrder'" ng-show="column.isSelected || !contactColumnsSaved || allContactColsHidden"
+                                    	ng-class="{'contact-name': (column.name == 'ContactName'), 'account-name' : (column.name == 'AccountName'),
+                                    		'col-notice' : (column.name == 'Notice'), 'col-about' : (column.name == 'About'), 
+                                    		'col-tag' :  (column.name == 'Tags'), 'col-owner': ((column.name == 'Owner') && showOwner)}">
+										<span class="slds-truncate">
+											<div ng-show="(column.name == 'ContactName')">
+                                                {{column.label}}
+                                            </div>
+                                            <div ng-show="(column.name == 'AccountName')">
+                                                {{column.label}}
+                                            </div>
+											<div ng-show="(column.name == 'Notice')" style="text-align: center;">
+                                                {{column.label}}
+                                            </div>
+                                            <div ng-show="(column.name == 'About')" style="text-align: center;">
+                                                {{column.label}}
+                                            </div>
+                                            
+                                            <div ng-show="(column.name == 'Tags')" style="text-align: center;">
+                                                {{column.label}}
+                                            </div>
+                                            <div ng-show="(column.name == 'Owner') && showOwner">
+                                                {{column.label}}
+                                            </div>  
+										</span>
+									</th>
+                                    <th scope="col" style="text-align: center;" ng-show="isRefMatch && !isHubMatch" class="col-assigned-count">
+                                        <span class="slds-truncate">
+                                            {!$Label.Assigned}
+                                        </span>
+                                    </th>
+                                    <th scope="col" style="text-align: center;" ng-show="isRefMatch && !isHubMatch" class="col-hitlist-count">
+                                        <span class="slds-truncate">
+                                            {!$ObjectType.Hit_List__c.Label}
+                                        </span>
+                                    </th>
+                                    <th scope="col" ng-show="isRefMatch && !isHubMatch"  style="width: 60px;">
+                                        <span class="slds-truncate">
+                                            &nbsp;
+                                        </span>
+                                    </th>
+	                            </tr>
+	                        </thead>
+	                        <tbody>
+                                <tr class="slds-hint-parent" ng-repeat="conWrap in contacts|orderBy:orderByField:reverseSort">
+                                    <td scope="col" ng-show="!isRefMatch && !isHubMatch" class="leftPaddingCustom">
+                                        <span class="slds-truncate">&nbsp;</span>
+                                    </td>
+                                    
+                                    <td role="row" ng-show="isRefMatch && !isHubMatch" class="leftPaddingCustom">
+                                        <span ng-show="conWrap.isAlreadyHit" class="hitIcon">H</span>
+                                    </td>
+                                    <!-- REF-1964 -->
+                                    <td ng-show="isHubMatch" class="slds-cell-shrink" data-label="Select Row">
+                                        <label class="slds-checkbox">
+                                            <input type="checkbox" name="options" ng-disabled="conWrap.ContactEmail == ''" 
+                                                   ng-model="conWrap.isSelected" ng-click="selectRow(conWrap);"/>
+                                            <span class="slds-checkbox--faux"></span>
+                                            <span class="slds-assistive-text">Select Row</span>
+                                        </label>
+                                    </td>
+                                    <td ng-show="isHubMatch">
+                                        <div style="min-width: 50px;">
+                                            {{conWrap.ContactEmail}}
+                                        </div>
+                                    </td>
+                                    <td ng-repeat="column in columnsList | orderBy:'displayOrder'" data-label="{{column.label}}" role="row">
+                                        <div ng-show="(column.isSelected && column.name == 'ContactName')
+                                                                || (!contactColumnsSaved && column.name == 'ContactName')
+                                                                || (allContactColsHidden && column.name == 'ContactName')" class="custom-ellipsis-class">
+                                            <a title="{{conWrap.ContactName}}" style="cursor: pointer;" href="/{{conWrap.rbi[nameSpace + Contact]}}" target="_blank">
+                                                {{conWrap.ContactName}}
+                                            </a>
+                                        </div>
+                                        <div ng-show="(column.isSelected && column.name == 'AccountName')
+                                                                || (!contactColumnsSaved && column.name == 'AccountName')
+                                                                || (allContactColsHidden && column.name == 'AccountName')" class="custom-ellipsis-class">
+                                            <a title="{{conWrap.AccountName}}" style="cursor: pointer;" href="/{{conWrap.rbi[nameSpace + Account]}}" target="_blank">
+                                                {{conWrap.AccountName}}
+                                            </a>
+                                        </div>
+                                        <!--  About Section  -->
+                                        <div style="text-align: center;">
+                                            <img ng-show="(column.isSelected && column.name == 'About') || (!contactColumnsSaved && column.name == 'About')
+                                                            || (allContactColsHidden && column.name == 'About')" class="type-About" ng-click="openAboutPopup(conWrap, $event)"
+                                                            src="{!URLFOR($Resource.RFSearch_Icons,'Info_Icon.svg')}"  style="max-width: 26px; cursor: pointer;"/>
+                                        </div>
+                                        <!--  End About Section  -->
+                                        <div ng-show="(column.isSelected && column.name == 'Notice')
+                                                            || (!contactColumnsSaved && column.name == 'Notice')
+                                                            || (allContactColsHidden && column.name == 'Notice')" style="text-align: center;">
+
+                                            <span class="slds-truncate" ng-show="accRBIWithLimitReach.includes(conWrap.rbi[nameSpace + Account]) || (!accRBIWithLimitReach.includes(conWrap.rbi[nameSpace + Account]) && conWrap.rbi[nameSpace + RUL_Limit_Reached])">
+                                                    <span class="slds-badge slds-theme--error">{!$Label.Limit_Reached}</span>
+                                            </span>
+                                            <span class="slds-truncate" ng-show="(conWrap.rbi[nameSpace + Referenceability_Status] == 'Caution' 
+                                            									&& !(accRBIWithLimitReach.includes(conWrap.rbi[nameSpace + Account]) 
+                                            										|| (!accRBIWithLimitReach.includes(conWrap.rbi[nameSpace + Account]) 
+                                            											&& conWrap.rbi[nameSpace + RUL_Limit_Reached])))">
+                                                <span class="slds-badge slds-theme--warning" style="color: WHITE">{!$Label.Caution}</span>
+                                            </span>
+                                        </div>											
+                                        <!--  Tags Section  -->
+                                        <div style="text-align: center;">
+                                            <img ng-show="(column.isSelected && column.name == 'Tags') || (!contactColumnsSaved && column.name == 'Tags')
+                                                            || (allContactColsHidden && column.name == 'Tags')" class="type-Tag" ng-click="openTagsPopup(conWrap, $event)"
+                                                            src="{!URLFOR($Resource.RFSearch_Icons,'Tags.svg')}"  style="max-width: 29px; cursor: pointer;"/>
+                                        </div>
+                                        <!--  End Tags Section  -->
+                                        
+                                        <a ng-show="((column.isSelected && column.name == 'Owner')
+                                                            || (!contactColumnsSaved && column.name == 'Owner')
+                                                            || (allContactColsHidden && column.name == 'Owner')) && showOwner" style="cursor: pointer;" href="/{{conWrap.ownerId}}" target="_blank">
+                                            {{conWrap.Owner}}
+                                        </a>
+                                    </td>
+                                    <td role="row" ng-show="isRefMatch && !isHubMatch" style="text-align: center;">
+                                        <span class="slds-truncate">
+                                            {{conWrap.assignCount}}
+                                        </span>
+                                    </td>
+                                    <td role="row" ng-show="isRefMatch && !isHubMatch" style="text-align: center;">
+                                        <span class="slds-truncate">
+                                            {{conWrap.hitCount}}
+                                        </span>
+                                    </td>
+                                    <td role="row" ng-show="isRefMatch && !isHubMatch">
+                                        <span class="slds-truncate">
+                                            <div class="slds-dropdown-trigger slds-is-open">
+                                                <button class="slds-button slds-button--icon-border-filled slds-button--icon-x-small">
+                                                    <svg class="slds-button__icon slds-button__icon--hint">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                                    </svg>
+                                                </button>
+                                                <div class="slds-dropdown slds-dropdown--right">
+                                                    <ul class="dropdown__list">
+                                                        <li class="slds-dropdown__item">
+                                                            <a ng-click="hitContact(conWrap)" ng-class="{'disabledAnchorTag' : conWrap.isAlreadyHit}">
+                                                                {!$Label.Hit}
+                                                            </a>
+                                                        </li>
+                                                        <li class="slds-dropdown__item">
+                                                            <a ng-click="assignContact(conWrap)">{!$Label.Assign}</a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </span>
+                                    </td>
+                                </tr>
+	                        </tbody>
+	                    </table>
+						<!--    About Section  REF-1377  -->
+                        <div ng-show="showAboutPopup" class="slds-popover slds-popover--panel slds-nubbin--right-top contact-about-panel not-hide" role="dialog">
+                            <button class="slds-button slds-button--icon-container" ng-click="showBackContactDropPopover()" style="cursor: pointer; position: absolute; right: 0;">
+                                <svg aria-hidden="true" class="slds-button__icon">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                            </button>
+                            <div class="slds-popover__header not-hide">
+                                <div class="slds-media slds-media--center slds-m-bottom--small not-hide">
+                                    <div class="slds-media__body not-hide" style="font-size: 17px; margin-right: 9px;">
+                                            {{contactAboutName}}                                       
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-wrap not-hide">
+                                    <footer class="slds-grid slds-wrap slds-grid_pull-padded">
+                                        <div class="slds-p-horizontal_small slds-size_1-of-2 slds-p-bottom_x-small">
+                                            <dl>
+                                            <dt>
+                                                <p class="slds-text-title_caps slds-truncate" title="{!$Label.USE_HISTORY}" style="color: #556886;">{!$Label.USE_HISTORY}</p>
+                                            </dt>
+                                            <dd>
+                                                <p class="slds-truncate" title="{!$Label.Last}&nbsp;{{rulPeriodLen}}&nbsp;{!$Label.days}">{!$Label.Last}&nbsp;{{rulPeriodLen}}&nbsp;{!$Label.days} : {{lastAboutNdays}}</p>
+                                                <p class="slds-truncate" title="{!$Label.T_Last_Used}">{!$Label.T_Last_Used}   : {{lastAboutUsed}}</p>
+                                            </dd>
+                                            <dt ng-show="summary.length > 0">
+                                                <p class="slds-text-title_caps slds-truncate" title="{!$Label.summary}" style="color: #556886;">{!$Label.summary}</p>
+                                            </dt>
+                                            <dd>
+                                                <pre class="slds-truncate tagAttributeAcc" style="white-space: pre-wrap!important;padding:unset;border:none;background-color: unset;font-family: unset;word-break: unset;color: #16325c;" title="{!$Label.summary}">{{summary}}</pre> 
+                                            </dd>
+                                            </dl>
+                                        </div>                                        
+                                    </footer>
+                                </div>
+                           </div> 
+                        </div> 
+                        <!--    End of About Section    -->
+                        <!--    Tags Section  REF-1377  -->
+                        <div ng-show="showTagsPopup" class="slds-popover slds-popover--panel slds-nubbin--right-top contact-Tags-panel not-hide" role="dialog">
+                            <button class="slds-button slds-button--icon-container" ng-click="showBackContactDropPopover()" style="cursor: pointer; position: absolute; right: 0;">
+                                <svg aria-hidden="true" class="slds-button__icon">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                            </button>
+                            <div class="slds-popover__header not-hide">
+                                <div class="slds-media slds-media--center slds-m-bottom--small not-hide">
+                                    <div class="slds-media__body not-hide" style="font-size: 17px; margin-right: 9px;">
+                                        {{contactAboutName}}
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-wrap not-hide">
+                                    <footer class="slds-grid slds-wrap slds-grid_pull-padded">
+                                        <div class="slds-col slds-size--1-of-1 slds-p-bottom--x-small not-hide">
+                                            <dl>
+                                            <dt>
+                                                <p class="slds-text-title_caps slds-truncate" title="{!$Label.Referenceability}" style="text-transform:uppercase; color: #556886;">{!$Label.Referenceability}</p>
+                                            </dt>
+                                            <dd>
+                                                <p class="slds-truncate tagReferencibilityCon" title="{!$Label.Referenceability}">{{tagReferencability}}</p>                                                
+                                            </dd>
+                                            </dl>
+                                        </div>   
+                                          
+                                        <div class="slds-col slds-size--1-of-1 slds-p-bottom--x-small not-hide">
+                                            <dl>
+                                            <dt>
+                                                <p class="slds-text-title_caps slds-truncate" title="{!$Label.Attributes}" style="text-transform:uppercase; color: #556886;">{!$Label.Attributes}</p>
+                                            </dt>
+                                            <dd>
+                                                <p class="slds-truncate tagAttributeCon" title="{!$Label.Attributes}">{{tagAttributes}}</p>                                                
+                                            </dd>
+                                            </dl>
+                                        </div>                                  
+                                    </footer>
+                                </div>
+                           </div>  
+                        </div> 
+                        <!--    End of Tags Section    -->
+                        <div class=" ng-scope popoverContactBackdrop" ng-click="showBackContactDropPopover()" ng-show="showBackContactDrop"></div>
+	                </div>
+                    <div class="slds-notify_container" ng-show="isError">
+                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert" style="position: fixed; top: 0; width: 50%; z-index: 999; left: 50%; margin-left: -25%;">
+                            <a class="slds-button slds-notify__close slds-button--icon-inverse" title="Close" ng-click="isError = false">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                </svg>
+                            </a>
+                            <div class="slds-notify__content">
+                                <h2 class="slds-text-heading--small" style="font-size: 16px">{{errorMessage}}</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:component>

@@ -1,0 +1,135 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Custom_Settings__c" extensions="ChangeAllNLNRequestsControllerSLDS" tabStyle="Custom_Settings__c" sidebar="false" id="pageId"
+		 standardStylesheets="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0">
+   	<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <style>
+                .slds {
+                	background: white !important;
+                }
+				.slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux:after, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux:after {
+					border-color: #7d8894; 
+				}
+				.slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux {
+					background-color: white;
+				}
+                #toast-msg {
+                    position: fixed;
+                    top: 10px;
+                    left: 0;
+                    right: 0;
+                    width: 50%;
+                    margin: 0 auto;
+                    z-index: 1100000;
+                }
+                .container {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+                var customSettingApp = angular.module('customSettingApp', []);
+                customSettingApp.controller('customSettingCon', function ($scope, $window, $q) {
+                
+                    $scope.customSetting = [];
+                    $scope.ConsiderNoLongerNeeded = false;
+                    $scope.isEditEnabled = ({!$ObjectType.Custom_Settings__c.fields.Consider_No_longer_needed_a_use__c.updateable});
+                    
+                    $scope.intialFunction = function() {
+                   
+	                    $scope.fetchCS().then(function(result) {
+	                        $scope.customSetting = result;
+	                        $scope.ConsiderNoLongerNeeded = angular.copy($scope.customSetting.ConsiderNoLongerNeeded);
+	                    });
+                    }
+                    
+                    $scope.fetchCS = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ChangeAllNLNRequestsControllerSLDS.getConsiderNoLongerNeeded}',
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.showPopup = function() {
+                    	var result = window.confirm('{!$Label.ChangeAllNLNRequestMsg}');
+			            
+			            if (result) {
+			            
+			                $scope.saveCS().then(function(result) {
+			                	console.log('saved');
+		                    });
+			            } else {
+			                $scope.ConsiderNoLongerNeeded = angular.copy($scope.customSetting.ConsiderNoLongerNeeded);
+			            }
+                    }
+                    
+                    $scope.saveCS = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ChangeAllNLNRequestsControllerSLDS.saveCS}', $scope.ConsiderNoLongerNeeded,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                });
+            </script>     
+        </head>
+        <body ng-app="customSettingApp" class="slds">
+        	<div class="container">
+	            <form id="frmId" class="slds-m-left--small" ng-controller="customSettingCon" ng-cloak="ng-cloak">
+	                <div ng-init="intialFunction();">
+	                    <!-- main block -->
+	                    <div class="slds-grid slds-wrap">
+	                   		<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-3 remove-flex">
+		                    	<div class="slds-form-element">
+		                            <label class="slds-form-element__label form-element-label">{!$ObjectType.Custom_Settings__c.fields.Consider_No_longer_needed_a_use__c.Label}</label>
+		                            <div class="slds-form-element__control">
+			                            <span class="slds-form-element__static slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+		                                    <label class="slds-checkbox">
+		                                        <input type="checkbox" ng-model="ConsiderNoLongerNeeded" ng-change="showPopup();" ng-disabled="!isEditEnabled"/>
+		                                        <span class="slds-checkbox--faux"></span>
+		                                    </label>
+		                                </span>
+		                            </div>
+		                        </div>
+	               			</div>
+	          			</div>
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

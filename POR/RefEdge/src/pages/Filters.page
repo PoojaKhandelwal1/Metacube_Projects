@@ -1,0 +1,149 @@
+<!-- 
+    * ReferenceEdge
+    * 
+    * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+    *
+    * @company : Point of Reference, Inc.
+    * @website : www.point-of-reference.com
+    *
+    * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+    * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+    * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+    * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+    * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+    * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+    * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+    * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+    * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+    * WRITTEN CONSENT FROM COMPANY. 
+    -->
+<apex:page standardController="Label__c" showHeader="true" lightningStylesheets="true"
+    extensions="FiltersExtensions" sidebar="true" tabStyle="Label__c">
+    <apex:pageMessages id="pgmsgId" />
+    <script>
+        var isEdit = "{!isEdit}";
+        var isAdvRouting = "{!isAdvanceRouting}"; 
+        var isShowP2PChecked=false;
+        
+        function confirmtoSave(isOnlySave) { 
+
+            if (Boolean(isEdit)==true && Boolean(isAdvRouting)==true && Boolean(isShowP2PChecked)==true) {
+                if (confirm('{!JSENCODE($Label.Remove_Advance_Routing)}')) {
+                    saveForm(isOnlySave);
+                }
+            }
+            else {
+                
+                saveForm(isOnlySave);
+            }     
+            return false;
+        }
+        
+        function resetValues(value) {  
+            if(!value.checked){ 
+                change();
+                isShowP2PChecked=true;
+            } 
+                 
+            return false;
+        }
+        
+    </script>
+    <style>
+        .legend-type {
+        border-top: 1px solid #ccc;
+        height: 20px;
+        position: relative;
+        width: 90%;
+        margin: 27px auto 0 auto;
+        }
+        .legend-heading {
+        display: block;
+        position: absolute;
+        left: 124px;
+        top: -20px;
+        height: 30px;
+        background: #f8f8f8;
+        text-align: center;
+        padding-top: 12px;
+        box-sizing: border-box;
+        font-weight: bold;
+        padding-left: 4px;
+        padding-right: 4px;
+        }
+        .requiredField {
+        background-color: #c00;
+        position: absolute;
+        right: -18px;
+        width: 3px;
+        top: 0px; 
+        bottom: -7px;}
+    </style>
+    <apex:form id="frmId">
+        <!-- Section Header-->
+        <apex:sectionHeader subTitle="{!IF(!isEdit,$Label.New_Filter,label.Name)}" title="{!$Label.Filter_Edit}"/>
+        <!-- Page Block -->
+        <apex:pageBlock id="pbId" title="{!$Label.Filter_Edit}" mode="edit">
+            <!-- Page Block Buttons-->
+            <apex:pageBlockButtons id="pbbId">
+                <apex:commandButton value="{!$Label.Save}" onclick="confirmtoSave(true); return false;"  />
+                <apex:commandButton value="{!$Label.Save_and_New}" onclick="confirmtoSave(false); return false;"/>
+                <apex:commandButton value="{!$Label.Cancel}" action="{!cancelForm}" immediate="true" />
+                <apex:actionfunction name="saveForm" action="{!saveForm}" reRender="pgmsgId">
+                    <apex:param name="saveOrNew" value="" assignTo="{!isOnlySave}"/>
+                </apex:actionfunction>
+            </apex:pageBlockButtons>
+            <!-- Page Block Section-->
+            <apex:pageBlockSection id="pbsId" columns="2" title="{!$Label.Information}">
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:outputLabel value="{!$Label.Filter_Label_Name}"/>
+                        <apex:outputPanel >
+                            <div class="requiredField"></div>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:inputField value="{!label.Name}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="{!$Label.Owner}" />
+                    <apex:outputPanel layout="block">
+                        <apex:outputLabel value="{!label.Owner.Name}" rendered="{!label.Id != null}"/>
+                        <apex:outputLabel value="{!$User.FirstName + ' ' + $User.LastName}" rendered="{!label.Id == null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:inputField value="{!label.BasicSearchView__c}" />
+                <apex:inputField value="{!label.Description__c}" />
+                <apex:inputField value="{!label.Filter_RefSearch_Visible__c}" />
+                <!-- added a field regarding #570  -->
+                <apex:inputField value="{!label.Ref_Limit_to_Acct_or_Cntct__c}" />
+                <apex:inputField value="{!label.Visible__c}" />
+            </apex:pageBlockSection>
+            <apex:pageBlockSection columns="1" rendered="{!AND(cs.Adv_Request_Routing__c,NOT(isthisBasic))}">
+                <div class="legend-type">
+                    <span class="legend-heading"> {!$Label.Advance_Routing} </span>
+                </div>
+            </apex:pageBlockSection>
+            <div>
+                <apex:pageBlockSection id="advRoutingSection" rendered="{!AND(cs.Adv_Request_Routing__c,NOT(isthisBasic))}">
+                    <apex:inputCheckbox id="showP2P" value="{!label.Show_in_P2P__c}" onchange="return resetValues(this);"/>
+                    <apex:actionfunction name="change" action="{!reSetP2PValues}" rerender="showP2P,pgmsgId,advlist,reqP2P"/>
+                    <apex:inputCheckbox id="reqP2P" value="{!label.Required_in_P2P__c}"  >
+                        <apex:actionSupport event="onchange" action="{!selectP2P}" rerender="showP2P,pgmsgId" />
+                    </apex:inputCheckbox>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="{!$ObjectType.Label__c.fields.Adv_Routing_Group__c.Label}" />
+                        <apex:outputPanel layout="block">
+                            <div class="requiredBlock"></div>
+                            <apex:selectList id="advlist" value="{!selectedGroup}" size="1">
+                                <apex:actionSupport event="onchange" action="{!selectP2P}" rerender="showP2P,pgmsgId" />
+                                <apex:selectOptions value="{!advRoutingGroup}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </div>
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

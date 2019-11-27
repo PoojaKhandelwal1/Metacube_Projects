@@ -1,0 +1,655 @@
+<!--
+    * ReferenceEdge
+    * 
+    * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+    *
+    * @company : Point of Reference, Inc.
+    * @website : www.point-of-reference.com
+    *
+    * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+    * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+    * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+    * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+    * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+    * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+    * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+    * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+    * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+    * WRITTEN CONSENT FROM COMPANY.
+-->
+<apex:page controller="DataCollectorControllerSLDS"  showHeader="false"
+sidebar="false"
+standardstylesheets="false"
+applyHtmlTag="false"
+applyBodyTag="false"
+docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="/soap/ajax/33.0/connection.js" type="text/javascript"></script>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />            
+            <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" /> 
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/> 
+            <apex:stylesheet value="{!URLFOR($Resource.AngularMultiSelectCSS)}" />
+            <script src="{!URLFOR($Resource.AngularMultiSelectJS)}"></script>          
+            <script src="{!URLFOR($Resource.MomentJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+            <c:LookupPicklistSLDS id="picklistId"/>
+            <style type="text/css">
+                .bPageHeader {
+					display:none;
+					background-image: url(/_slds/images/themes/lightning_blue/lightning_blue_background.png),linear-gradient(to top, rgba(160, 180, 206, 0.0) 0, rgba(160, 180, 206, 1.0));
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux{ 
+					background-color: white !important;
+					border-radius: 20%;
+                }
+                .slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux:after, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux:after{
+					border-color : gray;
+                }
+                a {
+					cursor: pointer;
+                }
+                #error-block {
+					background-color: #DA4949;
+					color: WHITE;
+					font-size: 15px;
+					border-radius: 5px;
+                }
+                .slds-form-element__static{
+					font-size: 13px !important;
+                }
+                
+                .panalHader {
+					background-color: #F3F5F8;
+					width: 98% !important; 
+					padding: 10px 24px 10px; 
+					margin-top: 10px;
+					margin-right: 10px;
+					border-radius: 5px;					
+                }
+                
+                #lookup-block {
+					width: 480px;
+                }
+                
+                #loading { 
+					width: 100%;
+					height: 100%;
+					top: 0px;
+					left: 0px;
+					position: absolute;
+					display:block;
+					opacity: 0.7;
+					filter: alpha(opacity = 50);
+					-moz-opacity: 0.7;
+					background-color: #fff;
+					text-align: center;
+					z-index: 19005;
+                }
+					#loading-image {
+					position: fixed;
+					top: 40%;
+					left: 42%;
+					width:5%;
+                }
+                .slds .slds-truncate {
+                    max-width: 250%;
+                }                       
+
+                @media only screen and (max-width: 767px) {
+                    /* For mobile phones: */
+                    .mobileDevice {
+                        display : none !important;
+                    }
+                    .lookupcss {
+                        width:20px !important;
+                    }
+                }
+
+                @media only screen and (min-width: 768px) {
+                    /* For desktop: */
+                    .mobileDevice1 {
+                        display : none !important;
+                    }
+                    
+                    .slds-input {
+                        width:480px !important;
+                    }
+                    .slds-select {
+                        width:480px !important;
+                    }
+                    .lookupcss {
+                        width:480px !important;
+                    }
+                }
+            </style>
+            <script>
+                var myApp = angular.module('myApp', ['angularjs-datetime-picker','lookupPicklistApp','angularMultiSelectList']);
+                myApp.controller('myCtrl', function ($scope, $window, $q , $filter) {
+                $scope.formName = '';
+                $scope.formHeader = '';
+                $scope.formSubHeader = '';
+                $scope.sectionInfo;
+                $scope.isloading = true;
+                $scope.pickListValues;
+                $scope.referenceObject;
+                $scope.dateFormat = 'yyyy-MM-dd';
+                $scope.referenceContent;
+                $scope.accountName = '';
+                $scope.accountIdTest = '';
+                $scope.isError = false;
+                $scope.errorMsg = '';
+                $scope.isRefContentSectio = {!refContentSec};
+                $scope.isPreview = {!isPreview};
+                $scope.refContentRec = '';
+                $scope.idCheck = {!noIdAssociated};
+                $scope.customSettingId = '{!JSENCODE(customSettingId )}';
+                $scope.showGreeting = false;
+                $scope.saveEnable = {!isSave};
+                
+                if(!$scope.idCheck && !$scope.isPreview) {
+					$scope.refContentRec = JSON.parse('{!JSENCODE(refContentRecord)}');  
+                }  
+                $scope.formName = '{!JSENCODE(strValue)}';
+                $scope.delMessage = '{!JSENCODE(deletedRecordMsg)}';
+                $scope.nameSpace = '{!JSENCODE(nameSpace)}';
+                $scope.refContentFields;
+                $scope.isNote = {!isNote};
+                $scope.currentUser = '{!JSENCODE(currentUser)}';                    
+                $scope.userIdSet;
+                $scope.dmMap;
+                $scope.dateTimeFields; 
+                
+                if($scope.delMessage != '') {
+					$scope.errorMsg = $scope.delMessage;
+                }
+                
+                $scope.selectedMPLValue = [];
+                
+                //Initial Function called when page loads
+                $scope.load  = function() {
+                
+                $scope.getDateFormat().then(function(result) {
+                
+                if (result != null) {  
+					$scope.dateFormat = result;                           
+                }
+                $scope.init(); 
+                });
+                
+                Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.DataCollectorControllerSLDS.getRefContentFieldAndPicklist}',
+					function(result, event) {  
+					
+					if (result != null) {  
+						$scope.refContentFields = JSON.parse($scope.parseResult(result));                                    
+						}
+					}
+                );
+                }
+                
+                $scope.init = function () {
+                
+                $scope.getReferenceContentInfo().then(function(result) {
+                //   alert(result);
+                if (result != null) {                                
+                
+					for(var i = 0; i < result.length; i++) {
+					
+						if(i == 0) {
+							$scope.formName = result[i];
+						} else if(i == 1) { 
+							$scope.formHeader = result[i];
+						} else if(i == 2) {
+							$scope.formSubHeader = result[i];
+						} else if(i == 3) {
+							$scope.referenceContent = JSON.parse($scope.parseResult(result[i]));                                        
+						} else if(i == 4) {                                    
+							$scope.sectionInfo = JSON.parse($scope.parseResult(result[i]));                                  
+						} else if(i == 5) {
+							$scope.dmMap = JSON.parse($scope.parseResult(result[i]));
+						} else if(i == 6) {
+							$scope.dateTimeFields = JSON.parse($scope.parseResult(result[i]));
+						} else if(i == 7) {
+							$scope.selectedMPLValue = JSON.parse($scope.parseResult(result[i]));
+						}                                  
+					}
+                }
+                
+                });   
+
+                $scope.isloading = false;                                                                                                     
+                }
+                
+                $scope.getReferenceContentInfo = function() {
+                var deferred = $q.defer();
+                // alert(JSON.stringify($scope.refContentRec));
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.DataCollectorControllerSLDS.getReferenceContentInfo}',
+                    JSON.stringify($scope.refContentRec), $scope.isPreview, $scope.formName,
+                    function(result, event) {
+                        deferred.resolve(result);
+                    },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                $scope.getDateFormat = function () {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.DataCollectorControllerSLDS.getDateFormat}', 
+                    function(result, event) {
+                        deferred.resolve(result);
+                    },
+                    {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                function showDisolvingAlert(rewards) {
+					if (rewards!='') { 
+		                var str_array = rewards.split(',');
+		                
+		                if(str_array.length == 3) { 
+		                    notification(str_array[2], str_array[1]); 
+		                }
+		            } 
+				}
+				
+				function redirectToBack() {
+				}
+				
+                $scope.parseResult = function(result) {
+				
+					if (result != null) {
+						result = result.replace(/&quot/gi, '"');
+						result = result.replace(/&amp/g, '&');
+						result = result.replace(/&lt/g, '<');
+						result = result.replace(/&gt/g, '>');
+						result = result.replace(/;/g, '');
+						result = result.replace(/&#39/g, '\'');
+						return result;
+					}
+                }
+                
+                $scope.dateTimeValue = [];
+                $scope.saveRecord = function() {
+                $scope.isloading = true;
+                
+                angular.forEach(
+                $scope.dateTimeFields,
+                function(val) {
+					if($scope.referenceContent[val] != '' && $scope.referenceContent[val] != null) {
+						$scope.dateTimeValue.push({fieldAPI : val, value : $scope.referenceContent[val]});  
+						$scope.referenceContent[val] = null;                              
+					} 
+                }
+                );
+                
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.DataCollectorControllerSLDS.saveResult}',
+                    JSON.stringify($scope.referenceContent),
+                    JSON.stringify($scope.refContentRec),
+                    $scope.currentUser,
+                    JSON.stringify($scope.dmMap),
+                    JSON.stringify($scope.dateTimeValue),
+                    JSON.stringify($scope.selectedMPLValue),
+                    function(result, event) {   
+
+                    if(result && result.substring('SUCCESS')) {                                
+                        $scope.isloading = false;
+                        showDisolvingAlert(result);
+                        if ($scope.saveEnable) {
+                        	setTimeout(function() {
+                        		var urlLink = window.location.origin+'/'+'{!JSENCODE(contentId)}';
+                            	window.location = urlLink;
+                        	}, 4100); 
+                        } else {
+                            $scope.showGreeting = true;
+                        }
+                    } else {
+                    
+                    angular.forEach(
+                    $scope.dateTimeValue,
+                    function(myval) { 
+                        $scope.referenceContent[myval.fieldAPIl] = myval.value;  
+                    }
+                    );                  
+                        $scope.isloading = false;
+                        $scope.isError = true;
+                        $scope.errorMsg = result;                                  
+                    } 
+                        $scope.$apply();                          
+                    }
+                    );
+                }
+                
+                $scope.backToManage = function() {                    
+                    var url = '{!$Page.DataCollectorManagePage}'
+                    +'?customSettingId='+$scope.customSettingId;
+                    sforce.one.navigateToURL(url, true);
+                }
+                
+                $scope.cancel = function() {
+
+                    if ((typeof sforce != 'undefined') && (sforce.one != null)) {
+                        sforce.one.back(true);
+                    } else {
+                        window.location = '/_ui/core/chatter/ui/ChatterPage';
+                    }
+                }
+                }               
+                );
+                </script>
+                </head>
+                <body class="slds">
+                    
+                    <div ng-app="myApp" ng-controller="myCtrl" ng-cloak="ng-cloak" ng-init="load();">
+                    	<c:RewardNotification />
+                        <br/>
+                        <div ng-if="!showGreeting">
+                            <!--        Error Message           -->
+                            <div ng-show="isError" class="slds-notify_container toast-msg">
+                                <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                                    <span class="slds-assistive-text">{!$Label.Error}</span>
+                                    <button class="slds-button slds-button--icon-inverse slds-notify__close">
+                                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;" style="cursor:pointer">
+                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                        </svg>
+                                        <span class="slds-assistive-text">{!$Label.Close}</span>
+                                    </button>
+                                    <div class="slds-notify__content slds-grid">
+                                        <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+                                        </svg>
+                                        <div class="slds-col slds-align-middle">
+                                            <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{errorMsg}}</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-page-header" style="margin-top: -20px">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-size_1-of-1 slds-medium-size_3-of-6 slds-large-size_3-of-6">
+                                        <div class="slds-media slds-grid slds-wrap slds-grid_vertical-align-center" style="align-items: center">
+                                            <div class="slds-media__figure">
+                                                <span class="slds-icon_container slds-icon-standard-user" style="background-color: #2291F1">
+                                                    <img src="{!URLFOR($Resource.RefEdge_Square_Icon,'icon-small.png')}"  style="width: 42px;"/>
+                                                </span>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <p class="slds-text-title_caps slds-line-height_reset" style="padding: 4px; font-size: 18px;">{{formHeader}}</p>
+                                                <h1 class="slds-page-header__title slds-m-right_small slds-align-middle">{{formSubHeader}}</h1>
+                                            </div>
+                                        </div>
+                                    </div>                                    
+                                    <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex"><br/>
+                                        <div role="group" style="float: right; margin-top: -6%;"><br/>
+                                            <button class="slds-button slds-button--neutral" ng-click="backToManage();" ng-show="isPreview">{!$Label.Back}</button>
+                                            <button class="slds-button slds-button--neutral" ng-click="cancel()" ng-show="!isPreview">{!$Label.Cancel}</button>
+                                            <button class="slds-button slds-button--neutral" ng-click="saveRecord()" ng-show="!isPreview && saveEnable">{!$Label.Save}</button>
+                                            <button class="slds-button slds-button--neutral" ng-click="saveRecord()" ng-show="!isPreview && !saveEnable">{!$Label.Submit}</button>                                       
+                                        </div>
+                                    </div>                        
+                                </div>
+                                <ul class="mobileDevice1 slds-grid slds-wrap slds-page-header__detail-row" style="background-color: #f7f9fb; padding: 0; margin: 0.75rem 0 0 0">
+                                    <li class="slds-page-header__detail-block">
+                                        <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Opportunity_Name}</p>
+                                        <p class="slds-text-body_regular">
+                                            <a title="{!$Label.Opportunity_Name}" style="cursor: pointer;" href="/{{refContentRec[nameSpace + 'Opportunity__r'].Id}}">
+                                                {{refContentRec[nameSpace + 'Opportunity__r'].Name}}
+                                            </a>
+                                        </p>
+                                    </li>
+                                    <li class="slds-page-header__detail-block">
+                                        <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Opportunity_Account}</p>
+                                        <p class="slds-text-body_regular">
+                                            <a title="{!$Label.Opportunity_Account}" style="cursor: pointer;" href="/{{refContentRec[nameSpace + 'Opportunity__r'].AccountId}}">
+                                                {{refContentRec[nameSpace + 'Opportunity__r'].Account.Name}}
+                                            </a>
+                                        </p>
+                                    </li>
+                                    <li class="slds-page-header__detail-block">
+                                        <p class="slds-text-title slds-m-bottom_xx-small">{!$Label.Opportunity} {!$Label.Owner}</p>
+                                        <p class="slds-text-body_regular">
+                                            <a title="{!$Label.Opportunity} {!$Label.Owner}" style="cursor: pointer;" href="/{{refContentRec[nameSpace + 'Opportunity__r'].OwnerId}}">
+                                            {{refContentRec[nameSpace + 'Opportunity__r'].Owner.Name}}
+                                        </a>
+                                        </p>
+                                    </li>                                    
+                                </ul>
+                            </div> <br/>
+                         <!--   REF-1895    (Add section for Opportunity Information) -->
+                           
+                            <div class="mobileDevice slds-grid slds-size_1-of-1 slds-medium-size_3-of-6 slds-large-size_3-of-6">
+                                <div class="slds-col" style="padding-left : 42px; max-width : 20%;">
+                                    <label class="slds-form-element__label">{!$Label.Opportunity_Name}</label> <br/> 
+                                    <a title="{!$Label.Opportunity_Name}" style="cursor: pointer;" href="/{{refContentRec[nameSpace + 'Opportunity__r'].Id}}" target="_blank">
+                                        {{refContentRec[nameSpace + 'Opportunity__r'].Name}}
+                                    </a>
+                                </div>
+                                <div class="slds-col" style="padding-left : 7px; max-width : 20%;">
+                                    <label class="slds-form-element__label">{!$Label.Opportunity_Account}</label> <br/> 
+                                    <a title="{!$Label.Opportunity_Account}" style="cursor: pointer;" href="/{{refContentRec[nameSpace + 'Opportunity__r'].AccountId}}" target="_blank">
+                                        {{refContentRec[nameSpace + 'Opportunity__r'].Account.Name}}
+                                    </a>
+                                </div>
+                                <div class="slds-col" style="padding-left : 7px; max-width : 20%;">
+                                    <label class="slds-form-element__label">{!$Label.Opportunity} {!$Label.Owner}</label> <br/> 
+                                    <a title="{!$Label.Opportunity} {!$Label.Owner}" style="cursor: pointer;" href="/{{refContentRec[nameSpace + 'Opportunity__r'].OwnerId}}" target="_blank">
+                                        {{refContentRec[nameSpace + 'Opportunity__r'].Owner.Name}}
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!--        Content Section        -->
+                            <div class="slds-grid slds-wrap" style="padding: 12px; width: 100%;">
+                                <div class="slds-col slds-size--1-of-2 slds-medium-size--1-of-2" style="margin: 0 18px 0 18px;" ng-show="!isPreview && isRefContentSectio">   
+                                    <div class="slds-section slds-is-open">
+                                        
+                                        <div class="panalHader">
+                                            <div class="slds-form-element">
+                                                <h2 class="slds-text-heading--small slds-truncate" title="{!$Label.Reference_Content_Section}">{!$Label.Reference_Content_Section}</h2> 
+                                            </div>
+                                        </div>  <BR/>
+                                        <div aria-hidden="false" class="slds-section__content">
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="fildInfo in refContentFields | orderBy : 'fieldId'" class="slds-col slds-size--1-of-2 slds-medium-size--1-of-2">
+                                                    <div ng-show="fildInfo.fieldAPIName != ''" style="min-height:65px; padding-top: 15px;">
+                                                        
+                                                        <div class="slds-form-element">
+                                                            <!--    dynamic Label    -->
+                                                            <label class="slds-form-element__label">{{fildInfo.fieldLabel}}</label>                                                        
+                                                            <!--        Dynamic Fields    -->
+                                                            
+                                                            <div ng-if="fildInfo.fieldType == 'BOOLEAN'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">
+                                                                        <label class="slds-checkbox">
+                                                                            <input type="checkbox" ng-model="refContentRec[fildInfo.fieldAPIName]"/>
+                                                                            <span class="slds-checkbox--faux"></span>
+                                                                        </label>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="fildInfo.fieldType == 'PICKLIST'">
+                                                                <div class="slds-form-element__control">
+                                                                    <select class="slds-select" ng-model="refContentRec[fildInfo.fieldAPIName]">
+                                                                        <option label="--None--" value=""></option>                                                                
+                                                                        <option ng-repeat="option in fildInfo.options" ng-selected="option == refContentRec[fildInfo.fieldAPIName]" value="{{option}}">{{option}}</option>   
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-show="fildInfo.fieldAPIName == nameSpace + 'Title__c'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static" style="color: cornflowerblue;">{{refContentRec[fildInfo.fieldAPIName]}}</span>
+                                                                </div>                                                                
+                                                            </div>
+                                                           
+                                                        </div>
+                                                    </div>
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div ng-repeat="secInfo in sectionInfo" class="slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1"  style="margin: 0 18px 0 18px;">   
+                                    <div class="slds-section slds-is-open">
+                                        
+                                        <div class="panalHader">
+                                            <div class="slds-form-element">
+                                                <h2 class="slds-text-heading--small slds-truncate" title="{{secInfo.Name}}">{{secInfo.Name}}</h2> 
+                                            </div>
+                                        </div>  <BR/>
+                                        <div aria-hidden="false" class="slds-section__content">
+                                            <div class="slds-grid slds-wrap">
+                                                <div ng-repeat="field in secInfo.Field" class="slds-col slds-size--1-of-1 slds-medium-size--1-of-1">
+                                                    <div ng-show="field.fieldAPIName != ''" style="min-height:65px; padding-top: 15px;">
+                                                        <div class="slds-form-element">
+                                                            <!--    dynamic Label    -->
+                                                            <label class="slds-form-element__label">{{field.fieldLabel}}</label>
+                                                            <!--        Dynamic Fields    -->
+                                                            
+                                                            <div ng-if="field.fieldType == 'BOOLEAN'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static">
+                                                                        <label class="slds-checkbox">
+                                                                            <input type="checkbox" ng-model="referenceContent[field.fieldAPIName]"/>
+                                                                            <span class="slds-checkbox--faux"></span>
+                                                                        </label>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'TEXTAREA'">
+                                                                <div class="slds-form-element__control">
+                                                                    <textarea rows="2" cols="50" class="slds-input" ng-model="referenceContent[field.fieldAPIName]"></textarea>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'DOUBLE'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static"></span>
+                                                                    <input type="number" class="slds-input" ng-model="referenceContent[field.fieldAPIName]"/>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'DATETIME'">
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static"></span>
+                                                                    <input class="slds-input" ng-model="referenceContent[field.fieldAPIName]" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker"/>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'DATE'">
+                                                                <div class="slds-form-element__control">                                                           
+                                                                    <input class="slds-input" ng-model="referenceContent[field.fieldAPIName]" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker"/>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'STRING' || field.fieldType == 'EMAIL' || field.fieldType == 'URL' || field.fieldType == 'CURRENCY' || field.fieldType == 'PHONE' || field.fieldType == 'PERCENT'">
+                                                                <div class="slds-form-element__control">
+                                                                    <input type="text" class="slds-input" ng-model="referenceContent[field.fieldAPIName]"/>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'PICKLIST'">
+                                                                <div class="slds-form-element__control">
+                                                                    <select class="slds-select" ng-model="referenceContent[field.fieldAPIName]">
+                                                                        <option label="--None--" value=""></option>                                                                
+                                                                        <option ng-repeat="option in field.options" ng-selected="option == referenceContent[field.fieldAPIName]" value="{{option}}">{{option}}</option>   
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'MULTIPICKLIST'">
+                                                                <div class="slds-form-element__control">
+                                                                    
+                                                                    <div ng-repeat="pickFld in selectedMPLValue">
+                                                                        <div ng-if="pickFld.fieldAPIName == field.fieldAPIName">                                                                        
+                                                                            <multi-select ng-model="pickFld.multiPickOptions"
+                                                                            available="field.multiPickOptions"
+                                                                            selected-label="Available"
+                                                                            available-label="Selected" 
+                                                                            display-attr="name">
+                                                                            </multi-select> 
+                                                                        </div>                                                                      
+                                                                    </div>                                                            
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="field.fieldType == 'REFERENCE'">
+                                                                <lookup-picklist object-Name="field.objectLabel" object-Api-Name="field.objectName"  selected-Id="referenceContent[field.fieldAPIName]" selected-Name="referenceContent[field.SelectedValue].Name"></lookup-picklist>    
+                                                            </div>
+                                                            
+                                                        </div>
+                                                    </div>
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr/>
+                                
+                            </div>                      
+                            
+                            <!--    End Of Content section        -->
+                            <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+                                <img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                            </div>
+                        </div>
+                        <div ng-if="showGreeting">  
+                            
+                            <div class="slds-page-header">
+                                <div class="slds-grid">
+                                    <div class="slds-col slds-has-flexi-truncate" style="min-width: 35%;">
+                                        <div class="slds-media slds-no-space slds-grow">
+                                            <div class="slds-media__figure">
+                                                <img src="{!URLFOR($Resource.RefEdge_Square_Icon,'icon-small.png')}"  style="width: 42px;"/>                      
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <nav>
+                                                    <ol class="slds-breadcrumb slds-line-height_reset">
+                                                        <li class="slds-breadcrumb__item">
+                                                            <h1 class="slds-page-header__title slds-truncate slds-align-middle" title="Form Header" style="padding: 4px; font-size: 21px;">{{formHeader}}</h1><br/>
+                                                            <p class="slds-text-body_small slds-line-height_reset" style="margin-left: -11%; width:250%">{{formSubHeader}} </p> 
+                                                        </li>
+                                                    </ol>
+                                                </nav>                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div ng-show="showGreeting" class="slds-notify_container toast-msg">
+                                        <div class="slds-notify slds-notify--toast slds-theme--success" role="alert">
+                                            
+                                            <div class="slds-notify__content slds-grid">
+                                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+                                                </svg>
+                                                <div class="slds-col slds-align-middle">
+                                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{!$Label.Thank_you_Note}</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+                                        <div class="slds-button-group buttonStyle" role="group" style="float: right; margin-top: -12%;">                                        
+                                            <button class="slds-button slds-button--neutral" ng-click="cancel()" ng-show="!isPreview">{!$Label.Back_to_Home}</button>                                        
+                                        </div>
+                                    </div>                        
+                                </div>  
+                            </div> <br/>
+                        </div>
+                    </div>
+                    
+                </body>
+            </html>
+        </apex:page>

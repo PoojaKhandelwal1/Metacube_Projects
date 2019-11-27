@@ -1,0 +1,724 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page sidebar="false" standardController="Reference_Lead__c" recordSetVar="refLeads" extensions="LaunchRefProspectorCampaignController" docType="html-5.0" standardStylesheets="false">
+<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+<script>
+	$(document).ready(function() {
+		$('#phHeader td.left div').css({"width": "19vw", "height": "auto"});
+	});
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+		<script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+		
+		<style>
+			#lightningDiv * {
+				font-family: "Salesforce Sans",Arial,sans-serif !important;
+			}
+			.container {
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				overflow-x: hidden;
+				overflow-y: scroll;
+			}
+			.classicSpinner {
+            	position: absolute;
+			    top: 50%;
+			    left: 50%;
+			    margin-left: -30px;
+            }
+            .classicSpinnerBackground {
+            	top: 0;
+			    height: 100vh;
+			    left: 0;
+			    right: 0;
+			    background-color: WHITE;
+			    opacity: 0.7;
+			    z-index: 9999;
+            }
+            .pageHeader {
+                background-color: #F4F6F9;
+            }
+            .errorPageMsgDiv {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+            }
+            .customPopup {
+				padding: 10px;
+	            background-color: white;
+	            box-shadow: 0 0 20px #6D6D6D;
+				border: 1px solid GRAY;
+				border-radius: 5px;
+				position: fixed;
+				top: 25vh;
+				left: 50%;
+				margin-left: -20%;
+				width: 40%;
+				z-index: 10;
+	        }
+	        .popupBackground {
+	            background-color: black;
+	            opacity: 0.20;
+	            filter: alpha(opacity = 20);
+	            position: absolute;
+	            width: 100%;
+	            height: 100%;
+	            top: 0;
+	            left: 0;
+	            z-index: 9;
+	        }
+	        .modalHeader {
+	        	border-bottom: 1px solid lightgray;
+	        	padding-bottom: 5px;
+    			font-size: 1.2em;
+	        }
+	        .modalHeader a {
+	        	float: right;
+	        	text-decoration: none;
+	        }
+	        .modalContent {
+        	    padding: 5px 0;
+	        }
+	        .modalFooter {
+	        	padding-top: 5px;
+			    border-top: 1px solid lightgray;
+			    text-align: end;
+	        }
+	        @media screen and (max-width: 767px) {
+		        .custom-input-small {
+		        	width: 35% !important;
+		        }
+		        .custom-input {
+		        	width: 100% !important;
+		        }
+		        .horizontal-padding-large {
+                    padding-right: 0.5rem;
+                    padding-left: 0.5rem;
+                }
+                .custom-toast-container {
+	            	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 0;
+				    width: 100%;
+				    margin-left: 0;
+	            }
+            }
+            @media screen and (min-width: 768px) {
+		        .custom-input-small {
+		        	width: 15% !important;
+		        }
+		        .custom-input {
+		        	width: 50% !important;
+		        }
+		        .horizontal-padding-large {
+                    padding-right: 2rem;
+                    padding-left: 2rem;
+                }
+                .custom-toast-container {
+	            	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 50%;
+				    width: 60%;
+				    margin-left: -30%;
+	            }
+            }
+            .custom-toast-width {
+            	min-width: 0;
+            	width: 96%;
+            }
+              /* Css override for make font consistent over  Request Detail modal - Re REF-1191   */
+			.customPopup {
+				padding: 1px;
+	            background-color: #F8F8F8;
+	            box-shadow: 0 0 20px #6D6D6D;
+				border: 1px solid GRAY;
+				border-radius: 5px;
+				position: absolute;
+				top: 20%;
+				left: 50%;
+				margin-left: -20%;
+				width: 40%;
+				z-index: 10;
+	        }
+	        .popupBackground {
+	            background-color: black;
+	            opacity: 0.20;
+	            filter: alpha(opacity = 20);
+	            position: absolute;
+	            width: 100%;
+	            height: 100%;
+	            top: 0;
+	            left: 0;
+	            z-index: 9;
+	        }
+	        .bPageBlock {
+			    background-color: #F8F8F8 !important;
+			    border-top: 2px solid gray !important;
+			    border-bottom: none !important;
+			    border-left: none !important;
+			    border-right: none !important;
+			    border-radius: 0px !important;
+			}
+			div#divBAck .Custom108Block .bPageBlock {
+	    		border-top: none !important;
+	    		font-size: 12px;
+			}
+			div#divDetails .Custom108Block .bPageBlock {
+	    		border-top: none !important;
+			}
+			select {
+	    		color: #000;
+	    		font-size: 12px;
+			} 
+			
+			.slds-button__icon {
+			    width: .875rem;
+			    height: .875rem;
+			    fill: currentColor;
+			    color: #ffffff;
+			}
+		</style>
+		
+		<script>
+			var launchCampaignApp = angular.module('launchCampaignApp', []);
+			var launchCampaignCtrl = launchCampaignApp.controller('launchCampaignCtrl',
+				function($scope, $q) {
+					$scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+					$scope.isSLDS = {!isSLDS};
+					$scope.isLoading = false;
+                   	$scope.errorMessage = '';
+                   	$scope.isError = false;
+                   	$scope.isFromCustomSettings = {!isFromCustomSettings};
+                   	$scope.isRefProspectEnabled = true;
+					$scope.showEnableProspectToast = true;
+					$scope.refLeadListViewId = '{!JSENCODE(refLeadListViewId)}'
+					$scope.nameSpace = '{!JSENCODE(nameSpace)}';
+					$scope.refLeadIdPrefix = '{!JSENCODE(refLeadIdPrefix)}';
+                   	
+                   	$scope.isCampaignLaunched = false;
+                   	$scope.showCampaignLaunchedToast = false;
+                   	$scope.customSettingWrapper = {};
+                   	$scope.showLaunchConfirmation = false;
+                   	$scope.launchConfirmationMsg = '';
+					
+					$scope.init = function() {
+						$scope.isLoading = true;
+						
+						$scope.getCustomSettings().then(function(result) {
+							$scope.customSettingWrapper = result;
+							$scope.launchConfirmationMsg = 'Are you sure you want to launch? '
+										+ 'This will send ' + result['refLeadCampaignCount'] + ' notifications.';
+							
+							if (!$scope.customSettingWrapper['isRefProspectEnabled']) {
+								$scope.isRefProspectEnabled = false;
+								$scope.showEnableProspectToast = false;
+								$scope.isLoading = false;
+							} else {
+								
+								$scope.getPermissionsMessage().then(function(result) {
+									
+									if (result != '') {
+										$scope.errorMessage = result;
+		                   				$scope.isError = true;
+									}
+									$scope.isLoading = false;
+								});
+							}
+						});
+					}
+					
+                    $scope.getPermissionsMessage = function() {
+                    	var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.LaunchRefProspectorCampaignController.getPermissionsMessage}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+					
+					$scope.getCustomSettings = function() {
+						var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.LaunchRefProspectorCampaignController.getCustomSettings}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+					}
+					
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+					
+					$scope.cancel = function() {
+						
+						if ((typeof sforce != 'undefined') && (sforce != null)) {
+							
+							if ($scope.isFromCustomSettings) {
+								var url = '{!URLFOR($Page.RefProspectorSettingsPage)}';
+								sforce.one.navigateToURL(url, true);
+							} else {
+								
+								if ($scope.refLeadListViewId != null && $scope.refLeadListViewId != '') {
+									sforce.one.navigateToList($scope.refLeadListViewId, null, $scope.nameSpace + 'Reference_Lead__c');
+								} else {
+									window.location = '/_ui/core/chatter/ui/ChatterPage';
+								}
+							}
+						} else {
+							
+							if ($scope.isFromCustomSettings) {
+								window.location.href = '/apex/RefProspectorSettingsPage';
+							} else {
+								window.location.href = '/' + $scope.refLeadIdPrefix;
+							}
+						}
+					}
+					
+					$scope.showLaunchModal = function() {
+						$scope.showLaunchConfirmation = true;
+					}
+					
+					$scope.hideLaunchModal = function() {
+						$scope.showLaunchConfirmation = false;
+					}
+					
+					$scope.launch = function() {
+						$scope.isLoading = true;
+						
+						$scope.getPermissionsMessage().then(function(result) {
+							
+							if (result == '') {
+								
+								$scope.launchCampaign().then(function(result) {
+	                                console.log(result);
+	                                
+	                                if (result.startsWith('success')) {
+		                                $scope.showLaunchConfirmation = false;
+	                                	$scope.isCampaignLaunched = true;
+	                                	$scope.showCampaignLaunchedToast = true;
+		                                $scope.isLoading = false;
+	                                } else {
+	                                	$scope.errorMessage = result;
+               							$scope.isError = true;
+               							$scope.isLoading = false;
+	                                }
+								});
+							} else {
+								$scope.showLaunchConfirmation = false;
+								$scope.errorMessage = result;
+                   				$scope.isError = true;
+                   				$scope.isLoading = false;
+							}
+						});
+					}
+					
+					$scope.launchCampaign = function() {
+						var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.LaunchRefProspectorCampaignController.launchCampaign}',
+                            angular.toJson($scope.customSettingWrapper),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+					}
+					
+					$scope.hideError = function() {
+						$scope.isError = false;
+						$scope.showEnableProspectToast = true;
+						$scope.showCampaignLaunchedToast = false;
+					}
+				}
+			);
+		</script>
+	</head>
+	
+	<body>
+		<div ng-app="launchCampaignApp" ng-controller="launchCampaignCtrl" ng-cloak="ng-cloak">
+			
+			<div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+	            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+					<svg class="slds-icon slds-icon_small" aria-hidden="true">
+						<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					</svg>
+				</span>
+	            {!$Label.User_License}
+	        </div>
+			
+			<div ng-show="isFullLicenseAccessible" ng-init="init()">
+				
+				<div ng-if="!isSLDS" id="classicDiv">
+					<div class="classicSpinnerBackground" ng-show="isLoading">
+						<apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60"/>
+					</div>
+					<div ng-show="!isLoading">
+						
+						<!-- Warning message for enabling Reference Prospector -->
+						<div ng-show="!isRefProspectEnabled">
+							<div class="errorPageMsgDiv" style="border-color: #ffb75d;">
+								<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+									<svg class="slds-icon" aria-hidden="true" style="fill: #ffb75d;">
+										<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+									</svg>
+								</span>
+								<div style="float: left; padding-top: 10px;">
+									{!$Label.Enable_Ref_Prospect_Message}
+								</div>
+							</div>
+							<a class="btn" style="margin: 20px; line-height: 220%; text-decoration: none; color: black; padding: 4px 3px" ng-click="cancel()">{!$Label.Back}</a>
+						</div>
+						
+						<div ng-show="isRefProspectEnabled">
+							
+							<div ng-show="isCampaignLaunched && showCampaignLaunchedToast">
+								<div class="errorPageMsgDiv" style="border-color: #349900;">
+									<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+										<svg class="slds-icon" aria-hidden="true" style="fill: #349900;">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+										</svg>
+									</span>
+									<div style="float: left; padding-top: 10px;">
+										Campaign launched successfully
+									</div>
+								</div>
+								<a class="btn" style="margin: 20px; line-height: 220%; text-decoration: none; color: black; padding: 4px 3px" ng-click="cancel()">{!$Label.Back}</a>
+							</div>
+							
+							<div ng-show="!isCampaignLaunched">
+								
+								<div class="errorPageMsgDiv" style="border-color: #cc0000;" ng-show="isError">
+									<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+										<svg class="slds-icon" aria-hidden="true" style="fill: #cc0000;">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+										</svg>
+									</span>
+									<div style="float: left;">
+										<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+										<div ng-repeat="msg in errorMessage.split('\n')">
+											{{msg}}
+										</div>
+									</div>
+								</div>
+								
+								<div class="slds-grid slds-wrap" style="padding-bottom: 0.5em">
+		                            <div class="slds-col slds-size_1-of-1">
+		                                <div class="slds-grid">
+		                                    <div>
+		                                        <img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_medium" style="margin-right: 10px" />
+		                                    </div>
+		                                    <div>
+		                                        <div style="font-size: 1.5em; line-height: 175%;">
+		                                            {!$Label.Launch_Campaign}
+		                                        </div>
+		                                        <span style="font-size: 1em;">
+		                                            {!$Label.Launch_Campaign_Subheader}
+		                                        </span>
+		                                    </div>
+		                                </div>
+		                            </div>
+			                    </div>
+			                    
+			                    <div>
+				                    <apex:pageBlock mode="Edit">
+					                    <apex:pageBlockButtons >
+											<a class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;" ng-click="cancel()">{!$Label.Cancel}</a>
+			                                <a class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;" ng-click="showLaunchModal()">{!$Label.Launch}</a>
+										</apex:pageBlockButtons>
+										
+										<div style="padding: 0.5em">
+											<div class="slds-grid slds-wrap">
+		                            			<div class="slds-p-horizontal_small slds-p-bottom_x-small slds-size_1-of-1 slds-medium-size_1-of-6 slds-large-size_2-of-12" style="text-align: right;">
+		                            				{!$Label.Subject}
+		                            			</div>
+		                            			<div class="slds-p-horizontal_small slds-p-bottom_x-small slds-size_1-of-1 slds-medium-size_5-of-6 slds-large-size_10-of-12">
+		                            				<input type="text" ng-model="customSettingWrapper['subject']" style="width: 50%" />
+		                            			</div>
+		                            			
+		                            			<div class="slds-p-horizontal_small slds-p-bottom_x-small slds-size_1-of-1 slds-medium-size_1-of-6 slds-large-size_2-of-12" style="text-align: right;">
+		                            				{!$Label.Body}
+		                            			</div>
+		                            			<div class="slds-p-horizontal_small slds-p-bottom_x-small slds-size_1-of-1 slds-medium-size_5-of-6 slds-large-size_10-of-12">
+		                            				<input type="text" ng-model="customSettingWrapper['salutation']" placeholder="Salutation" style="margin-bottom: 3px;width: 8%;" />
+		                            				[{!$Label.Account_Owner}&nbsp;{!$ObjectType.User.fields.FirstName.Label}],
+		                            				<br />
+		                            				<div style="background:white;width:50%;border-width: 1px;border-style: solid;border-color: #d8dde6;">
+													<textarea rows="8" ng-model="customSettingWrapper['body']" style="width: 100%;border:none;resize:none"></textarea>
+													<p style="padding: 2px;">Accounts requiring your review include:<br/>[Account Name]<br/><br/>[Prospect Page Link]
+													</p>
+													</div>
+		                            			</div>
+		                            			
+		                            			<div class="slds-p-horizontal_small slds-p-bottom_x-small slds-size_1-of-1 slds-medium-size_1-of-6 slds-large-size_2-of-12" style="text-align: right;">
+		                            				{!$ObjectType.Reference_Lead__c.fields.Ref_Lead_Campaign_Name__c.Label}
+		                            			</div>
+		                            			<div class="slds-p-horizontal_small slds-p-bottom_x-small slds-size_1-of-1 slds-medium-size_5-of-6 slds-large-size_10-of-12">
+		                            				<input type="text" ng-model="customSettingWrapper['campaignName']" />
+		                            			</div>
+		                           			</div>
+										</div>
+										
+										<!-- Modals and toasts -->
+										
+										<div ng-show="showLaunchConfirmation">
+				                        	<div class="customPopup">
+					                        	<div class="modalHeader" style="margin: 0; font-weight: bold;padding: 8px;background: #03A7E4;color:#FFFFFF;font-family: Arial,Helvetica,sans-serif;font-size: 13.3px;margin-left:2px;margin-right:2px;margin-top:2px;border-radius:4px;">
+					                        		<a ng-click="hideLaunchModal()">
+				                                        <svg class="slds-button__icon slds-button__icon_medium" aria-hidden="true">
+				                                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+				                                        </svg>
+				                                        <span class="slds-assistive-text">Close</span>
+				                                    </a>
+				                                    <h2>Confirmation</h2>
+					                        	</div>
+					                        	<div class="divBAck">
+					                        		<div style="margin: 10px;font-size: 12px;font-family: Arial,Helvetica,sans-serif;">
+					                        			{{launchConfirmationMsg}}
+					                        		</div>
+					                        	</div>
+					                        	<div style=" padding: 9px;overflow: hidden;background: #EEEEEE;border-top: 1px solid #DDDDDD;padding-right: 17px;"> 
+					                        		<a class="btn" style=" text-decoration: none; color: black; font-size: 0.85em;;float:right;height: 23px" ng-click="hideLaunchModal()">{!$Label.Cancel}</a>
+					                        		<a class="btn" style=" text-decoration: none; color: black; font-size: 0.85em;float:right;padding-left: 10px; padding-right: 10px; margin-right: 5px;height: 23px; text-transform: uppercase;" 
+                                                    	ng-click="launch()">{!$Label.Ok}</a>
+					                        	</div>
+				                        	</div>
+				                            <div class="popupBackground"></div>
+				                        </div>
+										
+									</apex:pageBlock>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div ng-if="isSLDS" id="lightningDiv" class="container">
+					<div role="status" ng-show="isLoading" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+					
+					<div ng-show="!isLoading">
+						
+						<div ng-show="!isRefProspectEnabled">
+							<div class="custom-toast-container" ng-show="!showEnableProspectToast">
+								<div class="slds-notify slds-notify_toast slds-theme_warning custom-toast-width" role="alert">
+									<span class="slds-assistive-text">Info</span>
+									<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+										<svg class="slds-icon slds-icon_small" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+										</svg>
+									</span>
+									<a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideError()">
+										<svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+										</svg>
+										<span class="slds-assistive-text">Close</span>
+									</a>
+									<div class="slds-notify__content">
+										<h2 class="slds-text-heading_small" style="font-size: 16px;">
+											{!$Label.Enable_Ref_Prospect_Message}
+										</h2>
+									</div>
+								</div>
+							</div>
+							<a style="margin: 1rem 0; float: right;" class="slds-button slds-button_neutral" ng-click="cancel()">{!$Label.Back}</a>
+						</div>
+						
+						<div ng-show="isRefProspectEnabled">
+							<!-- Page header -->
+	                        <div class="pageHeader slds-grid slds-wrap slds-grid_vertical-align-center slds-p-horizontal_x-large slds-p-vertical_small">
+	                            <div class="slds-size_1-of-1 slds-medium-size_9-of-12 slds-large-size_9-of-12">
+	                                <div class="slds-grid slds-grid_vertical-align-center">
+	                                    <div>
+	                                        <img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" style="margin-right: 10px" />
+	                                    </div>
+	                                    <div>
+	                                        <div class="slds-text-heading_medium">
+	                                            {!$Label.Launch_Campaign}
+	                                        </div>
+	                                    </div>
+	                                </div>
+	                            </div>
+	                            <div class="slds-size_1-of-1 slds-medium-size_3-of-12 slds-large-size_3-of-12" style="z-index: 100 !important;">
+	                                <div class="slds-grid slds-grid_align-end">
+	                                    <a ng-show="!isCampaignLaunched" class="slds-button slds-button_neutral" ng-click="cancel()">{!$Label.Cancel}</a>
+	                                    <a ng-show="!isCampaignLaunched" class="slds-button slds-button_brand" ng-click="showLaunchModal()">{!$Label.Launch}</a>
+	                                    <a ng-show="isCampaignLaunched" class="slds-button slds-button_brand" ng-click="cancel()">{!$Label.Back}</a>
+	                                </div>
+	                            </div>
+	                        </div>
+	                        <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-p-horizontal_x-large slds-p-vertical_small" style="border-bottom: 1px solid #d8dde6">
+	                            <div class="slds-col slds-size_12-of-12">
+	                                <div class="slds-text-heading_small" style="float: left; font-size: 0.9rem;">
+	                                    {!$Label.Launch_Campaign_Subheader}
+	                                </div>
+	                            </div>
+	                        </div>
+	                        
+	                        <div class="slds-grid slds-wrap horizontal-padding-large" ng-show="!isCampaignLaunched">
+	                        	<div class="slds-size_1-of-1 slds-p-vertical_medium">
+	                        		<div class="slds-form-element">
+										<label class="slds-form-element__label">{!$Label.Subject}</label>
+										<div class="slds-form-element__control">
+											<input type="text" ng-model="customSettingWrapper['subject']" class="slds-input custom-input" />
+										</div>
+									</div>
+	                        	</div>
+	                        	
+	                        	<div class="slds-size_1-of-1 slds-p-bottom_medium">
+	                        		<div class="slds-form-element">
+										<label class="slds-form-element__label">{!$Label.Body}</label>
+										<div class="slds-form-element__control">
+											<input type="text" ng-model="customSettingWrapper['salutation']" placeholder="Salutation" class="slds-input custom-input-small" style="margin-bottom: 5px;" />
+											&nbsp;[{!$Label.Account_Owner}&nbsp;{!$ObjectType.User.fields.FirstName.Label}],
+											<br />
+											<div style="width:50%;background:white;border:1px solid #d8dde6;border-radius:.25rem">
+												<textarea rows="8" class="slds-textarea custom-input" style="width:100% !important;border:none;" ng-model="customSettingWrapper['body']"></textarea>
+												<p style="padding: .5rem .75rem;">Accounts requiring your review include:<br/>[Account Name]<br/><br/>[Prospect Page Link]
+												</p>
+											</div>
+											
+										</div>
+									</div>
+	                        	</div>
+	                        	
+	                        	<div class="slds-size_1-of-1 slds-p-bottom_medium">
+	                        		<div class="slds-form-element">
+										<label class="slds-form-element__label">{!$ObjectType.Reference_Lead__c.fields.Ref_Lead_Campaign_Name__c.Label}</label>
+										<div class="slds-form-element__control">
+											<input type="text" ng-model="customSettingWrapper['campaignName']" class="slds-input custom-input" />
+										</div>
+									</div>
+	                        	</div>
+	                        </div>
+	                        
+	                        <!-- Modals and toasts -->
+	                        
+	                        <div class="custom-toast-container" ng-show="showCampaignLaunchedToast">
+	                        	<div class="slds-notify slds-notify_toast slds-theme_success custom-toast-width" role="alert">
+									<span class="slds-assistive-text">Info</span>
+									<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+										<svg class="slds-icon slds-icon_small" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+										</svg>
+									</span>
+									<a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideError()">
+										<svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+										</svg>
+										<span class="slds-assistive-text">Close</span>
+									</a>
+									<div class="slds-notify__content">
+										<h2 class="slds-text-heading_small" style="font-size: 16px;">
+											Campaign launched successfully
+										</h2>
+									</div>
+								</div>
+	                        </div>
+	                        
+	                        <div class="custom-toast-container" ng-show="isError">
+	                        	<div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+									<span class="slds-assistive-text">Info</span>
+									<span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+										<svg class="slds-icon slds-icon_small" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+										</svg>
+									</span>
+									<a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideError()">
+										<svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+											<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+										</svg>
+										<span class="slds-assistive-text">Close</span>
+									</a>
+									<div class="slds-notify__content">
+										<h2 class="slds-text-heading_small" style="font-size: 16px;">
+											<p ng-repeat="msg in errorMessage.split('\n')">
+		                                        {{msg}}
+		                                    </p>
+										</h2>
+									</div>
+								</div>
+	                        </div>
+	                        
+	                        <div ng-show="showLaunchConfirmation">
+		                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+									<div class="slds-modal__container">
+										<header class="slds-modal__header">
+											<a class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" ng-click="hideLaunchModal()" title="Close">
+												<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+													<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+												</svg>
+												<span class="slds-assistive-text">Close</span>
+											</a>
+											<h2 class="slds-text-heading_medium slds-hyphenate">Confirmation</h2>
+										</header>
+										<div class="slds-modal__content slds-p-around_medium">
+											<p>{{launchConfirmationMsg}}</p>
+										</div>
+										<footer class="slds-modal__footer">
+											<a class="slds-button slds-button_brand" style="text-transform: uppercase;" ng-click="launch()">{!$Label.Ok}</a>
+			                        		<a class="slds-button slds-button_neutral" ng-click="hideLaunchModal()">{!$Label.Cancel}</a>
+										</footer>
+									</div>
+								</section>
+								<div class="slds-backdrop slds-backdrop_open"></div>
+	                        </div>
+						</div>
+						
+					</div>
+				</div>
+				
+			</div>
+		</div>
+	</body>
+</html>
+</apex:page>

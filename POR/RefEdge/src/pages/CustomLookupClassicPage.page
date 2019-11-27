@@ -1,0 +1,332 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page showHeader="false" sidebar="false" controller="CustomLookupClassicController" docType="html-5.0">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+
+        <style>
+            .errorPageMsgDiv {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+            }
+            @media screen and (max-width: 767px) {
+			    .responsiveInput {
+			    	width: 100%;
+			    }
+			}
+			@media screen and (min-width: 768px) {
+			    .responsiveInput {
+			    	width: 30%;
+			    }
+			}
+			#classicDiv .pbBody {
+				margin: 0;
+			}
+			.classicSpinner {
+            	position: absolute;
+			    top: 50%;
+			    left: 50%;
+			    margin-left: -30px;
+            }
+            .classicSpinnerBackground {
+            	height: 80vh;
+			    background-color: WHITE;
+			    opacity: 0.7;
+			    z-index: 9999;
+            }
+			.classicTable {
+				border: 1px solid #e0e3e5;
+			    background-color: #fff;
+				width: 100%;
+			}
+			.classicTable tr:HOVER {
+				background-color: #e3f3ff;
+			}
+			.classicTableHeaderCell {
+				background: #f2f3f3;
+				border-width: 0 0 1px 1px;
+				border-color: #e0e3e5;
+				color: #000;
+				font-size: .9em;
+				font-weight: bold;
+				padding: 5px 2px 4px 5px;
+				border: 1px solid #ededed;
+			}
+			.classicTableBodyCell {
+				border-width: 0 0 1px 0;
+				border-color: #ededed;
+				border-style: solid;
+				padding: 4px 2px 4px 5px;
+				font-size: .9em;
+			}
+            .pbTitle {
+            	font-size: 0.8em !important;
+			    font-weight: bold !important;
+			    padding: 12px !important;
+				width: 100% !important;
+            }
+            .errorClass {
+            	border: 2px solid #c00;
+            }
+			.infScrollDiv {
+				height: 70vh;
+				overflow-y: auto;
+				float: left;
+			    width: 100%;
+			}
+        </style>
+        
+        <script>
+            var customLookupApp = angular.module('customLookupApp', []);
+            var infiniteScrollDirective = customLookupApp.directive('whenScrolled',
+				function() {
+					return function(scope, elm, attr) {
+						var raw = elm[0];
+						
+						elm.bind('scroll', function() {
+							
+							if (raw.scrollTop + raw.offsetHeight >= raw.scrollHeight) {
+								scope.$apply(attr.whenScrolled);
+							}
+						});
+					};
+				}
+			);
+            var customLookupCtrl = customLookupApp.controller('customLookupCtrl',
+                function($scope, $q) {
+					$scope.alreadyPresentIds = [];
+					$scope.itemWrapperList = [];
+                    $scope.pageVariables = {};
+                    $scope.pageVariables['isLoading'] = false;
+					$scope.pageVariables['searchText'] = '{!JSENCODE(searchText)}';
+					$scope.pageVariables['selectedId'] = '';
+					$scope.pageVariables['selectedName'] = '';
+                    $scope.pageVariables['isError'] = false;
+					$scope.pageVariables['isTextSearchApplied'] = false;
+					$scope.pageVariables['isAllItemsFetched'] = false;
+					
+					$scope.init = function() {
+                        $scope.pageVariables['isLoading'] = true;
+					    $scope.alreadyPresentIds = [];
+                        $scope.itemWrapperList = [];
+
+						if ($scope.pageVariables['searchText'] != null && $scope.pageVariables['searchText'] != '') {
+							$scope.pageVariables['isTextSearchApplied'] = true;
+						}
+
+                        $scope.getItemWrapperList().then(function(result) {
+                            $scope.itemWrapperList = result;
+
+							if (result.length < 50) {
+								$scope.pageVariables['isAllItemsFetched'] = true;
+							}
+                            
+                            angular.forEach(
+                                result,
+                                function(item) {
+                                    $scope.alreadyPresentIds.push(item['id']);
+                                }
+                            );
+                            $scope.pageVariables['isLoading'] = false;
+                        });
+                    }
+
+                    $scope.getItemWrapperList = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.CustomLookupClassicController.getItemWrapperList}',
+                            $scope.pageVariables['searchText'],
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getMoreItems = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.CustomLookupClassicController.getMoreItems}',
+                            $scope.pageVariables['searchText'],
+                            angular.toJson($scope.alreadyPresentIds),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.parseResult = function(result) {
+						result = result.replace(/&quot/gi, '"');
+						result = result.replace(/&amp/g, '&');
+						result = result.replace(/&lt/g, '<');
+						result = result.replace(/&gt/g, '>');
+						result = result.replace(/;/g, '');
+						result = result.replace(/&#39/g, '\'');
+						return result;
+					}
+
+					$scope.searchItems = function(ev) {
+						var keyCode = ev.which || ev.keyCode;
+						
+                        if (keyCode === 13 || ev.target.className == 'btn') {
+							
+							if ($scope.pageVariables['searchText'].trim().length < 2) {
+								$scope.pageVariables['isError'] = true;
+							} else {
+								$scope.pageVariables['isError'] = false;
+								$scope.pageVariables['isLoading'] = true;
+								$scope.itemWrapperList = [];
+								$scope.alreadyPresentIds = [];
+								$scope.pageVariables['isTextSearchApplied'] = true;
+								
+								$scope.getMoreItems().then(function(result) {
+									$scope.itemWrapperList = result;
+									
+									angular.forEach(
+										result,
+										function(item) {
+											$scope.alreadyPresentIds.push(item['id']);
+										}
+									);
+									$scope.pageVariables['isLoading'] = false;
+								});
+							}
+                        }
+					}
+
+					$scope.clearSearch = function() {
+						$scope.pageVariables['isError'] = false;
+						$scope.pageVariables['searchText'] = '';
+						$scope.pageVariables['isLoading'] = true;
+						$scope.itemWrapperList = [];
+						$scope.alreadyPresentIds = [];
+						$scope.pageVariables['isTextSearchApplied'] = false;
+						
+						$scope.getItemWrapperList().then(function(result) {
+							$scope.itemWrapperList = result;
+							
+							angular.forEach(
+								result,
+								function(item) {
+									$scope.alreadyPresentIds.push(item['id']);
+								}
+							);
+							$scope.pageVariables['isLoading'] = false;
+						});
+					}
+
+					$scope.showMore = function() {
+						
+						if (!$scope.pageVariables['isAllItemsFetched']) {
+							$scope.pageVariables['isLoading'] = true;
+							
+							$scope.getMoreItems().then(function(result) {
+								
+								angular.forEach(
+									result,
+									function(item) {
+										$scope.itemWrapperList.push(item);
+										$scope.alreadyPresentIds.push(item['id']);
+									}
+								);
+								$scope.pageVariables['isLoading'] = false;
+								
+								if (result.length < 50) {
+									$scope.pageVariables['isAllItemsFetched'] = true;
+								}
+							});
+						}
+					}
+
+					$scope.selectItem = function(item) {
+						var data = {};
+                        data['id'] = item['id'];
+                        data['name'] = item['name'];
+                        window.opener.postMessage(data, window.parent.location.origin);
+						window.close();
+					}
+                }
+            );
+        </script>
+    </head>
+
+    <body>
+        <div ng-app="customLookupApp" ng-controller="customLookupCtrl" ng-cloak="ng-cloak">
+			<div ng-init="init()">
+				<div class="classicSpinnerBackground" ng-show="pageVariables['isLoading']">
+					<apex:image styleClass="classicSpinner" value="{!$Resource.LoaderSpinner}" width="60" height="60" />
+				</div>
+				<div ng-show="!pageVariables['isLoading']">
+					<apex:pageBlock title="{!$Label.Select_reference_lead_owner}">
+						<div style="padding: 0.5rem 1rem;">
+							<input type="text" ng-model="pageVariables['searchText']" ng-keypress="searchItems($event)" ng-class="{'errorClass': pageVariables['isError']}" placeholder="{!$Label.Search}" style="padding: 2px;" />
+							<a ng-click="searchItems($event)" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.Search}</a>
+							<a ng-click="clearSearch()" ng-show="pageVariables['isTextSearchApplied']" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.Clear}</a>
+							<span ng-show="pageVariables['isError']" style="color: #d74c3b; display: block;">{!$Label.Atleast_two_characters}</span>
+						</div>
+						<div ng-show="itemWrapperList.length > 0" class="infScrollDiv" when-scrolled="showMore()">
+							<table class="classicTable">
+								<thead>
+									<tr>
+										<th scope="col" class="classicTableHeaderCell">
+											{!$Label.User_Name}
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr ng-repeat="item in itemWrapperList">
+										<td class="classicTableBodyCell">
+											<a ng-click="selectItem(item)" style="text-decoration: none; cursor: pointer">{{item['name']}}</a>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div ng-show="itemWrapperList.length == 0" class="errorPageMsgDiv" style="border-color: #ffb75d;">
+							<span class="slds-icon__container" style="padding: 0 6px; float: left;">
+								<svg class="slds-icon" aria-hidden="true" style="fill: #ffb75d;">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+								</svg>
+							</span>
+							<div style="float: left; padding-top: 10px;">
+								{!$Label.No_matches_found}
+							</div>
+						</div>
+					</apex:pageBlock>
+				</div>
+			</div>
+        </div>
+    </body>
+</html>
+</apex:page>

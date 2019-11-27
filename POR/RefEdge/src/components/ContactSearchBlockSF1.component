@@ -1,0 +1,489 @@
+<apex:component controller="RefSearchBlockController">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        
+        <script>
+            var sf1ContactCtrl = sf1RefSearchApp.controller('sf1ContactCtrl',
+                function($scope, $q, productService) {
+                    $scope.activeContactRBIlist = [];
+                    $scope.filterContactAttributeMap = {};
+                    $scope.selectedContactRef = [];
+                    $scope.filterNoForContact = {};
+                    $scope.filterOperationMap = {};
+                    $scope.alreadyDisplayedContacts = [];
+                    $scope.pageSize = 5;
+                    $scope.totalContacts = 0;
+                    $scope.showMoreContact = false;
+                    $scope.Account = 'Account__c';
+                    $scope.Contact = 'Contact__c';
+                    $scope.Reference_Owner = 'Reference_Owner__c';
+                    $scope.Referenceability = 'Referenceability__c';
+                    $scope.Attributes = 'Attributes__c';
+                    $scope.Default_Period_Completed_Uses = 'Default_Period_Completed_Uses__c';
+                    $scope.Account_Level_RUL = 'Account_Level_RUL__c';
+                    $scope.RUL_Limit_Reached = 'RUL_Limit_Reached__c';
+                    $scope.Is_Contact_Limit_Reached = 'Is_Contact_Limit_Reached__c';
+                    $scope.Referenceability_no = 'Referenceability_no__c';
+                    $scope.Attribute_Ids = 'Attribute_Ids__c';
+                    $scope.Referenceability_Status = 'Referenceability_Status__c';
+                    $scope.isMoreContactAvailable = false;
+                    $scope.contactIds = [];
+                    $scope.allActiveContactIds = [];
+                    $scope.contacts = [];
+                    $scope.searchResultContact = [];
+                    $scope.filterResultContact = [];
+                    $scope.nameSpace = '{!JSENCODE(nameSpace)}';
+                    $scope.searchText = '';
+                    $scope.isAnyFilterAppiled = false;
+                    $scope.isFilterAppiled = false;
+					$scope.isRefMatch = {!isRefMatch};
+                    $scope.selectedRefStatusContact = 'Active';
+                    $scope.refRequestId = '{!JSENCODE(refRequestId)}';
+                    $scope.projectType = '{!JSENCODE(projectType)}';
+                    $scope.contactCount = 0;
+                    $scope.relatedContactIds = [];
+                    $scope.contactmappingSelected = false;
+
+                    $scope.intialFunction = function() {
+                        
+                        $scope.getAllContactIds().then(function(result) {
+                            $scope.allActiveContactIds = result;
+                            $scope.totalContacts = $scope.allActiveContactIds.length;
+
+                            if (result.length > 50) {
+                                $scope.contactCount = '50+';
+                            } else {
+                                $scope.contactCount = result.length;
+                            }
+                            $scope.getContacts();
+                        });
+                    }
+
+                    $scope.getAllContactIds = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getAllContactIds}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getTotalContacts1 = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getTotalContacts1}',
+                            $scope.isAnyFilterAppiled,
+                            angular.toJson($scope.alreadyDisplayedContacts),
+                            angular.toJson($scope.contactIds),
+                            $scope.selectedRefStatusContact,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getAllActiveContactRBIs2 = function(refrequestId) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getAllActiveContactRBIs2}',
+                            $scope.isAnyFilterAppiled,
+                            angular.toJson($scope.alreadyDisplayedContacts),
+                            angular.toJson($scope.contactIds),
+                            250, refrequestId,
+                            $scope.selectedRefStatusContact,
+                            $scope.isRefMatch,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterContactsByRefAttributes1 = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterContactsByRefAttributes1}',
+                            angular.toJson($scope.selectedContactRef),
+                            angular.toJson($scope.filterNoForContact),
+                            angular.toJson($scope.alreadyDisplayedContacts),
+                            angular.toJson($scope.allActiveContactIds),
+                            angular.toJson($scope.filterOperationMap),
+                            $scope.selectedRefStatusContact,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterContactsBySearchText1 = function(filterdaccounts) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterContactsBySearchText1}',
+                            $scope.searchText,
+                            angular.toJson($scope.alreadyDisplayedContacts),
+                            angular.toJson($scope.allActiveContactIds),
+                            angular.toJson(filterdaccounts),
+                            $scope.selectedRefStatusContact,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+
+                    $scope.getTotalContacts = function() {
+                        $scope.contactIds = [];
+
+                        if ($scope.searchText != '') {
+
+                            if ($scope.searchResultContact.length > 0) {
+                                $scope.contactIds = $scope.searchResultContact;
+                            }
+                        } else {
+                            $scope.contactIds = [];
+                        }
+
+                        if ($scope.isFilterAppiled || $scope.selectedContactRef.length > 0) {
+
+                            if ($scope.filterResultContact.length > 0) {
+
+                                if ($scope.contactIds.length > 0) {
+                                    $scope.tempList = [];
+
+                                    angular.forEach(
+                                        $scope.contactIds,
+                                        function(conId) {
+
+                                            if ($scope.filterResultContact.indexOf(conId) >= 0) {
+                                                $scope.tempList.push(conId);
+                                            }
+                                        }
+                                    );
+                                    $scope.contactIds = $scope.tempList;
+                                } else {
+                                    $scope.contactIds = $scope.filterResultContact;
+                                }
+                            } else {
+                                $scope.contactIds = [];
+                            }
+                        }
+                        
+                        if ($scope.contactmappingSelected) {
+
+                            if ($scope.relatedContactIds.length > 0) {
+
+                                if ($scope.contactIds.length > 0) {
+                                    $scope.tempList = [];
+                                    
+                                    angular.forEach(
+                                        $scope.contactIds,
+                                        function(conId) {
+
+                                            if ($scope.relatedContactIds.indexOf(conId) >= 0) {
+                                                $scope.tempList.push(conId);
+                                            }
+                                        }
+                                    );
+                                    $scope.contactIds = $scope.tempList;
+                                } else {
+                                    $scope.contactIds = $scope.relatedContactIds;
+                                }
+                            } else {
+                                $scope.contactIds = [];
+                            }
+                        }
+                        $scope.isAnyFilterAppiled = false;
+                        
+                        if ($scope.isFilterAppiled ||
+                                $scope.searchText != '' ||
+                                $scope.selectedContactRef.length > 0 ||
+                                $scope.contactmappingSelected) {
+                            $scope.isAnyFilterAppiled = true;
+                        }
+
+                        $scope.getTotalContacts1().then(function(result) {
+                            $scope.totalContacts = result; 
+                            $scope.contacts = [];
+                            $scope.activeContactRBIlist = [];
+                            $scope.alreadyDisplayedContacts = [];
+
+                            if (result > 50) {
+                                $scope.contactCount = '50+';
+                            } else {
+                                $scope.contactCount = result;
+                            }
+                            $scope.getContacts();
+                        });
+                    }
+
+                    $scope.getContacts = function() {
+                        var refrequestId = '';
+
+                        $scope.getAllActiveContactRBIs2(refrequestId).then(function(result) {
+                            $scope.tempList = result;
+
+                            if ($scope.tempList.length > 250) {
+                                $scope.isMoreContactAvailable = true;
+                                $scope.tempList.splice(250, 1);
+                            } else {
+                                $scope.isMoreContactAvailable = false;
+                            }
+
+                            if ($scope.pageSize == 5) {
+                                $scope.showMoreContact = ($scope.tempList.length > $scope.pageSize ? true : false);
+                            } else {
+                                $scope.showMoreContact = false;
+                            }
+                            $scope.contacts = [];
+
+                            for (var i = 0; i < $scope.tempList.length; i++) {
+                                $scope.alreadyDisplayedContacts.push($scope.tempList[i].rbi[$scope.nameSpace + $scope.Contact]);
+                                $scope.activeContactRBIlist.push($scope.tempList[i]);
+                                
+                                if (i < $scope.pageSize) {
+                                    $scope.contacts.push($scope.tempList[i]);
+                                }
+                            }
+                            //productService.isloading(false);
+                        });
+                    }
+
+                    $scope.$on('filter', function(e, myMap, operationMap, accountMappedIds, accountmappingSelected, contactMappedIds, contactmapping, relatedFilterMapContent, abc1, mappedFilterIds, stageFilterId) {
+                        $scope.filterContactAttributeMap = {};
+                        $scope.filterNoForContact = {};
+                        $scope.filterOperationMap = operationMap;
+                        $scope.relatedContactIds = contactMappedIds;
+                        $scope.contactmappingSelected = contactmapping;
+                        $scope.isFilterAppiled = false;
+                        $scope.selectedContactRef = [];
+
+                        angular.forEach(
+                            myMap,
+                            function(itm, key) {
+                                $scope.tempList = [];
+                                
+                                if (key == 'Referenceability') {
+
+                                    for (var i = 0; i < itm.length; i++) {
+
+                                        if (itm[i].isSelected && itm[i].refType[$scope.nameSpace + $scope.Referenceability_no] != null) {
+                                            $scope.tempList.push(itm[i].refType[$scope.nameSpace + $scope.Referenceability_no]);
+                                        }
+                                    }
+
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.selectedContactRef = $scope.tempList;
+                                    }
+                                } else if (key != stageFilterId && key != 'Content Types' && key != 'Content Language' && mappedFilterIds.indexOf(key) < 0) {
+                                    var filterNo = '';
+
+                                    for (var i = 0; i < itm.length; i++) {
+
+                                        if (itm[i].isSelected) {
+                                            $scope.tempList.push(itm[i].attId);
+                                            filterNo = itm[i].filterNo;
+                                        }
+                                    }
+
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.filterContactAttributeMap[key] = $scope.tempList;
+                                        $scope.filterNoForContact[key] = filterNo;
+                                        $scope.isFilterAppiled = true;
+                                    }
+                                }
+                            }
+                        );
+                        $scope.alreadyDisplayedContacts = [];
+                        $scope.filterContacts();
+                    });
+
+                    $scope.filterContacts = function() {
+
+                        $scope.filterContactsByRefAttributes1().then(function(result) {
+                            $scope.tempList = result; 
+                            $scope.labelLogicMap = {};
+                            $scope.filterResultContact = [];
+
+                            angular.forEach(
+                                $scope.tempList,
+                                function(conRbi) {
+
+                                    if ($scope.isFilterAppiled) {
+
+                                        if (conRbi[$scope.nameSpace + $scope.Attribute_Ids] != null
+                                                && conRbi[$scope.nameSpace + $scope.Attribute_Ids] != '') {
+                                            $scope.setAttribute = conRbi[$scope.nameSpace + $scope.Attribute_Ids].split(',');
+                                            $scope.selectedlabelCount = 0;
+                                            $scope.recordMatchCount = 0;
+
+                                            angular.forEach(
+                                                $scope.filterContactAttributeMap,
+                                                function(array, labelId) {
+                                                    $scope.labelLogicMap[labelId] = false;
+                                                    $scope.selectedlabelCount = $scope.selectedlabelCount + 1;
+                                                    
+                                                    if ($scope.filterOperationMap[labelId] == 'and') {
+                                                        $scope.notMatched = false;
+
+                                                        for (var j = 0; j < array.length; j++) {
+
+                                                            if ($scope.setAttribute.indexOf(array[j]) < 0) {
+                                                                $scope.notMatched = true;
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        if (!$scope.notMatched) {
+                                                            $scope.recordMatchCount = $scope.recordMatchCount + 1;
+                                                            $scope.labelLogicMap[labelId] = true;
+                                                        }
+                                                    } else {
+                                                        
+                                                        for (var j = 0; j < array.length; j++) {
+                                                            
+                                                            if ($scope.setAttribute.indexOf(array[j]) >= 0) {
+                                                                $scope.recordMatchCount = $scope.recordMatchCount + 1;
+                                                                $scope.labelLogicMap[labelId] = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            );
+
+                                            if ($scope.selectedlabelCount != 0) {
+                                                $scope.checkResult = true;
+                                                
+                                                angular.forEach(
+                                                    $scope.labelLogicMap,
+                                                    function(flag, labelId) {
+                                                        $scope.checkResult = ($scope.checkResult && flag);
+                                                    }
+                                                );
+                                                
+                                                if ($scope.checkResult) {
+                                                    $scope.filterResultContact.push(conRbi[$scope.nameSpace + $scope.Contact]);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        $scope.filterResultContact.push(conRbi[$scope.nameSpace + $scope.Contact]);
+                                    }
+                                }
+                            );
+                            $scope.getTotalContacts();
+                        });
+                    }
+
+                    $scope.$on('searchTextContact', function(e, value, filterdaccounts) {
+                        $scope.searchText = value;
+                        $scope.alreadyDisplayedContacts = [];
+                        $scope.search(filterdaccounts);
+                    });
+
+                    $scope.search = function(filterdaccounts) {
+                        
+                        $scope.filterContactsBySearchText1(filterdaccounts).then(function(result) {
+                            $scope.searchResultContact = result;
+                            $scope.getTotalContacts();
+                        });
+                    }
+
+                    $scope.showMoreContacts = function() {
+
+                        if ($scope.showMoreContact) {
+                            $scope.pageSize = 25;
+                            $scope.showMoreContact = false;
+
+                            for (var i = 5; i < $scope.activeContactRBIlist.length; i++) {
+
+                                if (i < $scope.pageSize) {
+                                    $scope.contacts.push($scope.activeContactRBIlist[i]);
+                                }
+                            }
+                        } else {
+                            $scope.contacts.splice(5);
+                            $scope.pageSize = 5;
+                            $scope.showMoreContact = true;
+                        }
+                        productService.toggleContactSectionEvent(!$scope.showMoreContact);
+                    }
+
+                    $scope.$on('fetchMoreRecordsEvent', function(e, value) {
+                        $scope.more();
+                    });
+
+                    $scope.more = function() {
+
+                        if ($scope.showMoreContact == false) {
+
+                            if ($scope.contacts.length < $scope.activeContactRBIlist.length) {
+								var size = (parseInt($scope.contacts.length) + parseInt($scope.pageSize));
+
+                                for (var i = $scope.contacts.length; i < $scope.activeContactRBIlist.length; i++) {
+
+									if (i < size) {
+										$scope.contacts.push($scope.activeContactRBIlist[i]);
+									}
+								}
+							} else if ($scope.isMoreContactAvailable) {
+                                $scope.getContacts();
+							}
+                        }
+                    }
+                }
+            );
+        </script>
+    </head>
+
+    <body>
+        <div ng-controller="sf1ContactCtrl" ng-init="intialFunction()" ng-cloak="ng-cloak">
+            <div class="titleBar slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                <div class="slds-text-title_caps">{!$Label.Contacts}</div>
+                <div class="slds-text-title">
+                    <a ng-show="showMoreContact && totalContacts > 5" ng-click="showMoreContacts()">
+                        {!$Label.View_More}
+                    </a>
+                    <a ng-show="!showMoreContact && totalContacts > 5" ng-click="showMoreContacts()">
+                        {!$Label.Back}
+                    </a>
+                </div>
+                <div class="slds-text-title">{{contactCount}}&nbsp;Results</div>
+            </div>
+            <div class="customToastDiv" ng-show="contacts.length == 0">
+                {!$Label.No_matches_found}
+            </div>
+            <div id="contactsBlock">
+                <div ng-repeat="conWrap in contacts" style="padding: 0.5rem 0.8rem">
+                    <div class="slds-text-body_regular">
+                        {{conWrap.ContactName}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+</apex:component>

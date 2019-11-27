@@ -1,0 +1,1394 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page id="pageId" standardController="Attribute_Mapping__c" extensions="AddAttributeMappingControllerSLDS, ListViewFiltersController"
+            showheader="{!NOT(isSLDS)}" sidebar="false" docType="html-5.0" standardStylesheets="false">
+<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+<script>
+	$(document).ready(function() {
+		$('#phHeader td.left div').css({"width": "19vw", "height": "auto"});
+	});
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <script>
+            var SLDS_BASE_URL = "{!URLFOR($Resource.LightningCSS_2_3, '')}";
+            var RESOURCE_ROOT = "{!URLFOR($Resource.ListViewDirective, '')}";
+            var PICKLIST_DIRECTIVE_RESOURCE = "{!URLFOR($Resource.PicklistValueDirective, '')}";
+            var deleteImg = "{!$Resource.RedCrossMark}";
+            var classicSpinnerImg = "{!$Resource.LoaderSpinner}";
+            var refedgeLogoImg = "{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}";
+
+            var getDateFormatRemoteAction = '{!$RemoteAction.ListViewFiltersController.getDateFormat}';
+            var getListViewFiltersRemoteAction = '{!$RemoteAction.ListViewFiltersController.getListViewFilters}';
+            var getFieldsListRemoteAction = '{!$RemoteAction.ListViewFiltersController.getFieldsList}';
+            var saveUserMappingsRemoteAction = '{!$RemoteAction.ListViewFiltersController.saveUserMappings}';
+            var isNameUniqueRemoteAction = '{!$RemoteAction.ListViewFiltersController.isNameUnique}';
+
+            var filtersLabel = '{!$Label.RF_Filters}';
+            var listViewCreatorLabel = '{!$Label.List_View_Creator_Heading}';
+            var noDataFoundLabel = 'No filters are currently applied.'; // re REF-1498
+            var addFilterLabel = '{!$Label.Add_Filter}';
+            var removeAllLabel = '{!$Label.Remove_All}';
+            var newFilterLabel = '{!$Label.New_Filter}';
+            var fieldLabel = '{!$Label.T_Field}';
+            var cancelLabel = '{!$Label.Cancel}';
+            var saveLabel = '{!$Label.Save}';
+            var saveAsLabel = '{!$Label.Save_As}';
+            var operatorLabel = '{!$Label.Operator}';
+            var valueLabel = '{!$Label.Value}';
+            var doneLabel = '{!$Label.Done}';
+            var saveNewListViewLabel = '{!$Label.Save_New_List_View}';
+            var listNameLabel = '{!$Label.List_Name}';
+            var requiredLabel = '{!$Label.REQUIRED_VALUES}';
+            var listViewUpdatedLabel = '{!$Label.List_view_updated}';
+        </script>
+        <script src="{!URLFOR($Resource.AngularJS)}"></script>
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+        <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+        <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+        <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+        <apex:stylesheet value="{!URLFOR($Resource.PicklistValueDirective, 'css/picklistValueSelector.css')}" />
+        <script src="{!URLFOR($Resource.PicklistValueDirective, 'js/picklistValueSelector.js')}"></script>
+        <apex:stylesheet value="{!URLFOR($Resource.ListViewDirective, 'css/ListViewFilter.css')}" />
+        <script src="{!URLFOR($Resource.ListViewDirective, 'js/ListViewFilter.js')}"></script>
+        <apex:stylesheet value="{!URLFOR($Resource.ClassicCSS)}" />
+
+        <style>
+            #lightningDiv * {
+                font-family: "Salesforce Sans",Arial,sans-serif !important;
+            }
+            .custom-toast-width {
+            	min-width: 0;
+            }
+            @media only screen and (max-width: 650px) {
+                .horizontal-padding-large {
+                    padding-right: 0.5rem;
+                    padding-left: 0.5rem;
+                }
+	            .custom-toast-container {
+	            	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 0;
+				    width: 100%;
+				    margin-left: 0;
+	            }
+                .grid-container-3col {
+                    padding: 0.8rem;
+                    display: grid;
+                    grid-template-columns: repeat(1, 1fr);
+                }
+            }
+            @media only screen and (min-width: 651px) {
+                .notesSection {
+                    grid-column: span 2 / auto;
+                }
+                .horizontal-padding-large {
+                    padding-right: 1.5rem;
+                    padding-left: 1.5rem;
+                }
+	            .custom-toast-container {
+	            	position: fixed;
+				    z-index: 10000;
+				    top: 0;
+				    left: 50%;
+				    width: 50%;
+				    margin-left: -25%;
+	            }
+                .grid-container-3col {
+                    padding: 0.8rem;
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    grid-gap: 3%;
+                }
+            }
+            .container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            .por-tooltip-body {
+                display: none;
+                position: absolute;
+                bottom: 2rem;
+    			left: -0.85rem;
+                width: max-content;
+            }
+            .por-tooltip-orb:hover > .por-tooltip-body {
+                display: block;
+            }
+            .custom-orb-icon {
+                fill: #b0adab !important;
+                transform: scale(0.9) !important;
+            }
+            .grid-container-1col {
+                padding: 0.8rem;
+                display: grid;
+                grid-template-columns: repeat(1, 1fr);
+                grid-gap: 3%;
+            }
+            .slds-form-element {
+                padding-bottom: 0.25rem;
+            }
+        	.slds-form-element > label {
+            	margin-right: 0 !important;
+            }
+            .pageHeader {
+            	background-color: #F4F6F9;
+            	border-bottom: 1px solid #d8dde6;
+            }
+        </style>
+
+        <script>
+            var attributeApp = angular.module('attributeApp', ['angularjs-datetime-picker', 'listViewFilterApp', 'picklistValueSelectorApp']);
+            var attributeCon = attributeApp.controller('attributeCon', function($scope, $window, $location, $q) {
+                $scope.objects = [];
+                $scope.objectsMap = {};
+                $scope.attMapId = '{!JSENCODE(attMapId)}';
+                $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                $scope.isloading = true;
+                $scope.isallDataFetched = false;
+                $scope.isError = false;
+                $scope.errorMsg = '';
+                $scope.allData = {};
+                $scope.lookupFieldsToMap = {};
+                $scope.data = {fields : {}, lookupfields : [], relatedfields : [], object : '', relationshipMap : {}, relationShipNameFieldName : {}};
+                $scope.info = {selectedObject : 'Account', selectedField : '', selectedLookupField : '', selectedRelatedField : '', 
+                            filterName : '', attName : '', autoPopulate : false, autoAdd : false, autoDelete : false, autoUpdate : false,
+                            isInheritable : false, selectedMapField : '', fieldApiName : '', fieldName : '', isRelatedMapping : false};
+                $scope.isIconButton = false;
+                $scope.isSLDS = {!isSLDS};
+                $scope.selectedMappingType = 'default';
+                $scope.filterVariables = {};
+                $scope.filterVariables.processName = 'AttMappingFilters';
+                $scope.filterVariables.selectedObjectLabel = '';
+                $scope.filterVariables.objectsMapForFilters = {};
+                $scope.filterVariables.showFilterModal = true;
+                $scope.filterVariables.isModalError = false;
+                $scope.filterVariables.isForAttMapping = true;
+                $scope.filterVariables.isLoadFilters = false;
+                $scope.filterVariables.selectedFiltersList = [];
+
+                //this function will be called on page load
+                $scope.intialFunction = function() {
+
+                    if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+
+                        if ($scope.attMapId == null || $scope.attMapId == '') {
+
+                            //fetching all the data initially related to attribute
+                            $scope.getObjects().then(function(result) {
+                                $scope.objectsMap = result;
+                                $scope.objects = result['default'];
+                                $scope.isloading = false;
+                                $scope.isallDataFetched = true;
+                                
+                                //get picklist values of Limit to Account Contact
+                                $scope.getFields().then(function(result) {
+                                    $scope.data.object = 'Account';
+                                    $scope.data.fields = result.fieldOptions;
+                                    $scope.data.lookupfields = result.lookUpFieldOptions;
+                                    $scope.data.relatedfields = result.relatedListOptions;
+                                    $scope.data.relationshipMap = result.relationShipNameObjectNameMap;
+                                    $scope.data.relationShipNameFieldName = result.relationShipNameFieldName;
+                                    $scope.allData['Account'] = angular.copy($scope.data);
+                                });
+                            });
+                        } else {
+                        
+                            //fetching all the data initially related to attribute
+                            $scope.getAttMappingRecord().then(function(result) {
+                                $scope.info = result;
+                                $scope.selectedMappingType = $scope.info.selectedMapField == null || $scope.info.selectedMapField == '' ? 'object' : 'default';
+                                
+                                if($scope.selectedMappingType == 'object') {
+                                	$scope.getObjects().then(function(result) {
+	                                	$scope.objectsMap = result;
+	                                	$scope.filterVariables.selectedObjectLabel = $scope.objectsMap['object'].find(ob => ob.id == $scope.info.selectedObject).name;
+				                        $scope.filterVariables.objectsMapForFilters = {};
+				                        $scope.filterVariables.objectsMapForFilters[$scope.filterVariables.selectedObjectLabel] = $scope.info.selectedObject;
+	                                	$scope.filterVariables.isLoadFilters = true;
+	                                	$scope.isloading = false;
+	                                	$scope.isallDataFetched = true;
+	                                });
+                                } else {
+                                	$scope.isloading = false;
+                                	$scope.isallDataFetched = true;
+                                }
+                            });
+                        }
+                        
+                        //check for CRUD and FLS permissions
+                        $scope.checkPermission().then(function(result) {
+                            
+                            if (result != '') {
+                                $scope.isError = true;
+                                $scope.errorMsg = result;
+                            } else {
+                                $scope.isError = false;
+                            }
+                        });
+                    }
+                }
+                
+                //get all picklist values when chnage object 
+                $scope.changeObject = function() {
+                    
+                    if ($scope.info.selectedObject != null && $scope.info.selectedObject != '' && $scope.selectedMappingType == 'default') {
+                        
+                        if (Object.keys($scope.allData).indexOf($scope.info.selectedObject) < 0) {
+                        
+                            //get picklist values of Limit to Account Contact
+                            $scope.getFields().then(function(result) {
+                                $scope.data.object = $scope.info.selectedObject;
+                                $scope.data.fields = result.fieldOptions;
+                                $scope.data.lookupfields = result.lookUpFieldOptions;
+                                $scope.data.relatedfields = result.relatedListOptions;
+                                $scope.data.relationshipMap = result.relationShipNameObjectNameMap;
+                                $scope.data.relationShipNameFieldName = result.relationShipNameFieldName;
+                                $scope.allData[$scope.info.selectedObject] = angular.copy($scope.data);
+                            });
+                        } else {
+                            $scope.data = $scope.allData[$scope.info.selectedObject];
+                        }
+                        /*
+                        if ($scope.info.selectedObject == 'Opportunity') {
+                            $scope.info.isInheritable = false;
+                        }*/
+                        $scope.info.filterName = '';
+                        $scope.info.attName = '';
+                    } else {
+                        $scope.filterVariables.selectedFiltersList = [];
+                        $scope.filterVariables.objectsMapForFilters = {};
+                        $scope.filterVariables.selectedObjectLabel = $scope.objectsMap['object'].find(ob => ob.id == $scope.info.selectedObject).name;
+                        $scope.filterVariables.objectsMapForFilters[$scope.filterVariables.selectedObjectLabel] = $scope.info.selectedObject;
+                        $scope.info.filterName = $scope.filterVariables.selectedObjectLabel;
+                        $scope.info.attName = $scope.filterVariables.selectedObjectLabel;
+                    }
+                    $scope.info.isRelatedMapping = false;
+                    $scope.info.selectedField = '';
+                    $scope.info.selectedLookupField = '';
+                    $scope.info.selectedRelatedField = '';
+                    $scope.info.fieldName = '';
+                    $scope.info.fieldApiName = '';
+                }
+                
+                //called on field change
+                $scope.changeField = function() {
+                    
+                    if ($scope.info.selectedField != null && $scope.info.selectedField != '') {
+                        $scope.info.fieldName = $scope.data.fields[$scope.info.selectedField];
+                        $scope.info.fieldApiName = $scope.info.selectedField;
+                        $scope.info.filterName = $scope.data.fields[$scope.info.selectedField];
+                        $scope.info.attName = $scope.data.fields[$scope.info.selectedField];
+                        $scope.info.isRelatedMapping = false;
+                    } else {
+                        $scope.info.fieldName = '';
+                        $scope.info.fieldApiName = '';
+                        $scope.info.filterName = '';
+                        $scope.info.attName = '';
+                    }
+                }
+                
+                //get all picklist values when chnage object 
+                $scope.changeLookupField = function() {
+                    
+                    if ($scope.info.selectedLookupField != null && $scope.info.selectedLookupField != '') {
+                    
+                        //get picklist values of Limit to Account Contact
+                        $scope.getlookupFields().then(function(result) {
+                            $scope.lookupFieldsToMap = result;
+                        });
+                        $scope.info.autoAdd = false;
+                        $scope.info.autoDelete = false;
+                        $scope.info.autoUpdate = false;
+                        $scope.info.autoPopulate = false;
+                        $scope.info.isRelatedMapping = true;
+                    } else {
+                        $scope.info.fieldName = '';
+                        $scope.info.fieldApiName = '';
+                        $scope.info.filterName = '';
+                        $scope.info.attName = '';
+                        $scope.info.isRelatedMapping = false;
+                    }
+                    $scope.info.selectedMapField = '';
+                }
+                
+                //get all picklist values when chnage object 
+                $scope.changeRelatedField = function() {
+                    
+                    if ($scope.info.selectedRelatedField != null && $scope.info.selectedRelatedField != '') {
+                    
+                        //get picklist values of Limit to Account Contact
+                        $scope.getrelatedFields().then(function(result) {
+                            $scope.lookupFieldsToMap = result;
+                        });
+                        
+                        $scope.info.autoAdd = false;
+                        $scope.info.autoDelete = false;
+                        $scope.info.autoUpdate = false;
+                        $scope.info.autoPopulate = false;
+                        $scope.info.isRelatedMapping = true;
+                    } else {
+                        $scope.info.fieldName = '';
+                        $scope.info.fieldApiName = '';
+                        $scope.info.filterName = '';
+                        $scope.info.attName = '';
+                        $scope.info.isRelatedMapping = false;
+                    }
+                    $scope.info.selectedMapField = '';
+                }
+                
+                //get all picklist values when chnage object 
+                $scope.changeLookupFieldToMap = function() {
+                    
+                    if ($scope.info.selectedMapField != null && $scope.info.selectedMapField != '') {
+                        $scope.info.fieldName = $scope.lookupFieldsToMap[$scope.info.selectedMapField];
+                        $scope.info.fieldApiName = $scope.info.selectedMapField;
+                        $scope.info.filterName = $scope.lookupFieldsToMap[$scope.info.selectedMapField];
+                        $scope.info.attName = $scope.lookupFieldsToMap[$scope.info.selectedMapField];
+                    } else {
+                        $scope.info.fieldName = '';
+                        $scope.info.fieldApiName = '';
+                        $scope.info.filterName = '';
+                        $scope.info.attName = '';
+                    }
+                }
+                
+                $scope.saveMapping = function() {
+                    $scope.isError = false;
+
+                    if ($scope.selectedMappingType == 'default') {
+
+                        if (($scope.attMapId == null || $scope.attMapId == '') && ($scope.info.fieldApiName == null || $scope.info.fieldApiName == '') ||
+                                ($scope.info.filterName == null || $scope.info.filterName == '') || ($scope.info.attName == null || $scope.info.attName == '')) {
+                            $scope.isError = true;
+                            $scope.errorMsg = '{!$Label.Select_Required_Fields}';
+                        } else if (($scope.attMapId == null || $scope.attMapId == '') && $scope.info.isRelatedMapping && ($scope.info.selectedMapField == null || $scope.info.selectedMapField == '')) {
+                            $scope.isError = true;
+                            $scope.errorMsg = '{!$Label.Select_Required_Fields}';
+                        }
+                    } else {
+
+                        if ($scope.info.filterName == null || $scope.info.filterName == ''
+                                || $scope.info.attName == null || $scope.info.attName == '') {
+                            $scope.isError = true;
+                            $scope.errorMsg = '{!$Label.Select_Required_Fields}';
+                        }
+                    }
+
+                    if (!$scope.isError) {
+                        $scope.isloading = true;
+
+                        $scope.saveAttMapping().then(function(result) {
+                            $scope.isloading = false;
+
+                            //changes related to #838
+                            if (result != '' && result.indexOf('success:') < 0) {
+                                $scope.isError = true;
+                                $scope.errorMsg = result;
+                            } else {
+                                $scope.attMapId = result.split(':')[1];
+                                $scope.redirectToBack();
+                            }
+                        });
+                    }
+                }
+
+                //redirect page to respective record
+                $scope.redirectToBack = function() {
+
+                    if ($scope.attMapId != null && $scope.attMapId != '') {
+                        redirect($scope.attMapId);
+                    } else {
+                        redirect('');
+                    }
+                }
+                //remoteAction call
+                $scope.checkPermission = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddAttributeMappingControllerSLDS.getPermissionsMessage}',
+                        ($scope.attMapId != null && $scope.attMapId != ''),
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                //remoteAction call
+                $scope.saveAttMapping = function() {
+                    var deferred = $q.defer();
+                    var fieldMap = {};
+                    fieldMap.fieldOptions = $scope.data.fields;
+                    fieldMap.lookUpFieldOptions = $scope.data.lookupfields;
+                    fieldMap.relatedListOptions = $scope.data.relatedfields;
+                    fieldMap.relationShipNameObjectNameMap = $scope.data.relationshipMap;
+                    fieldMap.relationShipNameFieldName = $scope.data.relationShipNameFieldName;
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddAttributeMappingControllerSLDS.saveMapping}',
+                        angular.toJson($scope.info), angular.toJson(fieldMap), $scope.selectedMappingType,
+                        angular.toJson($scope.filterVariables.selectedFiltersList),
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                //remoteAction call
+                $scope.getObjects = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddAttributeMappingControllerSLDS.getObjects}', 
+                        function(result, event) {
+                            result = $scope.parseResult(result);
+                            deferred.resolve(JSON.parse(result));
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                //remoteAction call
+                $scope.getAttMappingRecord = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddAttributeMappingControllerSLDS.getAttributeMappingRecord}', 
+                        $scope.attMapId,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                //remoteAction call
+                $scope.getrelatedFields = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddAttributeMappingControllerSLDS.relatedListSelected}', 
+                        $scope.data.relationshipMap[$scope.info.selectedRelatedField], 
+                        $scope.info.selectedObject == 'Opportunity',
+                        $scope.info.selectedRelatedField,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                //remoteAction call
+                $scope.getlookupFields = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddAttributeMappingControllerSLDS.lookupSelected}', 
+                        $scope.data.relationshipMap[$scope.info.selectedLookupField],
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+                
+                //remoteAction call
+                $scope.getFields = function() {
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.AddAttributeMappingControllerSLDS.getFields}', 
+                        $scope.info.selectedObject,
+                        function(result, event) {
+                            deferred.resolve(result);
+                        },
+                        {escape: true}
+                    );
+                    return deferred.promise;
+                }
+
+                $scope.parseResult = function(result) {
+                
+                    if (result != null) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/&#39/g, '\'');
+                        result = result.replace(/;/g, '');
+                    }
+                    return result;
+                }
+
+                $scope.resetFormValues = function() {
+                    $scope.allData = {};
+                    $scope.lookupFieldsToMap = {};
+                    $scope.data = {fields : {}, lookupfields : [], relatedfields : [], object : '', relationshipMap : {}, relationShipNameFieldName : {}};
+                    $scope.info = {selectedObject : '', selectedField : '', selectedLookupField : '', selectedRelatedField : '', 
+                                filterName : '', attName : '', autoPopulate : false, autoAdd : false, autoDelete : false, autoUpdate : false,
+                                isInheritable : false, selectedMapField : '', fieldApiName : '', fieldName : '', isRelatedMapping : false};
+                }
+
+                $scope.changeMappingType = function(newType) {
+                    $scope.selectedMappingType = newType;
+                    $scope.objects = $scope.objectsMap[newType];
+                    $scope.resetFormValues();
+                }
+
+                $scope.closeFilterModal = function(isSave) {
+                    $scope.isModalError = false;
+
+                    if (isSave) {
+                    }
+                    $scope.showFilterModal = false;
+                }
+
+                $scope.showFilterModal = function() {
+                    $scope.isModalError = false;
+                    $scope.showFilterModal = true;
+                }
+            });
+            
+            //function to redirect to sobject or list view
+            function redirect(url) {
+
+                if ((typeof sforce != 'undefined') && sforce != null) {
+                    
+                    if (url != '') {
+                        sforce.one.navigateToSObject(url, 'detail');
+                    } else {
+                        sforce.one.navigateToURL('#/sObject/{!nameSpace}Attribute_Mapping__c/home');
+                    }
+                } else {
+                    
+                    if (url != '') {
+                        window.location = '{!JSENCODE(sfBaseUrl)}' + '/' + url;
+                    } else {
+                        window.location = '{!JSENCODE(sfBaseUrl)}' + '/' + '{!JSENCODE(parentId)}';
+                    }
+                }
+            }
+        </script>
+    </head>
+
+    <body>
+        <div ng-app="attributeApp" ng-controller="attributeCon" ng-cloak="ng-cloak">
+            <div ng-show="isFullLicenseAccessible == 'false'" class="slds-m-around_large">
+                <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                    </svg>
+                </span>
+                {!$Label.User_License}
+            </div>
+            <div ng-init="intialFunction()" ng-show="isFullLicenseAccessible == 'true'">
+                <div id="classicDiv" ng-show="!isSLDS">
+                    <div class="classicSpinnerBackground" ng-show="isloading">
+						<apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60"/>
+					</div>
+                    <div ng-show="!isloading && isallDataFetched">
+                        <div class="errorPageMsgDiv" style="border-color: #cc0000;" ng-show="isError">
+							<span class="slds-icon__container" style="padding: 0 6px">
+								<svg class="slds-icon" aria-hidden="true" style="fill: #cc0000;">
+									<use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+								</svg>
+							</span>
+							<div>
+								<span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+								<div>
+									{{parseResult(errorMsg)}}
+								</div>
+							</div>
+						</div>
+                        <div style="display: flex; align-items: center; margin-bottom: 0.75rem">
+                            <img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" style="margin-right: 10px; height: 2.5rem" />
+                            <div>
+                                <div ng-hide="attMapId != null && attMapId != ''" style="font-size: 2em">
+                                    {!$Label.T_New_Attribute_Mapping}
+                                </div>
+                                <div ng-show="attMapId != null && attMapId != ''" style="font-size: 2em">
+                                    {{parseResult(info.name)}}
+                                </div>
+                            </div>
+                        </div>
+                        <apex:pageBlock mode="Edit">
+                            <apex:pageBlockButtons>
+                                <a class="btn" ng-click="redirectToBack()">{!$Label.Cancel}</a>
+                                <a class="btn" ng-click="saveMapping()">{!$Label.Save}</a>
+                                <span ng-if="selectedMappingType == 'object' && filterVariables.selectedObjectLabel != ''">
+                                    <list-view-filter process="filterVariables.processName" objects-map="filterVariables.objectsMapForFilters"
+                                        is-icon-button="filterVariables.isIconButton" list-view-id="attMapId" template-name="classic"
+                                        object-name="{{filterVariables.selectedObjectLabel}}" selected-filters="filterVariables.selectedFiltersList"
+                                        is-for-att-mapping="filterVariables.isForAttMapping" is-load-filters="filterVariables.isLoadFilters">
+                                    </list-view-filter>
+                                </span>
+							</apex:pageBlockButtons>
+                            <div ng-hide="attMapId != null && attMapId != ''">
+                                <div class="pbSubsection">
+                                    <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                        <tbody>
+                                            <tr>
+                                                <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                    {!$Label.Attribute_Mapping_Type}
+                                                </th>
+                                                <td class="dataCol  first  last ">
+                                                    <input type="radio" id="defaultMappingC" name="attMappingTypeC"
+                                                        ng-checked="selectedMappingType == 'default'" ng-click="changeMappingType('default')" />
+                                                    <label for="defaultMappingC" style="margin-right: 1em">{!$Label.Default}</label>
+                                                    <input type="radio" id="objectMappingC" name="attMappingTypeC"
+                                                        ng-checked="selectedMappingType == 'object'" ng-click="changeMappingType('object')" />
+                                                    <label for="objectMappingC">{!$Label.Using_Object_Records}</label>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pbSubsection">
+                                    <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                        <tbody>
+                                            <tr>
+                                                <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                    <span class="helpButton">
+                                                        <label>{!$Label.T_Object}</label>
+                                                        <div style="position: relative">
+                                                            <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                            <span class="helpText classicTooltipBody">
+                                                                {!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}
+                                                            </span>
+                                                        </div>
+                                                    </span>
+                                                </th>
+                                                <td class="dataCol  first  last " style="padding-left: 15px">
+                                                    <div style="position: relative">
+                                                        <div class="classicRequiredDiv">&nbsp;</div>
+                                                        <select ng-model="info.selectedObject" ng-change="changeObject()" style="width: 30%">
+                                                            <option label="--None--" value=""></option>
+                                                            <option ng-repeat="option in objects" ng-selected="option.id == info.selectedObject" value="{{option.id}}">{{option.name}}</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr ng-show="selectedMappingType == 'default'">
+                                                <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                    <span class="helpButton">
+                                                        <label>{!$Label.T_PickListField}</label>
+                                                        <div style="position: relative">
+                                                            <img ng-show="'{!$Label.PicklistFieldHelptext}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                            <span class="helpText classicTooltipBody">
+                                                                {!$Label.PicklistFieldHelptext}
+                                                            </span>
+                                                        </div>
+                                                    </span>
+                                                </th>
+                                                <td class="dataCol  first  last " style="padding-left: 15px">
+                                                    <div style="position: relative">
+                                                        <div class="classicRequiredDiv">&nbsp;</div>
+                                                        <select ng-model="info.selectedField" ng-change="changeField()" style="width: 30%"
+                                                                ng-disabled="(info.selectedLookupField != null && info.selectedLookupField != '') || (info.selectedRelatedField != null && info.selectedRelatedField != '')">
+                                                            <option label="--None--" value=""></option>
+                                                            <option ng-repeat="(key, value) in data.fields" ng-selected="key == info.selectedField" value="{{key}}">{{parseResult(value)}}</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pbSubsection" style="margin: 1em 0" ng-show="selectedMappingType == 'default'">
+                                    <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                        <tbody>
+                                            <tr>
+                                                <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                    <span class="helpButton">
+                                                        <label>{!$Label.Lookup_Field}</label>
+                                                        <div style="position: relative">
+                                                            <img ng-show="'{!$Label.LookupFieldHelptext}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                            <span class="helpText classicTooltipBody">
+                                                                {!$Label.LookupFieldHelptext}
+                                                            </span>
+                                                        </div>
+                                                    </span>
+                                                </th>
+                                                <td class="dataCol  first  last " style="padding-left: 15px">
+                                                    <div style="position: relative">
+                                                        <div class="classicRequiredDiv">&nbsp;</div>
+                                                        <select ng-model="info.selectedLookupField" ng-change="changeLookupField()" style="width: 30%"
+                                                                ng-disabled="(info.selectedField != null && info.selectedField != '') || (info.selectedRelatedField != null && info.selectedRelatedField != '')">
+                                                            <option label="--None--" value=""></option>
+                                                            <option ng-repeat="option in data.lookupfields" ng-selected="option.id == info.selectedLookupField" value="{{option.id}}">{{parseResult(option.name)}}</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                    <span class="helpButton">
+                                                        <label>{!$Label.Related_List}</label>
+                                                        <div style="position: relative">
+                                                            <img ng-show="'{!$Label.RelatedListHelptext}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                            <span class="helpText classicTooltipBody">
+                                                                {!$Label.RelatedListHelptext}
+                                                            </span>
+                                                        </div>
+                                                    </span>
+                                                </th>
+                                                <td class="dataCol  first  last " style="padding-left: 15px">
+                                                    <div style="position: relative">
+                                                        <div class="classicRequiredDiv">&nbsp;</div>
+                                                        <select ng-model="info.selectedRelatedField" ng-change="changeRelatedField()" style="width: 30%"
+                                                                ng-disabled="(info.selectedLookupField != null && info.selectedLookupField != '') || (info.selectedField != null && info.selectedField != '')">
+                                                            <option label="--None--" value=""></option>
+                                                            <option ng-repeat="option in data.relatedfields" ng-selected="option.id == info.selectedRelatedField" value="{{option.id}}">{{parseResult(option.name)}}</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                    <span class="helpButton">
+                                                        <label>{!$Label.Lookup_Field_to_Map}</label>
+                                                        <div style="position: relative">
+                                                            <img ng-show="'{!$Label.LookupFieldtoMapHelptext}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                            <span class="helpText classicTooltipBody">
+                                                                {!$Label.LookupFieldtoMapHelptext}
+                                                            </span>
+                                                        </div>
+                                                    </span>
+                                                </th>
+                                                <td class="dataCol  first  last " style="padding-left: 15px">
+                                                    <div style="position: relative">
+                                                        <div class="classicRequiredDiv">&nbsp;</div>
+                                                        <select ng-model="info.selectedMapField" ng-change="changeLookupFieldToMap()" style="width: 30%"
+                                                                ng-disabled="!((info.selectedLookupField != null && info.selectedLookupField != '') || (info.selectedRelatedField != null && info.selectedRelatedField != ''))">
+                                                            <option label="--None--" value=""></option>
+                                                            <option ng-repeat="(key, value) in lookupFieldsToMap" ng-selected="key == info.selectedMapField" value="{{key}}">{{parseResult(value)}}</option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pbSubsection">
+                                <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                    <tbody>
+                                        <tr ng-show="attMapId != null && attMapId != ''">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$Label.T_Object}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                {{parseResult(info.selectedObject)}}
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="attMapId != null && attMapId != ''">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Field__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Field__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Field__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                {{parseResult(info.fieldName)}}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Attribute_Name__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Attribute_Name__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Attribute_Name__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                <div ng-hide="attMapId != null && attMapId != ''" style="position: relative">
+                                                    <div class="classicRequiredDiv">&nbsp;</div>
+                                                    <input type="text" ng-model="info.attName" style="width: 40%" />
+                                                </div>
+                                                <span ng-show="attMapId != null && attMapId != ''">
+                                                    {{parseResult(info.attName)}}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Filter_Label_Name__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Filter_Label_Name__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Filter_Label_Name__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                <div ng-hide="attMapId != null && attMapId != ''" style="position: relative">
+                                                    <div class="classicRequiredDiv">&nbsp;</div>
+                                                    <input type="text" ng-model="info.filterName" style="width: 40%" />
+                                                </div>
+                                                <span ng-show="attMapId != null && attMapId != ''">
+                                                    {{parseResult(info.filterName)}}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pbSubsection" style="margin-top: 1em">
+                                <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                    <tbody>
+                                        <tr>
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Inheritable__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Inheritable__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Inheritable__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                <input type="checkbox" ng-model="info.isInheritable"/>
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="selectedMappingType != 'default' || (info.selectedObject == 'Opportunity' && info.selectedMapField != 'Product2') || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping)">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Auto_add__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Auto_add__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Auto_add__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                <input type="checkbox" ng-model="info.autoAdd"/>
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="selectedMappingType != 'default' || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping)">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Auto_update__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Auto_update__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Auto_update__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                <input type="checkbox" ng-model="info.autoUpdate"/>
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="selectedMappingType != 'default' || (info.selectedObject == 'Opportunity' && info.selectedMapField != 'Product2') || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping)">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Auto_delete__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Auto_delete__c.InlineHelpText}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Auto_delete__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                <input type="checkbox" ng-model="info.autoDelete"/>
+                                            </td>
+                                        </tr>
+                                        <tr ng-show="selectedMappingType == 'default' && ((info.selectedObject == 'Opportunity' && info.selectedMapField != 'Product2') || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping))">
+                                            <th class="labelCol vfLabelColTextWrap  first  last " scope="row">
+                                                <span class="helpButton">
+                                                    <label>{!$ObjectType.Attribute_Mapping__c.fields.Auto_populate__c.Label}</label>
+                                                    <div style="position: relative">
+                                                        <img ng-show="'{!JSENCODE($ObjectType.Attribute_Mapping__c.fields.Auto_populate__c.InlineHelpText)}' != ''" src="/img/s.gif" class="helpOrb" />
+                                                        <span class="helpText classicTooltipBody">
+                                                            {!$ObjectType.Attribute_Mapping__c.fields.Auto_populate__c.InlineHelpText}
+                                                        </span>
+                                                    </div>
+                                                </span>
+                                            </th>
+                                            <td class="dataCol  first  last " style="padding-left: 15px">
+                                                <input type="checkbox" ng-model="info.autoPopulate"/>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div ng-hide="attMapId != null && attMapId != ''" style="padding-left: 5rem; font-size: 88%">
+                                <div ng-show="(info.selectedObject == 'Opportunity' && info.selectedMapField == 'Product2') || selectedMappingType != 'default'">
+                                    <label style="font-weight: bold">{!$Label.Note}:</label>
+                                    <ul style="list-style: disc" ng-show="info.selectedObject == 'Opportunity' && info.selectedMapField == 'Product2'">
+                                        <li style="color: red">{!$Label.Opportunity_product_Note_1}</li>
+                                        <li>{!$Label.Opportunity_product_Note_2}</li>
+                                        <li>{!$Label.Opportunity_product_Note_3}</li>
+                                    </ul>
+                                    <ul style="list-style: disc" ng-show="selectedMappingType != 'default'">
+                                        <li style="color: red">{!$Label.Object_Att_Mapping_Label_1}</li>
+                                        <li>{!$Label.Object_Att_Mapping_Label_2}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </apex:pageBlock>
+                    </div>
+                </div>
+
+                <div class="container" id="lightningDiv" ng-show="isSLDS">
+                    <div role="status" ng-show="isloading && !isallDataFetched" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                    <div ng-show="!isloading && isallDataFetched">
+                        <div class="pageHeader slds-grid slds-wrap slds-grid_vertical-align-center slds-p-horizontal_x-large slds-p-vertical_small">
+                            <div class="slds-size_1-of-1 slds-medium-size_9-of-12 slds-large-size_9-of-12">
+                                <div class="slds-grid slds-grid_vertical-align-center">
+                                    <div>
+                                        <img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" style="margin-right: 10px" />
+                                    </div>
+                                    <div>
+                                        <div ng-hide="attMapId != null && attMapId != ''" class="slds-text-heading_medium">
+                                            {!$Label.T_New_Attribute_Mapping}
+                                        </div>
+                                        <div ng-show="attMapId != null && attMapId != ''" class="slds-text-heading_medium">
+                                            {{parseResult(info.name)}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-size_1-of-1 slds-medium-size_3-of-12 slds-large-size_3-of-12" style="z-index: 100 !important;">
+                                <div class="slds-grid slds-grid_align-end">
+                                    <a class="slds-button slds-button_neutral" ng-click="redirectToBack()">{!$Label.Cancel}</a>
+                                    <a class="slds-button slds-button_brand" ng-click="saveMapping()">{!$Label.Save}</a>
+                                    <span ng-if="selectedMappingType == 'object' && filterVariables.selectedObjectLabel != ''">
+                                        <list-view-filter process="filterVariables.processName" objects-map="filterVariables.objectsMapForFilters"
+                                            is-icon-button="filterVariables.isIconButton" list-view-id="attMapId" template-name="lightning"
+                                            object-name="{{filterVariables.selectedObjectLabel}}" selected-filters="filterVariables.selectedFiltersList"
+                                            is-for-att-mapping="filterVariables.isForAttMapping" is-load-filters="filterVariables.isLoadFilters">
+                                        </list-view-filter>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="custom-toast-container" ng-show="isError">
+                            <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                                <span class="slds-assistive-text">Info</span>
+                                <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+                                    </svg>
+                                </span>
+                                <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="isError = false; isModalError = false;">
+                                    <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                    </svg>
+                                    <span class="slds-assistive-text">Close</span>
+                                </a>
+                                <div class="slds-notify__content">
+                                    <h2 class="slds-text-heading_small" style="font-size: 16px">
+                                        {{parseResult(errorMsg)}}
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div ng-class="{'grid-container-3col': attMapId == null || attMapId == '', 'grid-container-1col': attMapId != null && attMapId != ''}">
+                            <div ng-hide="attMapId != null && attMapId != ''">
+                                <fieldset class="slds-form-element">
+                                    <legend class="slds-form-element__legend slds-form-element__label" style="font-weight: normal">
+                                        {!$Label.Attribute_Mapping_Type}
+                                    </legend>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-radio" style="display: inline-block">
+                                            <input type="radio" ng-show="false" id="defaultMapping" name="attMappingType" ng-checked="selectedMappingType == 'default'" ng-click="changeMappingType('default')" />
+                                            <label class="slds-radio__label" for="defaultMapping">
+                                                <span class="slds-radio_faux"></span>
+                                                <span class="slds-form-element__label">{!$Label.Default}</span>
+                                            </label>
+                                        </span>
+                                        <span class="slds-radio" style="display: inline-block">
+                                            <input type="radio" ng-show="false" id="objectMapping" name="attMappingType" ng-checked="selectedMappingType == 'object'" ng-click="changeMappingType('object')" />
+                                            <label class="slds-radio__label" for="objectMapping">
+                                                <span class="slds-radio_faux"></span>
+                                                <span class="slds-form-element__label">{!$Label.Using_Object_Records}</span>
+                                            </label>
+                                        </span>
+                                    </div>
+                                </fieldset>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label">
+                                        {!$Label.T_Object}
+                                        <span class="slds-required" title="required">*</span>
+                                    </label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-select_container">
+                                            <select class="slds-select" ng-model="info.selectedObject" ng-change="changeObject()">
+                                                <option label="--None--" value=""></option>
+                                                <option ng-repeat="option in objects" ng-selected="option.id == info.selectedObject" value="{{option.id}}">{{option.name}}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div ng-show="selectedMappingType == 'default'">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">
+                                            {!$Label.T_PickListField}
+                                            <span class="slds-required" title="required">*</span>
+                                        </label>
+                                        <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$Label.PicklistFieldHelptext}' != ''">
+                                            <button aria-describedby="help" class="slds-button slds-button_icon">
+                                                <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                </svg>
+                                            </button>
+                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                                <div class="slds-popover__body">{!$Label.PicklistFieldHelptext}</div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <select class="slds-select" ng-model="info.selectedField" ng-change="changeField()"
+                                                        ng-disabled="(info.selectedLookupField != null && info.selectedLookupField != '') || (info.selectedRelatedField != null && info.selectedRelatedField != '')">
+                                                    <option label="--None--" value=""></option>
+                                                    <option ng-repeat="(key, value) in data.fields" ng-selected="key == info.selectedField" value="{{key}}">{{parseResult(value)}}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">
+                                            {!$Label.Lookup_Field}
+                                            <span class="slds-required" title="required">*</span>
+                                        </label>
+                                        <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$Label.LookupFieldHelptext}' != ''">
+                                            <button aria-describedby="help" class="slds-button slds-button_icon">
+                                                <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                </svg>
+                                            </button>
+                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                                <div class="slds-popover__body">{!$Label.LookupFieldHelptext}</div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <select class="slds-select" ng-model="info.selectedLookupField" ng-change="changeLookupField()"
+                                                        ng-disabled="(info.selectedField != null && info.selectedField != '') || (info.selectedRelatedField != null && info.selectedRelatedField != '')">
+                                                    <option label="--None--" value=""></option>
+                                                    <option ng-repeat="option in data.lookupfields" ng-selected="option.id == info.selectedLookupField" value="{{option.id}}">{{parseResult(option.name)}}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">
+                                            {!$Label.Related_List}
+                                            <span class="slds-required" title="required">*</span>
+                                        </label>
+                                        <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$Label.RelatedListHelptext}' != ''">
+                                            <button aria-describedby="help" class="slds-button slds-button_icon">
+                                                <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                </svg>
+                                            </button>
+                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                                <div class="slds-popover__body">{!$Label.RelatedListHelptext}</div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <select class="slds-select" ng-model="info.selectedRelatedField" ng-change="changeRelatedField()"
+                                                        ng-disabled="(info.selectedLookupField != null && info.selectedLookupField != '') || (info.selectedField != null && info.selectedField != '')">
+                                                    <option label="--None--" value=""></option>
+                                                    <option ng-repeat="option in data.relatedfields" ng-selected="option.id == info.selectedRelatedField" value="{{option.id}}">{{parseResult(option.name)}}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label">
+                                            {!$Label.Lookup_Field_to_Map}
+                                            <span class="slds-required" title="required">*</span>
+                                        </label>
+                                        <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$Label.LookupFieldtoMapHelptext}' != ''">
+                                            <button aria-describedby="help" class="slds-button slds-button_icon">
+                                                <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                </svg>
+                                            </button>
+                                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                                <div class="slds-popover__body">{!$Label.LookupFieldtoMapHelptext}</div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <select class="slds-select" ng-model="info.selectedMapField" ng-change="changeLookupFieldToMap()"
+                                                        ng-disabled="!((info.selectedLookupField != null && info.selectedLookupField != '') || (info.selectedRelatedField != null && info.selectedRelatedField != ''))">
+                                                    <option label="--None--" value=""></option>
+                                                    <option ng-repeat="(key, value) in lookupFieldsToMap" ng-selected="key == info.selectedMapField" value="{{key}}">{{parseResult(value)}}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="slds-form-element" ng-show="attMapId != null && attMapId != ''">
+                                    <label class="slds-form-element__label">{!$Label.T_Object}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Object__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element_static">{{parseResult(info.selectedObject)}}</span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element" ng-show="attMapId != null && attMapId != ''">
+                                    <label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Field__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Field__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Field__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element_static">{{parseResult(info.fieldName)}}</span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Attribute_Name__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Attribute_Name__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Attribute_Name__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element__control">
+                                        <input ng-hide="attMapId != null && attMapId != ''" type="text" ng-model="info.attName" class="slds-input" />
+                                        <span ng-show="attMapId != null && attMapId != ''" class="slds-form-element_static">
+                                            {{parseResult(info.attName)}}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Filter_Label_Name__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Filter_Label_Name__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Filter_Label_Name__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form-element__control">
+                                        <input ng-hide="attMapId != null && attMapId != ''" type="text" ng-model="info.filterName" class="slds-input" />
+                                        <span ng-show="attMapId != null && attMapId != ''" class="slds-form-element_static">
+                                            {{parseResult(info.filterName)}}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+									<label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Inheritable__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Inheritable__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Inheritable__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+									<div class="slds-form-element__control">
+										<span class="slds-checkbox slds-form-element__static">
+											<input type="checkbox" id="inheritableCB" ng-model="info.isInheritable"/>
+											<label class="slds-checkbox__label" for="inheritableCB">
+												<span class="slds-checkbox_faux"></span>
+											</label>
+										</span>
+									</div>
+								</div>
+                                <div class="slds-form-element" ng-show="selectedMappingType != 'default' || (info.selectedObject == 'Opportunity' && info.selectedMapField != 'Product2') || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping)">
+									<label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Auto_add__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Auto_add__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Auto_add__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+									<div class="slds-form-element__control">
+										<span class="slds-checkbox slds-form-element__static">
+											<input type="checkbox" id="autoAddCB" ng-model="info.autoAdd"/>
+											<label class="slds-checkbox__label" for="autoAddCB">
+												<span class="slds-checkbox_faux"></span>
+											</label>
+										</span>
+									</div>
+								</div>
+                                <div class="slds-form-element" ng-show="selectedMappingType != 'default' || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping)">
+									<label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Auto_update__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Auto_update__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Auto_update__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+									<div class="slds-form-element__control">
+										<span class="slds-checkbox slds-form-element__static">
+											<input type="checkbox" id="autoUpdateCB" ng-model="info.autoUpdate"/>
+											<label class="slds-checkbox__label" for="autoUpdateCB">
+												<span class="slds-checkbox_faux"></span>
+											</label>
+										</span>
+									</div>
+								</div>
+                                <div class="slds-form-element" ng-show="selectedMappingType != 'default' || (info.selectedObject == 'Opportunity' && info.selectedMapField != 'Product2') || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping)">
+									<label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Auto_delete__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!$ObjectType.Attribute_Mapping__c.fields.Auto_delete__c.InlineHelpText}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Auto_delete__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+									<div class="slds-form-element__control">
+										<span class="slds-checkbox slds-form-element__static">
+											<input type="checkbox" id="autoDeleteCB" ng-model="info.autoDelete"/>
+											<label class="slds-checkbox__label" for="autoDeleteCB">
+												<span class="slds-checkbox_faux"></span>
+											</label>
+										</span>
+									</div>
+								</div>
+                                <div class="slds-form-element" ng-show="selectedMappingType == 'default' && ((info.selectedObject == 'Opportunity' && info.selectedMapField != 'Product2') || (info.selectedObject != 'Opportunity' && !info.isRelatedMapping))" >
+									<label class="slds-form-element__label">{!$ObjectType.Attribute_Mapping__c.fields.Auto_populate__c.Label}</label>
+                                    <div class="slds-form-element__icon por-tooltip-orb" ng-show="'{!JSENCODE($ObjectType.Attribute_Mapping__c.fields.Auto_populate__c.InlineHelpText)}' != ''">
+                                        <button aria-describedby="help" class="slds-button slds-button_icon">
+                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default custom-orb-icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                            </svg>
+                                        </button>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left por-tooltip-body" role="tooltip">
+                                            <div class="slds-popover__body">{!$ObjectType.Attribute_Mapping__c.fields.Auto_populate__c.InlineHelpText}</div>
+                                        </div>
+                                    </div>
+									<div class="slds-form-element__control">
+										<span class="slds-checkbox slds-form-element__static">
+											<input type="checkbox" id="autoPopulateCB" ng-model="info.autoPopulate"/>
+											<label class="slds-checkbox__label" for="autoPopulateCB">
+												<span class="slds-checkbox_faux"></span>
+											</label>
+										</span>
+									</div>
+								</div>
+                            </div>
+                            <div ng-hide="attMapId != null && attMapId != ''" class="notesSection">
+                                <div class="slds-form-element" ng-show="(info.selectedObject == 'Opportunity' && info.selectedMapField == 'Product2') || selectedMappingType != 'default'">
+                                    <label class="slds-form-element__label">{!$Label.Note}:</label>
+                                    <div class="slds-form-element__control">
+                                        <span class="slds-form-element__static">
+                                            <ul ng-show="info.selectedObject == 'Opportunity' && info.selectedMapField == 'Product2'">
+                                                <li style="color: red">{!$Label.Opportunity_product_Note_1}</li>
+                                                <li>{!$Label.Opportunity_product_Note_2}</li>
+                                                <li>{!$Label.Opportunity_product_Note_3}</li>
+                                            </ul>
+                                            <ul ng-show="selectedMappingType != 'default'">
+                                                <li style="color: red">{!$Label.Object_Att_Mapping_Label_1}</li>
+                                                <li>{!$Label.Object_Att_Mapping_Label_2}</li>
+                                            </ul>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>

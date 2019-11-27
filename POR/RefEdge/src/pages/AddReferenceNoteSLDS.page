@@ -1,0 +1,499 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reference_Note__c" sidebar="false" 
+			extensions="AddReferenceNoteControllerSLDS" 
+			id="pageId" standardstylesheets="false"
+            applyHtmlTag="false"
+            showHeader="false"
+            applyBodyTag="false"
+            docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+        	<apex:includescript value="{!URLFOR($Resource.ckeditor,'ckeditor/ckeditor.js')}" />
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:includeScript value="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"/>
+            <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+            
+            <style>
+            	.top-padding {
+            		padding-top: 1.75rem;
+            	}
+                .slds {
+                	background: white !important;
+                }
+                @media only screen and (max-width: 500px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    //width: 90%;
+	                    max-width: 380px;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	width: 141px;
+    					margin: 10px auto 0 auto;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 42%;
+	                   width:15%;
+	                }
+	                .container {
+	                	padding:12px;
+	                }
+				}
+				@media only screen and (min-width: 501px) {
+				    #toast-msg {
+	                    position: fixed;
+	                    top: 10px;
+	                    left: 0;
+	                    right: 0;
+	                    width: 50%;
+	                    margin: 0 auto;
+	                    z-index: 1100000;
+	                }
+	                .buttonStyle {
+	                	float: right;
+	                }
+	                #loading-image {
+	                   position: fixed;
+	                   top: 40%;
+	                   left: 47%;
+	                   width:4%;
+	                }
+	                .container {
+	                	margin-top: 15px;
+	                	margin-left: 70px;
+	                }
+				}
+				.slds-notify--toast {
+                	min-width: auto !important;
+                	padding: 15px 12px;
+                }  
+                #loading { 
+                   width: 100%;
+                   height: 100%;
+                   top: 0px;
+                   left: 0px;
+                   position: absolute;
+                   display:block;
+                   opacity: 0.7;
+                   filter: alpha(opacity = 50);
+                   -moz-opacity: 0.7;
+                   background-color: #fff;
+                   text-align: center;
+                   z-index: 19005;
+                }
+                .remove-flex{
+                    flex:none !important;
+                    webkit-flex:none !important;
+                }
+                .required{
+                	color:red;
+                	display: inline;
+                	font-weight:bold;
+                }
+                .container1 {
+	                position: fixed;
+	                top: 0;
+	                left: 0;
+	                right: 0;
+	                bottom: 0;
+	                overflow-x: hidden;
+	                overflow-y: scroll;
+	            }
+            </style>
+            <script>
+                function redirectToBack() {
+                    sforce.one.back(true);
+                }
+                function redirectOnSave() {
+                	
+                	if ({!fromDetailPage}) {
+                		sforce.one.navigateToSObject('{!JSENCODE(recordId)}', 'detail');
+                	} else {
+	                    sforce.one.back(true);
+                	}
+                }
+                var addNoteApp = angular.module('addNoteApp', ['angularjs-datetime-picker']);
+                var addNoteCon = addNoteApp.controller('addNoteCon', function($scope, $location, $q, $filter) {
+                	$scope.returnId = '{!JSENCODE(returnId)}';
+                    $scope.recordId = '{!JSENCODE(recordId)}';
+                    $scope.fromWhere = '{!JSENCODE(fromWhere)}';
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.isloading = false;
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.noteDate = '{!JSENCODE(dateString)}';
+                    $scope.todayDate = '{!JSENCODE(dateString)}';
+                    $scope.dateFormat = 'yyyy-MM-dd';
+                    
+                    //initial function which is called on page load
+                    $scope.load  = function() {
+						$scope.getDateFormat().then(function(result) {
+							if (result != null) {  
+		                   	   $scope.dateFormat = result;
+  		                     }
+  		                     $scope.noteDate = $filter('date')($scope.noteDate, $scope.dateFormat); 
+		                     $scope.todayDate = $filter('date')($scope.todayDate, $scope.dateFormat); 
+		                     $scope.intialFunction();
+                         });
+					}
+					//get locale based date Format
+					$scope.getDateFormat = function () {
+						var deferred = $q.defer();
+                       	Visualforce.remoting.Manager.invokeAction(
+			               '{!$RemoteAction.AddReferenceNoteControllerSLDS.getDateFormat}', 
+			               function(result, event) {
+			                   deferred.resolve(result);
+			               },
+			               {escape: true}
+			            );
+                        return deferred.promise;
+					}
+                    
+                    $scope.intialFunction = function() {
+                    	//$scope.todayDate = $scope.todayDate.toISOString().substring(0, 10);
+
+                    	if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+                    		
+                    		if (($scope.recordId != null && $scope.recordId != '') || ($scope.returnId != null && $scope.returnId != '')) {
+                    			$scope.isloading = true;
+	                            $scope.fetchInfo().then(function(result) {
+	                                $scope.info = result;
+	                                
+	                                if ($scope.info.noteDate != null && $scope.info.noteDate != '') {
+	                                    $scope.info.noteDate = $scope.parseResult($scope.info.noteDate);
+	                                    $scope.noteDate = JSON.parse($scope.info.noteDate);
+		                                $scope.noteDate = $filter('date')($scope.noteDate, $scope.dateFormat);
+	                                } else {
+	                                	$scope.noteDate = angular.copy($scope.todayDate);
+	                                }
+	                                CKEDITOR.instances['txtSubject'].setData($scope.parseResult($scope.info.note));
+	                            	$scope.isallDataFetched = true;
+	                            	$scope.isloading = false;
+	                            	console.log($scope.info);
+	                            	console.log($scope.parseResult($scope.info.note));
+	                            });
+	                            //check for CRUD and FLS permissions
+	                            $scope.checkPermission().then(function(result) {
+			                        	
+	                        		if (result != '') {
+		                            	$scope.isError = true;
+		                        		$scope.errorMsg = result;
+		                            } else {
+		                            	$scope.isError = false;
+		                            }
+		                      	});
+	                      	}
+                        }
+                    }
+                    
+                    //#1070 : convert date to yyyy-MM-dd format befor sending to controller
+	                $scope.convertToDate = function (date) {
+	                		date = (date == null) ? '' : date;
+	                		var regEx = /^[0-9]{4}\-(0[1-9]|1[012]|[1-9])\-([1-9]|0[1-9]|[12][0-9]|3[01])/;
+	                		
+	                		if (date == null || date == '') {
+                				return '';
+	                		}
+	                		
+	                		if (date.match(regEx))  { 
+	                			tempDF = date.split('-');
+	                			if (tempDF.length < 3 || !$scope.checkDate(tempDF[2], tempDF[1], tempDF[0])) {
+	                				return null;
+	                			}
+	                			return date; 
+						}
+	               		try {
+	               			var tempDF = $scope.dateFormat;
+	               			var tempDate = date + '';
+	               			tempDF = tempDF.split(/[./-]/g);
+	               			tempDate = tempDate.split(/[./-]/g);
+	               			var month = (tempDF.indexOf('MM') == -1) ? tempDate[tempDF.indexOf('M')] :tempDate[tempDF.indexOf('MM')];
+	               			var day = (tempDF.indexOf('dd') == -1) ? tempDate[tempDF.indexOf('d')] :tempDate[tempDF.indexOf('dd')];
+	               			var modDate = new Date(tempDate[tempDF.indexOf('yyyy')], month - 1, day);
+	               			var dateString = modDate.getFullYear() + '-' + (modDate.getMonth() + 1) + '-' + modDate.getDate();
+		              	 	
+	              	 		if (modDate != 'Invalid Date' && dateString.indexOf('NaN') == -1 ) {
+	              	 			
+	              	 			if (month.length > 2 || day.length > 2 || tempDate[tempDF.indexOf('yyyy')].length != 4 || !$scope.checkDate(day, month, tempDate[tempDF.indexOf('yyyy')])) {
+		              	 			return null;
+		              	 		}
+	     				 		return dateString;
+	     				 	} else {
+	     				 		return null;
+	     				 	}
+	     				} catch (e) {
+	     					return null;
+	     				}
+	                }
+	                
+	                $scope.checkDate = function (day, month, year){
+	                		var returnval = true;
+	                		if (day == null || day.trim() == '' || month == null || month.trim() == '' || year == null || year.trim() == '' ||
+	                			parseInt(day) == NaN || parseInt(month) == NaN || parseInt(year) == NaN) {
+	                			returnval = false;
+	            			} else {
+	            				day = parseInt(day);
+	            				month = parseInt(month);
+	            				year = parseInt(year);
+	            			}
+					    returnval = (month < 1 || month > 12 || day < 1) ? false : returnval;
+					    var days = (month == 2) ? ((year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) ? 29 : 28) 
+					    				: (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31 ;
+					    returnval = (day > days) ? false : returnval;
+				        return returnval;
+	                }
+	                
+                    //to save the reward
+                    $scope.save = function() {
+	                    	$scope.showModal = false;
+	                    	$scope.isError = false;
+	                    	
+	                    	if ($scope.noteDate == null || $scope.noteDate.trim() == '') {
+	               			$scope.isError = true;
+							$scope.errorMsg = 'NoteDate : {!$Label.REQUIRED_VALUES}';
+	         			} else {	
+		                    var dateString = $scope.convertToDate($scope.noteDate);
+		                    
+	                 		if (dateString != null) {
+	                 			$scope.noteDate = dateString;
+	                 		} else {
+	                 			$scope.isError = true;
+	        						$scope.errorMsg = '{!$Label.Date_Invalid}' + $scope.noteDate; 
+	                 		}
+	                 	}
+	                 	
+                 		if (!$scope.isError) {
+	                   		$scope.isloading = true;
+	                   		$scope.info.noteDateNew = $scope.noteDate;
+	                   		
+	                   		if (typeof CKEDITOR.instances['txtSubject'] != 'undefined') {
+	                   			$scope.info.note = CKEDITOR.instances['txtSubject'].getData();
+	                   		}
+	                   		
+	                   		$scope.submit().then(function(result) {
+	                           	$scope.isloading = false;
+	                           	
+	                           	if (result != '') {
+	                           		$scope.isError = true;
+	                  				$scope.errorMsg = $scope.parseResult(result);
+	                           	} else {
+	                           		$scope.isSuccess = true;
+	                           		redirectOnSave();
+	                      		}
+	                    		}); 
+	                    	}
+                    }
+                    
+                    //to parse any string
+                    $scope.parseResult = function(result) {
+                    
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                            result = result.replace(/&amp/g, '&');
+                            return result;
+                        }
+                    }
+                    
+                    // method to save reward
+                    $scope.submit = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddReferenceNoteControllerSLDS.submit}',
+                            angular.toJson($scope.info), 
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        ); 
+                        return deferred.promise;
+                    }
+                    $scope.fetchInfo = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddReferenceNoteControllerSLDS.fetchInfo}', 
+                            $scope.recordId, $scope.returnId, $scope.fromWhere,
+                            function(result, event) {
+                              	deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    // method to check permission to perform DML
+                    $scope.checkPermission = function() {
+                    	var deferred = $q.defer();
+                    	Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AddReferenceNoteControllerSLDS.getPermissionsMessage}',
+                            $scope.recordId,//re #903
+                            function(result, event) {
+                                deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.back = function() {
+                    	redirectToBack();
+                    }
+                });
+                function redirect() {
+                 	sforce.one.back();
+                }
+            </script>
+        </head>
+        
+        <body ng-app="addNoteApp" class="slds"> 
+        	<div class="container1">
+	            <form id="frmId" ng-controller="addNoteCon" ng-cloak="ng-cloak" >
+	                <div ng-show="isFullLicenseAccessible == 'false'">
+	                    <svg class="slds-icon slds-icon-action-call slds-icon--small slds-p-around--x-small">
+	                        <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	                    </svg>
+	                    {!$Label.User_License}
+	                </div>
+	                <div ng-if="((recordId == null || recordId == '') && (returnId == null || returnId == ''))">
+	                	<div id="toast-msg" class="slds-notify_container">
+			                <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+			                    <span class="slds-assistive-text">{!$Label.Error}</span>
+			                    <button class="slds-button slds-button--icon-inverse slds-notify__close" onclick="redirect()" style="z-index:9999;cursor:pointer">
+		                            <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+		                                <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+		                            </svg>
+		                            <span class="slds-assistive-text">{!$Label.Close}</span>
+		                        </button>
+			                    <div class="slds-notify__content slds-grid" style="z-index:999;">
+			                        <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+			                            <use xlink:href="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+			                        </svg>
+			                        <div class="slds-col slds-align-middle">
+			                            <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{!$Label.Cannot_create_new_record}</h2>
+			                        </div>
+			                    </div>
+			                </div>
+			            </div>
+	                </div>
+	                <div ng-init="load();" ng-show="isFullLicenseAccessible == 'true' && ((recordId != null && recordId != '') || (returnId != null && returnId != ''))">
+	                    <!-- header -->
+	                    <div class="slds-page-header" role="banner">
+						    <div class="slds-grid slds-wrap">
+						        <div class="slds-col slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-media">
+						                <div class="slds-media__figure">
+						                    <img class="slds-icon slds-icon--large" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" />
+						                </div>
+						                <div class="slds-grid" ng-show="recordId != null && recordId != ''">
+	                                        <div>
+	                                            <h1 class="slds-text-heading--medium" title="{{info.name}}">{{info.name}}</h1>
+	                                            <p class="slds-text-body_small slds-line-height_reset">{!$Label.T_Reference_Note_Edit}</p>
+	                                        </div>
+	                                    </div>
+	                                    <div class="slds-grid" ng-show="recordId == null || recordId == ''" style="margin-top: 1%;">
+	                                        <div>
+	                                        	<h1 class="slds-text-heading--medium" title="{!$Label.T_New_Reference_Note}">{!$Label.T_New_Reference_Note}</h1>
+	                                        </div>
+	                                    </div>
+						            </div>
+						        </div>
+						        <div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2 remove-flex">
+						            <div class="slds-button-group buttonStyle" role="group">
+						                <button class="slds-button slds-button--neutral" ng-click="back();">{!$Label.Cancel}</button>
+	                                    <button class="slds-button slds-button--neutral" ng-click="save();">{!$Label.Save}</button>
+						            </div>
+						        </div>
+						    </div>
+						</div>
+	                    <!-- toast -->
+	                    <div id="toast-msg" ng-show="isError" class="slds-notify_container">
+	                        <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+	                            <span class="slds-assistive-text">{!$Label.Error}</span>
+	                            <button class="slds-button slds-button--icon-inverse slds-notify__close">
+	                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" ng-click="isError=false;" style="cursor:pointer">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+	                                </svg>
+	                                <span class="slds-assistive-text">{!$Label.Close}</span>
+	                            </button>
+	                            <div class="slds-notify__content slds-grid">
+	                                <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+	                                    <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#error')}"></use>
+	                                </svg>
+	                                <div class="slds-col slds-align-middle">
+	                                    <h2 class="slds-text-heading--small" style="white-space: pre-wrap;">{{errorMsg}}</h2>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <!-- main block -->
+	                    <div class="slds-grid slds-wrap" style="padding:12px;">
+	                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label" ng-show="info.fromWhere == 'Account'">{!$ObjectType.Reference_Note__c.fields.Account__c.Label}</label>
+	                                <label class="slds-form-element__label" ng-show="info.fromWhere == 'Contact'">{!$ObjectType.Reference_Note__c.fields.Contact__c.Label}</label>
+	                                <label class="slds-form-element__label" ng-show="info.fromWhere == 'Content'">{!$ObjectType.Reference_Note__c.fields.Reference_Content__c.Label}</label>
+	                                <label class="slds-form-element__label" ng-show="info.fromWhere == 'RR'">{!$ObjectType.Reference_Note__c.fields.Reference_Request__c.Label}</label>
+	                                <label class="slds-form-element__label" ng-show="info.fromWhere == 'AR'">{!$ObjectType.Reference_Note__c.fields.Account_Request__c.Label}</label>
+	                                <label class="slds-form-element__label" ng-show="info.fromWhere == 'UR'">{!$ObjectType.Reference_Note__c.fields.Unspecified_Request__c.Label}</label>
+									<label class="slds-form-element__label" ng-show="info.fromWhere == 'NC'">{!$ObjectType.Reference_Note__c.fields.Nomination__c.Label}</label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+		                                <a style="cursor: pointer;" href="/{{info.returnId}}" target="_blank">{{parseResult(info.parentName)}}</a>
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Note_Date__c.Label}<div class="required">*</div></label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-2 slds-large-size--1-of-2">
+		                                <input type="text" ng-model="noteDate" class="slds-input" placeholder="{{dateFormat.toLowerCase()}}" date-format="{{dateFormat}}" datetime-picker="datetime-picker"></input>
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    	<div class="slds-col slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1 remove-flex top-padding">
+	                    		<div class="slds-form-element">
+	                          		<label class="slds-form-element__label">{!$ObjectType.Reference_Note__c.fields.Note__c.Label}<div class="required">*</div></label>
+	                                <div class="slds-form-element__control slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1">
+		                                <textarea rows="6" class="ckeditor" id="txtSubject"></textarea>
+	                                </div>	
+	                           	</div>
+	                    	</div>
+	                    </div>
+	                </div>
+	                <div ng-show="isloading" class="slds-spinner--medium" id="loading">
+	                	<img ng-show="isloading" id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+	                </div>
+	            </form>
+        	</div>
+        </body>
+    </html>
+</apex:page>

@@ -1,0 +1,734 @@
+<apex:component controller="RefSearchBlockController">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+
+        <script>
+            var sf1AccountCtrl = sf1RefSearchApp.controller('sf1AccountCtrl',
+                function($scope, $q, productService) {
+                    $scope.activeRBIlist = [];
+                    $scope.filterAttributeMap = {};
+                    $scope.selectedRef = [];
+                    $scope.filterNos = {};
+                    $scope.filterOperationMap = {};
+                    $scope.alreadyDisplayedAccounts = [];
+                    $scope.pageIndex = 1;
+                    $scope.pageSize = 5;
+                    $scope.totalAccounts = 0;
+                    $scope.showMoreAccount = false;
+                    $scope.accountIds = [];
+                    $scope.allActiveAccountIds = [];
+                    $scope.accounts = [];
+                    $scope.searchResult = [];
+                    $scope.filterResult = [];
+                    $scope.Account = 'Account__c';
+                    $scope.Reference_Owner = 'Reference_Owner__c';
+                    $scope.Referenceability = 'Referenceability__c';
+                    $scope.Attributes = 'Attributes__c';
+                    $scope.Default_Period_Completed_Uses = 'Default_Period_Completed_Uses__c';
+                    $scope.Account_Level_RUL = 'Account_Level_RUL__c';
+                    $scope.RUL_Limit_Reached = 'RUL_Limit_Reached__c';
+                    $scope.Is_Contact_Limit_Reached = 'Is_Contact_Limit_Reached__c';
+                    $scope.Referenceability_no = 'Referenceability_no__c';
+                    $scope.Attribute_Ids = 'Attribute_Ids__c';
+                    $scope.Referenceability_Status = 'Referenceability_Status__c';
+                    $scope.nameSpace = '{!JSENCODE(nameSpace)}';
+                    $scope.searchText = '';
+                    $scope.isFilterAppiled = false;
+                    $scope.isAnyFilterAppiled = false;
+                    $scope.isMoreAccountsAvailable = false;
+                    $scope.selectedAccIds = [];
+                    $scope.selectedAccIdsParam = [];
+                    $scope.showLimitReachedMsg = false;
+                    $scope.showMaxAccountRequestsMsg = false;
+                    $scope.showMinAccountMsg = false;
+                    $scope.maxAccountRequests = {!maxAccountRequests};
+                    $scope.maxAccountRequestsMsg = '{!$Label.Maximum_Account_No_Message_Part1}';
+                    $scope.fetchingData = false;
+                    $scope.showStageErrorMessage1 = false;
+                    $scope.stageErrorMessage1 = '';
+                    $scope.allowRequestFromLead = {!allowRequestFromLead};
+                    $scope.accountmappingSelected = false;
+                    $scope.selectedRefStatus = 'Active';
+                    $scope.projectType = '{!JSENCODE(projectType)}';
+                    $scope.relatedAccountIds = [];
+                    $scope.isRefMatch = {!isRefMatch};
+                    $scope.refRequestId = '{!JSENCODE(refRequestId)}';
+                    $scope.accountCount = 0;
+
+                    $scope.intialFunction = function() {
+                        $scope.maxAccountRequestsMsg = $scope.maxAccountRequestsMsg.replace(/@@@/gi, $scope.maxAccountRequests);
+
+                        if ('{!JSENCODE(selectedAccIdsParam)}' != '') {
+                            $scope.selectedAccIdsParam = '{!JSENCODE(selectedAccIdsParam)}'.split(',');
+                        }
+
+                        $scope.getAllAccountIds().then(function(result) {
+                            $scope.allActiveAccountIds = result;
+                            $scope.totalAccounts = $scope.allActiveAccountIds.length;
+
+                            if (result.length > 50) {
+                                $scope.accountCount = '50+';
+                            } else {
+                                $scope.accountCount = result.length;
+                            }
+                            $scope.getAccounts();
+                        });
+                    }
+
+                    $scope.getAllAccountIds = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getAllAccountIds}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getTotalAccounts1 = function(refStatus) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getTotalAccounts1}',
+                            $scope.isAnyFilterAppiled,
+                            angular.toJson($scope.alreadyDisplayedAccounts),
+                            angular.toJson($scope.accountIds),
+                            refStatus,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getAllActiveRBIs2 = function(refStatus) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getAllActiveRBIs2}',
+                            $scope.isAnyFilterAppiled,
+                            angular.toJson($scope.alreadyDisplayedAccounts),
+                            angular.toJson($scope.accountIds),
+                            250,
+                            $scope.isRefMatch,
+                            $scope.refRequestId,
+                            refStatus,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterAccountsByRefAttributes = function(refStatus) {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterAccountsByRefAttributes}',
+                            angular.toJson($scope.selectedRef),
+                            angular.toJson($scope.filterNos),
+                            angular.toJson($scope.alreadyDisplayedAccounts),
+                            angular.toJson($scope.allActiveAccountIds),
+                            angular.toJson($scope.filterOperationMap),
+                            refStatus,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterAccountsBySearchText1 = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterAccountsBySearchText1}',
+                            $scope.searchText,
+                            angular.toJson($scope.alreadyDisplayedAccounts),
+                            angular.toJson($scope.allActiveAccountIds),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+
+                    $scope.getTotalAccounts = function() {
+                        $scope.accountIds = [];
+                        
+                        if ($scope.searchText != '') {
+
+                            if ($scope.searchResult.length > 0) {
+                                $scope.accountIds = $scope.searchResult;
+                            }
+                        } else {
+                           $scope.accountIds = [];
+                        }
+
+                        if ($scope.isFilterAppiled || $scope.selectedRef.length > 0) {
+                            
+                            if ($scope.filterResult.length > 0) {
+
+                                if ($scope.accountIds.length > 0) {
+                                    $scope.tempList = [];
+                                    
+                                    angular.forEach(
+                                        $scope.accountIds,
+                                        function(accId) {
+
+                                            if ($scope.filterResult.indexOf(accId) >= 0) {
+                                                $scope.tempList.push(accId);
+                                            }
+                                        }
+                                    );
+                                    $scope.accountIds = $scope.tempList;
+                                } else {
+                                    $scope.accountIds = $scope.filterResult;
+                                }
+                            } else {
+                                $scope.accountIds = [];
+                            }
+                        }
+
+                        if ($scope.accountmappingSelected) {
+                            
+                            if ($scope.relatedAccountIds.length > 0) {
+
+                                if ($scope.accountIds.length > 0) {
+                                    $scope.tempList = [];
+
+                                    angular.forEach(
+                                        $scope.accountIds,
+                                        function(accId) {
+
+                                            if ($scope.relatedAccountIds.indexOf(accId) >= 0) {
+                                                $scope.tempList.push(accId);
+                                            }
+                                        }
+                                    );
+                                    $scope.accountIds = $scope.tempList;
+                                } else {
+                                    $scope.accountIds = $scope.relatedAccountIds;
+                                }
+                            } else {
+                                $scope.accountIds = [];
+                            }
+                        }
+                        $scope.isAnyFilterAppiled = false;
+                        
+                        if ($scope.isFilterAppiled
+                                || $scope.searchText != ''
+                                || $scope.selectedRef.length > 0
+                                || $scope.accountmappingSelected) {
+                            $scope.isAnyFilterAppiled = true;
+                        }
+                        var refStatus = $scope.projectType == 'Candidate' ? 'Candidate' : $scope.selectedRefStatus;
+                        
+                        $scope.getTotalAccounts1(refStatus).then(function(result) {
+                            $scope.totalAccounts = result;
+                            $scope.accounts = [];
+                            $scope.alreadyDisplayedAccounts = [];
+                            $scope.activeRBIlist = [];
+
+                            if (result > 50) {
+                                $scope.accountCount = '50+';
+                            } else {
+                                $scope.accountCount = result;
+                            }
+                            $scope.getAccounts();
+                        });
+                    }
+
+                    $scope.getAccounts = function() {
+                        var refStatus = $scope.projectType == 'Candidate' ? 'Candidate' : $scope.selectedRefStatus;
+
+                        $scope.getAllActiveRBIs2(refStatus).then(function(result) {
+                            $scope.tempList = result;
+
+                            if ($scope.tempList.length > 250) {
+                                $scope.isMoreAccountsAvailable = true;
+                                $scope.tempList.splice(250, 1);
+                            } else {
+                                $scope.isMoreAccountsAvailable = false;
+                            }
+
+                            if ($scope.pageSize == 5) {
+                                $scope.showMoreAccount = ($scope.tempList.length > $scope.pageSize ? true : false);
+                            } else {
+                                $scope.showMoreAccount = false;
+                            }
+                            $scope.accounts = [];
+
+                            for (var i = 0; i < $scope.tempList.length; i++) {
+                                $scope.alreadyDisplayedAccounts.push($scope.tempList[i].rbi[$scope.nameSpace + $scope.Account]);
+                                $scope.activeRBIlist.push($scope.tempList[i]);
+
+                                if (i < $scope.pageSize) {
+                                    $scope.accounts.push($scope.tempList[i]);
+                                }
+
+                                // added for REF-1341 - Gaurav Saini (6 Sep, 2018)
+                                if ($scope.selectedAccIdsParam.length > 0
+                                        && $scope.selectedAccIdsParam.indexOf($scope.tempList[i].rbi[$scope.nameSpace + $scope.Account]) >= 0) {
+                                    var accIdIndex = $scope.selectedAccIds.indexOf($scope.tempList[i].rbi[$scope.nameSpace + $scope.Account]);
+                                    $scope.tempList[i].isSelected = true;
+
+                                    if (accIdIndex == -1) {
+                                        $scope.selectedAccIds.push($scope.tempList[i].rbi[$scope.nameSpace + $scope.Account]);
+                                    }
+                                }
+                            }
+                            $scope.fetchingData = false;
+                            //productService.isloading(false);
+                        });
+                    }
+
+                    $scope.$on('filter', function(e, myMap, operationMap, accountMappedIds, accountmapping, relatedFilterMapContact, abc, relatedFilterMapContent, abc1, mappedFilterIds, stageFilterId) {
+                        $scope.filterAttributeMap = {};
+                        $scope.filterNos = {};
+                        $scope.accountmappingSelected = accountmapping;
+                        $scope.relatedAccountIds = accountMappedIds;
+                        $scope.filterOperationMap = operationMap;
+                        $scope.isFilterAppiled = false;
+                        $scope.selectedRef = [];
+                        
+                        angular.forEach(
+                            myMap,
+                            function(itm, key) {
+                                $scope.tempList = [];
+                                
+                                if (key == 'Referenceability') {
+
+                                    for (var i = 0; i < itm.length; i++) {
+
+                                        if (itm[i].isSelected && itm[i].refType[$scope.nameSpace + $scope.Referenceability_no] != null) {
+                                            $scope.tempList.push(itm[i].refType[$scope.nameSpace + $scope.Referenceability_no]);
+                                        }
+                                    }
+
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.selectedRef = $scope.tempList;
+                                        //$scope.isFilterAppiled = true;
+                                    }
+                                } else if (key != stageFilterId && key != 'Content Types' && key != 'Content Language' && mappedFilterIds.indexOf(key) < 0) {
+                                    var filterNo = '';
+                                    
+                                    for (var i = 0; i < itm.length; i++) {
+
+                                        if (itm[i].isSelected) {
+                                            $scope.tempList.push(itm[i].attId);
+                                            filterNo = itm[i].filterNo;
+                                        }
+                                    }
+
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.filterAttributeMap[key] = $scope.tempList;
+                                        $scope.filterNos[key] = filterNo;
+                                        $scope.isFilterAppiled = true;
+                                    }
+                                }
+                            }
+                        );
+                        $scope.alreadyDisplayedAccounts = [];
+                        $scope.filterAccounts();
+                    });
+
+                    $scope.filterAccounts = function() {
+                        $scope.alreadyDisplayedAccountsJson = angular.toJson($scope.alreadyDisplayedAccounts);
+                        $scope.accountIdsJson = angular.toJson($scope.allActiveAccountIds);
+                        $scope.selectedRefJson = angular.toJson($scope.selectedRef);
+                        $scope.filterNospJson = angular.toJson($scope.filterNos);
+                        $scope.filterOperationMapJson  = angular.toJson($scope.filterOperationMap);
+                        var refStatus = $scope.projectType == 'Candidate' ? 'Candidate' : $scope.selectedRefStatus;
+
+                        $scope.filterAccountsByRefAttributes(refStatus).then(function(result) {
+                            $scope.tempList = result; 
+                            $scope.labelLogicMap = {};
+                            $scope.filterResult = [];
+
+                            angular.forEach(
+                                $scope.tempList,
+                                function(accRbi) {
+
+                                    if ($scope.isFilterAppiled) {
+
+                                        if (accRbi[$scope.nameSpace + $scope.Attribute_Ids] != null && accRbi[$scope.nameSpace + $scope.Attribute_Ids] != '') {
+                                            $scope.setAttribute = accRbi[$scope.nameSpace + $scope.Attribute_Ids].split(',');
+                                            $scope.selectedlabelCount = 0;
+                                            $scope.recordMatchCount = 0;
+                                            
+                                            angular.forEach(
+                                                $scope.filterAttributeMap,
+                                                function(array, labelId) {
+                                                    $scope.labelLogicMap[labelId] = false;
+                                                    $scope.selectedlabelCount = $scope.selectedlabelCount + 1;
+                                                    
+                                                    if ($scope.filterOperationMap[labelId] == 'and') {
+                                                        $scope.notMatched = false;
+                                                        
+                                                        for (var j = 0; j < array.length; j++) {
+
+                                                            if ($scope.setAttribute.indexOf(array[j]) < 0) {
+                                                                $scope.notMatched = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                        
+                                                        if (!$scope.notMatched) {
+                                                            $scope.recordMatchCount = $scope.recordMatchCount+1;
+                                                            $scope.labelLogicMap[labelId] = true;
+                                                        }
+                                                    } else {
+                                                        
+                                                        for (var j = 0; j < array.length; j++) {
+
+                                                            if ($scope.setAttribute.indexOf(array[j]) >= 0) {
+                                                                $scope.recordMatchCount = $scope.recordMatchCount + 1;
+                                                                $scope.labelLogicMap[labelId] = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            );
+
+                                            if ($scope.selectedlabelCount != 0) {
+                                                $scope.checkResult = true;
+                                                
+                                                angular.forEach(
+                                                    $scope.labelLogicMap,
+                                                    function(flag, labelId) {
+                                                       $scope.checkResult = ($scope.checkResult && flag);
+                                                    }
+                                                );
+
+                                                if ($scope.checkResult) {
+                                                    $scope.filterResult.push(accRbi[$scope.nameSpace + $scope.Account]);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        $scope.filterResult.push(accRbi[$scope.nameSpace + $scope.Account]);
+                                    }
+                                }
+                            );
+                            $scope.getTotalAccounts();
+                        });
+                    }
+
+                    $scope.$on('searchText', function(e, value) {
+                        $scope.searchText = value;
+                        $scope.alreadyDisplayedAccounts = [];
+                        $scope.search();
+                    });
+
+                    $scope.search = function() {
+                        
+                        $scope.filterAccountsBySearchText1().then(function(result) {
+                            var tempResult = result;
+                            $scope.searchResult = tempResult['AllIds'];
+                            var result2 = tempResult['NameBasedIds'];
+                            productService.searchTextContent($scope.searchText, result2);
+                            productService.searchTextContact($scope.searchText, result2);
+                            $scope.getTotalAccounts();
+                        });
+                    }
+
+                    $scope.showMoreAccounts = function() {
+
+                        if ($scope.showMoreAccount) {
+                            $scope.pageSize = 25;
+                            $scope.showMoreAccount = false;
+
+                            for (var i = 5; i < $scope.activeRBIlist.length; i++) {
+
+                                if (i < $scope.pageSize) {
+                                    $scope.accounts.push($scope.activeRBIlist[i]);
+                                }
+                            }
+                        } else {
+                            $scope.accounts.splice(5);
+                            $scope.pageSize = 5;
+                            $scope.showMoreAccount = true;
+                        }
+                        productService.toggleAccountSectionEvent(!$scope.showMoreAccount);
+                    }
+
+                    $scope.$on('fetchMoreRecordsEvent', function(e, value) {
+                        $scope.more();
+                    });
+
+                    $scope.more = function() {
+                        
+                        if ($scope.showMoreAccount == false) {
+                            
+                            if ($scope.accounts.length < $scope.activeRBIlist.length) {
+                                var size = (parseInt($scope.accounts.length) + parseInt($scope.pageSize));
+                                
+                                for (var i = $scope.accounts.length; i < $scope.activeRBIlist.length; i++) {
+
+                                    if (i < size) {
+                                        $scope.accounts.push($scope.activeRBIlist[i]);
+                                    }
+                                }
+                            } else if ($scope.isMoreAccountsAvailable) {
+                                $scope.fetchingData = true;
+                                $scope.getAccounts();
+                            }
+                        }
+                    }
+
+                    $scope.selectDeselect = function(accWrap) {
+                        var indexOfAccId = $scope.selectedAccIds.indexOf(accWrap.rbi[$scope.nameSpace + $scope.Account]);
+                        
+                        if ($scope.selectedAccIds.length < $scope.maxAccountRequests || indexOfAccId >= 0) {
+                            
+                            if (indexOfAccId == -1) {
+                                $scope.selectedAccIds.push(accWrap.rbi[$scope.nameSpace + $scope.Account]);
+                                
+                                if (accWrap.rbi[$scope.nameSpace + $scope.Account_Level_RUL]) {
+                                    
+                                    if (accWrap.rbi[$scope.nameSpace + $scope.RUL_Limit_Reached]) {
+                                        $scope.showLimitReachedMsg = true;
+                                    }
+                                } else {
+                                    
+                                    if (accWrap.rbi[$scope.nameSpace + $scope.Is_Contact_Limit_Reached]) {
+                                        $scope.showLimitReachedMsg = true;
+                                    }
+                                }
+                            } else {
+                                $scope.selectedAccIds.splice(indexOfAccId, 1);
+                            }
+                            var allSelectedTemp = true;
+                            var breakFlag = true;
+                            
+                            angular.forEach(
+                                $scope.accounts,
+                                function(item) {
+                                    
+                                    if (breakFlag) {
+                                        
+                                        if (!item.isSelected) {
+                                            allSelectedTemp = false;
+                                            breakFlag = false;
+                                        }
+                                    }
+                                }
+                            );
+                        } else {
+                            $scope.showMaxAccountRequestsMsg = true;
+                            accWrap.isSelected = false;
+                        }
+                    }
+
+                    $scope.$on('stageErrorEvent', function(event, stageErrorMsg) {
+                        $scope.stageErrorMessage1 = stageErrorMsg;
+                    });
+
+                    $scope.discardAccIds = function() {
+                        $scope.selectedAccIds = [];
+                        $scope.sendAccIds();
+                    }
+
+                    $scope.sendAccIds = function() {
+                        var ids = '';
+                        
+                        if ($scope.selectedAccIds.length > 0) {
+                            ids = $scope.selectedAccIds.join(',');
+                        }
+                        var form = document.createElement("form");
+                        form.setAttribute("method", "POST");
+                        form.setAttribute("action", "{!URLFOR($Page.SF1_ReferenceUseRequest)}");
+                        
+                        var hiddenField = document.createElement("input");
+                        hiddenField.setAttribute("type", "hidden");
+                        hiddenField.setAttribute("name", "accountIds");
+                        hiddenField.setAttribute("value", ids);
+                        form.appendChild(hiddenField);
+                        
+                        var hiddenField1 = document.createElement("input");
+                        hiddenField1.setAttribute("type", "hidden");
+                        hiddenField1.setAttribute("name", "forAccount");
+                        hiddenField1.setAttribute("value", $scope.forAccount);
+                        form.appendChild(hiddenField1);
+                        
+                        var hiddenField2 = document.createElement("input");
+                        hiddenField2.setAttribute("type", "hidden");
+                        hiddenField2.setAttribute("name", "forContent");
+                        hiddenField2.setAttribute("value", $scope.forContent);
+                        form.appendChild(hiddenField2);
+                        
+                        if ($scope.opportunityId != '') {
+                            var hiddenField3 = document.createElement("input");
+                            hiddenField3.setAttribute("type", "hidden");
+                            hiddenField3.setAttribute("name", "opportunityId");
+                            hiddenField3.setAttribute("value", $scope.opportunityId);
+                            form.appendChild(hiddenField3);
+                        }
+                        
+                        if ($scope.caseId != '') {
+                            var hiddenField3 = document.createElement("input");
+                            hiddenField3.setAttribute("type", "hidden");
+                            hiddenField3.setAttribute("name", "caseId");
+                            hiddenField3.setAttribute("value", $scope.caseId);
+                            form.appendChild(hiddenField3);
+                        }
+                        
+                        if ($scope.leadId != '') {
+                            var hiddenField3 = document.createElement("input");
+                            hiddenField3.setAttribute("type", "hidden");
+                            hiddenField3.setAttribute("name", "leadId");
+                            hiddenField3.setAttribute("value", $scope.leadId);
+                            form.appendChild(hiddenField3);
+                        }
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+
+                    $scope.$on('initiateRequestProcessEvent', function(e, value) {
+
+                        if ($scope.preFilter && $scope.stageErrorMessage1 != '') {
+                            $scope.showStageErrorMessage1 = true;
+                        } else {
+                            $scope.showStageErrorMessage1 = false;
+
+                            if ($scope.isBasicEdition) {
+
+                                if ($scope.selectedAccIds.length > 0) {
+                                    $scope.sendAccIds();
+                                } else {
+                                    $scope.showMinAccountMsg = true;
+                                }
+                            } else {
+
+                                if ($scope.selectedAccIds.length > 0) {
+                                    $scope.sendAccIds();
+                                } else {
+                                    $scope.discardAccIds();
+                                }
+                            }
+                        }
+                    });
+                }
+            );
+        </script>
+    </head>
+
+    <body>
+        <div ng-controller="sf1AccountCtrl" ng-init="intialFunction()" ng-cloak="ng-cloak">
+            <div class="titleBar slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                <div class="slds-text-title_caps">{!$Label.Accounts}</div>
+                <div class="slds-text-title">
+                    <a ng-show="showMoreAccount && totalAccounts > 5" ng-click="showMoreAccounts()">
+                        {!$Label.View_More}
+                    </a>
+                    <a ng-show="!showMoreAccount && totalAccounts > 5" ng-click="showMoreAccounts()">
+                        {!$Label.Back}
+                    </a>
+                </div>
+                <div class="slds-text-title">{{accountCount}}&nbsp;Results</div>
+            </div>
+            <div class="customToastDiv" ng-show="accounts.length == 0">
+                {!$Label.No_matches_found}
+            </div>
+            <div id="accountsBlock">
+                <div ng-repeat="accWrap in accounts" style="padding: 0.5rem 0.8rem">
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <span class="slds-checkbox">
+                                <input type="checkbox" ng-change="selectDeselect(accWrap)" ng-model="accWrap.isSelected" name="{{'acc' + $index}}" id="{{'acc' + $index}}" />
+                                <label class="slds-checkbox__label" for="{{'acc' + $index}}">
+                                    <span class="slds-checkbox_faux"></span>
+                                    <span class="slds-form-element__label">{{accWrap.AccountName}}</span>
+                                </label>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-toast-container" ng-show="showStageErrorMessage1">
+                <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="showStageErrorMessage1 = false">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                        <span class="slds-assistive-text">Close</span>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small" style="font-size: 16px">
+                            {{stageErrorMessage1}}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-toast-container" ng-show="showMinAccountMsg">
+                <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="showMinAccountMsg = false">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                        <span class="slds-assistive-text">Close</span>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small" style="font-size: 16px">
+                            {!$Label.Select_Atleast_One_Account}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-toast-container" ng-show="showLimitReachedMsg">
+                <div class="slds-notify slds-notify_toast custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="showLimitReachedMsg = false">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                        <span class="slds-assistive-text">Close</span>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small" style="font-size: 16px">
+                            {!$Label.Limit_Reached_Message}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-toast-container" ng-show="showMaxAccountRequestsMsg">
+                <div class="slds-notify slds-notify_toast custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="showMaxAccountRequestsMsg = false">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                        <span class="slds-assistive-text">Close</span>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small" style="font-size: 16px">
+                            {{maxAccountRequestsMsg}}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </body>
+</html>
+</apex:component>

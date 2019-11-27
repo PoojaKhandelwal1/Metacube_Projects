@@ -1,0 +1,124 @@
+<!-- 
+* ReferenceEdge
+* 
+* Point of Reference, Inc. - Copyright 2014 All rights reserved.
+*
+* @company : Point of Reference, Inc.
+* @website : www.point-of-reference.com
+*
+* Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+* WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+* POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+* MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+* AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF  
+* ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+* WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS  
+* WRITTEN CONSENT FROM COMPANY.
+--> 
+<apex:component controller="SLDSAccountLevelRULController">
+    <html>
+        <style>
+            .slds-pill {
+                padding: 10px;
+            }
+            .addSearchIcon {
+                background-image: url({!URLFOR($Resource.LightningCSS, '/assets/icons/utility/search_60.png')});
+                background-repeat: no-repeat;
+                background-size: 22px;
+                background-position-x: 1%;
+                background-position-y: 50%;
+            }
+            .slds .slds-pill.removeBorder {
+                border: none;
+            }
+        </style>
+        <script>
+        myApp.controller('myAppControllerUser', function($scope, $http, $sce, $timeout) {
+            if (!$scope.$$phase) {
+                $scope.$apply();
+            }
+            
+            $scope.lookupValue = {Id:'', Name:''};
+            $scope.lookupList = [];
+            
+            $scope.selectLookup = function(value) {
+                $scope.lookupValue = value;
+                $scope.RBI[$scope.namespace+'Reference_Owner__c'] = value.Id;
+            }
+            
+            $scope.getLookupDetails = function(object) {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.SLDSAccountLevelRULController.getLookupDataByObjectAndName}',
+                    $scope.objectName,
+                    function(result, event) {
+                        if (event.statusCode == 200) {
+                            $timeout(function() {
+                                $scope.lookupList = result;
+                            });
+                        }
+                    },
+                    {escape: true}
+                );
+            }
+            $scope.removeSelection = function() {
+                $scope.lookupValue = {Id:'', Name:''};
+            }
+            $scope.htmlbinding = function(value) {
+                return $sce.trustAsHtml(value);
+            };
+            $scope.test = function() {
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
+            }
+        });
+        </script>
+        
+        <div ng-app="myApp">
+            <div ng-controller="myAppControllerUser" ng-init="test();">
+                <input id="lookupValue-User" class="slds-input" type="hidden" ng-value="lookupValue.Id" />
+                <div class="slds-lookup" data-select="multi" data-scope="single" data-typeahead="true" ng-show="lookupValue.Id == ''">
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--left">
+                            <input id="lookupValue-User" class="slds-input addSearchIcon" style="width:97%" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" aria-activedescendant="" ng-model="lookupValue.Name" ng-change="getLookupDetails(objectName);"/>
+                        </div>    
+                    </div>
+                    <div class="slds-lookup__menu-User" role="listbox" ng-show="lookupValue.Name.length > 0">
+                        <div class="slds-lookup__item">
+                            <button class="slds-button">{{lookupValue.Name}} in {{objectName}}</button>
+                        </div>
+                        <ul class="slds-lookup__list" role="presentation" ng-show="lookupList.length != 0">
+                            <li class="slds-lookup__item" ng-repeat="obj in lookupList | filter: lookupValue.Name">
+                                <a id="s{{$index}}" href="#" role="option" ng-click="selectLookup(obj);">
+                                    <span ng-bind-html="htmlbinding(obj.Name)"></span>
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="slds-lookup__list" role="presentation" ng-show="lookupList.length == 0">
+                            <li class="slds-lookup__item" style="color:red;">
+                                {!$Label.No_Records_Found}!
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slds-lookup slds-has-selection" data-select="single" data-scope="single" data-typeahead="false" ng-show="lookupValue.Id != ''">
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right" id="testDom">
+                            <div class="slds-pill__container slds-show">
+                                <a href="" class="slds-pill removeBorder">
+                                    <span class="slds-pill__label" ng-bind-html="htmlbinding(lookupValue.Name)"></span>
+                                    <button class="slds-button slds-button--icon-bare slds-pill__remove" ng-click="removeSelection();">
+                                        <img id="close-Image" src="{!URLFOR($Resource.LightningCSS, '/assets/icons/utility/close_60.png')}" alt="close" height="20" width="20"/>
+                                        <span class="slds-assistive-text">Remove</span>
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </html>
+</apex:component>

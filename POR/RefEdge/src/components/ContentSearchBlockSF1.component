@@ -1,0 +1,1080 @@
+<apex:component controller="RefSearchBlockController">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+
+        <script>
+            var sf1ContentCtrl = sf1RefSearchApp.controller('sf1ContentCtrl',
+                function($scope, $q, productService) {
+                    $scope.allRefContents = [];
+                    $scope.selectedTypes = [];
+                    $scope.selectedLanguages = [];
+                    $scope.selectedAttributes = [];
+                    $scope.filterAttributeMap = {};
+                    $scope.filterOperationMap = {};
+                    $scope.alreadyDisplayedContents = [];
+                    $scope.pageSize = 5;
+                    $scope.totalContents = 0;
+                    $scope.showMoreContent = false;
+                    $scope.contents = [];
+                    $scope.searchResult = [];
+                    $scope.filterResult = [];
+                    $scope.contentTypeResult = [];
+                    $scope.contentLanguageResult = [];
+                    $scope.Title = 'Title__c';
+                    $scope.Attributes = 'Attributes__c';
+                    $scope.Language = 'Language__c';
+                    $scope.Referenceability = 'Referenceability__c';
+                    $scope.Attribute = 'Attribute__c';
+                    $scope.Reference_Content = 'Reference_Content__c';
+                    $scope.Internal_Use = 'Internal_Use__c';
+                    $scope.Featured_Content = 'Featured_Content__c';
+                    $scope.Ref_Content_Type = 'Reference_Content_Type__c';
+                    $scope.Summary = 'Summary__c';
+                    $scope.Content_URL = 'Content_URL__c';
+                    $scope.Custom_Reference_Content = 'Custom_Reference_Content__c';
+                    $scope.nameSpace = '{!JSENCODE(nameSpace)}';
+                    $scope.searchText = '';
+                    $scope.isFilterAppiled = false;
+                    $scope.isMoreContentAvailable = false;
+                    $scope.isAnyFilterAppiled = false;
+                    $scope.ShowFeaturedContentFirst = {!ShowFeaturedContentFirst};
+                    $scope.featuredChecked = false;
+                    $scope.resource = '{!URLFOR($Resource.LightningCSS_2_3)}';
+                    $scope.doctypeMap = {"UNKNOWN": "/assets/icons/doctype/unknown_60.png",
+                                            "XML": "/assets/icons/doctype/xml_60.png",
+                                            "TEXT": "/assets/icons/doctype/txt_60.png",
+                                            "MP4": "/assets/icons/doctype/mp4_60.png",
+                                            "CSV": "/assets/icons/doctype/csv_60.png",
+                                            "EXCEL": "/assets/icons/doctype/excel_60.png",
+                                            "JPG": "/assets/icons/doctype/image_60.png",
+                                            "BMP": "/assets/icons/doctype/unknown_60.png",
+                                            "PNG": "/assets/icons/doctype/image_60.png",
+                                            "GIF": "/assets/icons/doctype/image_60.png",
+                                            "LINK": "/assets/icons/doctype/link_60.png",
+                                            "PDF": "/assets/icons/doctype/pdf_60.png",
+                                            "POWER_POINT": "/assets/icons/doctype/ppt_60.png",
+                                            "RTF": "/assets/icons/doctype/rtf_60.png",
+                                            "WAV": "/assets/icons/doctype/audio_60.png",
+                                            "MOV": "/assets/icons/doctype/video_60.png",
+                                            "WORD": "/assets/icons/doctype/word_60.png",
+                                            "WORD_X": "/assets/icons/doctype/word_60.png",
+                                            "EXCEL_X": "/assets/icons/doctype/excel_60.png",
+                                            "POWER_POINT_X": "/assets/icons/doctype/ppt_60.png",
+                                            "Reference Interview": "/assets/icons/doctype/video_60.png",
+                                            "ZIP": "/assets/icons/doctype/unknown_60.png"};
+
+                    $scope.refContentIdsCSV = '{!JSENCODE(refContentIds)}';
+                    $scope.selectedRefContentIds = [];
+                    $scope.refContentsForDownload = [];
+                    $scope.refInternalContents = [];
+                    $scope.shareableValue = 'All';
+                    $scope.isFromInvitation = false;
+                    $scope.showLinkMsg = false;
+                    $scope.fetchingData = false;
+                    $scope.isDownloadUnsuccessful = false;
+                    $scope.showNoFileAvailableMsg = false;
+                    $scope.showDownloadError = false;
+                    $scope.stopLoadingFlag = false;
+                    $scope.showSelectContentMsg = false;
+                    $scope.isInternalUseContent = false;
+                    $scope.isRefMatch = {!isRefMatch};
+                    $scope.contentCount = 0;
+                    $scope.relatedContentIds = [];
+                    $scope.contentmappingSelected = false;
+                    $scope.isError = false;
+
+                    $scope.intialFunction = function() {
+                        
+                        if ($scope.refContentIdsCSV.length > 0) {
+                            $scope.selectedRefContentIds = $scope.refContentIdsCSV.split(',');
+                            $scope.isFromInvitation = true;
+                        }
+                        $scope.getTotalContents(false);
+                    }
+
+                    $scope.getTotalContents = function(isShareableClicked) {
+
+                        if (isShareableClicked) {
+                            $scope.totalContents = 0;
+                            $scope.contents = [];
+                            $scope.alreadyDisplayedContents = [];
+                            $scope.allRefContents = [];
+                        }
+                        $scope.filteredContentId = [];
+                        $scope.isAnyFilterAppiled = false;
+
+                        if ($scope.searchText != '') {
+
+                            if ($scope.searchResult.length > 0) {
+                                $scope.filteredContentId = $scope.searchResult;
+                            }
+                        } else {
+                            $scope.filteredContentId = [];
+                        }
+                        
+                        if ($scope.isFilterAppiled) {
+
+                            if ($scope.filterResult.length > 0) {
+
+                                if ($scope.filteredContentId.length > 0) {
+                                    $scope.tempList = [];
+
+                                    for (var i = 0; i < $scope.filteredContentId.length; i++) {
+
+                                        if ($scope.filterResult.indexOf($scope.filteredContentId[i]) >= 0) {
+                                            $scope.tempList.push($scope.filteredContentId[i]);
+                                        }
+                                    }
+                                    $scope.filteredContentId = $scope.tempList;
+                                } else {
+                                    $scope.filteredContentId = $scope.filterResult;
+                                }
+                            } else {
+                                $scope.filteredContentId = [];
+                            }
+                        }
+                        
+                        if ($scope.contentmappingSelected) {
+
+                            if ($scope.relatedContentIds.length > 0) {
+
+                                if ($scope.filteredContentId.length > 0) {
+                                    $scope.tempList = [];
+
+                                    for (var i = 0; i < $scope.filteredContentId.length; i++) {
+
+                                        if ($scope.relatedContentIds.indexOf($scope.filteredContentId[i]) >= 0) {
+                                            $scope.tempList.push($scope.filteredContentId[i]);
+                                        }
+                                    }
+                                    $scope.filteredContentId = $scope.tempList;
+                                } else {
+                                    $scope.filteredContentId = $scope.relatedContentIds;
+                                }
+                            } else {
+                                $scope.filteredContentId = [];
+                            }
+                        }
+
+                        if ($scope.selectedTypes.length > 0) {
+
+                            if ($scope.contentTypeResult.length > 0) {
+
+                                if ($scope.filteredContentId.length > 0) {
+                                    $scope.tempList = [];
+
+                                    for (var i = 0; i < $scope.filteredContentId.length; i++) {
+
+                                        if ($scope.contentTypeResult.indexOf($scope.filteredContentId[i]) >= 0) {
+                                            $scope.tempList.push($scope.filteredContentId[i]);
+                                        }
+                                    }
+                                    $scope.filteredContentId = $scope.tempList;
+                                } else {
+                                    $scope.filteredContentId = $scope.contentTypeResult;
+                                }
+                            } else {
+                                $scope.filteredContentId = [];
+                            }
+                        }
+
+                        if ($scope.selectedLanguages.length > 0) {
+
+                            if ($scope.contentLanguageResult.length > 0) {
+
+                                if ($scope.filteredContentId.length > 0) {
+                                    $scope.tempList = [];
+
+                                    for (var i = 0; i < $scope.filteredContentId.length; i++) {
+
+                                        if ($scope.contentLanguageResult.indexOf($scope.filteredContentId[i]) >= 0) {
+                                            $scope.tempList.push($scope.filteredContentId[i]);
+                                        }
+                                    }
+                                    $scope.filteredContentId = $scope.tempList;
+                                } else {
+                                    $scope.filteredContentId = $scope.contentLanguageResult;
+                                }
+                            } else {
+                                $scope.filteredContentId = [];
+                            }
+                        }
+                        
+                        if ($scope.isFilterAppiled
+                                || $scope.searchText != ''
+                                || $scope.selectedLanguages.length > 0
+                                || $scope.selectedTypes.length > 0
+                                || $scope.contentmappingSelected) {
+                            $scope.isAnyFilterAppiled = true;
+                        }
+
+                        $scope.getTotalContentsValues().then(function(result) {
+                            $scope.totalContents = result; 
+                            $scope.contents = [];
+                            $scope.alreadyDisplayedContents = [];
+                            $scope.allRefContents = [];
+
+                            if (result > 50) {
+                                $scope.contentCount = '50+';
+                            } else {
+                                $scope.contentCount = result;
+                            }
+                            $scope.getContents(isShareableClicked);
+                        });
+                    }
+
+                    $scope.getTotalContentsValues = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getTotalContentsValues}',
+                            $scope.isAnyFilterAppiled,
+                            angular.toJson($scope.alreadyDisplayedContents),
+                            angular.toJson($scope.filteredContentId),
+                            $scope.featuredChecked,
+                            $scope.shareableValue,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.getAllContents1 = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.getAllContents1}',
+                            $scope.shareableValue,
+                            $scope.isAnyFilterAppiled,
+                            angular.toJson($scope.alreadyDisplayedContents),
+                            angular.toJson($scope.filteredContentId),
+                            250, $scope.featuredChecked,
+                            $scope.ShowFeaturedContentFirst,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            },
+                            {
+                                buffer: false,
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterByContentLanguage = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterByContentLanguage}',
+                            angular.toJson($scope.selectedLanguages),
+                            $scope.filterOperationMap['Content Language'],
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterByContentType = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterByContentType}',
+                            angular.toJson($scope.selectedTypes),
+                            $scope.filterOperationMap['Content Types'],
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterByContentAttribute = function() {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterByContentAttribute}',
+                            angular.toJson($scope.selectedAttributes),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.filterBySearchText = function(filterdaccounts) {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.filterBySearchText}',
+                            $scope.searchText,
+                            angular.toJson(filterdaccounts),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.downloadRefContent = function(refContentIds) {
+                        var deferred = $q.defer();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefSearchBlockController.downloadRefContent}',
+                            angular.toJson(refContentIds),
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+
+                    $scope.getContents = function(isShareSwitchClicked) {
+                        
+                        if (isShareSwitchClicked) {
+                            productService.isloading(true);
+                            $scope.contents = [];
+                            $scope.alreadyDisplayedContents = [];
+                            $scope.allRefContents = [];
+                        }
+                        
+                        $scope.getAllContents1().then(function(result) {
+                            $scope.tempList = result
+
+                            if ($scope.tempList.length > 250) {
+                                $scope.isMoreContentAvailable = true;
+                                $scope.tempList.splice(250, 1);
+                            } else {
+                                $scope.isMoreContentAvailable = false;
+                            }
+
+                            if ($scope.pageSize == 5) {
+                                $scope.showMoreContent = ($scope.tempList.length > $scope.pageSize ? true : false);
+                            } else {
+                                $scope.showMoreContent = false;
+                            }
+                            
+                            for (var i = 0; i < $scope.tempList.length; i++) {
+                                $scope.alreadyDisplayedContents.push($scope.tempList[i].refContent.Id);
+                                $scope.allRefContents.push($scope.tempList[i]);
+
+                                if (i < $scope.pageSize) {
+
+                                    if ($scope.selectedRefContentIds.indexOf($scope.tempList[i].refContent.Id) >= 0) {
+                                        $scope.tempList[i].isSelected = true;
+                                    }
+                                    $scope.contents.push($scope.tempList[i]);
+                                }
+                            }
+                            $scope.fetchingData = false;
+
+                            if (!$scope.preFilter || $scope.stopLoadingFlag) {
+                                productService.isloading(false);
+                                //$scope.stopLoadingFlag = false;
+                            } else {
+                                $scope.stopLoadingFlag = true;
+                            }
+                        });
+                    }
+
+                    $scope.$on('filter', function(e, myMap, operationMap, accountMappedIds, accountmappingSelected, contactMappedIds, contactmapping, contentMappedIds, contentmapping, mappedFilterIds, stageFilterId) {
+                        $scope.filterAttributeMap = {};
+                        $scope.filterOperationMap = operationMap;
+                        $scope.relatedContentIds = contentMappedIds;
+                        $scope.contentmappingSelected = contentmapping;
+                        $scope.isFilterAppiled = false;
+                        $scope.selectedAttributes = [];
+                        var isType = false;
+                        var isLanguage = false;
+                        
+                        angular.forEach(
+                            myMap,
+                            function(itm, key) {
+                                $scope.tempList = [];
+                                
+                                if (key == 'Content Types') {
+
+                                    for (var i = 0; i < itm.length; i++) {
+
+                                        if (itm[i].isSelected && itm[i].contentTypeName != null && itm[i].contentTypeName != '') {
+                                            $scope.tempList.push(itm[i].contentTypeName);
+                                        } else {
+                                            var index = $scope.selectedTypes.indexOf(itm[i].contentTypeName);
+
+                                            if (index >= 0) {
+                                                $scope.selectedTypes.splice(index, 1);
+                                            }
+                                        }
+                                    }
+
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.selectedTypes = $scope.tempList;
+                                    }
+                                    isType = true;
+                                } else if (key == 'Content Language') {
+
+                                    for (var i = 0; i < itm.length; i++) {
+
+                                        if (itm[i].isSelected && itm[i].contentLanguageName != null && itm[i].contentLanguageName != '') {
+                                            $scope.tempList.push(itm[i].contentLanguageName);
+                                        } else {
+                                            var index = $scope.selectedLanguages.indexOf(itm[i].contentLanguageName);
+
+                                            if (index >= 0) {
+                                                $scope.selectedLanguages.splice(index, 1);
+                                            }
+                                        }
+                                    }
+
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.selectedLanguages = $scope.tempList;
+                                    }
+                                    isLanguage = true;
+                                } else if (key != 'Referenceability' && mappedFilterIds.indexOf(key) < 0) {
+                                    
+                                    for (var i = 0; i < itm.length; i++) {
+
+                                        if (itm[i].isSelected) {
+                                            $scope.tempList.push(itm[i].attId);
+                                            $scope.selectedAttributes.push(itm[i].attId);
+                                        }
+                                    }
+
+                                    if ($scope.tempList.length > 0) {
+                                        $scope.filterAttributeMap[key] = $scope.tempList;
+                                        $scope.isFilterAppiled = true;
+                                    }
+                                }
+                            }
+                        );
+                        $scope.contents = [];
+                        $scope.alreadyDisplayedContents = [];
+
+                        if (isLanguage) {
+                            $scope.filterContentsByLanguages();
+                        }
+                        
+                        if (isType) {
+                            $scope.filterContentsByTypes();
+                        }
+                        
+                        if ($scope.isFilterAppiled) {
+                            $scope.filterContents();
+                        } else if (!isLanguage && !isType) {
+                            $scope.getTotalContents(false);
+                        }
+                    });
+
+                    $scope.filterContentsByLanguages = function() {
+
+                        $scope.filterByContentLanguage().then(function(result) {
+                            
+                            if (result != '') {
+                                $scope.contentLanguageResult = JSON.parse(result);
+                            } else {
+                                $scope.contentLanguageResult = [];
+                            }
+
+                            if ($scope.selectedTypes.length == 0 && $scope.isFilterAppiled == false) {
+                                $scope.getTotalContents(false);
+                            }
+                        });
+                    }
+
+                    $scope.filterContentsByTypes = function() {
+                        
+                        $scope.filterByContentType().then(function(result) {
+
+                            if (result != '') {
+                                $scope.contentTypeResult = JSON.parse(result);
+                            } else {
+                                $scope.contentTypeResult = [];
+                            }
+
+                            if ($scope.isFilterAppiled == false) {
+                                $scope.getTotalContents(false);
+                            }
+                        });
+                    }
+
+                    $scope.filterContents = function() {
+                        
+                        $scope.filterByContentAttribute().then(function(result) {
+                            $scope.contentAtts = result; 
+                            $scope.labelLogicMap = {};
+                            $scope.refContentAttributes = {};
+                            $scope.filterResult = [];
+                            
+                            for (var i = 0; i < $scope.contentAtts.length; i++) {
+                                $scope.tempList = $scope.refContentAttributes[$scope.contentAtts[i][$scope.nameSpace + $scope.Reference_Content]];
+                                $scope.tempList1 = [];
+
+                                if ($scope.tempList1 != null) {
+                                    $scope.tempList1.push($scope.contentAtts[i][$scope.nameSpace + $scope.Attribute]);
+                                } else {
+                                    $scope.tempList1 = [];
+                                }
+                                
+                                if ($scope.tempList != null && $scope.tempList.length > 0) {
+
+                                    for (var j = 0; j < $scope.tempList.length; j++) {
+                                        $scope.tempList1.push($scope.tempList[j]);
+                                    }
+                                }
+                                $scope.refContentAttributes[$scope.contentAtts[i][$scope.nameSpace + $scope.Reference_Content]] = $scope.tempList1;
+                            }
+
+                            angular.forEach(
+                                $scope.refContentAttributes,
+                                function(conAttributes, contentId) {
+                                    $scope.attIds = [];
+                                    $scope.recordMatchingCondition = 0;
+                                    $scope.attMapLength = 0;
+                                    
+                                    angular.forEach(
+                                        $scope.filterAttributeMap,
+                                        function(array,labelId) {
+                                            $scope.attIds = conAttributes;
+                                            $scope.attMapLength = $scope.attMapLength + 1;
+
+                                            if ($scope.filterOperationMap[labelId] == 'and') {
+                                                $scope.recordMatched = false;
+
+                                                for (var j = 0; j < array.length; j++) {
+
+                                                    if ($scope.attIds.indexOf(array[j]) < 0) {
+                                                        $scope.recordMatched = true;
+                                                        break;
+                                                    }
+                                                }
+                                                
+                                                if (!$scope.recordMatched) {
+                                                    $scope.recordMatchingCondition = $scope.recordMatchingCondition + 1;
+                                                }
+                                            } else {
+                                                
+                                                for (var j = 0; j < array.length; j++) {
+
+                                                    if ($scope.attIds.indexOf(array[j]) >= 0) {
+                                                        $scope.recordMatchingCondition = $scope.recordMatchingCondition + 1;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    );
+
+                                    if ($scope.recordMatchingCondition != 0 && $scope.recordMatchingCondition == $scope.attMapLength) {
+                                        $scope.filterResult.push(contentId);
+                                    } else if ($scope.attMapLength == 0) {
+                                        $scope.filterResult.push(contentId);
+                                    }
+                                }
+                            );
+                            $scope.getTotalContents(false);
+                        });
+                    }
+
+                    $scope.$on('searchTextContent', function(e, value, filterdaccounts) {
+                        $scope.searchText = value;
+                        $scope.featuredChecked = false;
+                        $scope.alreadyDisplayedContents = [];
+                        $scope.search(filterdaccounts);
+                    });
+
+                    $scope.search = function(filterdaccounts) {
+                        
+                        $scope.filterBySearchText(filterdaccounts).then(function(result) {
+                            $scope.searchResult = result;
+                            $scope.getTotalContents(false);
+                        });
+                    }
+
+                    $scope.showMoreAccounts = function() {
+                        
+                        if ($scope.showMoreContent) {
+                            $scope.pageSize = 25;
+                            $scope.showMoreContent = false;
+
+                            for (var i = 5; i < $scope.allRefContents.length; i++) {
+
+                                if (i < $scope.pageSize) {
+
+                                    if ($scope.selectedRefContentIds.indexOf($scope.allRefContents[i].refContent.Id) >= 0) {
+                                        $scope.allRefContents[i].isSelected = true;
+                                    }
+                                    $scope.contents.push($scope.allRefContents[i]);
+                                }
+                            }
+                            $scope.isAllContentSelected = false;
+                        } else {
+                            $scope.contents.splice(5);
+                            $scope.pageSize = 5;
+                            $scope.showMoreContent = true;
+                        }
+                        productService.toggleContentSectionEvent(!$scope.showMoreContent);
+                    }
+
+                    $scope.$on('fetchMoreRecordsEvent', function(e, value) {
+                        $scope.more();
+                    });
+
+                    $scope.more = function() {
+                        
+                        if (!$scope.showMoreContent) { 
+                            productService.isloading(true);
+
+                            if ($scope.contents.length < $scope.allRefContents.length) {
+                                var size = (parseInt($scope.contents.length) + parseInt($scope.pageSize));
+
+                                for (var i = $scope.contents.length; i < $scope.allRefContents.length; i++) {
+
+                                    if (i < size) {
+
+                                        if ($scope.selectedRefContentIds.indexOf($scope.allRefContents[i].refContent.Id) >= 0) {
+                                            $scope.allRefContents[i].isSelected = true;
+                                        }
+                                        $scope.contents.push($scope.allRefContents[i]);
+                                    }
+                                }
+                            } else if ($scope.isMoreContentAvailable) {
+                                $scope.fetchingData = true;
+                                $scope.getContents(false);
+                            }
+                            $scope.isAllContentSelected = false;
+                        }
+                        productService.isloading(false);
+                    }
+
+                    $scope.selectDeselect = function(rcId, accWrap) { 
+                        var index = $scope.selectedRefContentIds.indexOf(rcId);
+
+                        if (index == -1) {
+                            $scope.selectedRefContentIds.push(rcId);
+                            $scope.refContentsForDownload.push(accWrap);
+                        } else {
+                            $scope.selectedRefContentIds.splice(index, 1);
+                            $scope.refContentsForDownload.splice(index, 1);
+                        }
+
+                        if (accWrap != null && accWrap.refContent[$scope.nameSpace + $scope.Internal_Use] == true) {
+	                        var index = $scope.refInternalContents.indexOf(rcId);
+
+	                        if (index == -1) {
+	                            $scope.refInternalContents.push(rcId); 
+	                        } else {
+	                            $scope.refInternalContents.splice(index, 1); 
+	                        }
+                        }
+                        var allSelectedTemp = true;
+                        var breakFlag = true;
+                        
+                        angular.forEach(
+                            $scope.contents,
+                            function(item) {
+
+                                if (breakFlag) {
+
+                                    if (!item.isSelected) {
+                                        allSelectedTemp = false;
+                                        breakFlag = false;
+                                    }
+                                }
+                            }
+                        );
+                        $scope.isAllContentSelected = allSelectedTemp;
+                    }
+
+                    $scope.$on('downloadContentEvent', function(e, value) {
+                        $scope.downloadRefContents();
+                    });
+
+                    $scope.downloadRefContents = function() {
+                        
+                        if ($scope.refContentsForDownload.length == 0) {
+                            $scope.showSelectContentMsg = true;
+                        } else if ($scope.refContentsForDownload.length == 1) {
+
+                            if ($scope.refContentsForDownload[0].fileType == 'LINK') {
+                                $scope.showLinkMsg = true;
+                            } else {
+                                
+                                $scope.downloadRefContent($scope.selectedRefContentIds).then(function(result) {
+
+                                    if (result != '' && result.startsWith('Error') == false) {
+                                        window.open(result, '_top');
+                                    } else if (result == '') {
+                                        $scope.isDownloadUnsuccessful = true;
+                                        $scope.showNoFileAvailableMsg = true;
+                                    } else {
+                                        $scope.isDownloadUnsuccessful = true;
+                                        $scope.showDownloadError = true;
+                                    }
+                                });
+                            }
+                        } else {
+                            var breakFlag = true;
+                            var tempDownloads = angular.copy($scope.refContentsForDownload);
+                            var tempSelectedIds = angular.copy($scope.selectedRefContentIds);
+                            
+                            angular.forEach(
+                                $scope.refContentsForDownload,
+                                function(item) {
+
+                                    if (item.fileType == 'LINK') {
+                                        var index = tempSelectedIds.indexOf(item.refContentId);
+                                        tempDownloads.splice(index, 1);
+                                        tempSelectedIds.splice(index, 1);
+                                    }
+
+                                    if (breakFlag && item.fileType == 'LINK') {
+                                        $scope.showLinkMsg = true;
+                                        breakFlag = false;
+                                    }
+                                }
+                            );
+                            $scope.refContentsForDownload = angular.copy(tempDownloads);
+
+                            if ($scope.refContentsForDownload.length > 0) {
+
+                                $scope.downloadRefContent(tempSelectedIds).then(function(result) {
+
+                                    if (result != '' && result.startsWith('Error') == false) {
+                                        window.open(result, '_top');
+                                    } else if (result == '') {
+                                        $scope.isDownloadUnsuccessful = true;
+                                        $scope.showNoFileAvailableMsg = true;
+                                    } else {
+                                        $scope.isDownloadUnsuccessful = true;
+                                        $scope.showDownloadError = true;
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    $scope.closeDownloadNotification = function() {
+                    	$scope.isDownloadUnsuccessful = false;
+                      	$scope.showNoFileAvailableMsg = false;
+                      	$scope.showDownloadError = false;
+                   	}
+
+                    $scope.$on('shareContentEvent', function(e, value) {
+                        $scope.shareRefContentIds();
+                    });
+
+                    $scope.shareRefContentIds = function() {
+                    	var isMatched = false;
+
+                        angular.forEach(
+                            $scope.selectedRefContentIds,
+                            function(valueRefCont, keyrefCont) {
+
+                                if (!isMatched) {
+
+                                    angular.forEach(
+                                        $scope.refInternalContents,
+                                        function(valueInt, keyInt) {
+
+                                            if (valueRefCont === valueInt) {
+                                                $scope.isInternalUseContent = true;
+                                                isMatched = true;
+                                            }
+                                        }
+                                    );
+                                }
+						    }
+                        );
+                        var refContentIds = $scope.selectedRefContentIds.join(',');
+
+                        if (refContentIds != '' && $scope.isInternalUseContent == false) {
+                            var form = document.createElement("form");
+                            form.setAttribute("method", "POST");
+                            form.setAttribute("action", "{!URLFOR($Page.SF1_Invitation)}");
+
+                            var hiddenField = document.createElement("input");
+                            hiddenField.setAttribute("type", "hidden");
+                            hiddenField.setAttribute("name", "refContentIds");
+                            hiddenField.setAttribute("value", refContentIds);
+                            form.appendChild(hiddenField);
+
+                            var hiddenField1 = document.createElement("input");
+                            hiddenField1.setAttribute("type", "hidden");
+                            hiddenField1.setAttribute("name", "forAccount");
+                            hiddenField1.setAttribute("value", $scope.forAccount);
+                            form.appendChild(hiddenField1);
+
+                            var hiddenField2 = document.createElement("input");
+                            hiddenField2.setAttribute("type", "hidden");
+                            hiddenField2.setAttribute("name", "forContent");
+                            hiddenField2.setAttribute("value", $scope.forContent);
+                            form.appendChild(hiddenField2);
+
+                            var hiddenField3 = document.createElement("input");
+                            hiddenField3.setAttribute("type", "hidden");
+                            hiddenField3.setAttribute("name", "opportunityId");
+                            hiddenField3.setAttribute("value", $scope.opportunityId);
+                            form.appendChild(hiddenField3);
+
+                            var hiddenField4 = document.createElement("input");
+                            hiddenField4.setAttribute("type", "hidden");
+                            hiddenField4.setAttribute("name", "caseId");
+                            hiddenField4.setAttribute("value", $scope.caseId);
+                            form.appendChild(hiddenField4);
+
+                            var hiddenField5 = document.createElement("input");
+                            hiddenField5.setAttribute("type", "hidden");
+                            hiddenField5.setAttribute("name", "leadId");
+                            hiddenField5.setAttribute("value", $scope.leadId);
+                            form.appendChild(hiddenField5);
+
+                            var hiddenField51 = document.createElement("input");
+                            hiddenField51.setAttribute("type", "hidden");
+                            hiddenField51.setAttribute("name", "fromLead");
+                            hiddenField51.setAttribute("value", $scope.fromLead);
+                            form.appendChild(hiddenField51);
+
+                            var hiddenField6 = document.createElement("input");
+                            hiddenField6.setAttribute("type", "hidden");
+                            hiddenField6.setAttribute("name", "isReturned");
+                            hiddenField6.setAttribute("value", $scope.isReturned);
+                            form.appendChild(hiddenField6);
+
+                            
+                            var hiddenField7 = document.createElement("input");
+                            hiddenField7.setAttribute("type", "hidden");
+                            hiddenField7.setAttribute("name", "contactIds");
+                            hiddenField7.setAttribute("value", $scope.contactIds);
+                            form.appendChild(hiddenField7);
+
+                            var hiddenField8 = document.createElement("input");
+                            hiddenField8.setAttribute("type", "hidden");
+                            hiddenField8.setAttribute("name", "userIds");
+                            hiddenField8.setAttribute("value", $scope.userIds);
+                            form.appendChild(hiddenField8);
+
+                            var hiddenField9 = document.createElement("input");
+                            hiddenField9.setAttribute("type", "hidden");
+                            hiddenField9.setAttribute("name", "recipientsIds");
+                            hiddenField9.setAttribute("value", $scope.recipientsIds);
+                            form.appendChild(hiddenField9);
+
+                            var hiddenField10 = document.createElement("input");
+                            hiddenField10.setAttribute("type", "hidden");
+                            hiddenField10.setAttribute("name", "emailSubject");
+                            hiddenField10.setAttribute("value", $scope.emailSubject);
+                            form.appendChild(hiddenField10);
+
+                            var hiddenField11 = document.createElement("input");
+                            hiddenField11.setAttribute("type", "hidden");
+                            hiddenField11.setAttribute("name", "emailContent");
+                            hiddenField11.setAttribute("value", $scope.emailContent);
+                            form.appendChild(hiddenField11);
+
+                            var hiddenField12 = document.createElement("input");
+                            hiddenField12.setAttribute("type", "hidden");
+                            hiddenField12.setAttribute("name", "invitaionName");
+                            hiddenField12.setAttribute("value", $scope.invitaionName);
+                            form.appendChild(hiddenField12);
+
+                            var hiddenField13 = document.createElement("input");
+                            hiddenField13.setAttribute("type", "hidden");
+                            hiddenField13.setAttribute("name", "note");
+                            hiddenField13.setAttribute("value", $scope.note);
+                            form.appendChild(hiddenField13);
+
+                            var hiddenField14 = document.createElement("input");
+                            hiddenField14.setAttribute("type", "hidden");
+                            hiddenField14.setAttribute("name", "selectedMictosite");
+                            hiddenField14.setAttribute("value", $scope.selectedMictosite);
+                            form.appendChild(hiddenField14);
+
+                            var hiddenField15 = document.createElement("input");
+			                hiddenField15.setAttribute("type", "hidden");
+			                hiddenField15.setAttribute("name", "expDate");
+			                hiddenField15.setAttribute("value", $scope.expDate);
+			                form.appendChild(hiddenField15);
+
+			                var hiddenField16 = document.createElement("input");
+			                hiddenField16.setAttribute("type", "hidden");
+			                hiddenField16.setAttribute("name", "isCcAllowed");
+			                hiddenField16.setAttribute("value", $scope.isCcAllowed);
+			                form.appendChild(hiddenField16);
+
+                			var hiddenField17 = document.createElement("input");
+			                hiddenField17.setAttribute("type", "hidden");
+			                hiddenField17.setAttribute("name", "emailTo");
+			                hiddenField17.setAttribute("value", $scope.emailTo);
+			                form.appendChild(hiddenField17);
+
+			                var hiddenField18 = document.createElement("input");
+			                hiddenField18.setAttribute("type", "hidden");
+			                hiddenField18.setAttribute("name", "emailBcc");
+			                hiddenField18.setAttribute("value", $scope.emailBcc);
+			                form.appendChild(hiddenField18);
+
+			                var hiddenField19 = document.createElement("input");
+			                hiddenField19.setAttribute("type", "hidden");
+			                hiddenField19.setAttribute("name", "emailCc");
+			                hiddenField19.setAttribute("value", $scope.emailCc);
+			                form.appendChild(hiddenField19);
+
+                			var hiddenField20 = document.createElement("input");
+			                hiddenField20.setAttribute("type", "hidden");
+			                hiddenField20.setAttribute("name", "opportunityName");
+			                hiddenField20.setAttribute("value", $scope.opportunityName);
+			                form.appendChild(hiddenField20);
+
+			                var hiddenField21 = document.createElement("input");
+			                hiddenField21.setAttribute("type", "hidden");
+			                hiddenField21.setAttribute("name", "opportunityAccount");
+			                hiddenField21.setAttribute("value",$scope.opportunityAccount);
+                			form.appendChild(hiddenField21);
+
+                            document.body.appendChild(form);
+                            form.submit();
+                        } else if ($scope.isInternalUseContent == false) {
+                            $scope.showSelectContentMsg = true;
+                        }  
+                    }
+
+
+
+                }
+            );
+        </script>
+    </head>
+
+    <body>
+        <div ng-controller="sf1ContentCtrl" ng-init="intialFunction()" ng-cloak="ng-cloak">
+            <div class="titleBar slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                <div class="slds-text-title_caps">{!$Label.Content}</div>
+                <div class="slds-text-title">
+                    <a ng-show="showMoreContent && totalContents > 5" ng-click="showMoreAccounts()">
+                        {!$Label.View_More}
+                    </a>
+                    <a ng-show="!showMoreContent && totalContents > 5" ng-click="showMoreAccounts()">
+                        {!$Label.Back}
+                    </a>
+                </div>
+                <div class="slds-text-title">{{contentCount}}&nbsp;Results</div>
+            </div>
+            <div class="customToastDiv" ng-show="contents.length == 0">
+                {!$Label.No_matches_found}
+            </div>
+            <div id="contentBlock">
+                <article class="slds-tile slds-media" ng-repeat="conWrap in contents" style="padding: 0.5rem 0.8rem">
+                    <div class="slds-media__figure">
+                        <span class="slds-checkbox">
+                            <input type="checkbox" ng-change="selectDeselect(conWrap.refContent.Id, conWrap)" ng-model="conWrap.isSelected"
+                                ng-disabled="!isCRMContentUser || conWrap.refContent[nameSpace + Internal_Use]
+                                                || (!conWrap.refContent[nameSpace + Custom_Reference_Content] && conWrap.contentVersion.Id == null
+                                                    && conWrap.fileType != 'LINK' && !conWrap.isInterviewType)"
+                                name="{{'rc' + $index}}" id="{{'rc' + $index}}" />
+                            <label class="slds-checkbox__label">
+                                <span class="slds-checkbox_faux"></span>
+                            </label>
+                        </span>
+                    </div>
+                    <div class="slds-media__body">
+                        <label for="{{'rc' + $index}}">
+                            {{parseResult(conWrap.refContent[nameSpace + Title])}}
+                        </label>
+                        <div class="slds-tile__detail slds-text-body_small">
+                            <dl>
+                                <dt style="display: inline-block" ng-show="conWrap.accountName != ''" class="slds-text-color_weak">{!$Label.Account}:</dt>
+                                <dd style="display: inline-block" ng-show="conWrap.accountName != ''">{{conWrap.accountName}}</dd><br ng-show="conWrap.accountName != ''" />
+                                <dt style="display: inline-block" class="slds-text-color_weak">{!$Label.Type}:</dt>
+                                <dd style="display: inline-block">{{conWrap.contentType}}</dd><br />
+                                <dt style="display: inline-block" class="slds-text-color_weak">{!$Label.Publish_Date}:</dt>
+                                <dd style="display: inline-block">{{conWrap.publishDate}}</dd><br />
+                                <dt style="display: inline-block" class="slds-text-color_weak">{!$Label.Language}:</dt>
+                                <dd style="display: inline-block">{{conWrap.refContent[nameSpace + Language]}}</dd><br />
+                            </dl>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="custom-toast-container" ng-show="showSelectContentMsg">
+                <div class="slds-notify slds-notify_toast custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="showSelectContentMsg = false">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small" style="font-size: 16px">
+                            {!$Label.Select_Atleast_One_Content}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-toast-container" ng-show="isInternalUseContent">
+                <div class="slds-notify slds-notify_toast custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="isInternalUseContent = false">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small" style="font-size: 16px">
+                            {!$Label.Internal_Content_Share}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-toast-container" ng-show="showLinkMsg">
+                <div class="slds-notify slds-notify_toast custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="showLinkMsg = false">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small" style="font-size: 16px">
+                            {!$Label.Link_Content_Message}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-toast-container" ng-show="isDownloadUnsuccessful">
+                <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                    <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="closeDownloadNotification()">
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                    </a>
+                    <div class="slds-notify__content">
+                        <h2 ng-show="showNoFileAvailableMsg" class="slds-text-heading_small" style="font-size: 16px">
+                            No file available for download.
+                        </h2>
+                        <h2 ng-show="showDownloadError" class="slds-text-heading_small" style="font-size: 16px">
+                            Download Unsuccessful. Please try again.
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </body>
+</html>
+</apex:component>

@@ -1,0 +1,168 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page standardController="Reference_Request__c" sidebar="false" extensions="AllAccReqofRefRequestControllerSLDS" standardStylesheets="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0">
+   	<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <style>
+            .slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux:after, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux:after {
+                border-color: #7d8894; 
+            }
+            .slds .slds-checkbox [type="checkbox"][disabled] > .slds-checkbox--faux, .slds .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox--faux {
+                background-color: white;
+            }
+            </style>
+            <script>
+                var requestApp = angular.module('requestApp', []);
+                requestApp.controller('requestCon', function ($scope, $window, $q) {
+                
+                    $scope.isFullLicenseAccessible = '{!isFullLicenseAccessible}';
+                    $scope.requests = [];
+                    $scope.reqId = '{!reqId}';
+                    
+                    $scope.parseResult = function(result) {
+                    
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/&#39/g, '\'');
+                            result = result.replace(/;/g, '');
+                        }
+                        return result;
+                    }
+	                    
+                    $scope.intialFunction = function() {
+                    
+                        if ($scope.isFullLicenseAccessible || $scope.isFullLicenseAccessible == 'true') {
+                            
+                            $scope.fetchAllRequests().then(function(result){
+                                $scope.requests = result;
+                                console.log(result);
+                            });
+                        }
+                    }
+                    
+                    $scope.fetchAllRequests = function() {
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.AllAccReqofRefRequestControllerSLDS.getRequestList}', $scope.reqId,
+                            function(result, event) {
+                                    deferred.resolve(result);
+                            },
+                            {escape: true}
+                        );
+                        return deferred.promise;
+                    }
+                });
+            </script>     
+        </head>
+        <body ng-app="requestApp" class="slds">
+            <form id="frmId" class="slds-m-left--small" ng-controller="requestCon" ng-cloak="ng-cloak">
+                <div ng-show="isFullLicenseAccessible == 'false'">
+                    <svg class="slds-icon slds-icon--medium slds-p-around--x-medium" style="background-color: rgb(194, 57, 52);">
+                        <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                    </svg>
+                    {!$Label.User_License}
+                </div>
+                
+                <div ng-init="intialFunction();" ng-show="isFullLicenseAccessible == 'true'">
+                    <div ng-show="requests.length == 0">
+                        <svg class="slds-icon slds-icon-action-call slds-icon--medium slds-p-around--x-medium">
+                            <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+                        </svg>
+                        {!$Label.No_Request_Found}
+                    </div>
+                    <table class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal innertable" ng-show="requests.length > 0">
+                        <thead>
+                            <tr class="slds-text-heading--label">
+                                <th scope="col">
+                                    <span>{!$Label.Account}</span>
+                                </th>
+                                <th scope="col">
+                                    <span >{!$Label.Reference_Type_Needed}</span>
+                                </th>
+                                <th scope="col">
+                                    <span >{!$ObjectType.Reference_Request_Account__c.fields.Requester__c.Label}</span>
+                                </th>
+                                <th scope="col">
+                                    <span >{!$Label.Deadline}</span>
+                                </th>
+                                <th scope="col">
+                                    <span >{!$ObjectType.Reference_Request_Account__c.fields.Managed_Request__c.Label}</span>
+                                </th>
+                                <th scope="col">
+                                    <span >{!$ObjectType.Reference_Request_Account__c.fields.Approval_Status__c.Label}</span>
+                                </th>
+                                <th scope="col">
+                                    <span >{!$ObjectType.Reference_Request_Account__c.fields.Account_Request_Status__c.Label}</span>
+                                </th>
+                                <th scope="col">
+                                    <span >{!$Label.Details}</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="accReq in requests">
+                                <td data-label="{!$Label.Account}">
+                                    <span>
+                                        <a href="/{{accReq.AccountId}}" target="_blank">{{parseResult(accReq.AccountName)}}</a>
+                                    </span>
+                                </td>
+                                <td data-label="{!$Label.Reference_Type_Needed}">
+                                    <span>
+                                        <a href="/{{accReq.ReferenceTypeNeededId}}" target="_blank">{{parseResult(accReq.ReferenceTypeNeeded)}}</a>
+                                    </span>
+                                </td>
+                                <td data-label="{!$ObjectType.Reference_Request_Account__c.fields.Requester__c.Label}">
+                                    <span>
+                                        <a href="/{{accReq.requesterId}}" target="_blank">{{parseResult(accReq.requesterName)}}</a>
+                                    </span>
+                                </td>
+                                <td data-label="{!$Label.Deadline}">
+                                    <span>{{accReq.Deadline}}</span>
+                                </td>
+                                <td data-label="{!$ObjectType.Reference_Request_Account__c.fields.Managed_Request__c.Label}" style="text-align: center;">
+                                    <label class="slds-checkbox">
+                                        <input type="checkbox" ng-model="accReq.ManagedRequest" ng-disabled="true"/>
+                                        <span class="slds-checkbox--faux"></span>
+                                    </label>
+                                </td>
+                                <td data-label="{!$ObjectType.Reference_Request_Account__c.fields.Approval_Status__c.Label}">
+                                    <span>{{accReq.ApprovalStatus}}</span>
+                                </td>
+                                <td data-label="{!$ObjectType.Reference_Request_Account__c.fields.Account_Request_Status__c.Label}">
+                                    <span>{{accReq.ManagedRequestStatus}}</span>
+                                </td>
+                                <td data-label="{!$Label.Details}">
+                                    <span>
+                                        <a href="/{{accReq.DetailId}}" target="_blank">{!$Label.Details}</a>
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </body>
+    </html>
+</apex:page>

@@ -1,0 +1,356 @@
+<apex:page standardController="Custom_Settings__c" extensions="ACVSelectionController" 
+		tabStyle="Custom_Settings__c" sidebar="false" id="pageId"
+		standardStylesheets="false" applyHtmlTag="true" applyBodyTag="false" docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/custom-slds.css')}" />   
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.Font, 'font-awesome-4.5.0/css/font-awesome.min.css')}" />
+			
+            <style>
+
+                .tooltipClassic {
+                    opacity:0.35;
+                    width: 20px;
+                    float: right;
+                    margin-right: 1px;
+                    display:inline;
+                }
+                .tooltipClassic:hover {
+                    opacity:1;
+                    width: 20px;
+                    float: right;
+                    margin-right: 1px;
+                    display:inline;
+                }
+                .tooltipClassic span {
+                    display: none;
+                    font-weight:normal;
+                    text-align:left;
+                    padding: 3px 5px;
+                    margin-left: 8px;
+                    width: 250px;
+                }
+                .tooltipClassic:hover span {
+                    display: inline;
+                    position: absolute;
+                    border: 1px solid orange;
+                    width: 15em;
+                    z-index: 1;
+                    background-color: #fefdb9;
+                    padding: 2px 5px;
+                    border: 1px solid orange;
+                    text-align: left;
+                    right: 25px;
+                    top: 25px;
+                    white-space: normal;
+                    font-weight: normal;
+                    color: #000;
+                }
+            
+                #error-block {
+                    background-color: #B60202;
+                    color: WHITE;
+                    font-size: 15px;
+                    border-radius: 5px;
+                }
+                .classicTableHeaderCell {
+                    background: #f2f3f3;
+                    border-width: 0 0 1px 1px;
+                    border-color: #e0e3e5;
+                    color: #000;
+                    font-size: 1.2em;
+                    color: #54698d;
+                    padding: 5px 2px 4px 5px;
+                    border: 1px solid #ededed;
+                }
+                .tooltip:hover .tooltipHelpShow {
+                    display : inline;
+                    bottom: 55px;
+                    position: absolute;
+                }
+                .dataCol {
+                    width: 36%;
+                    padding-top: 3px;
+                    padding-bottom: 3px;
+                    padding-left: 10px;
+                    text-align: left;
+                    font-family: Arial,Helvetica,sans-serif!important;
+                }
+                .labelCol {
+                    padding-right: 10px;
+                    padding-bottom: 2px;
+                    padding-left: 2px;
+                    color: #4a4a56;
+                    width: 16%;
+                    padding-top: 3px;
+                    text-align: right;
+                    font-size: 91%;
+                    font-weight: bold;
+                    padding-bottom: 3px;
+                    font-family: Arial,Helvetica,sans-serif!important;
+                }
+                .tooltipHelpShow {
+                    display : none;
+                    bottom: 55px;
+                    line-height: 0.95rem;
+                    position: absolute;
+                }
+                #classicDiv .tertiaryPalette {
+                    background: #79b4cd;
+                    border-color: #79b4cd;
+                    margin-bottom: 0.5rem;
+                }
+                #classicDiv .tertiaryPalette h3 {
+                    font-size: 1.1em !important;
+                }
+                .pageHeader {
+                    background-color: #F4F6F9;
+                }
+            </style>
+            
+            <script src="{!URLFOR($Resource.AngularJS)}"></script>
+            <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <script>
+                var myapp = angular.module('myapp',  []);
+                myapp.controller('controller', function ($scope, $q) {
+                    $scope.isSLDS = {!isSLDS};
+                    $scope.oppFields = {};
+                    $scope.isError = false;
+                    $scope.errorMsg = '';
+                    $scope.permissionsMsg = '';
+                    $scope.showPermissionsMsg = false;
+                    $scope.acvBasis = '';
+                    $scope.acvFieldInitial = '';
+                    $scope.acvBasisInitial = '';
+                    $scope.acvBasisOptions = ['Calendar Year','Fiscal Year'];
+                    $scope.acvField = '';
+                    $scope.acvFieldDisplay = '';
+                    $scope.isEdit = false;
+                    $scope.initialFunction =  function() {
+                        $scope.getFields().then(function(result) {
+                            if (result && result.indexOf('@@') == -1) {
+                                result = JSON.parse(result);
+                                var resultKeys = Object.keys(result);
+                                for (var index = 0 ; index < resultKeys.length; index++) {
+                                    if (resultKeys[index] == 'ACV_Amount_Field') {
+                                        $scope.acvField = result[resultKeys[index]];
+                                    } else if (resultKeys[index] == 'ACV_Basis') {
+                                        $scope.acvBasis = result[resultKeys[index]];
+                                    } else {
+                                        $scope.oppFields[resultKeys[index]] = result[resultKeys[index]]
+                                    }
+                                }
+                                $scope.acvFieldDisplay = $scope.oppFields[$scope.acvField];
+                            } else if (result) {
+                                $scope.showPermissionsMsg = true;
+                                $scope.permissionsMsg = result.split('@@')[1];
+                            }
+                        });
+                    }
+                    $scope.edit =  function() {
+                        $scope.isEdit = true;
+                        $scope.acvFieldInitial = $scope.acvField;
+                        $scope.acvBasisInitial = $scope.acvBasis;
+                    }
+                    $scope.cancel =  function() {
+                        $scope.isEdit = false;
+                        $scope.acvField = $scope.acvFieldInitial;
+                        $scope.acvBasis = $scope.acvBasisInitial;
+                        $scope.acvFieldDisplay = $scope.oppFields[$scope.acvField];
+                        $scope.acvFieldInitial = '';
+                        $scope.acvBasisInitial = '';
+                    }
+
+                    $scope.save =  function() {
+                        console.log($scope.acvField);
+                        $scope.saveCS().then(function(result) {
+                            if (result && result == 'Success') {
+                                $scope.isEdit = false;
+                                $scope.acvFieldDisplay = $scope.oppFields[$scope.acvField];
+                                $scope.acvFieldInitial = '';
+                                $scope.acvBasisInitial = '';
+                            } else if (result) {
+                                $scope.isError = true;
+                                $scope.errorMsg = result;
+                            }
+                        });
+                    }
+                    $scope.getFields = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ACVSelectionController.getFields}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    $scope.parseResult = function(result) {
+                        if (result != null) {
+                            result = result.replace(/&quot/gi, '"');
+                            result = result.replace(/&amp/g, '&');
+                            result = result.replace(/&lt/g, '<');
+                            result = result.replace(/&gt/g, '>');
+                            result = result.replace(/;/g, '');
+                            result = result.replace(/&#39/g, '\'');
+                            return result;
+                        }
+                    }
+                    $scope.saveCS = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.ACVSelectionController.saveCS}',
+                            $scope.acvField,$scope.acvBasis,
+                            function(result, event) {
+                                deferred.resolve(result);
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                });
+            </script>
+        </head>
+        <body>
+            <div ng-app="myapp" ng-controller="controller">
+                <div ng-init="initialFunction();">
+                    <div ng-show="isSLDS" id="lightningDiv" class="container slds" style="margin-top:2rem ;font-size:1.2em; font-family:'Salesforce Sans',Arial,sans-serif !important;">
+                    	<div class="slds-col slds-align-bottom slds-size--1-of-1 slds-medium-size--1-of-1 slds-large-size--1-of-1" style="float:right;">
+                            <div class="slds-button-group buttonStyle" role="group" style="float: right;">
+                                <button class="slds-button slds-button--neutral" style="border-radius: 4px!important;" ng-if="!isEdit" ng-click="edit()">{!$Label.Edit}</button>
+                                <button class="slds-button slds-button--neutral" ng-if="isEdit" style="border: 1px solid #d8dde6;border-radius: 4px 0 0 4px!important;" ng-click="cancel()">{!$Label.Cancel}</button>
+                                <button class="slds-button slds-button--neutral" ng-if="isEdit" ng-click="save();">{!$Label.Save}</button>
+                            </div>
+                        </div>
+                        <div style="display:flex;width: 100%;">
+                            <div class="slds-form-element" style="flex:1">
+                                <div class="slds-col top-padding" style="padding:0.75rem">
+                                    <label class="slds-form-element__label">
+                                        {!$ObjectType.Custom_Settings__c.fields.ACV_Amount_Field__c.Label}
+                                    </label>
+                                    <div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.ACV_Amount_Field__c.inlineHelpText}' != ''">
+                                        <div class="slds-form-element ">
+                                            <div class="slds-form-element__icon slds-align-middle">
+                                            <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                <svg class="slds-button__icon" aria-hidden="true">
+                                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                </svg>
+                                            </p>
+                                            </div>
+                                        </div>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpShow" style="right:-46px;" role="tooltip" id="help">
+                                            <div class="slds-popover__body" style="padding: 0.5rem;">{!$ObjectType.Custom_Settings__c.fields.ACV_Amount_Field__c.inlineHelpText}</div>
+                                        </div>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" style="right:-46px;" role="tooltip" id="help">
+                                            <div class="slds-popover__body" style="padding: 0.5rem;">{!$ObjectType.Custom_Settings__c.fields.ACV_Amount_Field__c.inlineHelpText}</div>
+                                        </div>
+                                    </div>
+                                    <p ng-bind="acvFieldDisplay" ng-show="!isEdit" style="flex:1"/>
+                                    <div style="padding: 1vh;display:flex;" ng-show="isEdit">
+                                        <div class="slds-form-element" style="width:100%;">  
+                                            <div class="slds-form-element__control" style="width:100%;"> 
+                                                <div class="slds-select_container" style="width:100%;">
+                                                    <select class="slds-select" style="width:100%;" ng-options="key as value for (key, value) in oppFields" ng-model="acvField"></select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form-element" style="flex:1">
+                                <div class="slds-col top-padding" style="padding:0.75rem">
+                                    <label class="slds-form-element__label">
+                                        {!$ObjectType.Custom_Settings__c.fields.ACV_Basis__c.Label}
+                                    </label>
+                                    <div style="display: inline-flex;" class="tooltip" ng-show="'{!$ObjectType.Custom_Settings__c.fields.ACV_Basis__c.inlineHelpText}' != ''">
+                                        <div class="slds-form-element ">
+                                            <div class="slds-form-element__icon slds-align-middle">
+                                            <p  style="color: rgb(176, 173, 171);" aria-describedby="help" title="Help">
+                                                <svg class="slds-button__icon" aria-hidden="true">
+                                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#info')}" />
+                                                </svg>
+                                            </p>
+                                            </div>
+                                        </div>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-fall-into-ground tooltipHelpShow" style="right:-10px;" role="tooltip" id="help">
+                                            <div class="slds-popover__body" style="padding: 0.5rem;">{!$ObjectType.Custom_Settings__c.fields.ACV_Basis__c.inlineHelpText}</div>
+                                        </div>
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left slds-rise-from-ground tooltipHelpShow" style="right:-10px;" role="tooltip" id="help">
+                                            <div class="slds-popover__body" style="padding: 0.5rem;">{!$ObjectType.Custom_Settings__c.fields.ACV_Basis__c.inlineHelpText}</div>
+                                        </div>
+                                    </div>
+                                    <p ng-bind="acvBasis" ng-show="!isEdit" style="flex:1"/>
+                                    <div style="padding: 1vh;display:flex;" ng-show="isEdit">
+                                        <div class="slds-form-element" style="width:100%;">  
+                                            <div class="slds-form-element__control" style="width:100%;"> 
+                                                <div class="slds-select_container" style="width:100%;">
+                                                    <select class="slds-select" style="width:100%;" ng-options="option for option in acvBasisOptions" ng-model="acvBasis"></select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div ng-show="!isSLDS" id="classicDiv" style="padding-top: 3px;">
+                        <div class="errorPageMsgDiv" style="border-color: #c00 !important; position: relative" ng-show="showPermissionsMsg || isError">
+                            <img class="errorImg" src="/s.gif" />
+                            <span style="position: absolute; padding-top: 0.2rem; padding-left: 0.4rem">
+                                <span style="display: block; font-weight: bold; color: #cc0000">Error:</span>
+                                <span ng-show="showPermissionsMsg">{{permissionsMsg}}</span>
+                                <span ng-show="isError">{{errorMsg}}</span>
+                            </span>
+                        </div>
+                        <div class="pbHeader" style="padding: 5px 12px;text-align: center;width: 70%;">
+                            <a class="pbButton btn" style="text-decoration: none; color: black; padding: 4px 3px;" ng-show="!isEdit" ng-click="edit()">{!$Label.Edit}</a>
+                            <a class="pbButton btn" style="text-decoration: none; color: black; padding: 4px 3px;" ng-show="isEdit" ng-click="save()">{!$Label.Save}</a>
+                            <a class="pbButton btn" style="text-decoration: none; color: black; padding: 4px 3px;" ng-show="isEdit" ng-click="cancel()">{!$Label.Cancel}</a>
+                        </div>    
+                        <table class="detailList" border="0" cellpadding="0" cellspacing="0" style="width:100%;">
+                            <tbody style="width:100%;">
+                                <tr style="width:100%;">
+                                    <th class="labelCol vfLabelColTextWrap first helpButtonOn" scope="row">
+                                        <label>{!$ObjectType.Custom_Settings__c.fields.ACV_Amount_Field__c.Label}</label>
+                                        <div class="helpOrb tooltipClassic" style="right: -9px;" ng-show="'{!$ObjectType.Custom_Settings__c.fields.ACV_Amount_Field__c.inlineHelpText}' != ''">
+                                            <span style="right:-8px;font-size: 102%;">
+                                            {!$ObjectType.Custom_Settings__c.fields.ACV_Amount_Field__c.inlineHelpText}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <td class="dataCol  first">
+                                        <span ng-show="!isEdit">
+                                            {{acvFieldDisplay}}
+                                        </span>
+                                        <select ng-model="acvField" ng-show="isEdit">
+                                            <option ng-repeat="(key,value) in oppFields" value="{{key}}">{{value}}</option>
+                                        </select>
+                                    </td>
+                                    <th class="labelCol vfLabelColTextWrap first helpButtonOn" scope="row">
+                                        <label>{!$ObjectType.Custom_Settings__c.fields.ACV_Basis__c.Label}</label>
+                                        <div class="helpOrb tooltipClassic" style="right: -9px;" ng-show="'{!$ObjectType.Custom_Settings__c.fields.ACV_Basis__c.inlineHelpText}' != ''">
+                                            <span style="font-size: 102%;">
+                                            {!$ObjectType.Custom_Settings__c.fields.ACV_Basis__c.inlineHelpText}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <td class="dataCol  first">
+                                        <span ng-show="!isEdit">
+                                            {{acvBasis}}
+                                        </span>
+                                        <select ng-model="acvBasis" ng-show="isEdit">
+                                            <option ng-repeat="option in acvBasisOptions" value="{{option}}">{{option}}</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

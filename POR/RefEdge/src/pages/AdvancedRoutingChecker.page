@@ -1,0 +1,354 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ --> 
+<apex:page id="pageId" controller="AdvancedRoutingCheckerController" showheader="true" lightningStylesheets="true" sidebar="false" tabStyle="Custom_Settings__c">
+	<apex:pageMessages id="pgmsgId"/>
+	<c:POR_ModalLoader id="PORLoader"/>
+	<apex:sectionHeader subtitle="{!$Label.Advanced_Routing_Checker}" rendered="{!isFullLicenseAccessible}" />
+	<apex:pageMessage summary="{!$Label.Insufficient_Privileges}" strength="3" severity="Info" rendered="{!IF(isFullLicenseAccessible, NOT(IsPageAccessible), isFullLicenseAccessible)}" />
+	<apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+	<style>
+		.pbSubheader {
+			background-image: none !important;
+		}
+		.bPageBlock {
+			background-color: WHITE !important;
+			border-top: 2px solid gray !important;
+			border-bottom: none !important;
+			border-left: none !important;
+			border-right: none !important;
+			border-radius: 0px !important;
+		}
+		.filterTableHeader {
+			background-color: transparent !important;
+			text-align: center;
+			border: none !important;
+		}
+		.filterTableHeader1 {
+			background-color: transparent !important;
+			text-align: right;
+			border: none !important;
+		}
+		.linkStyle {
+			color: #048EC6 !important;
+			text-decoration: none;
+		}
+		  /* Css override for make font consistent over  Request Detail modal - Re REF-1191   */
+		.customPopup {
+			padding: 1px;
+            background-color: #F8F8F8;
+            box-shadow: 0 0 20px #6D6D6D;
+			border: 1px solid GRAY;
+			border-radius: 5px;
+			position: absolute;
+			top: 20%;
+			left: 50%;
+			margin-left: -20%;
+			width: 40%;
+			z-index: 10;
+        }
+        .popupBackground {
+            background-color: black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9;
+        }
+        .bPageBlock {
+		    background-color: #F8F8F8 !important;
+		    border-top: 2px solid gray !important;
+		    border-bottom: none !important;
+		    border-left: none !important;
+		    border-right: none !important;
+		    border-radius: 0px !important;
+		}
+		div#divBAck .Custom108Block .bPageBlock {
+    		border-top: none !important;
+    		font-size: 12px;
+		}
+		div#divDetails .Custom108Block .bPageBlock {
+    		border-top: none !important;
+		}
+		select {
+    		color: #000;
+    		font-size: 12px;
+		} 
+		 
+    </style>
+    <script>
+    	function confirmToRemove(showInP2P, isFilterEdit) {
+    		
+    		if (!showInP2P && isFilterEdit) {
+    			
+    			if (confirm('{!JSENCODE($Label.Remove_Advance_Routing)}')) {
+    				saveFilterModal();
+    			} else {
+    				cancelFilterPopup();
+    			}
+    		} else {
+    			saveFilterModal();
+    		}
+    	}
+    </script>
+    
+    <apex:form id="formId" rendered="{!AND(IsPageAccessible, isFullLicenseAccessible)}" >
+    	<apex:actionFunction name="setSelectedFilter" action="{!setSelectedFilter}" oncomplete="PORHideLoading();" rerender="addFilterPopup, addFilterSection1, addFilterSection2, addFilterSection3">
+			<apex:param name="selectedFilterId" assignTo="{!selectedFilterId}" value="" />
+		</apex:actionFunction>
+		<apex:actionFunction name="setRoutingGroup" action="{!setRoutingGroup}" oncomplete="PORHideLoading();" rerender="addFilterPopup, addFilterSection1, addFilterSection2, addFilterSection3">
+			<apex:param name="selectedRoutingGroupTemp" assignTo="{!selectedRoutingGroupTemp}" value="" />
+		</apex:actionFunction>
+		<apex:actionFunction name="editFilter" action="{!editFilter}" oncomplete="PORHideLoading();" rerender="addFilterPopup, addFilterSection1, addFilterSection2, addFilterSection3">
+			<apex:param name="selectedFilterId" assignTo="{!selectedFilterId}" value="" />
+		</apex:actionFunction>
+		<apex:actionFunction name="resetFilterValues" action="{!resetFilterValues}" oncomplete="PORHideLoading();" rerender="addFilterPopup, addFilterSection1, addFilterSection2, addFilterSection3">
+			<apex:param name="showInP2PValue" assignTo="{!showInP2PValue}" value="" />
+		</apex:actionFunction>
+		<apex:actionFunction name="checkedShowInP2P" action="{!checkedShowInP2P}" oncomplete="PORHideLoading();" rerender="addFilterPopup, addFilterSection1, addFilterSection2, addFilterSection3" />
+		<apex:actionfunction name="saveFilterModal" action="{!saveFilterModal}" />
+		<apex:actionfunction name="cancelFilterPopup" action="{!cancelFilterPopup}" />
+    	
+    	<apex:pageBlock id="pageBlockId" mode="edit">
+    		<apex:pageBlockSection id="pageBlockSectionId" columns="1">
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Request_Routing__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" rendered="{!cs.Adv_Request_Routing__c}" style="margin-right: 1.7em" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" rendered="{!NOT(cs.Adv_Request_Routing__c)}" style="margin-right: 1.7em" width="17px" height="17px" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$Label.Advanced_Routing_Default_selected}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!cs.Adv_Request_Routing__c}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!NOT(cs.Adv_Request_Routing__c)}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!cs.Adv_Routing_Default__c}" rendered="{!AND(cs.Adv_Request_Routing__c, cs.Adv_Routing_Default__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Rt_Acct_Team_Object__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(cs.Adv_Rt_Acct_Team_Object__c != null, cs.Adv_Rt_Acct_Team_Object__c != '')}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!OR(cs.Adv_Rt_Acct_Team_Object__c == null, cs.Adv_Rt_Acct_Team_Object__c == '')}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.None}" rendered="{!OR(cs.Adv_Rt_Acct_Team_Object__c == null, cs.Adv_Rt_Acct_Team_Object__c == '')}" />
+	    				<apex:outputLabel value="{!accTeamObjLabel}" rendered="{!AND(cs.Adv_Rt_Acct_Team_Object__c != null, cs.Adv_Rt_Acct_Team_Object__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Rt_Acct_Team_Routeby__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(cs.Adv_Rt_Acct_Team_Routeby__c != null, cs.Adv_Rt_Acct_Team_Routeby__c != '')}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!OR(cs.Adv_Rt_Acct_Team_Routeby__c == null, cs.Adv_Rt_Acct_Team_Routeby__c == '')}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.None}" rendered="{!OR(cs.Adv_Rt_Acct_Team_Routeby__c == null, cs.Adv_Rt_Acct_Team_Routeby__c == '')}" />
+	    				<apex:outputLabel value="{!routingPicklistLabel}" rendered="{!AND(cs.Adv_Rt_Acct_Team_Routeby__c != null, cs.Adv_Rt_Acct_Team_Routeby__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+				<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Rt_Acct_Team_Contact__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(cs.Adv_Rt_Acct_Team_Contact__c != null, cs.Adv_Rt_Acct_Team_Contact__c != '')}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!OR(cs.Adv_Rt_Acct_Team_Contact__c == null, cs.Adv_Rt_Acct_Team_Contact__c == '')}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.None}" rendered="{!OR(cs.Adv_Rt_Acct_Team_Contact__c == null, cs.Adv_Rt_Acct_Team_Contact__c == '')}" />
+	    				<apex:outputLabel value="{!contactFieldLabel}" rendered="{!AND(cs.Adv_Rt_Acct_Team_Contact__c != null, cs.Adv_Rt_Acct_Team_Contact__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Rt_Acct_Team_User__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(cs.Adv_Rt_Acct_Team_User__c != null, cs.Adv_Rt_Acct_Team_User__c != '')}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!OR(cs.Adv_Rt_Acct_Team_User__c == null, cs.Adv_Rt_Acct_Team_User__c == '')}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.None}" rendered="{!OR(cs.Adv_Rt_Acct_Team_User__c == null, cs.Adv_Rt_Acct_Team_User__c == '')}" />
+	    				<apex:outputLabel value="{!userFieldLabel}" rendered="{!AND(cs.Adv_Rt_Acct_Team_User__c != null, cs.Adv_Rt_Acct_Team_User__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+				<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Rt_Acct_Team_Role_Picklist__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(cs.Adv_Rt_Acct_Team_Role_Picklist__c != null, cs.Adv_Rt_Acct_Team_Role_Picklist__c != '')}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!OR(cs.Adv_Rt_Acct_Team_Role_Picklist__c == null, cs.Adv_Rt_Acct_Team_Role_Picklist__c == '')}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.None}" rendered="{!OR(cs.Adv_Rt_Acct_Team_Role_Picklist__c == null, cs.Adv_Rt_Acct_Team_Role_Picklist__c == '')}" />
+	    				<apex:outputLabel value="{!rolePicklistLabel}" rendered="{!AND(cs.Adv_Rt_Acct_Team_Role_Picklist__c != null, cs.Adv_Rt_Acct_Team_Role_Picklist__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+				<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Rt_Acct_Team_Roles_to_Include__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(cs.Adv_Rt_Acct_Team_Roles_to_Include__c != null, cs.Adv_Rt_Acct_Team_Roles_to_Include__c != '')}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!OR(cs.Adv_Rt_Acct_Team_Roles_to_Include__c == null, cs.Adv_Rt_Acct_Team_Roles_to_Include__c == '')}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.None}" rendered="{!OR(cs.Adv_Rt_Acct_Team_Roles_to_Include__c == null, cs.Adv_Rt_Acct_Team_Roles_to_Include__c == '')}" />
+	    				<apex:outputLabel value="{!roleIncludedPicklist}" rendered="{!AND(cs.Adv_Rt_Acct_Team_Roles_to_Include__c != null, cs.Adv_Rt_Acct_Team_Roles_to_Include__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Label__c.fields.Adv_Routing_Group__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(advRoutingGroupsList != null, advRoutingGroupsList.size != 1)}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!AND(advRoutingGroupsList != null, advRoutingGroupsList.size == 1)}" width="17px" height="17px" />
+	    				<apex:commandLink value="{!$Label.Details}"
+    									rendered="{!AND(advRoutingGroupsList != null, advRoutingGroupsList.size != 1)}"
+    									action="{!showRoutingGroupsModal}"
+    									onclick="PORShowLoading();"
+    									oncomplete="PORHideLoading();"
+    									reRender="businessGroupsPopup" 
+    									styleClass="linkStyle" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Routing_Group_Lbl__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!AND(cs.Adv_Routing_Group_Lbl__c != null, cs.Adv_Routing_Group_Lbl__c != '')}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!OR(cs.Adv_Routing_Group_Lbl__c == null, cs.Adv_Routing_Group_Lbl__c == '')}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.None}" rendered="{!OR(cs.Adv_Routing_Group_Lbl__c == null, cs.Adv_Routing_Group_Lbl__c == '')}" />
+	    				<apex:outputLabel value="{!cs.Adv_Routing_Group_Lbl__c}" rendered="{!AND(cs.Adv_Routing_Group_Lbl__c != null, cs.Adv_Routing_Group_Lbl__c != '')}" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<apex:outputLabel value="{!$ObjectType.Custom_Settings__c.fields.Adv_Routing_Group_Mandatory__c.label}" />
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!cs.Adv_Routing_Group_Mandatory__c}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!NOT(cs.Adv_Routing_Group_Mandatory__c)}" width="17px" height="17px" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    			<apex:pageBlockSectionItem >
+    				<!-- <apex:commandLink value="{!$Label.Advanced_Routing_Table}" action="{!openMappingTable}" target="_blank" styleClass="linkStyle" /> -->
+    				<a href="/{!objIdPrefix}" target="_blank">{!$Label.Advanced_Routing_Table}</a>
+    				<apex:outputPanel >
+	    				<apex:image value="{!$Resource.GreenCheckMark}" style="margin-right: 1.7em" rendered="{!isAdvRoutingTableComplete}" width="17px" height="17px" />
+	    				<apex:image value="{!$Resource.RedCrossMark}" style="margin-right: 1.7em" rendered="{!NOT(isAdvRoutingTableComplete)}" width="17px" height="17px" />
+	    				<apex:outputLabel value="{!$Label.All_Records_Complete}" rendered="{!isAdvRoutingTableComplete}" style="color: GREEN" />
+	    				<apex:outputLabel value="{!$Label.Records_Incomplete}" rendered="{!NOT(isAdvRoutingTableComplete)}" style="color: RED" />
+    				</apex:outputPanel>
+    			</apex:pageBlockSectionItem>
+    		</apex:pageBlockSection>
+   			<apex:pageBlockTable id="filtersTable"
+   									value="{!filterMap}"
+   									var="filterId"
+   									style="margin-top: 10px;background:#F8F8F8; width: 45%; border: none"
+   									border="0px" >
+   				<apex:column headerValue="{!$Label.Filters_for_P2P}" headerClass="filterTableHeader1" style="text-align: right; width: 39%;; border: none" >
+   					<apex:commandLink value="{!filterMap[filterId].Name}" onclick="PORShowLoading(); editFilter('{!filterMap[filterId].Id}'); return false;" styleClass="linkStyle" />
+   				</apex:column>
+   				<apex:column headerValue="{!$ObjectType.Label__c.fields.Show_in_P2P__c.label}" headerClass="filterTableHeader" style="text-align: center; border: none" >
+   					<apex:image value="{!$Resource.GreenCheckMark}" rendered="{!filterMap[filterId].Show_in_P2P__c}" width="17px" height="17px" />
+   				</apex:column>
+   				<apex:column headerValue="{!$ObjectType.Label__c.fields.Required_in_P2P__c.label}" headerClass="filterTableHeader" style="text-align: center; border: none" >
+   					<apex:image value="{!$Resource.GreenCheckMark}" rendered="{!filterMap[filterId].Required_in_P2P__c}" width="17px" height="17px" />
+   				</apex:column>
+   				<apex:column headerValue="{!$ObjectType.Label__c.fields.Adv_Routing_Group__c.label}" headerClass="filterTableHeader" style="text-align: center; border: none" >
+   					<apex:outputLabel value="{!filterMap[filterId].Adv_Routing_Group__c}" />
+   				</apex:column>
+   			</apex:pageBlockTable>
+    		<apex:pageBlockSection columns="1">
+    			<apex:pageBlockSectionItem >
+    				<apex:commandLink value="{!$Label.Add_a_Filter}" action="{!addFilter}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="addFilterPopup" styleClass="linkStyle" />
+    				<apex:outputLabel value="" />
+    			</apex:pageBlockSectionItem>
+    		</apex:pageBlockSection>
+    	</apex:pageBlock>
+    	
+    	<div id ="divDetails" > 
+    	<apex:outputPanel id="businessGroupsPopup">
+    		<apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!showGroupsPopup}" /> 
+	    		<apex:outputPanel styleClass="customPopup" layout="block" rendered="{!showGroupsPopup}" >
+	    			<p style="margin: 0; font-weight: bold;padding: 9px;background: #03A7E4;color:#FFFFFF;font-family: Arial,Helvetica,sans-serif;font-size: 13.3px;margin-left:2px;margin-right:2px;margin-top:2px;border-radius:4px;">Available Business Groups
+	    			<apex:commandLink value="x" style=" color:#ffffff !important;float: right; margin: 5px; margin-top: -2px;font-weight: bold;font-size: 16px;text-decoration: none;" action="{!closeRoutingGroupsModal}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="businessGroupsPopup" styleClass="linkStyle" /></p>
+	    			<apex:pageBlock >
+		    			<apex:pageBlockTable value="{!advRoutingGroupsList}"
+		   									var="groupName"
+		   									style="margin-top: 10px; width: 100%; border: none;background:#F8F8F8"
+		   									border="0px"
+		   									first="1"
+		   									columns="1" >
+							<apex:column headerValue="{!$Label.Name}" >  
+			   					<apex:outputLabel value="{!groupName.label}" />
+			   				</apex:column>
+						</apex:pageBlockTable>
+	    			</apex:pageBlock>
+	    		</apex:outputPanel>
+	    	</apex:outputPanel>
+    	</div>
+		<apex:outputPanel id="addFilterPopup">
+			<apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!showFilterPopup}" />
+			<apex:outputPanel styleClass="customPopup" layout="block" rendered="{!showFilterPopup}" >
+			
+				<p style="margin: 0; font-weight: bold;padding: 8px;background: #03A7E4;color:#FFFFFF;font-family: Arial,Helvetica,sans-serif;font-size: 13.3px;margin-left:2px;margin-right:2px;margin-top:2px;border-radius:4px;">{!$Label.Add_a_Filter}
+					<apex:commandLink value="x" style="float: right; margin: 5px;margin-top: -2px; font-weight: bold;color:#FFFFFF;font-size: 16px;text-decoration: none;" action="{!cancelFilterPopup}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="pageBlockId, addFilterPopup, filtersTable" />
+				</p>
+				<div id ="divBAck" >
+					<apex:outputPanel rendered="{!isError}" style="color: #D81D1D; margin: 5px 0; font-size: 100%;">
+						{!$Label.Check_Show_in_P2P}
+					</apex:outputPanel>
+					<apex:outputPanel rendered="{!isGroupError}" style="color: #D81D1D; margin: 5px 0; font-size: 100%;">
+						{!$Label.Associated_to_Filter}
+					</apex:outputPanel>
+					<apex:outputPanel rendered="{!NOT(isFilterSelectedBeforeSave)}" style="color: #D81D1D; margin: 5px 0; font-size: 100%;">
+						Please select a filter before saving the form.
+					</apex:outputPanel>
+					
+					<apex:pageBlock >
+						<apex:pageBlockSection columns="1">
+							<apex:pageBlockSectionItem >
+								<apex:outputLabel value="{!$ObjectType.Label__c.Label}" />
+								<apex:outputPanel layout="block">
+									<apex:outputLabel value="{!selectedFilterObj.Name}" rendered="{!isFilterEdit}" />
+									<apex:selectList id="selectedFilter"
+														value="{!selectedFilterId}"
+														onchange="PORShowLoading(); setSelectedFilter(this.value);"
+														size="1"
+														multiselect="false"
+														rendered="{!NOT(isFilterEdit)}">
+										<apex:selectOptions value="{!filterListForModal}"/>
+									</apex:selectList>
+								</apex:outputPanel>
+							</apex:pageBlockSectionItem>
+							<apex:pageBlockSectionItem id="addFilterSection1" rendered="{!selectedFilterObj != null}">
+								<apex:outputLabel value="{!$ObjectType.Label__c.fields.Show_in_P2P__c.label}" />
+								<apex:inputField value="{!selectedFilterObj.Show_in_P2P__c}" onchange="PORShowLoading(); resetFilterValues(this.checked);" />
+							</apex:pageBlockSectionItem>
+							<apex:pageBlockSectionItem id="addFilterSection2" rendered="{!selectedFilterObj != null}">
+								<apex:outputLabel value="{!$ObjectType.Label__c.fields.Required_in_P2P__c.label}" />
+								<apex:inputField value="{!selectedFilterObj.Required_in_P2P__c}" onchange="PORShowLoading(); checkedShowInP2P(this.checked);" />
+							</apex:pageBlockSectionItem>
+							<apex:pageBlockSectionItem id="addFilterSection3" rendered="{!selectedFilterObj != null}">
+								<apex:outputLabel value="{!$ObjectType.Label__c.fields.Adv_Routing_Group__c.label}" />
+								<apex:selectList id="selectedRoutingGroup"
+													value="{!selectedFilterObj.Adv_Routing_Group__c}"
+													size="1"
+													multiselect="false"
+													onchange="PORShowLoading(); setRoutingGroup(this.value);">
+									<apex:selectOptions value="{!advRoutingGroupsList}"/>
+								</apex:selectList>
+								<!-- <apex:inputField value="{!selectedFilterObj.Adv_Routing_Group__c}" /> -->
+							</apex:pageBlockSectionItem>
+						</apex:pageBlockSection>
+					</apex:pageBlock>
+				</div>
+				<div style=" padding: 5px;overflow: hidden;background: #EEEEEE;border-top: 1px solid #DDDDDD;">
+					<apex:commandButton value="{!$Label.Close}" action="{!cancelFilterPopup}" onclick="PORShowLoading();" oncomplete="PORHideLoading();" reRender="pageBlockId, addFilterPopup, filtersTable" style="float: right;margin-right: 14px;" />
+					<apex:commandButton value="{!$Label.Save}" onclick="confirmToRemove({!selectedFilterObj.Show_in_P2P__c}, {!isFilterEdit}); PORShowLoading();" oncomplete="PORHideLoading();" reRender="pageBlockId, addFilterPopup, filtersTable" style="float: right" />
+				</div>
+			</apex:outputPanel>
+		</apex:outputPanel>
+    	
+    </apex:form>
+</apex:page>

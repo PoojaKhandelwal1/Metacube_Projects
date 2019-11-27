@@ -1,0 +1,419 @@
+<!-- 
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+<apex:page id="pageId" standardController="Reference_Content__c" extensions="AddNewReferenceContentController" standardstylesheets="true"  sidebar="false"
+            applyHtmlTag="true"
+            applyBodyTag="false"
+            docType="html-5.0"> 
+	<apex:outputPanel rendered="{!!isSLDS}">
+	    <c:POR_ModalLoader /> 
+	    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+	    <apex:stylesheet value="{!URLFOR($Resource.JqueryFiles, 'jquery-ui-1.9.2.custom.min.css')}"/>  
+	    <style>
+	        .pbSubheader {
+	            background-image : none !important;
+	            color : white !important;
+	        }
+	          /* Css override for make font consistent over  Request Detail modal - Re REF-1191   */
+	         .dialogButtonClass{
+	            margin-left: 3px !important;
+	            margin-right: 3px !important;
+	            color: #333 !important;
+	            border: 1px solid #b5b5b5 !important;
+	            border-bottom-color: #7f7f7f !important;
+	            background: #e8e8e9 url('/img/alohaSkin/btn_sprite.png') repeat-x right top !important;
+	            font-weight: bold !important;
+	            font-size: .9em !important;
+	            -moz-border-radius: 3px !important;
+	            -webkit-border-radius: 3px !important;
+	            border-radius: 3px !important;
+	            font-family : arial !important;
+	            }
+	            
+	            .ui-dialog .ui-dialog-buttonpane {
+				    text-align: left;
+				    border-width: 1px 0 0 0;
+				    /* background-image: none; */
+				    margin: .5em 0 0 0;
+				    padding: 0em 1em 0em .4em;
+				    background: #eeeeee; 
+				}
+
+				.ui-widget {
+				    font-family: Arial;
+				    font-size: 1.1em;
+				}
+
+				.ui-dialog .ui-dialog-content {
+				    position: relative;
+				    border: 0;
+				    padding: .5em 1em;
+				    background: #f8f8f8;
+				    overflow: auto;
+				    zoom: 1;
+				}
+				.ui-widget-content {
+				    border: 1px solid #ddd0; 
+				    background: #eee url(images/ui-bg_highlight-soft_100_eeeeee_1x100.png) 50% top repeat-x;
+				    color: #333;
+				}
+				.ui-dialog {
+				    position: absolute;
+				    top: 0;
+				    left: 0;
+				    padding: 0em;
+				    width: 300px;
+				    overflow: hidden;
+				}
+
+				.ui-dialog .ui-dialog-buttonpane {
+				    text-align: left;
+				    border-width: 1px 0 0 0;
+				    /* background-image: none; */
+				    margin: .5em 0 0 0;
+				    padding: 0em 1em 0em .4em;
+				    background: #eeeeee;
+				    border-top: 1px solid #DDDDDD;
+				    margin-top: 0;
+				}
+				.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+				    float: right;
+				    margin-right: 3px; 
+				}
+	    </style>
+	    <apex:pageMessages id="pgmsgId"/>
+	     
+	    <!-- Form -->
+	    <apex:form id="formId" rendered="{!isFullLicenseAccessible}">
+	    <apex:sectionHeader title="{!$Label.T_Reference_Content_Edit}" subtitle="{!$Label.T_New_Reference_Content}"/>
+	    <apex:pageBlock id="pageBlockId" title="{!$Label.T_Reference_Content_Edit}" mode="edit">
+	        <apex:pageBlockButtons >
+	            <apex:commandButton value="{!$Label.Save}" onclick="confirmSubmit(); return false;" rerender="pageBlockId"/>
+	            <apex:commandButton value="{!$Label.Cancel}" onclick="returnToPrevious(); return false;"/>
+	        </apex:pageBlockButtons>
+	        
+	        <apex:pageBlockSection id="pageBlockSectionId" columns="1" title="{!$Label.Information}">
+	            <apex:actionRegion >
+	                <apex:pageBlockSection id="CustomReferenceContentType" columns="1" rendered="{!customReferenceContentType != null}">
+	                    <apex:pageBlockSectionItem id="customRefContentType">
+	                        <apex:outputLabel style="margin-right: 15px;margin-left: -10px;" for="selectCustomRefContentType" value="{!$Label.T_Reference_Content_Type}"/>
+	                        <apex:outputPanel id="ContentPanel" styleClass="requiredInput" layout="block" style="margin-left: -13px;">
+	                            <div class="requiredBlock"></div>
+	                         <apex:selectList size="1" value="{!customReferenceContentTypeId}" id="selectCustomRefContentType" onChange="showContentFields();return false;">
+	                                 <apex:selectOptions value="{!customReferenceContentType}"/>
+	                         </apex:selectList>
+	                     </apex:outputPanel>
+	                    </apex:pageBlockSectionItem>
+	                </apex:pageBlockSection>
+	            </apex:actionRegion>
+	            <apex:outputPanel id="fileType">
+	                <apex:pageBlockSection id="fileSection" columns="1">
+	                    <apex:outputLabel value="{!$Label.RefContent_File_msg}" />
+	                    <apex:pageblockSectionItem id="fileItem">
+	                        <apex:outputLabel style="margin-right: 15px;" value="{!$Label.Content}" />
+	  		                 <apex:inputFile value="{!newfile}" style="margin-left: -15px;" onchange="disableOtherOptionsElseFile(true);" filename="{!newFileName}" id="file" disabled="{!OR(AND(NOT(isNewReferContent), OR(NOT(ISNULL(Reference_Content__c.Content_URL__c)),NOT(ISBLANK(Reference_Content__c.Content_URL2__c)))),NOT(IsFileType))}"/> 
+	<!-- 						 <input onChange="disableOtherOptionsElseFile(true,'file');return false;" type="file" multiple="false" id="file" name="file1"/>  -->
+	                    </apex:pageblockSectionItem>
+	                </apex:pageBlockSection>
+	            </apex:outputPanel>
+	            <apex:pageBlockSectionItem id="actionSection">
+	            <apex:actionRegion >
+	                <apex:outputPanel id="actionPanel">
+	                   <apex:pageBlockSection columns="1">
+	                        <apex:outputLabel value="{!$Label.Add_Website_Link}"/>
+	                        <apex:pageblockSectionItem id="contentUrlItem" >
+	                            <apex:outputLabel style="margin-right: 15px;" for="contentUrlId" value="{!$Label.T_Content_URL}"/>
+	                            <apex:inputText id="contentUrlId" style="margin-left: -15px;" value="{!ContentURL}" onchange="disableOtherOptions();return false;" disabled="{!OR(NOT(IscontentURL), isExistingContnet)}"/>
+	                        </apex:pageblockSectionItem>
+	                    </apex:pageBlockSection>  
+	                    
+	                    <apex:actionFunction name="changeLibraryOptions" action="{!changeLibraryOptions}" status="myStatus" reRender="pageBlockId,fileItem" onComplete="loadAutoComplete();PORHideLoading();">
+	                        <apex:param assignTo="{!selectedcontentName}" name="contentName" value="one"/>
+	                    </apex:actionFunction>
+	                    
+	                    <apex:actionFunction name="disableOptions" action="{!disableOptions}"  rerender="pageBlockId" onComplete="loadAutoComplete();PORHideLoading();"/>
+	                    <apex:actionFunction name="findContentName" action="{!findContentVersionDetails}" rerender="contentTitles,pgmsgId" onComplete="loadAutoComplete();PORHideLoading();"/>
+	                    <apex:actionFunction name="disableOtherOptionsElsFile" rerender="actionPanel, opAdditionalContentInfo" onComplete="PORHideLoading();">
+	                        <apex:param name="IsFileType" value="" assignTo="{!IsFileType}"/>
+	                        <apex:param name="IsContentType" value="" assignTo="{!IsContentType}"/>
+	                        <apex:param name="IscontentURL" value="" assignTo="{!IscontentURL}"/>
+	                        <apex:param name="IsRecordedContentType" value="" assignTo="{!IsRecordedContentType}"/>
+	                        <apex:param name="IsCustomContentType" value="" assignTo="{!IsCustomContentType}"/>
+	                        <apex:param name="FileName" value="" assignTo="{!newFileName}"/> 
+	                    </apex:actionFunction>
+	                    <apex:actionFunction name="showCustomContentFields"  action="{!showCustomContentFields}" immediate="true" rerender="pgmsgId, internalUseRegion,fileType,actionPanel,opCustomReferenceContent, opAdditionalContentInfo, opCustomContentId" status="myStatus">
+	                        <apex:param name="customReferenceContentTypeId" value="" assignTo="{!customReferenceContentTypeId}"/>
+	                        <apex:param name="CustomRefContent" value="" assignTo="{!CustomRefContent}"/>
+	                    </apex:actionFunction>
+	                    
+	                    <apex:actionFunction name="saveRefContent"  rerender="refId" oncomplete="PORHideLoading();saveContentRecord(); return false;">
+	                        <apex:param name="IsAllowAssociation" value="" assignTo="{!isAllowAssociation}"/> 
+	                    </apex:actionFunction>
+	                    
+	<!--                    <apex:actionFunction name="jsDisableCustomContent"  rerender="opCustomReferenceContent, opCustomContentId"/>-->
+	                     
+	                    <apex:actionStatus onstart="PORShowLoading();"  onstop="PORHideLoading();" id="myStatus"/>
+                        
+                        <!-- REF -2401 -->
+                        <apex:actionFunction name="setPublishDate" action="{!setPublishDate}" oncomplete="PORHideLoading();" rerender="publishDateId">
+                            <apex:param name="param" value="" assignTo="{!tempPublishdate}"/>
+                        </apex:actionFunction>  
+	                    
+	                    <apex:pageBlockSection id="contentSection" columns="1">
+	                        <apex:outputLabel value="{!$Label.RefContent_Content_msg}"/> 
+	                        <apex:pageblockSectionItem id="contentSectionItem" >
+	                            <apex:outputLabel style="margin-right: 15px;" for="content" value="{!$Label.T_Contents}"/>
+	                            <apex:inputText id="content" disabled="{!OR(NOT(selectedcontentName!='undefined'),NOT(IsContentType))}" onkeyup="findContentNames();return false;" onblur="changeVisibility();return false;"  style="margin-left: -15px;" styleclass="autocom" value="{!selectedcontentName}"/>
+	                        </apex:pageblockSectionItem>
+	                    </apex:pageBlockSection> 
+	                    
+	                    <apex:outputPanel id="opCustomReferenceContent">
+	                        <apex:pageBlockSection id="CustomReferenceContent" columns="1">
+	                            <apex:outputLabel value="{!$Label.Create_a_custom_content}"/>
+	                            <apex:pageBlockSectionItem id="customRefContent">
+	                                <apex:outputLabel style="margin-right: 15px;margin-left: -10px;" for="Customcontent" value="{!$Label.T_Custom_Reference_Content}"/>
+	                                <apex:inputCheckbox disabled="{!!IsCustomContentType}" style="margin-left: -10px;" onChange="showContentFields();return false;" id="Customcontent" value="{!CustomRefContent}"/>
+	                            </apex:pageBlockSectionItem>
+	                        </apex:pageBlockSection>
+	                    </apex:outputPanel>
+	
+	                    <apex:pageBlockSection id="CustomReferenceContentTypeFields" columns="1" rendered="{!customContentTypeFields.size  > 0}">
+	                        <apex:repeat value="{!customContentTypeFields}" var="FieldsName">
+	                            <apex:inputField value="{!refContentField[FieldsName]}" required="{!customContentTypeFieldsMap[FieldsName]}"/>
+	                        </apex:repeat>
+	                    </apex:pageBlockSection>
+	                                        
+	                    <apex:pageBlockSection rendered="{!showLibrary}" columns="1" id="librarySection" > 
+	                        <apex:outputLabel value="{!$Label.RefContent_Library_msg}"/>
+	                        <apex:pageBlockSectionItem id="librarySectionItem" >
+	                            <apex:outputLabel style="margin-right: 15px;" value="{!$Label.T_Library}" for="selectLibType"/>
+	                                <apex:outputPanel id="libraryPanel" styleClass="requiredInput" layout="block" style="margin-left: -13px;">
+	                                <div class="requiredBlock"></div>
+	                                <apex:selectList size="1" value="{!LibraryId}" id="selectLibType" >
+	                                    <apex:selectOptions value="{!libraries}"/>
+	                                </apex:selectList>
+	                            </apex:outputPanel>
+	                        </apex:pageBlockSectionItem>
+	                    </apex:pageBlockSection>
+	                    
+	                </apex:outputPanel> 
+	            </apex:actionRegion>
+	            </apex:pageBlockSectionItem> 
+	            
+	            <apex:outputLabel value="{!$Label.RefContent_Title_msg}"/>
+	            <apex:inputField required="true" id="titleId" value="{!referContent.Title__c}"/>
+	            <apex:inputField id="contentStatusId" value="{!referContent.Content_Status__c}"/>
+	            <apex:inputField id="langId" value="{!referContent.Language__c}"/>
+	            <apex:actionRegion >
+	                <apex:actionFunction name="hideSocialSharing" action="{!hideSocialSharing}" rerender="internalUseRegion" status="myStatus"/>
+	                <apex:outputPanel id="internalUseRegion">
+	                 <apex:pageBlockSection id="internal" columns="1">
+	                    <apex:pageblockSectionItem id="internalChexkBox">
+	                        <apex:outputLabel style="margin-right: 15px;" value="{!$Label.Internal_Use}" rendered="{!!referContent.Allow_Social_Sharing__c}"/>
+	                        <apex:inputcheckBox style="margin-left: -10px;" id="internalUseId" value="{!referContent.Internal_Use__c}"  onChange="checkForCustomContent();return false;" rendered="{!!referContent.Allow_Social_Sharing__c}"/>
+	                    </apex:pageblockSectionItem>
+	                </apex:pageBlockSection>
+	                <apex:pageBlockSection id="internalUse" columns="1">
+	                    <apex:pageblockSectionItem >
+	                        <apex:outputLabel style="margin-right: 15px;" value="{!$Label.Allow_Social_Sharing}" rendered="{!!internalUse}"/>
+	                        <apex:inputField id="allowSocialId" style="margin-left: -10px;" value="{!referContent.Allow_Social_Sharing__c}" onChange="hideSocialSharing();return false;" rendered="{!!internalUse}"/>
+	                    </apex:pageblockSectionItem>
+	                </apex:pageBlockSection>
+	                </apex:outputPanel>
+	                
+	            </apex:actionRegion>
+	            <apex:inputField id="featuredContent" value="{!referContent.Featured_Content__c}"/>
+	            <apex:inputField id="substituteAccountName" value="{!referContent.Substitute_Account_Name__c}"/>
+	            <!-- REF-2401 --> 
+	            <apex:inputField id="publishDateId" value="{!referContent.Publish_date__c}" onchange="PORShowLoading();storePublishDate();return false;"/>
+	            <apex:inputField id="reviewDateId" value="{!referContent.Review_Date__c}"/>
+	            <apex:inputField id="expDateId" value="{!referContent.Expiration_Date__c}"/>
+	            <apex:inputField id="pubId" value="{!referContent.Publication_name__c}"/>
+	            <apex:inputField id="authorId" value="{!referContent.Author__c}"/>
+	            <apex:inputField id="articlePubId" value="{!referContent.Article_publication_date__c}"/>
+	            <apex:inputField id="searchId" value="{!referContent.Search_Terms_keywords__c}" style="width: 75%;"/>
+	            <apex:inputField id="summaryId" value="{!referContent.Summary__c}" style="width: 75%;"/>
+	            <!-- Exteranal summary field added for #444 -->
+	            <apex:inputField id="extSummaryId" value="{!referContent.External_Summary__c}" style="width: 75%;"/>
+	            <apex:inputHidden id="CreatedBy" value="{!referContent.Created_User_Name__c}"/>
+	        </apex:pageBlockSection>
+	        
+	        <apex:outputPanel id="opAdditionalContentInfo">
+	            <apex:pageBlockSection title="{!$Label.Content_Additional_Fields}" rendered="{! AND(contentVersionFieldApiNames.size > 0, OR(IscontentURL, IsContentType, IsFileType), NOT(IsCustomContentType))}" columns="1" id="AdditionalContentInfo">
+	                <apex:repeat value="{!contentVersionFieldApiNames}" var="field">
+	                    <apex:inputField value="{!tempContentVersion[field]}"/>
+	                </apex:repeat>
+	            </apex:pageBlockSection>
+	        </apex:outputPanel>
+	    </apex:pageblock>
+	    <div id="dialogBoxDivCon" style="display:none;font-size:12px;height: 60px; !important;">
+	            <apex:outPutText value="{!$Label.Associate_Accounts_And_Contact}" escape="false"/>
+	    </div>
+	    <script>
+	    	/* Function used to redirect to previous page.- re #1041 */
+	    	function returnToPrevious() {
+	    		window.open('{!returnUrl}',"_self");
+	    	}
+	         
+	        function confirmSubmit(){
+	            var contentValue=document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:contentSection:contentSectionItem:content').value;
+	           	var isEditMode='{!isNewReferContent}';
+	            if(contentValue=='' && isEditMode==false){
+	            var where_to= confirm("{!$Label.Existing_Content_not_Selected}");
+	                
+	                if (where_to) {
+	                    return true;
+                    } else{
+	                    return false;
+	                }
+	            }
+	            
+	            var isCustom = document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').checked;
+	            var summaryText = document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:summaryId').value;
+	            
+	            if(isCustom == false && summaryText.length > 1000 && summaryText.length < 4001){
+	                alert('{!$Label.Summary_Text_greater_than_1000}');
+	            }
+	            PORShowLoading();
+	            //saveContentRecord();
+	            showPopup();
+	        }
+	        function checkForCustomContent(){
+	            if(document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').checked && !document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:internal:internalChexkBox:internalUseId').checked){
+	                var val = confirm('Are you sure you want to do this?\nBy unchecking the internal checkbox this content can be shared externally and displayed in a Microsite.');
+					if (!val) {
+	                	document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:internal:internalChexkBox:internalUseId').checked = true;
+					} else {
+						hideSocialSharing();
+					}
+	            } else
+	                hideSocialSharing();
+	        }
+	        function findContentNames(){
+	            PORShowLoading();
+	            document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').checked = false;
+	            findContentName();
+	        }
+	        function changeVisibility(){
+	            var contentValue=document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:contentSection:contentSectionItem:content').value;
+	            PORShowLoading();            
+	            changeLibraryOptions(contentValue);
+	            if(contentValue == ''){
+	                document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:fileSection:fileItem:file').disabled = false;
+	            }
+	        }
+	        function loadAutoComplete(){
+	            arrayOfStrings = content.split(',');
+	            jQuery('.autocom').autocomplete({
+	                source:arrayOfStrings
+	            });
+	            //jsLoadAutoComplete();
+	        }
+	        function disableOtherOptions(){
+	            PORShowLoading(); 
+	            document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').checked = false;
+	            disableOptions();
+	        }
+	        function showContentFields(){
+	            var customContentFields = document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:CustomReferenceContentType:customRefContentType:selectCustomRefContentType').value;
+	            var isCustomContent = false;
+	            var isEditMode='{!isNewReferContent}';
+	            
+				if(document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').disabled && isEditMode==false){
+	                document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').checked = false;
+	                isCustomContent = false;
+	            } else {
+	                isCustomContent = document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').checked;
+	            } 
+				showCustomContentFields(customContentFields,isCustomContent);
+	        }
+	        function disableOtherOptionsElseFile(ele,file){
+	            PORShowLoading(); 
+	            document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent').checked = false;
+	            if(document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:fileSection:fileItem:file').value!='')
+	                disableOtherOptionsElsFile(true,false,false,false,false,document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:fileSection:fileItem:file').value);
+	            else
+	                disableOtherOptionsElsFile(true,true,true,true,true,document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:fileSection:fileItem:file').value);
+	                
+	        } 
+	            
+	        var content;
+	        var arrayOfStrings;
+	        jQuery(document).ready(function() {
+	            loadAutoComplete();
+	        });
+            
+            //REF-2401
+            function storePublishDate() {
+            	var datestring = document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:publishDateId').value;
+                setPublishDate(datestring);
+            }
+	    </script>
+	    <apex:outputPanel id="contentTitles">
+	        <script>
+	            content = '{!JSENCODE(contentTitleNames)}';
+	        </script>
+	    </apex:outputPanel>
+	     
+	<!--    <apex:outputPanel id="opCustomContentId">-->
+	<!--        <script>-->
+	<!--            function disableCustomContent(){-->
+	<!--                document.getElementById('pageId:formId:pageBlockId:pageBlockSectionId:actionSection:CustomReferenceContent:customRefContent:Customcontent') = '{!CustomRefContent}';-->
+	<!--                jsDisableCustomContent();-->
+	<!--            }-->
+	<!--        </script>-->
+	<!--    </apex:outputPanel>-->
+	 		<apex:outputPanel id="refId">
+				<apex:inputHidden id="refContentId" value="{!refContentId}"/> 
+				<script> 			 
+			    	function showPopup() {  
+			             jQuery( "#dialogBoxDivCon" ).dialog({
+			                 width: '400px',
+			                 modal: true,
+			                 resizable: false,
+			                 draggable: false,
+			                 buttons: [{
+			                     text: "Yes",
+			                     "class": "dialogButtonClass",
+			                     click: function() {
+			                         jQuery( this ).dialog( "close" ); 
+				     				 saveRefContent(true);  
+			                     }
+			                 }, 
+			                 {
+								text: "No",
+			                     "class": "dialogButtonClass",
+			                     click: function() {
+			                         jQuery( this ).dialog( "close" );  
+				     				 saveRefContent(false); 
+			                     }
+			                 }]
+			             });
+			             jQuery(".ui-dialog-titlebar").hide();
+			             jQuery(".ui-dialog-content ui-widget-content").css("height", "auto");
+			             return false;  
+			         } 
+				</script>
+				<apex:actionFunction name="saveContentRecord" action="{!saveContent}">  
+	        	</apex:actionFunction>
+			</apex:outputPanel> 
+	    </apex:form>
+    </apex:outputPanel>
+	<apex:include pageName="AddNewReferenceContentSLDS" rendered="{!isSLDS}"/>
+</apex:page>

@@ -1,0 +1,76 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reference_Note__c" sidebar="false" extensions="ViewAllReferenceNotesController" id="pageId" 
+		standardstylesheets="false"
+		applyHtmlTag="true" applyBodyTag="false" docType="html-5.0">
+	<apex:outputPanel rendered="{!!isSLDS}">
+	    <apex:pageMessages id="pgmsgId"/>
+	    <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+	    <c:POR_ModalLoader id="PORLoader"/>
+	    <apex:sectionHeader subtitle="{!$Label.View_Reference_Notes}" rendered="{!isFullLicenseAccessible}"/>
+	    <apex:pageMessage summary="{!$Label.No_Records_Found}" severity="Warning" strength="3" rendered="{!AND(isFullLicenseAccessible,referenceNotes.size == 0)}"/>
+	    <apex:outPutPanel id="scriptPanel">
+            <script>
+                function done() {
+					var requestId = '{!RefReqId}';
+					var nomId = '{!nomiId}';
+                    if ((requestId == null || requestId == '') && (nomId == null || nomId == '')) {
+                        cancel();
+                    } else {
+                        history.go(-1);
+                    }
+                }
+            </script>
+        </apex:outPutPanel>
+		<!-- Form -->
+	    <apex:form id="formId" rendered="{!AND(referenceNotes.size > 0,isFullLicenseAccessible)}">
+			<apex:actionFunction name="cancel" action="{!cancel}" reRender="frmId,pgmsgId">
+			</apex:actionFunction>
+	        <apex:commandButton value="{!$Label.Done}" style="margin-left: 45%;margin-bottom: 7px;" onclick="done(); return false;"/>
+	        <apex:repeat value="{!referenceNotes}" var="note">
+	            <apex:pageBlock mode="detail">
+	                <apex:pageBlockSection id="SectionId" columns="1">
+	                    <apex:outputField value="{!note.Account__c}" rendered="{!NOT(ISBLANK(note.Account__c))}"/>
+	                    <apex:outputField value="{!note.Contact__c}" rendered="{!NOT(ISBLANK(note.Contact__c))}"/>
+	                    <apex:outputField value="{!note.Reference_Content__c}" rendered="{!NOT(ISBLANK(note.Reference_Content__c))}"/>
+	                    <apex:outputField value="{!note.Nomination__c}" rendered="{!NOT(ISBLANK(note.Nomination__c))}"/>
+	                    <apex:outputField value="{!note.Reference_Request__c}" rendered="{!NOT(ISBLANK(note.Reference_Request__c))}"/>
+	                    <apex:outputField value="{!note.Account_Request__c}" rendered="{!NOT(ISBLANK(note.Account_Request__c))}"/>
+	                    <apex:outputField value="{!note.Unspecified_Request__c}" rendered="{!NOT(ISBLANK(note.Unspecified_Request__c))}"/>
+	                    <apex:outputField value="{!note.Note__c}" />
+	                    <apex:outputField value="{!note.Note_Date__c}" />
+	                    <apex:pageBlockSectionItem >
+	                        <apex:outputLabel value="{!$ObjectType.Reference_Note__c.fields.CreatedDate.Label}" />
+	                        <apex:outputText value="{0,date,MM/dd/yyyy}">
+	                            <apex:param value="{!note.CreatedDate}" />
+	                        </apex:outputText>
+	                    </apex:pageBlockSectionItem>
+	                    <apex:outputField label="{!$ObjectType.Reference_Note__c.fields.LastModifiedDate.Label} / {!$Label.Time}" value="{!note.LastModifiedDate}" />
+	                    <apex:pageBlockSectionItem >
+	                        <apex:outputLabel value="{!$ObjectType.Reference_Note__c.fields.Name.Label}" />
+	                        <apex:outputLink target="_blank" value="/{!note.Id}" >{!note.Name}</apex:outputLink>
+	                    </apex:pageBlockSectionItem>
+	                </apex:pageBlockSection>
+	            </apex:pageBlock>
+	        </apex:repeat>
+	    </apex:form>
+    </apex:outputPanel>
+    <apex:include pageName="ViewAllReferenceNotesSLDS" rendered="{!isSLDS}"/>
+</apex:page>

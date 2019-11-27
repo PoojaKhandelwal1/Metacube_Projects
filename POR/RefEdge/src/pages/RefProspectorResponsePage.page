@@ -1,0 +1,1164 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page sidebar="false" controller="RefProspectorResponseController"
+        extensions="ReferenceLeadFormControllerSLDS,ReferenceByLeadControllerSLDS,NominationFormControllerSLDS"
+        docType="html-5.0" standardStylesheets="false">
+<script src="{!URLFOR($Resource.JqueryFiles, 'jquery-1.8.3.js')}"></script>
+<script>
+    var elm = document.getElementById('AppBodyHeader');
+    var isSLDS;
+    
+    if (elm != null) {
+        isSLDS = false;
+    } else {
+        isSLDS = true;
+    }
+    
+    $(document).ready(function() {
+        $('#phHeader td.left div').css({"width": "19vw", "height": "auto"});
+    });
+</script>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <script>
+            window.RESOURCE_ROOT = "{!URLFOR($Resource.RefProspectorData, '')}";
+            var sldsBaseURL = "{!URLFOR($Resource.LightningCSS_2_3, '')}";
+            var greenCheckMark = '{!URLFOR($Resource.GreenCheck)}';
+            
+            // ref by lead remote actions
+            var getRefLeadRemoteAction = '{!$RemoteAction.RefProspectorResponseController.getRefLead}';
+            var getFollowUpDaysRemoteAction = '{!$RemoteAction.RefProspectorResponseController.getFollowUpDaysList}';
+            var saveRefLeadRemoteAction = '{!$RemoteAction.ReferenceByLeadControllerSLDS.saveRefLead}';
+            var getRefLeadOwnerDetailsRemoteAction = '{!$RemoteAction.RefProspectorResponseController.getRefLeadOwnerDetails}';
+            // ref lead form remote actions
+            var getDateFormatRemoteAction = '{!$RemoteAction.RefProspectorResponseController.getDateFormat}';
+            var getFiltersToExcludeRemoteAction = '{!$RemoteAction.ReferenceLeadFormControllerSLDS.getFiltersToExclude}';
+            var getDataMappingsRemoteAction = '{!$RemoteAction.ReferenceLeadFormControllerSLDS.getDataMappingsList}';
+            var getRefLeadRemoteAction1 = '{!$RemoteAction.ReferenceLeadFormControllerSLDS.getRefLead}';
+            var getFilterAttributesMapRemoteAction = '{!$RemoteAction.ReferenceLeadFormControllerSLDS.getFilterAttributesMap}';
+            var getRefTypesListRemoteAction = '{!$RemoteAction.ReferenceLeadFormControllerSLDS.getRefTypesList}';
+            var getContactsListRemoteAction = '{!$RemoteAction.ReferenceLeadFormControllerSLDS.getContactsList}';
+            var saveRefLeadFormRemoteAction = '{!$RemoteAction.ReferenceLeadFormControllerSLDS.saveRefLead}';
+            // nomination form remote actions
+            var getInfoRemoteAction = '{!$RemoteAction.NominationFormControllerSLDS.fetchInfo}';
+            var getAllFilterAttributesRemoteAction = '{!$RemoteAction.NominationFormControllerSLDS.getAllFilterAttributes}';
+            var submitNominationRemoteAction = '{!$RemoteAction.NominationFormControllerSLDS.submit}';
+            
+            // custom labels
+            var responseNotificationMsgLabel = '{!$Label.Response_Notification_msg}';
+            var refLeadOption1 = '{!$Label.RefLeadOption1}';
+            var refLeadOption2 = '{!$Label.RefLeadOption2}';
+            var refLeadOption4 = '{!$Label.RefLeadOption4}';
+            var checkBackWithMeIn = '{!$Label.Check_back_with_me_in}';
+            var refLeadOwnerFieldLabel = '{!$ObjectType.Reference_Lead__c.fields.Reference_Lead_Owner__c.Label}';
+            var referenceableContactsCheck = '{!$Label.Referenceable_Contacts_Check}';
+            var consideredAReferenceAccount = '{!$Label.Considered_a_reference_account}';
+            var timeToReferenceable = '{!$Label.Time_to_referenceable}';
+            var provideNameOfPerson = '{!$Label.Provide_the_name_of_responsible_person}';
+            var selectResponseMsg = '{!$Label.Select_Response}';
+            var selectUserMsg = '{!$Label.Select_reference_lead_owner}';
+            var yesOption = '{!$Label.Yes}';
+            var noOption = '{!$Label.No}';
+            var thankNoteForRefLead = '{!$Label.Thank_Note_for_Lead}';
+            var thanksForLettingUsKnow = '{!$Label.Thanks_for_letting_us_know}';
+            var accountContactInformation = '{!$Label.Account_Contact_Information}';
+            var accountLabel = '{!$Label.Account}';
+            var contactLabel = '{!$Label.Contact}';
+            var editLabel = '{!$Label.Edit}';
+            var cancelLabel = '{!$Label.Cancel}';
+            var commentsLabel = '{!$Label.Comments}';
+            var rfFilters = '{!$Label.RF_Filters}';
+            var saveLabel = '{!$Label.Save}';
+            var invalidDateMsg = '{!$Label.Date_Invalid}';
+            var requiredErrorMsg = '{!$Label.ERROR_SELECT_REQUIRED_VALUE}';
+            var addRemoveContact = '{!$Label.Add_Remove_Contact}';
+            var addRemoveAccount = '{!$Label.Add_Remove_Account}';
+            var multipleItemsFound = '{!$Label.Multiple_items_found}';
+            var selectAndEdit = '{!$Label.Select_And_Edit}';
+            
+            var popupWindowUrl = '{!URLFOR($Page.CustomLookupClassicPage)}';
+            var lookupIconImage = '{!URLFOR($Resource.lookupIconImage)}';
+        </script>
+        
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS_2_3, 'assets/styles/custom-slds.css')}" />
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularMaterialRepo, 'angular-route.min.js')}"></script>
+        <script src="{!URLFOR($Resource.AngularDateTimePickerJS)}"></script>
+        <apex:stylesheet value="{!URLFOR($Resource.AngularDateTimePickerCSS)}" />
+        <c:LookupPicklistSLDS id="picklistId" />
+        <c:RewardNotification />
+        <script src="{!URLFOR($Resource.RefProspectorData, '/js/refProspectApp.js')}"></script>
+        <script src="{!URLFOR($Resource.RefProspectorData, '/js/refByLeadController.js')}"></script>
+        <script src="{!URLFOR($Resource.RefProspectorData, '/js/nominationFormController.js')}"></script>
+        <script src="{!URLFOR($Resource.RefProspectorData, '/js/referenceLeadFormController.js')}"></script>
+        
+        <style>
+            .container * {
+                font-family: "Salesforce Sans",Arial,sans-serif !important;
+            }
+            .custom-toast-width {
+                min-width: 0;
+                width: 96%;
+            }
+            .green-check-icon {
+                margin-right: 10px;
+                width: 15px;
+                float: right;
+            }
+            @media screen and (max-width: 767px) {
+                .container {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    overflow-x: hidden;
+                    overflow-y: scroll;
+                }
+                .desktopVisible {
+                    display: none;
+                }
+                .mobileVisible {
+                    display: block;
+                }
+                .horizontal-padding-large {
+                    padding-right: 0.5rem;
+                    padding-left: 0.5rem;
+                }
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    margin-left: 0;
+                }
+                .responsiveInput {
+                    width: 100%;
+                }
+                .topPaddingFormElement {
+                    padding-top: 0.8rem;
+                }
+            }
+            @media screen and (min-width: 768px) {
+                .desktopVisible {
+                    display: block;
+                }
+                .mobileVisible {
+                    display: none;
+                }
+                .horizontal-padding-large {
+                    padding-right: 1.5rem;
+                    padding-left: 1.5rem;
+                }
+                .custom-width {
+                    width: 75% !important;
+                }
+                .custom-toast-container {
+                    position: fixed;
+                    z-index: 10000;
+                    top: 0;
+                    left: 50%;
+                    width: 60%;
+                    margin-left: -30%;
+                }
+                .responsiveInput {
+                    width: 50%;
+                }
+            }
+            .myList {
+                position: fixed;
+                z-index: 100;
+                overflow: hidden;
+                height: 0px;
+                background-color: WHITE;
+                transition: all linear 0.15s;
+                border-radius: 3px;
+                box-shadow: 0 0 10px white;
+                max-width: 70%
+            }
+            .openList {
+                height: 450px;
+                overflow: auto;
+            }
+            .backdrop {
+                position: fixed;
+                z-index: 99;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #939ea9;
+                visibility: hidden;
+                opacity: 0;
+                display: none;
+                transition: visibility 0s 2s, opacity 0.15s linear, display 0.01s linear;
+            }
+            .backdropOpen {
+                visibility: visible;
+                opacity: 0.8;
+                display: block;
+                transition: opacity 0.15s linear, display 0.01s linear;
+            }
+            .menu-item {
+                display: block;
+                width: 100%;
+                padding: 10px;
+                text-decoration: none;
+            }
+            .menu-item:HOVER {
+                background-color: #f4f6f9;
+                text-decoration: none;
+            }
+            .disabledAnchor {
+                pointer-events: none;
+                color: #dddbda;
+            }
+            #adp-time {
+                display: none;
+            }
+            .slds-page-header__detail-block {
+                max-width: 100%;
+            }
+            .classicSpinner {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-left: -30px;
+            }
+            .classicSpinnerInner {
+                position: absolute;
+                top: 35%;
+                left: 60%;
+                margin-left: -30px;
+            }
+            .classicSpinnerBackground {
+                top: 0;
+                height: 100vh;
+                left: 0;
+                right: 0;
+                background-color: WHITE;
+                opacity: 0.7;
+                z-index: 9999;
+            }
+            .errorPageMsgDiv {
+            	border-radius: 4px;
+            	background-color: #ffc;
+			    border-style: solid;
+			    border-width: 1px;
+			    color: #000;
+			    padding: 6px 8px 6px 6px;
+			    margin: 4px 20px;
+			    float: left;
+			    width: 98%;
+			    display: block;
+            }
+            .navItem {
+                display: block;
+                padding: 0.7rem 1rem;
+            }
+            .navItem:HOVER {
+                background-color: #f4f6f9;
+            }
+            .navItemActive {
+                border: 2px solid rgba(0, 112, 210, 0.8);
+                border-radius: 2px;
+                background-color: rgba(0, 112, 210, 0.08);
+            }
+            .classicFormElement {
+                line-height: 250%;
+            }
+        </style>
+        
+        <script>
+            var refProspectResponseCtrl = refProspectResponseApp.controller('refProspectResponseCtrl',
+                function($scope, $q, $route, $routeParams, refProspectService, $location, $timeout) {
+                    $scope.isFullLicenseAccessible = {!isFullLicenseAccessible};
+                    $scope.isLoading = false;
+                    $scope.innerLoading = false;
+                    $scope.createNomination = false;
+                    $scope.isRefProspectEnabled = true;
+                    $scope.showEnableProspectToast = true;
+                    $scope.isSLDS = isSLDS;
+                    $scope.isError = false;
+                    $scope.errorMessage = '';
+                    $scope.isSuccess = false;
+                    $scope.successMessage = '';
+                    $scope.refLeadsList = [];
+                    $scope.showMoreAccounts = false;
+                    $scope.showList = false;
+                    $scope.showPagination = false;
+                    $scope.showNextLink = false;
+                    $scope.showPrevLink = false;
+                    $scope.headerText = '';
+                    $scope.subHeaderText = '';
+                    
+                    $scope.recordIndex = 0;
+                    $scope.selectedRefLeadId = '';
+                    $scope.selectedAccountName = '';
+                    $scope.alreadyPresentRefLeads = [];
+                    $scope.currentPage = 0;
+                    $scope.refLeadPaginationMap = {};
+                    $scope.onScreenNotification = '';
+                    
+                    $scope.$on('isLoading', function(e, value) {
+                        $scope.innerLoading = value;
+                    });
+                    
+                    $scope.initialFunction = function() {
+                        $scope.isLoading = true;
+
+                        $scope.getCustomSettings().then(function(result) {
+                            $scope.isRefProspectEnabled = result['isRefProspectEnabled'] == 'true';
+                            $scope.showEnableProspectToast = result['isRefProspectEnabled'] == 'true';
+                            $scope.createNomination = result['createNomination'] == 'true';
+                            $scope.headerText = result['pageHeader'];
+                            $scope.subHeaderText = result['pageSubHeader'];
+                            $scope.onScreenNotification = result['onScreenNotification'];
+                            
+                            if ($scope.isRefProspectEnabled) {
+                                
+                                $scope.getRefLeads().then(function(result) {
+                                    
+                                    if (result.length > 0) {
+                                        
+                                        if (result.length > 3) {
+                                            result.splice(3, 1);
+                                            $scope.showMoreAccounts = true;
+                                        }
+                                        $scope.refLeadsList = result;
+                                        
+                                        angular.forEach(
+                                            $scope.refLeadsList,
+                                            function(refLead) {
+                                                
+                                                if ($scope.recordIndex == 0) {
+                                                    refLead['isSelected'] = true;
+                                                    $scope.selectedRefLeadId = refLead['refLeadId'];
+                                                    $scope.selectedAccountName = refLead['accountName'];
+                                                    $location.path(refLead['refLeadId'] + '/' + refLead['isAccountMember']);
+                                                }
+                                                
+                                                if ($scope.alreadyPresentRefLeads.indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.alreadyPresentRefLeads.push(refLead['refLeadId']);
+                                                }
+                                                
+                                                if (!($scope.currentPage in $scope.refLeadPaginationMap)) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage] = [];
+                                                }
+                                                
+                                                if ($scope.refLeadPaginationMap[$scope.currentPage].indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                                }
+                                                $scope.recordIndex++;
+                                            }
+                                        );
+                                    }
+                                    $scope.isLoading = false;
+                                });
+                            } else {
+                                $scope.isLoading = false;
+                            }
+                        });
+                    }
+                    
+                    $scope.getCustomSettings = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorResponseController.getCustomSettings}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getRefLeads = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorResponseController.getRefLeads}',
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getRefLeadsForPageNo = function(accountPageNo) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorResponseController.getRefLeadsForPageNo}',
+                            accountPageNo,
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getAlreadyPresentRefLeads = function(refLeadIds) {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorResponseController.getAlreadyPresentRefLeads}',
+                            angular.toJson(refLeadIds),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.getAlreadyNotPresentRefLeads = function() {
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RefProspectorResponseController.getAlreadyNotPresentRefLeads}',
+                            angular.toJson($scope.alreadyPresentRefLeads),
+                            function(result, event) {
+                                result = $scope.parseResult(result);
+                                deferred.resolve(JSON.parse(result));
+                            }
+                        );
+                        return deferred.promise;
+                    }
+                    
+                    $scope.parseResult = function(result) {
+                        result = result.replace(/&quot/gi, '"');
+                        result = result.replace(/&amp/g, '&');
+                        result = result.replace(/&lt/g, '<');
+                        result = result.replace(/&gt/g, '>');
+                        result = result.replace(/;/g, '');
+                        result = result.replace(/&#39/g, '\'');
+                        return result;
+                    }
+                    
+                    $scope.getAllRefLeads = function() {
+                        var tempCurrentPageNo = angular.copy($scope.currentPage);
+                        $scope.currentPage = 0;
+                        $scope.recordIndex = 0;
+                        $scope.selectedRefLeadId = '';
+                        $scope.selectedAccountName = '';
+                        $scope.refLeadsList = [];
+                        $scope.alreadyPresentRefLeads = [];
+                        $scope.refLeadPaginationMap = {};
+                        $scope.isLoading = true;
+                        
+                        if ($scope.showMoreAccounts) {
+                            $scope.initialFunction();
+                        } else {
+                            
+                            $scope.getRefLeadsForPageNo(tempCurrentPageNo).then(function(result) {
+                                
+                                angular.forEach(
+                                    result,
+                                    function(refLead) {
+                                        
+                                        if ($scope.recordIndex == 10) {
+                                            $scope.recordIndex = 0;
+                                            $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                            
+                                            if ($scope.currentPage < tempCurrentPageNo) {
+                                                $scope.refLeadsList = [];
+                                            }
+                                            $scope.currentPage++;
+                                            $scope.showPagination = true;
+                                        }
+                                        
+                                        if ($scope.currentPage <= tempCurrentPageNo) {
+                                            
+                                            if ($scope.alreadyPresentRefLeads.indexOf(refLead['refLeadId']) == -1) {
+                                                $scope.alreadyPresentRefLeads.push(refLead['refLeadId']);
+                                            }
+                                            
+                                            if ($scope.refLeadsList.indexOf(refLead) == -1) {
+                                                $scope.refLeadsList.push(refLead);
+                                            }
+                                            
+                                            if (!($scope.currentPage in $scope.refLeadPaginationMap)) {
+                                                $scope.refLeadPaginationMap[$scope.currentPage] = [];
+                                            }
+                                            
+                                            if ($scope.refLeadPaginationMap[$scope.currentPage].indexOf(refLead['refLeadId']) == -1) {
+                                                $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                            }
+                                            ++$scope.recordIndex;
+                                        }
+                                    }
+                                );
+                                
+                                if ($scope.refLeadsList.length > 0) {
+                                    $location.path($scope.refLeadsList[0]['refLeadId'] + '/' + $scope.refLeadsList[0]['isAccountMember']);
+                                    $scope.refLeadsList[0]['isSelected'] = true;
+                                    
+                                    if ($scope.currentPage > tempCurrentPageNo) {
+                                        $scope.showNextLink = true;
+                                        $scope.currentPage--;
+                                    }
+                                    
+                                    if ($scope.currentPage > 0) {
+                                        $scope.showPrevLink = true;
+                                    }
+                                } else {
+                                    $location.path('');
+                                }
+                                $scope.isLoading = false;
+                            });
+                        }
+                    }
+                    
+                    $scope.showMoreRecords = function() {
+                        $scope.isLoading = true;
+                        $scope.currentPage = 0;
+                        $scope.recordIndex = 0;
+                        $scope.refLeadPaginationMap = {};
+                        $scope.refLeadsList = [];
+                        $scope.showMoreAccounts = false;
+                        var breakFlag = false;
+                        
+                        $scope.getRefLeadsForPageNo($scope.currentPage).then(function(result) {
+                            
+                            angular.forEach(
+                                result,
+                                function(refLead) {
+                                    
+                                    if (!breakFlag) {
+                                        
+                                        if ($scope.recordIndex == 10) {
+                                            $scope.recordIndex = 11;
+                                            $scope.showPagination = true;
+                                            $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                            breakFlag = true;
+                                        }
+                                        
+                                        if (!breakFlag) {
+                                            
+                                            if ($scope.selectedRefLeadId == refLead['refLeadId']) {
+                                                refLead['isSelected'] = true;
+                                            }
+                                            
+                                            if ($scope.alreadyPresentRefLeads.indexOf(refLead['refLeadId']) == -1) {
+                                                $scope.alreadyPresentRefLeads.push(refLead['refLeadId']);
+                                            }
+                                            
+                                            if ($scope.refLeadsList.indexOf(refLead) == -1) {
+                                                $scope.refLeadsList.push(refLead);
+                                            }
+                                            
+                                            if (!($scope.currentPage in $scope.refLeadPaginationMap)) {
+                                                $scope.refLeadPaginationMap[$scope.currentPage] = [];
+                                            }
+                                            
+                                            if ($scope.refLeadPaginationMap[$scope.currentPage].indexOf(refLead['refLeadId']) == -1) {
+                                                $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                            }
+                                            $scope.recordIndex++;
+                                        }
+                                        
+                                        if ($scope.recordIndex == 11) {
+                                            $scope.showNextLink = true;
+                                        }
+                                    }
+                                }
+                            );
+                            $scope.isLoading = false;
+                        });
+                    }
+                    
+                    $scope.showPrevRecords = function() {
+                        $scope.isLoading = true;
+                        $scope.currentPage = $scope.currentPage - 1;
+                        $scope.refLeadsList = [];
+                        $scope.recordIndex = 0;
+                        $scope.showNextLink = true;
+                        
+                        if ($scope.currentPage == 0) {
+                            $scope.showPrevLink = false;
+                        }
+                        
+                        if ($scope.currentPage in $scope.refLeadPaginationMap) {
+                            var temprefLeadIds = angular.copy($scope.refLeadPaginationMap[$scope.currentPage]);
+                            var breakFlag = false;
+                            
+                            $scope.getAlreadyPresentRefLeads(temprefLeadIds).then(function(result) {
+                                
+                                angular.forEach(
+                                    result,
+                                    function(refLead) {
+                                        if (!breakFlag) {
+                                            
+                                            if ($scope.recordIndex == 10) {
+                                                $scope.recordIndex = 11;
+                                                $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                                breakFlag = true;
+                                            }
+                                            
+                                            if (!breakFlag) {
+                                                
+                                                if ($scope.recordIndex == 0) {
+                                                    refLead['isSelected'] = true;
+                                                    $scope.selectedRefLeadId = refLead['refLeadId'];
+                                                    $scope.selectedAccountName = refLead['accountName'];
+                                                }
+                                                
+                                                if ($scope.alreadyPresentRefLeads.indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.alreadyPresentRefLeads.push(refLead['refLeadId']);
+                                                }
+                                                
+                                                if ($scope.refLeadsList.indexOf(refLead) == -1) {
+                                                    $scope.refLeadsList.push(refLead);
+                                                }
+                                                
+                                                if (!($scope.currentPage in $scope.refLeadPaginationMap)) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage] = [];
+                                                }
+                                                
+                                                if ($scope.refLeadPaginationMap[$scope.currentPage].indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                                }
+                                                $scope.recordIndex++;
+                                            }
+                                        }
+                                    }
+                                );
+                                $location.path($scope.refLeadsList[0]['refLeadId'] + '/' + $scope.refLeadsList[0]['isAccountMember']);
+                                $scope.isLoading = false;
+                            });
+                        }
+                    }
+                    
+                    $scope.showNextRecords = function() {
+                        $scope.isLoading = true;
+                        $scope.currentPage = $scope.currentPage + 1;
+                        $scope.refLeadsList = [];
+                        $scope.recordIndex = 0;
+                        
+                        if ($scope.currentPage in $scope.refLeadPaginationMap) {
+                            var tempRefLeadIds = angular.copy($scope.refLeadPaginationMap[$scope.currentPage]);
+                            var breakFlag = false;
+                            
+                            $scope.getAlreadyPresentRefLeads(tempRefLeadIds).then(function(result) {
+                                
+                                angular.forEach(
+                                    result,
+                                    function(refLead) {
+                                        
+                                        if (!breakFlag) {
+                                            
+                                            if ($scope.recordIndex == 10) {
+                                                $scope.recordIndex = 11;
+                                                $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                                breakFlag = true;
+                                            }
+                                            
+                                            if (!breakFlag) {
+                                                
+                                                if ($scope.recordIndex == 0) {
+                                                    refLead['isSelected'] = true;
+                                                    $scope.selectedRefLeadId = refLead['refLeadId'];
+                                                    $scope.selectedAccountName = refLead['accountName'];
+                                                }
+                                                
+                                                if ($scope.alreadyPresentRefLeads.indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.alreadyPresentRefLeads.push(refLead['refLeadId']);
+                                                }
+                                                
+                                                if ($scope.refLeadsList.indexOf(refLead) == -1) {
+                                                    $scope.refLeadsList.push(refLead);
+                                                }
+                                                
+                                                if (!($scope.currentPage in $scope.refLeadPaginationMap)) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage] = [];
+                                                }
+                                                
+                                                if ($scope.refLeadPaginationMap[$scope.currentPage].indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                                }
+                                                $scope.recordIndex++;
+                                            }
+                                        }
+                                    }
+                                );
+                                var tempPageNo = $scope.currentPage + 1;
+                                
+                                if ($scope.recordIndex == 11 || (tempPageNo in $scope.refLeadPaginationMap)) {
+                                    $scope.showNextLink = true;
+                                } else {
+                                    $scope.showNextLink = false;
+                                }
+                                $location.path($scope.refLeadsList[0]['refLeadId'] + '/' + $scope.refLeadsList[0]['isAccountMember']);
+                                $scope.isLoading = false;
+                            });
+                        } else {
+                            $scope.refLeadPaginationMap[$scope.currentPage] = [];
+                            var breakFlag = false;
+                            
+                            $scope.getAlreadyNotPresentRefLeads().then(function(result) {
+                                
+                                angular.forEach(
+                                    result,
+                                    function(refLead) {
+                                        
+                                        if (!breakFlag) {
+                                            
+                                            if ($scope.recordIndex == 10) {
+                                                $scope.recordIndex = 11;
+                                                $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                                breakFlag = true;
+                                            }
+                                            
+                                            if (!breakFlag) {
+                                                
+                                                if ($scope.recordIndex == 0) {
+                                                    refLead['isSelected'] = true;
+                                                    $scope.selectedRefLeadId = refLead['refLeadId'];
+                                                    $scope.selectedAccountName = refLead['accountName'];
+                                                }
+                                                
+                                                if ($scope.alreadyPresentRefLeads.indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.alreadyPresentRefLeads.push(refLead['refLeadId']);
+                                                }
+                                                
+                                                if ($scope.refLeadsList.indexOf(refLead) == -1) {
+                                                    $scope.refLeadsList.push(refLead);
+                                                }
+                                                
+                                                if (!($scope.currentPage in $scope.refLeadPaginationMap)) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage] = [];
+                                                }
+                                                
+                                                if ($scope.refLeadPaginationMap[$scope.currentPage].indexOf(refLead['refLeadId']) == -1) {
+                                                    $scope.refLeadPaginationMap[$scope.currentPage].push(refLead['refLeadId']);
+                                                }
+                                                $scope.recordIndex++;
+                                            }
+                                        }
+                                    }
+                                );
+                                var tempPageNo = $scope.currentPage + 1;
+                                
+                                if ($scope.recordIndex == 11 || (tempPageNo in $scope.refLeadPaginationMap)) {
+                                    $scope.showNextLink = true;
+                                } else {
+                                    $scope.showNextLink = false;
+                                }
+                                $location.path($scope.refLeadsList[0]['refLeadId'] + '/' + $scope.refLeadsList[0]['isAccountMember']);
+                                $scope.isLoading = false;
+                            });
+                        }
+                        $scope.showPrevLink = true;
+                    }
+                    
+                    $scope.handleAccountSelect = function(refLead) {
+                        
+                        if ($scope.selectedRefLeadId != refLead['refLeadId']) {
+                            
+                            angular.forEach(
+                                $scope.refLeadsList,
+                                function(rl) {
+                                    rl['isSelected'] = false;
+                                }
+                            );
+                            refLead['isSelected'] = true;
+                            $scope.selectedRefLeadId = refLead['refLeadId'];
+                            $scope.selectedAccountName = refLead['accountName'];
+                            $scope.showList = false;
+                            $location.path(refLead['refLeadId'] + '/' + refLead['isAccountMember']);
+                        }
+                    }
+                    
+                    $scope.cancelRefLead = function() {
+                        window.location = '/_ui/core/chatter/ui/ChatterPage';
+                    }
+                    
+                    $scope.saveRefLead = function() {
+                        var url = $location.$$path;
+                        
+                        if (url.indexOf('Form') == -1) {
+                            refProspectService.submitRefByLead($scope.createNomination);
+                        } else if (url.indexOf('nomination') >= 0) {
+                            refProspectService.submitNominationForm();
+                        } else {
+                            refProspectService.submitRefLeadForm();
+                        }
+                    }
+                    
+                    $scope.hideToasts = function() {
+                        $scope.isError = false;
+                        $scope.isSuccess = false;
+                        $scope.showEnableProspectToast = true;
+                    }
+                    
+                    $scope.$on('saveResult', function(e, result) {
+                        console.log(result);
+                        
+                        if (result['status'] == 'failure') {
+                            $scope.errorMessage = result['statusMsg'];
+                            $scope.isError = true;
+                        } else {
+                            
+                            if (result['process'] == 'refByLead') {
+                                $scope.successMessage = result['statusMsg'];
+                                $scope.isSuccess = true;
+                                
+                                if (result['rewardPts'] != '') {
+                                    showDisolvingAlert(result['rewardPts'], result['rewardAction'], $scope.onScreenNotification);
+                                }
+                                
+                                $timeout(function() {
+                                    $scope.isSuccess = false;
+                                }, 3000);
+                                $scope.getAllRefLeads();
+                            } else if (result['process'] == 'refLeadForm') {
+                                $scope.successMessage = result['statusMsg'];
+                                $scope.isSuccess = true;
+                                
+                                if (result['rewardPts'] != '') {
+                                    showDisolvingAlert(result['rewardPts'], result['rewardAction'], $scope.onScreenNotification);
+                                }
+                                
+                                $timeout(function() {
+                                    $scope.isSuccess = false;
+                                }, 3000);
+                                $scope.getAllRefLeads();
+                            } else if (result['process'] == 'nominationForm') {
+                                
+                                if (result['rewardPts'] != '') {
+                                    showDisolvingAlert(result['rewardPts'], result['rewardAction'], $scope.onScreenNotification);
+                                }
+                                $scope.getAllRefLeads();
+                            }
+                        }
+                    });
+                }
+            );
+            
+            function showDisolvingAlert(points, action, isDisolvingAlert) {
+                
+                if(isDisolvingAlert == 'true') {
+                    notification(points, action);
+                }
+            }
+            
+            function redirectToBack() {}
+        </script>
+    </head>
+    
+    <body>
+        <div ng-class="{container : isSLDS}" ng-app="refProspectResponseApp" ng-controller="refProspectResponseCtrl" ng-cloak="ng-cloak">
+            <div ng-show="!isFullLicenseAccessible" class="slds-m-around_large">
+                <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                    </svg>
+                </span>
+                {!$Label.User_License}
+            </div>
+        
+            <div ng-show="isFullLicenseAccessible" ng-init="initialFunction()">
+                <div role="status" ng-show="isLoading && isSLDS" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                    <span class="slds-assistive-text">Loading</span>
+                    <div class="slds-spinner__dot-a"></div>
+                    <div class="slds-spinner__dot-b"></div>
+                </div>
+                <div class="classicSpinnerBackground" ng-show="isLoading && !isSLDS">
+                    <apex:image styleClass="classicSpinner" id="theImage" value="{!$Resource.LoaderSpinner}" width="60" height="60"/>
+                </div>
+                
+                <div ng-show="!isLoading">
+                    <div ng-show="!isRefProspectEnabled && isSLDS">
+                        <a style="float: right; margin: 1rem" ng-click="cancelRefLead()" class="slds-button slds-button_neutral">{!$Label.Back}</a>
+                    </div>
+                    <div ng-show="!isRefProspectEnabled && !isSLDS">
+                        <div class="errorPageMsgDiv" style="border-color: #ffb75d;">
+                            <span class="slds-icon__container" style="padding: 0 6px; float: left;">
+                                <svg class="slds-icon" aria-hidden="true" style="fill: #ffb75d;">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                                </svg>
+                            </span>
+                            <div style="float: left; padding-top: 10px;">
+                                {!$Label.Enable_Ref_Prospect_Message}
+                            </div>
+                        </div>
+                        <a class="btn" ng-show="isSuccess || !isRefProspectEnabled" style="margin: 20px; line-height: 220%; text-decoration: none; color: black; padding: 4px 3px" ng-click="cancelRefLead()">{!$Label.Back}</a>
+                    </div>
+                    
+                    <div ng-show="isRefProspectEnabled">
+                        <div ng-show="refLeadsList.length == 0" class="slds-m-around_large">
+                            <span class="slds-icon_container slds-icon-action-call" style="border-radius: 5px">
+                                <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                    <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                                </svg>
+                            </span>
+                            {!$Label.No_More_Reference_Leads}
+                            <a href="javascript:void(0)" style="float: right" ng-click="cancelRefLead()" class="slds-button slds-button_neutral">{!$Label.Back}</a>
+                        </div>
+                        
+                        <div ng-show="refLeadsList.length > 0">
+                            <div class="slds-page-header">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-col slds-has-flexi-truncate">
+                                        <div class="slds-media slds-media_center">
+                                            <div class="slds-media__figure">
+                                                <span class="slds-icon_container">
+                                                    <img alt="refedge logo" src="{!URLFOR($Resource.RefEdge_Square_Icon, 'icon-small.png')}" class="slds-icon slds-icon-text-default slds-icon_large" />
+                                                </span>
+                                            </div>
+                                            <div class="slds-media__body" ng-if="!isSLDS">
+                                                <h1 class="slds-page-header__title slds-m-right_small slds-align-middle slds-truncate">
+                                                    {{headerText}}
+                                                </h1>
+                                            </div>
+                                            <div class="slds-media__body" ng-if="isSLDS">
+                                                <p class="mobileVisible slds-text-title_caps">{{headerText}}</p>
+                                                <h1 class="desktopVisible slds-page-header__title slds-m-right_small slds-align-middle slds-truncate">
+                                                    {{headerText}}
+                                                </h1>
+                                                <h1 class="mobileVisible slds-page-header__title slds-m-right_small slds-align-middle slds-truncate">
+                                                    <div ng-click="showList = !showList" style="cursor: pointer; color: #54698D; white-space: normal;">
+                                                        {{selectedAccountName}}
+                                                        <span class="slds-icon_container slds-icon-utility-down">
+                                                            <svg class="slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
+                                                                <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                                            </svg>
+                                                            <span class="slds-assistive-text">Select Account</span>
+                                                        </span>
+                                                    </div>
+                                                    <div ng-class="{openList : showList}" class="myList">
+                                                        <nav class="slds-nav-vertical slds-p-vertical_x-small">
+                                                            <div class="slds-nav-vertical__section">
+                                                                <ul>
+                                                                    <li ng-repeat="refLead in refLeadsList" class="slds-nav-vertical__item" style="border-bottom: 1px solid #d8dde6; margin: 0">
+                                                                        <a class="slds-nav-vertical__action" href="javascript:void(0);" ng-click="handleAccountSelect(refLead)" style="text-decoration: none; color: #54698D; white-space: normal;">
+                                                                            {{refLead['accountName']}}
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </nav>
+                                                        <a ng-show="showMoreAccounts" ng-click="showMoreRecords()" href="javascript:void(0);" class="slds-nav-vertical__action" style="text-decoration: none">
+                                                            {!$Label.Show_me_more_Accounts}
+                                                        </a>
+                                                        <div ng-show="!showMoreAccounts && showPagination" style="margin: 5px;">
+                                                            <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-grid_align-spread">
+                                                                <a ng-disabled="!showPrevLink" ng-click="showPrevRecords()" ng-class="{disabledAnchor : !showPrevLink}" class="slds-button slds-button_neutral" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+                                                                    <svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft')}"></use>
+                                                                    </svg>
+                                                                    {!$Label.Previous}
+                                                                </a>
+                                                                <a ng-disabled="!showNextLink" ng-click="showNextRecords()" ng-class="{disabledAnchor : !showNextLink}" class="slds-button slds-button_neutral" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+                                                                    {!$Label.Next}
+                                                                    <svg class="slds-button__icon slds-button__icon_right" aria-hidden="true">
+                                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronright')}"></use>
+                                                                    </svg>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div ng-click="showList = !showList" ng-class="{backdropOpen : showList}" class="backdrop"></div>
+                                                </h1>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-no-flex slds-grid slds-align-bottom" ng-show="refLeadsList.length > 0 && isSLDS">
+                                        <a ng-click="cancelRefLead()" class="slds-button slds-button_neutral">{!$Label.Cancel}</a>
+                                        <a ng-click="saveRefLead()" class="slds-button slds-button_brand">{!$Label.Submit}</a>
+                                    </div>
+                                </div>
+                                <ul class="slds-grid slds-page-header__detail-row" ng-show="subHeaderText != null && subHeaderText != ''">
+                                    <li class="slds-page-header__detail-block" style="margin-left: 0">
+                                        <p class="slds-text-body_regular slds-truncate">{{subHeaderText}}</p>
+                                    </li>
+                                </ul>
+                                
+                                <ul class="slds-grid slds-page-header__detail-row" style="padding-top: 0" ng-if="!isSLDS">
+                                    <li class="slds-page-header__detail-block" ng-show="refLeadsList.length > 0" style="margin: 0; width: 100%; text-align: center;">
+                                        <p class="slds-text-body_regular slds-truncate">
+                                            <a ng-click="saveRefLead()" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.Submit}</a>
+                                            <a ng-click="cancelRefLead()" class="btn" style="line-height: 220%; text-decoration: none; color: black; padding: 4px 3px; font-size: 0.85em;">{!$Label.Cancel}</a>
+                                        </p>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="slds-p-top_large">
+                                <div class="slds-grid slds-wrap">
+                                    <div ng-if="!isSLDS" class="slds-size_1-of-4 slds-p-horizontal_x-small slds-p-bottom_medium">
+                                        <nav class="slds-nav-vertical slds-p-vertical_x-small">
+                                            <div class="slds-nav-vertical__section">
+                                                <ul>
+                                                    <li ng-repeat="refLead in refLeadsList">
+                                                        <a class="navItem" ng-class="{navItemActive : (refLead['isSelected'])}" href="javascript:void(0);" ng-click="handleAccountSelect(refLead)" style="text-decoration: none">
+                                                            {{refLead['accountName']}}
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </nav>
+                                        <a ng-show="showMoreAccounts" href="javascript:void(0);" ng-click="showMoreRecords()" class="navItem" style="text-decoration: none">
+                                            {!$Label.Show_me_more_Accounts}
+                                        </a>
+                                        <div ng-show="!showMoreAccounts && showPagination">
+                                            <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-grid_align-spread">
+                                                <a ng-disabled="!showPrevLink" ng-click="showPrevRecords()" ng-class="{disabledAnchor : !showPrevLink}" style="padding-left: 0.5rem; padding-right: 0.5rem; text-decoration: none">
+                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft')}"></use>
+                                                    </svg>
+                                                    {!$Label.Previous}
+                                                </a>
+                                                <a ng-disabled="!showNextLink" ng-click="showNextRecords()" ng-class="{disabledAnchor : !showNextLink}" style="padding-left: 0.5rem; padding-right: 0.5rem; text-decoration: none">
+                                                    {!$Label.Next}
+                                                    <svg class="slds-button__icon" aria-hidden="true">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronright')}"></use>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div ng-if="isSLDS" class="desktopVisible slds-size_1-of-4 slds-p-horizontal_large slds-p-bottom_medium">
+                                        <nav class="slds-nav-vertical slds-p-vertical_x-small">
+                                            <div class="slds-nav-vertical__section">
+                                                <ul>
+                                                    <li ng-repeat="refLead in refLeadsList" class="slds-nav-vertical__item" ng-class="{'slds-is-active' : (refLead['isSelected'])}">
+                                                        <a class="slds-nav-vertical__action" href="javascript:void(0);" ng-click="handleAccountSelect(refLead)" style="text-decoration: none; color: #54698D">
+                                                            {{refLead['accountName']}}
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </nav>
+                                        <a ng-show="showMoreAccounts" href="javascript:void(0);" ng-click="showMoreRecords()" class="slds-nav-vertical__action" style="text-decoration: none">
+                                            {!$Label.Show_me_more_Accounts}
+                                        </a>
+                                        <div ng-show="!showMoreAccounts && showPagination">
+                                            <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-grid_align-spread">
+                                                <a ng-disabled="!showPrevLink" ng-click="showPrevRecords()" ng-class="{disabledAnchor : !showPrevLink}" class="slds-button slds-button_neutral" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+                                                    <svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft')}"></use>
+                                                    </svg>
+                                                    {!$Label.Previous}
+                                                </a>
+                                                <a ng-disabled="!showNextLink" ng-click="showNextRecords()" ng-class="{disabledAnchor : !showNextLink}" class="slds-button slds-button_neutral" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+                                                    {!$Label.Next}
+                                                    <svg class="slds-button__icon slds-button__icon_right" aria-hidden="true">
+                                                        <use xlink:href="{!URLFOR($Resource.LightningCSS_2_3, '/assets/icons/utility-sprite/svg/symbols.svg#chevronright')}"></use>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col custom-width horizontal-padding-large slds-p-bottom_medium" style="border-left: 1px solid #d8dde6; min-height: 100vh; overflow: hidden;">
+                                        <div role="status" ng-show="innerLoading && isSLDS" class="slds-spinner slds-spinner_medium slds-spinner_brand" style="position: relative; top: 30vh">
+                                            <span class="slds-assistive-text">Loading</span>
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                        <div class="classicSpinnerBackground" ng-show="innerLoading && !isSLDS">
+                                            <apex:image styleClass="classicSpinnerInner" id="theImage1" value="{!$Resource.LoaderSpinner}" width="60" height="60" />
+                                        </div>
+                                        <div ng-show="!innerLoading" ng-view="ng-view"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modals and toasts -->
+                <!-- Error toast -->
+                <div class="custom-toast-container" ng-show="isError">
+                    <div class="slds-notify slds-notify_toast slds-theme_error custom-toast-width" role="alert">
+                        <span class="slds-assistive-text">Info</span>
+                        <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+                            <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                            </svg>
+                        </span>
+                        <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideToasts()">
+                            <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                            </svg>
+                            <span class="slds-assistive-text">Close</span>
+                        </a>
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading_small" style="font-size: 16px;">
+                                {{errorMessage}}
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Success toast -->
+                <div class="custom-toast-container" ng-show="isSuccess">
+                    <div class="slds-notify slds-notify_toast slds-theme_success custom-toast-width" role="alert">
+                        <span class="slds-assistive-text">Info</span>
+                        <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+                            <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#success')}"></use>
+                            </svg>
+                        </span>
+                        <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideToasts()">
+                            <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                            </svg>
+                            <span class="slds-assistive-text">Close</span>
+                        </a>
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading_small" style="font-size: 16px;">
+                                {{successMessage}}
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Warning toast for enabling Reference Prospector -->
+                <div class="custom-toast-container" ng-show="!isRefProspectEnabled && !showEnableProspectToast && isSLDS">
+                    <div class="slds-notify slds-notify_toast slds-theme_warning custom-toast-width" role="alert">
+                        <span class="slds-assistive-text">Info</span>
+                        <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+                            <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                            </svg>
+                        </span>
+                        <a class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" ng-click="hideToasts()">
+                            <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                <use xlink:href="{!URLFOR($Resource.LightningCSS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                            </svg>
+                            <span class="slds-assistive-text">Close</span>
+                        </a>
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading_small" style="font-size: 16px;">
+                                {!$Label.Enable_Ref_Prospect_Message}
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>

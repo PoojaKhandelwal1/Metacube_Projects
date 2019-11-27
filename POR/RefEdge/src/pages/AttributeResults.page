@@ -1,0 +1,381 @@
+<!-- 
+ * ReferenceEdge
+ *
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY. 
+ -->
+ <apex:page controller="RfSearchController" sidebar="false" id="pageId" tabStyle="Ref_Search__tab">
+    
+    <!-- Message -->
+    <apex:outputPanel id="pgmsg">
+        <apex:pageMessages id="msgId"/>
+        <apex:pageMessage summary="{!$Label.User_License}" strength="3" severity="Info" rendered="{!NOT(isFullLicenseAccessible)}" />
+        <apex:pageMessage id="depmsg" severity="Info" summary="{!$Label.Dependent_Filter_Info}" escape="false" strength="1" rendered="{!AND((attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0 ),attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].anyAttrHidden)}"/>
+        <apex:pageMessage id="deperrormsg" severity="Info" summary="{!$Label.Dependent_Filter_error}" strength="1" escape="false" rendered="{!AND((attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size == 0 ),attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].anyAttrHidden)}"/>
+    </apex:outputPanel>
+    
+    <!-- Add POR_ModalLoader Component-->
+    <c:POR_ModalLoader id="PORLoader"/>
+   
+    <!-- Sction Header-->
+    <apex:sectionHeader title="{!$Label.RF_Filters}" help="RfSearchHelpPage?toshow=filter"  rendered="{!isFullLicenseAccessible}"/>
+   
+    <!-- Add JavaScript & Jquery-->
+    <script language="javascript" type="text/javascript">
+        var alphabet = '';
+        PORShowLoading();
+        jQuery(window).load(function() {
+            
+            //REF-2366
+            if ('{!isFromSelectReferenceUseAttributes}' == 'true') {
+                var labelId = '{!attributeWrapper.selectedLabelId}';
+                var mapLabelIdAttributeIds = JSON.parse(localStorage.getItem('mapLabelIdAttributesInAttributeResults'));
+                var selectedAttributeIds = '';
+                
+                if (mapLabelIdAttributeIds != null && mapLabelIdAttributeIds[labelId] != undefined && mapLabelIdAttributeIds[labelId].length > 0) {
+                    selectedAttributeIds = mapLabelIdAttributeIds[labelId].join();
+                    selectedAttributeIds = selectedAttributeIds.replace(/\"/g,'');
+                    setAttributes(selectedAttributeIds);
+                } else {
+                	PORHideLoading();
+                }
+            } else {
+                PORHideLoading();
+            }
+        });
+        jQuery(".content img").css("background-image","none");
+        jQuery(".content img").attr("src","{!URLFOR($Resource.RESearchFilterIcons, 'filter-icon.png')}");
+        function doSearch() {
+            var searchText = jQuery('input:text[id*=inputTextId]').val();
+            PORShowLoading();
+            alphabet = '';
+            searchRecord(searchText.trim());
+        }
+    
+    //REF-2366
+    function setSelectedAttributes(attributeId, attributeLabelId) {
+        
+        if ('{!isFromSelectReferenceUseAttributes}' == 'true') {
+            var labelId = '{!attributeWrapper.selectedLabelId}';
+            var mapLabelIdAttributeIds = JSON.parse(localStorage.getItem('mapLabelIdAttributesInAttributeResults'));
+            var mapLabelIdselectedAttributeLabels = JSON.parse(localStorage.getItem('mapLabelIdattributeLabelsInAttributeResults'));
+            
+            if (mapLabelIdAttributeIds == null) {
+                mapLabelIdAttributeIds = {};
+            }
+            
+            if (mapLabelIdselectedAttributeLabels == null) {
+                mapLabelIdselectedAttributeLabels = {};
+            }
+            
+            if (mapLabelIdAttributeIds[labelId] == undefined) {
+                mapLabelIdAttributeIds[labelId] = [];
+            }
+            
+            if (mapLabelIdselectedAttributeLabels[labelId] == undefined) {
+                mapLabelIdselectedAttributeLabels[labelId] = [];
+            }
+            
+            if (mapLabelIdAttributeIds[labelId].indexOf(attributeId) == -1) {
+                mapLabelIdAttributeIds[labelId].push(attributeId);
+            } else {
+                mapLabelIdAttributeIds[labelId].splice(mapLabelIdAttributeIds[labelId].indexOf(attributeId),1);
+            }
+            
+            if (mapLabelIdselectedAttributeLabels[labelId].indexOf(attributeLabelId) == -1) {
+                mapLabelIdselectedAttributeLabels[labelId].push(attributeLabelId);
+            } else {
+                mapLabelIdselectedAttributeLabels[labelId].splice(mapLabelIdselectedAttributeLabels[labelId].indexOf(attributeLabelId),1);
+            }
+            
+            localStorage.setItem('mapLabelIdAttributesInAttributeResults', JSON.stringify(mapLabelIdAttributeIds));
+            localStorage.setItem('mapLabelIdattributeLabelsInAttributeResults', JSON.stringify(mapLabelIdselectedAttributeLabels));
+        }        
+        selectAttribute(attributeId);
+    }
+    
+    function setSelectedAttributess() {
+        
+        if ('{!isFromSelectReferenceUseAttributes}' == 'true') {
+            var labelId = '{!attributeWrapper.selectedLabelId}';
+            var mapLabelIdAttributeIds = JSON.parse(localStorage.getItem('mapLabelIdAttributesInAttributeResults'));
+            var selectedAttributeIds = '';
+            if (mapLabelIdAttributeIds != null && mapLabelIdAttributeIds[labelId] != undefined && mapLabelIdAttributeIds[labelId].length > 0) {
+                selectedAttributeIds = mapLabelIdAttributeIds[labelId].join();
+                selectedAttributeIds = selectedAttributeIds.replace(/\"/g,'');
+                setAttributes(selectedAttributeIds);
+            } else {
+                PORHideLoading();
+            }
+        } else {
+            PORHideLoading();
+        }
+
+        if (jQuery('input:text[id*=inputTextId]').val() == alphabet) {
+        	jQuery('input:text[id*=inputTextId]').val('');
+        }
+    }
+    </script>
+   
+    <!-- Add CSS-->
+    <style type="text/css">
+
+        /* ---------------------- Div width -------------------------- */
+        .attributeDiv { 
+            width:1000px;
+        }
+
+        /* ----------Change width here for item container------------- */
+        #attributeUl li { 
+            display:-moz-inline-box; -moz-box-orient:vertical;
+            display:inline-block; vertical-align:top; 
+            word-wrap:break-word; 
+        }
+        .ulClass1{
+            column-count: 3;
+            -webkit-column-count: 3;
+            -moz-column-count: 3;
+            list-style-type: none;
+            float : left;
+            overflow:hidden;
+            display:contents;
+        }
+        .ulClass{ 
+            table-layout:fixed; 
+            width:250px; 
+            overflow:hidden; 
+            float : left;
+            list-style-type: none;
+            display:-moz-inline-box; -moz-box-orient:vertical;
+            display:inline-block; vertical-align:top; 
+            word-wrap:break-word;
+        }      
+        .rightImage {
+            display:inline-block; width:15px;
+        }                   
+        
+        /* ----------Change width here for item container------------- */
+        .attributeDiv div { 
+            width:950px; 
+            float:left;
+        }
+        
+        /* ----------Change item width here -------------------------- */
+        #attributeUl li > * { 
+            table-layout:fixed; 
+            width:250px; 
+            overflow:hidden; 
+            
+        }
+        
+        /* ----------------- Item text aliment ----------------------- */
+        .attributeDiv li { 
+            color:#333; 
+            text-align:left;
+        }
+        
+        .pbTitle{
+            display:none;
+        }
+        
+        .attributeUl  { 
+             table-layout:fixed; 
+             width:250px; 
+             overflow:hidden; 
+             float : left;
+             list-style-type: none;
+         }
+        
+    </style>
+    
+    <!-- Form -->    
+    <apex:form rendered="{!isFullLicenseAccessible}">
+        <!-- Action Fuctions for the Page-->
+        <apex:actionFunction name="selectAttribute" reRender="opAttributes" action="{!attributeWrapper.setAttributes}" immediate="false" oncomplete="PORHideLoading();">
+            <apex:param name="param1" value="" assignTo="{!attributeWrapper.attributeId}"/>
+        </apex:actionFunction>
+        <apex:actionFunction name="selectAll" action="{!attributeWrapper.selectAllAttributeTypes}" immediate="false" oncomplete="PORHideLoading();" reRender="pgmsg,opAttributes,depmsg,deperrormsg">
+        </apex:actionFunction>
+        <apex:actionFunction name="clearAll" action="{!attributeWrapper.clearSelectedAttributeTypes}" immediate="false" oncomplete="PORHideLoading();" reRender="pgmsg,opAttributes,depmsg,deperrormsg">
+        </apex:actionFunction>
+        <apex:actionFunction name="showAllACV" action="{!attributeWrapper.showAll}" immediate="false" oncomplete="PORHideLoading();" reRender="pgmsg,opAttributes,depmsg,deperrormsg">
+        </apex:actionFunction>
+        <apex:actionFunction name="searchRecord" action="{!attributeWrapper.searchRecords}" reRender="pbId" oncomplete="setSelectedAttributess();">
+            <apex:param name="searchParam" value="" assignTo="{!attributeWrapper.searchValue}"/>
+            <apex:param name="performSearch" value="true" assignTo="{!attributeWrapper.performSearch}"/>
+        </apex:actionFunction>
+        <!--REF-2366 -->
+        <apex:actionFunction name="setAttributes" action="{!setSelectedAttributes}" reRender="pbId,attributeDiv" oncomplete="PORHideLoading();">
+            <apex:param name="p1" value="" assignTo="{!slectedAttributesFromSelectRefAttrString}"/>
+        </apex:actionFunction>
+        
+        <!-- Page Block -->
+        <apex:pageBlock id="pbId">
+            <!-- Page Block Section--> 
+            <apex:PageBlockSection id="pbsId" columns="1">
+                <apex:outputPanel id="opAttributes"  >
+                    <div class="attributeSelectAllDiv">
+                        <apex:outputPanel layout="block" style="width: 20%;float:right;text-align:right;" rendered="{!OR((attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0),attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].anyAttrHidden)}">
+                            <div style="text-align:right;"> 
+                                <apex:outputPanel id="iconblockId" rendered="{!AND((attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0),NOT(isFromSelectReferenceUseAttributes))}"
+                                                  layout="block" style="float:left;margin-top: 5px;margin-right: 9px;">
+                                    <span style="float:left;" class="helpButton" id="DeliveryFrequency-_help"> 
+                                        <apex:outputLabel value=""/> 
+                                        <img id="helpImg1" class="helpOrb" src="/s.gif"/> 
+                                        <script>
+                                            sfdcPage.setHelp('DeliveryFrequency', '{!$Label.Any_All_helpText}');
+                                            var isIE = (navigator.appName.indexOf("Microsoft") != -1);
+                                            var isIE7 = (navigator.appVersion.indexOf('MSIE 7.')==-1) ? false : true;
+                                            var helpImg = document.getElementById('helpImg1');
+                                            if(isIE7)
+                                            helpImg.style.marginRight = "6px";
+                                            else if(isIE)
+                                            helpImg.style.marginRight = "0px";
+                                            else
+                                            helpImg.style.marginRight = "3px";                         
+                                        </script> 
+                                    </span>
+                                </apex:outputPanel>
+                                <apex:selectRadio style="float:left;" layout="lineDirection" value="{!filterLogics[attributeWrapper.selectedLabelId].operatorSelected}" 
+                                                  rendered="{!AND((attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0),NOT(isFromSelectReferenceUseAttributes))}">
+                                    <apex:selectOptions value="{!logicsWithName}"/>
+                                 </apex:selectRadio>
+                                <div style="float: right;width: 80%;margin-top: 5px;">
+                                    <apex:outputLink style="color:#5C95C4;" value="#" rendered="{!attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].anyAttrHidden}" onclick="PORShowLoading();showAllACV();return false;">
+                                        <apex:outputLabel value="Show All"/>
+                                    </apex:outputLink>
+                                    <apex:outputPanel rendered="{!AND((attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0), attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].anyAttrHidden)}">
+                                        &nbsp;&nbsp;&nbsp;&nbsp;
+                                    </apex:outputPanel> 
+                                    <apex:outputPanel style="display:inline-flex;margin-right: 0.3rem;" 
+                                                      rendered="{!attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0 && !attributeWrapper.hasBulkRecords}">
+                                        <apex:outputLink style="color:#5C95C4;" value="#" onclick="PORShowLoading();selectAll();return false;">
+                                            <apex:outputLabel value="{!$Label.Select_All}"/>
+                                        </apex:outputLink>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;
+                                        <apex:outputLink style="color:#5C95C4;" value="#" onclick="PORShowLoading();clearAll();return false;">
+                                            <apex:outputLabel value="{!$Label.Clear_All}"/>
+                                        </apex:outputLink>   
+                                    </apex:outputPanel>                      
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                        <div style="text-align:left;text-indent:50px;font-size: 150%;">{!attributeWrapper.labelName} </div>
+                    </div>
+                    <apex:outputPanel rendered="{!AND(attributeWrapper.hasBulkRecords,attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0)}">
+                        <apex:inputText maxlength="100" style="width:250px;margin-top:15px;" id="inputTextId" value="{!attributeWrapper.searchValue}"/> &nbsp;
+                        <apex:commandButton value="{!$Label.Search}" onclick="doSearch();return false;"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!AND(attributeWrapper.hasBulkRecords,attributeWrapper.currentRecordsAreBulky,attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0)}">
+                        <div style="color:red;margin:10px 0px;">{!$Label.BulkRecords}</div>
+                    </apex:outputPanel>
+                    <div class="attributeDiv">
+                        <div> 
+                            <!-- Output Panel for Attribute records-->
+                            <div style="padding-inline-start: 60px!important;margin-bottom: 10px;margin-top: 10px;"> 
+                                <apex:outputPanel rendered="{!attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size > 0}" >
+                                    <blockquote class="ulClass1"> 
+                                        <apex:repeat value="{!attributeWrapper.mapAllAttributesLabel[attributeWrapper.selectedLabelId]}" var="attribute">
+                                        <apex:outputPanel rendered="{!attribute.show}" style="float:left;">
+                                            <li style="float:left;">
+                                                <table>
+                                                    <tr>
+                                                        <td style="width:13px;">
+                                                            <apex:image url="{!$Resource.Tick}" rendered="{!attribute.fontWeight !='normal'}" height="12px" width="12px"/>
+                                                        </td>
+                                                        <td style="width: 250px;">
+                                                            <!-- REF-2366 -->
+                                                            <apex:outputLink style="text-decoration:none;" value="#" onclick="PORShowLoading();setSelectedAttributes('{!JSENCODE(attribute.attributeLabel.Attribute__c)}','{!JSENCODE(attribute.attributeLabel.Id)}');return false;">
+                                                                <apex:outputLabel value="{!attribute.attributeLabel.Attribute__r.Name}" style="font-weight:{!HTMLENCODE(attribute.fontWeight)};cursor:pointer;" />
+                                                            </apex:outputLink>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </li>
+                                        </apex:outputPanel>
+                                        </apex:repeat>
+                                    </blockquote>
+                                </apex:outputPanel>    
+                            </div>
+                            <!-- Output Panel for No Record found--> 
+                            <apex:outputPanel rendered="{!attributeWrapper.dependentBooleanMap[attributeWrapper.selectedLabelId].size = 0}">                                
+                                <ul class="ulClass">    
+                                    <li>
+                                        <apex:outputLabel value="{!$Label.No_Data_Found}" />
+                                    </li>
+                                </ul>
+                            </apex:outputPanel>                                 
+                        </div>
+                    </div>
+                </apex:outputPanel>
+            </apex:PageBlockSection>
+            
+            <!-- Page Block Buttons Top REF-2366 -->
+            <apex:outputPanel>
+                <script>
+                function showAll() {
+                    PORShowLoading();
+                    alphabet = '';
+                    searchRecord('');
+                }
+                
+                function searchByAlphabets(alpha) {
+
+                    if (alpha == 'All') {
+                        showAll();
+                    } else {
+                        alphabet = alpha;
+                        PORShowLoading();
+                    	searchRecord(alpha);
+                    }
+                }
+                </script>
+            </apex:outputPanel>
+            <apex:pageBlockButtons id="pbbIdTop" location="top" >
+                <div style="width:100%;">
+                    <div style="float:left ; width: 40%;">
+                        <apex:commandLink style="color:#5C95C4;" value="{!$Label.Back_to_RF_Search}" action="{!backToSearch}" id="backCmdLinkId" rendered="{!!isFromSelectReferenceUseAttributes}"/>
+                        <apex:commandLink style="color:#5C95C4;" value="Back to Request" action="{!backToSelectReferenceUseAttributes}" id="backBtnRequestId" rendered="{!isFromSelectReferenceUseAttributes}"/>
+                    </div>
+                    <div style="float:left ; width: 20%;">
+                        <apex:commandButton value="{!$Label.Done}" action="{!backToSearch}" id="doneCmdBtnId" rendered="{!!isFromSelectReferenceUseAttributes}"/>
+                        <apex:commandButton value="{!$Label.Done}" action="{!backToSelectReferenceUseAttributes}" id="doneBtnRequestId" rendered="{!isFromSelectReferenceUseAttributes}"/>
+                        <apex:commandButton value="{!$Label.Show_All}" onclick="showAll(); return false;" rendered="{!AND(attributeWrapper.hasBulkRecords,NOT(attributeWrapper.currentRecordsAreBulky))}" />
+                    </div>
+                    <apex:outputPanel >
+                        <div style="float:left ; width: 40%;text-align:right;">
+                            <apex:repeat value="{!attributeWrapper.alphabets}" var="alpha" id="alphaRptId">&nbsp;&nbsp;
+                                <apex:commandLink style="color:#5C95C4;" value="{!alpha}" onclick="searchByAlphabets('{!alpha}'); return false;" id="alphaCmdLinkId">
+                                </apex:commandLink>
+                            </apex:repeat>
+                        </div>
+                    </apex:outputPanel>
+                </div>
+            </apex:pageBlockButtons>
+            <!-- Page Block Buttons Bottom REF-2366 -->
+            <apex:pageBlockButtons id="pbbIdBottom" location="bottom">
+                <div style="width:100%;">
+                    <div style="float:left ; width: 100%;text-indent:40%;">
+                        <apex:commandButton value="{!$Label.Done}" action="{!backToSearch}" id="doneCmdBtnId" rendered="{!!isFromSelectReferenceUseAttributes}"/>
+                        <apex:commandButton value="{!$Label.Done}" action="{!backToSelectReferenceUseAttributes}" id="doneBtnRequestId" rendered="{!isFromSelectReferenceUseAttributes}"/>
+                        <apex:commandButton value="{!$Label.Show_All}" onclick="showAll(); return false;" rendered="{!AND(attributeWrapper.hasBulkRecords,NOT(attributeWrapper.currentRecordsAreBulky))}" />
+                    </div>
+                </div>
+            </apex:pageBlockButtons>
+            
+        </apex:pageBlock> 
+    </apex:form>
+</apex:page>

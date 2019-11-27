@@ -1,0 +1,348 @@
+<!--
+ * ReferenceEdge
+ * 
+ * Point of Reference, Inc. - Copyright 2014 All rights reserved.
+ *
+ * @company : Point of Reference, Inc.
+ * @website : www.point-of-reference.com
+ *
+ * Disclaimer: THIS SOFTWARE IS PROVIDED "AS-IS" BY POINT OF REFERENCE ("POR"), 
+ * WITH NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE SOFTWARE, 
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. 
+ * POR SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, 
+ * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES. POR IS NOT LIABLE FOR, 
+ * AND MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING, THE ACTIONS OR OMISSIONS OF 
+ * ANY THIRD PARTIES (OR THE PRODUCTS OR SERVICES OFFERED BY ANY THIRD PARTIES) INCLUDING, 
+ * WITHOUT LIMIATION, SALESFORCE.COM. COPY, USE OR DISTRIBUTION PROHIBITED WITHOUT EXPRESS 
+ * WRITTEN CONSENT FROM COMPANY.
+ -->
+<apex:page standardController="Reference_Content__c"
+            extensions="UploadThumbnailForRefContentController" standardStylesheets="true" showHeader="false" sidebar="false">
+            <apex:pageMessages id="pgmsgId"/>
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.LightningCSS, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+        <script src="{!URLFOR($Resource.AngularJS)}"></script>
+        
+        <style>
+            #loading-image {
+                position: fixed;
+                top: 40%;
+                left: 50%;
+                margin-left: -2%;
+                width: 4%;
+                z-index: 110;
+            } 
+            #loading { 
+                width: 100%;
+                height: 100%;
+                top: 0px;
+                left: 0px;
+                position: absolute;
+                display: block;
+                background-color: rgba(255, 255, 255, 0.6);
+                z-index: 100;
+            }
+            .currentThumbnail {
+                width: 50%;
+            }
+            .currentThumbnail img {
+                height: 220px !important;
+                width: auto !important;
+            }
+            
+            /*REF-1327 - CSS changes for buttons and label for Classic*/
+            .classicBtn {
+				float: right;
+			    color: #333 !important;
+			    border: 1px solid #b5b5b5;
+			    border-bottom-color: #b5b5b5; 
+			    background: #e8e8e9 url(/img/alohaSkin/btn_sprite.png) repeat-x right top;
+			    font-weight: bold; 
+			    -moz-border-radius: 3px;
+			    -webkit-border-radius: 3px;
+			    border-radius: 3px;
+			    width: 42px;
+			    height: 24px;
+			    line-height: 22px;
+			    text-align: center;
+			    font-family: Arial, Helvetica, sans-serif;
+			    font-size: 10.8px;
+			    font-stretch: 100%;
+			    font-style: normal;
+			    font-variant-caps: normal;
+			    font-variant-east-asian: normal;
+			    font-variant-ligatures: normal;
+			    font-variant-numeric: normal;
+			    font-weight: 700;
+			    text-decoration:none !important;
+			    margin-right: 5px;
+			} 
+			
+			.classicLabel {
+				font-family:Arial,Helvetica,sans-serif;
+				fount-color:#000;
+			}
+        
+            .classicThumbnailInstruction {
+                width: 45%;
+            }
+            .SLDSThumbnailInstruction {
+                width: 55%;
+            }
+        </style>
+        
+        <script>
+            //regarding #840
+            function redirectToBack() {
+                
+                if ({!isSLDS} || '{!isSLDS}' == 'true') {
+                    sforce.one.navigateToSObject('{!JSENCODE(Reference_Content__c.Id)}', 'detail');
+                } else {
+                    window.top.location = '/{!JSENCODE(Reference_Content__c.Id)}';
+                }
+            }
+            var addThumbnail = angular.module('addThumbnail', []);
+            
+            addThumbnail.controller('addThumbnailCtrl', function($scope, $timeout) {
+                $scope.maxStringSize = 6000000;
+                $scope.maxFileSize = 2100000;
+                $scope.chunkSize = 950000;
+                $scope.attachment;
+                $scope.attachmentName = 'documentThumbnail.jpg';
+                $scope.fileSize;
+                $scope.positionIndex = 0;
+                $scope.doneUploading = false;
+                $scope.contentId = '{!Reference_Content__c.Id}';
+                $scope.isloading = false;
+                $scope.isEdit = false;
+                $scope.isError = false;
+                $scope.errorMessage = '';
+                $scope.currentThumbnail1 = '{!JSENCODE(currentThumbnail)}';
+                $scope.isAllowedPremission = {!isAllowedPremission};
+                $scope.contentVersionId = '{!JSENCODE(contentVersionId)}';
+                $scope.contentVersionWrapperObj = {};
+                $scope.renderableFileTypes = ['TEXT', 'EXCEL', 'GIF', 'PNG', 'JPG', 'PDF', 'POWER_POINT', 'WORD', 'WORD_X', 'EXCEL_X', 'POWER_POINT_X'];
+                $scope.imageSource = '';
+                $scope.isFileRendereable = false;
+                $scope.isFileChanged = {!isFileChanged};
+                $scope.isThumbnailGenerated = true;
+                $scope.counter = 30;
+                $scope.increment = 30;
+                $scope.showThumbnailErrorMessage = false;
+                $scope.isSLDS = {!isSLDS};
+                
+                $scope.init = function() {
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.UploadThumbnailForRefContentController.getContentVersion}',
+                        $scope.contentVersionId,
+                        function(result, event) {
+                            
+                            if (result != '') {
+                                result = $scope.parseResult(result);
+                                $scope.contentVersionWrapperObj = JSON.parse(result);
+                                
+                                if ($scope.renderableFileTypes.indexOf($scope.contentVersionWrapperObj.fileType) > -1) {
+                                    $scope.isFileRendereable = true;
+                                } else {
+                                    $scope.isFileRendereable = false;
+                                }
+                            }
+                            $scope.$apply();
+                        }
+                    );
+                }
+                
+                $scope.renderFilePage = function() {
+                    $scope.isloading = true;
+                    
+                    if ($scope.isFileChanged || $scope.currentThumbnail1 == null || $scope.currentThumbnail1 == '') {
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.UploadThumbnailForRefContentController.getImageSource}',
+                            $scope.contentVersionWrapperObj['fileId'],
+                            $scope.contentId,
+                            function(result, event) {
+                                $scope.$apply(function() {
+                                    
+                                    if (result != null && result != '') {
+                                        $scope.imageSource = 'data:image/jpeg;base64,' + result;
+                                        redirectToBack();
+                                    } else {
+                                        $scope.isThumbnailGenerated = false;
+                                        $scope.countdown();
+                                    }
+                                    $scope.isloading = false;
+                                });
+                            }
+                        );
+                    }
+                }
+                
+                $scope.countdown = function() {
+                    $timeout(function() {
+                        
+                        if ($scope.counter == 0) {
+                            
+                            if ($scope.increment == 12) {
+                                $scope.showThumbnailErrorMessage = true;
+                            } else {
+                                $scope.increment = $scope.increment * 2
+                                $scope.counter = $scope.increment;
+                                $scope.renderFilePage();
+                            }
+                        } else {
+                            $scope.counter--;
+                            $scope.countdown();
+                        }
+                    }, 1000);
+                };
+                
+                $scope.parseResult = function(result) {
+                    result = result.replace(/&quot/gi, '"');
+                    result = result.replace(/&amp/g, '&');
+                    result = result.replace(/&lt/g, '<');
+                    result = result.replace(/&gt/g, '>');
+                    result = result.replace(/;/g, '');
+                    result = result.replace(/&#39/g, '\'');
+                    return result;
+                }
+                
+                $scope.editThumbnail = function() {
+                    $scope.isEdit = true;
+                }
+                
+                $scope.cancel = function() {
+                    $scope.isEdit = false;
+                    $scope.isError = false;
+                }
+                
+                $scope.uploadFile = function() {
+                    $scope.isError = false;
+                    var file = document.getElementById('attachmentFile').files[0];
+                    
+                    if (file != undefined) {
+                        
+                        if (file.size <= $scope.maxFileSize) {
+                            $scope.isloading = true;
+                            var fileReader = new FileReader();
+                            fileReader.onloadend = function(e) {
+                                $scope.attachment = window.btoa(this.result);
+                                $scope.positionIndex = 0;
+                                $scope.fileSize = $scope.attachment.length;
+                                $scope.doneUploading = false;
+                                
+                                if ($scope.fileSize < $scope.maxStringSize) {
+                                    $scope.uploadAttachment(null);
+                                } else {
+                                    $scope.isError = true;
+                                    $scope.errorMessage = 'Base 64 Encoded file is too large. Maximum size is ' + $scope.maxStringSize + ', your file is ' + $scope.fileSize + '.';
+                                }
+                            }
+                            fileReader.onerror = function(e) {
+                                $scope.isError = true;
+                                $scope.errorMessage = 'There was an error reading the file. Please try again.';
+                            }
+                            fileReader.onabort = function(e) {
+                                $scope.isError = true;
+                                $scope.errorMessage = 'There was an error reading the file. Please try again.';
+                            }
+                            fileReader.readAsBinaryString(file);
+                        } else {
+                            $scope.isError = true;
+                            $scope.errorMessage = 'File must be under 2.1 MB in size. Your file is too large. Please try again.';
+                        }
+                    } else {
+                        $scope.isError = true;
+                        $scope.errorMessage = 'Please select a file to upload.';
+                    }
+                }
+                
+                $scope.uploadAttachment = function(fileId) {
+                    var attachmentBody = '';
+                    
+                    if ($scope.fileSize <= $scope.positionIndex + $scope.chunkSize) {
+                        attachmentBody = $scope.attachment.substring($scope.positionIndex);
+                        $scope.doneUploading = true;
+                    } else {
+                        attachmentBody = $scope.attachment.substring($scope.positionIndex, $scope.positionIndex + $scope.chunkSize);
+                    }
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.UploadThumbnailForRefContentController.uploadAttachment}',
+                        $scope.contentId, attachmentBody, $scope.attachmentName, fileId,
+                        function(result, event) {
+                            
+                            if (event.type === 'exception') {
+                                $scope.isError = true;
+                                $scope.errorMessage = event.message + '. Please select a smaller file.';
+                                console.log('exception');
+                                console.log(event);
+                            } else if (event.status) {
+                                
+                                if (result.substring(0,3) == '00P') {
+                                    
+                                    if ($scope.doneUploading) {
+                                        //regarding #840
+                                        redirectToBack();
+                                    } else {
+                                        $scope.positionIndex += $scope.chunkSize;
+                                        $scope.uploadAttachment(result);
+                                    }
+                                }
+                            } else {
+                                console.log(event.message);
+                            }
+                        },
+                        {buffer: true, escape: true}
+                    );
+                }
+            });
+        </script>
+    </head>
+    <body ng-app="addThumbnail" ng-controller="addThumbnailCtrl" ng-init="init()" ng-cloak="ng-cloak" style="padding: 10px">
+        <div class="slds">
+            <div class="slds-page-header__detail-row" style="margin:0; padding-top:10px; padding-bottom:10px; padding-right:10px" role="banner">
+                <!-- REF-2171 -->
+                <div class="slds-grid" style="float:left;" ng-show="isAllowedPremission" 
+                     ng-class="(isSLDS==true) ? 'SLDSThumbnailInstruction' : 'classicThumbnailInstruction'">
+                    <span>{!$Label.Text_Thumbnail_Sizing_Instructions}</span>
+                </div>
+                <div class="slds-grid" style="float:right;" ng-show="isAllowedPremission"> 
+                    <a ng-click="editThumbnail()" ng-show="!isEdit" style="cursor: pointer;" ng-class="(isSLDS==true) ? 'slds-button slds-button--neutral' : 'classicBtn'">{!$Label.Edit}</a>
+                    <a ng-click="cancel()" ng-show="isEdit" style="cursor: pointer;" ng-class="(isSLDS==true) ? 'slds-button slds-button--neutral' : 'classicBtn'">{!$Label.Cancel}</a>
+                    <a ng-click="uploadFile()" ng-show="isEdit" style="cursor: pointer;" ng-class="(isSLDS==true) ? 'slds-button slds-button--brand' : 'classicBtn'">{!$Label.Save}</a>
+                </div>
+                <div style="clear:both"></div>
+            </div> 
+            <div ng-class="(isSLDS==true) ? 'slds-form-element' : 'classicLabel'" class="" style="margin-top:10px;">
+                <span ng-class="(isSLDS==true) ? 'slds-form-element__label' : 'classicLabel'">{!$Label.Attachment}</span>
+                <div class="slds-form-element__control" ng-show="isEdit">
+                    <input type="file" id="attachmentFile" accept="image/*"/>
+                </div>
+                
+                <!-- for user uploaded thumbnail -->
+                <div class="currentThumbnail" ng-if="!isEdit && !isFileChanged && currentThumbnail1 != null && currentThumbnail1 != ''">
+                    <apex:image rendered="{!currentThumbnail != null}" value="{!URLFOR($Action.Attachment.Download, currentThumbnail)}" />
+                </div>
+                
+                <!-- for auto generated file thumbnail -->
+                <div ng-if="!isEdit && isThumbnailGenerated && (isFileChanged || currentThumbnail1 == null || currentThumbnail1 == '') && isFileRendereable">
+                    <img ng-init="renderFilePage()" style="height: 260px" ng-src="{{imageSource}}" />
+                </div>
+                <h3 ng-class="(isSLDS==true) ? 'slds-section__title' : 'classicLabel'" ng-if="!isEdit && (currentThumbnail1 == null || currentThumbnail1 == '') && !isFileRendereable">
+                    {!$Label.NoImage}
+                </h3>
+                <h3 ng-class="(isSLDS==true) ? 'slds-section__title' : 'classicLabel'" ng-if="!isEdit && !isThumbnailGenerated">
+                    <span ng-hide="showThumbnailErrorMessage">The thumbnail for the document could not be generated at the moment. Retrying in {{counter}} seconds.</span>
+                    <span ng-show="showThumbnailErrorMessage">Unable to generate thumbnail for the document. Please contact your system administrator.</span>
+                </h3>
+                <div class="slds-form-element__help" ng-show="isError" style="color: #C23934">{{errorMessage}}</div>
+            </div>
+            <div class="slds-spinner--medium" id="loading" ng-show="isloading">
+                <img id="loading-image" src="{!URLFOR($Resource.LightningCSS, '/assets/images/spinners/slds_spinner_brand.gif')}" />
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>
