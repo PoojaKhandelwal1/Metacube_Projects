@@ -1,0 +1,565 @@
+<apex:component controller="GlobalController">
+<div class="modal fade-scale customer-orderv2 checkout-modal-popup" id="checkout-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" >
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <i class=" doneIcon white_FFF_NewCO  closeiconWidth" data-dismiss="modal"
+                        ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                    <div class="checkout-popup">
+                        <div class="left">
+                            <h2 class="section-heading">
+                                <span class="chk_tick" ng-click="F_CO.selectAllCOInvoiceItem();" ng-class="{'disableCheck': F_CO.disableSelectAllCOInvoiceItemBtn() || F_CO.disableSelectAllCOInvoiceItemBtnWithPermission()}">
+                                    <!--  <span class = "bp-partial-select" ng-if = "M_CO.isCheckOutPartialSelect"></span> -->
+                                    <i class="green_00A3DB doneIcon svg_width closeiconWidth"
+                                        ng-include="'{!Application_Images}/Icons/check-1.svg'"
+                                        ng-if="M_CO.isAllInvoiceItemsSelected" ></i>
+                                    <span class = "bp-partiallyselect" ng-if = "M_CO.isCheckOutPartialSelect"></span>
+                                </span>
+                                {{ 'Select_what_you_want_to_checkout' | translate }}
+                            </h2>
+                            
+                            <span class="checkoutNoLI" ng-if="F_CO.disableSelectAllCOInvoiceItemBtn()">{{ 'No_line_item_for_checkout' | translate }}</span>
+                            
+                            <ul class="checkout-items">
+                                <li ng-repeat="invItem in CheckoutInfoModel.InvoiceItemList" ng-init ="checkoutRecIndex = $index"
+                                    ng-class="{'job':invItem.CheckoutItemType == 'Service Job' , 'deal':invItem.CheckoutItemType == 'Deal','deductible':invItem.CheckoutItemType == 'SO Deductible'}"
+                                     ng-click = "F_CO.getCOCheckoutLineItemList(invItem.CheckoutItemType,invItem.ItemId,checkoutRecIndex,invItem.ItemId); " >
+                                    <div class = "level1-name">
+                                        <div class="name">
+                                            <span class="chk_tick" ng-click="F_CO.updateCOInvoiceItem($index)" ng-class="{'disableCheck': !F_CO.isSelectedable(invItem) || F_CO.disableCheckOutItemSelection(invItem)}">
+                                            <i class="green_00A3DB doneIcon svg_width closeiconWidth" 
+                                                ng-include="'{!Application_Images}/Icons/check-1.svg'"
+                                                ng-if="invItem.IsActive" ></i>
+                                            </span>
+                                            {{invItem.Item}}<span class="qty" ng-if="invItem.CheckoutItemType != 'Service Job' && invItem.CheckoutItemType != 'Deal' 
+                                            && invItem.CheckoutItemType != 'SO Deductible' ">{{ 'Label_Quantity' | translate }} {{invItem.Qty}}</span>
+                                        </div>
+                                        <div class="price">{{invItem.Total | currency}}</div>
+                                    </div>
+                                    <p class="bp-red-font pull-left checkout-line-item-error" ng-if="invItem.cannotCheckoutError">
+                                        <span class="pull-left bp-lh-14">{{invItem.cannotCheckoutError}}</span>
+                                    </p>
+                                    <p class="bp-orange-dark-font pull-left checkout-line-item-error"  ng-if="invItem.cannotCheckoutWarning">
+                                        <span class="pull-left bp-lh-14">{{invItem.cannotCheckoutWarning}}</span>
+                                    </p>
+                                    <ul class = "level2" ng-if="M_CO.prevOpenedInvItemId == invItem.ItemId"> 
+                                        <li ng-If="invItem.CheckoutItemType == 'Service Job' && M_CO.showCheckOutLineItem == checkoutRecIndex" ng-repeat = "checkoutSOKitHeaderRec in M_CO.checkOutLineItem" ng-class="{'historyjob': M_CO.showCheckOutLineItem == checkoutRecIndex}">
+                                           
+                                           <div class = "level2-name" ng-if="checkoutSOKitHeaderRec.Id">
+                                                <div  class = "name" >
+                                                    {{checkoutSOKitHeaderRec.ItemDescription}}
+                                                </div>
+                                                <div class="price bp-font-12">{{checkoutSOKitHeaderRec.FixedPrice | currency}}</div>
+                                            </div>
+                                            
+                                           <div class = "level2-name" ng-if="!checkoutSOKitHeaderRec.Id" ng-repeat = "checkoutSOKitLIRec in checkoutSOKitHeaderRec.SOLIList" ng-class="{'checkoutKit_LIItemPadding': checkoutSOKitHeaderRec.Id}">
+                                                <div  class = "name">
+                                                    {{checkoutSOKitLIRec.ItemDesc}}<span class="qty">{{ 'Label_Quantity' | translate }}{{checkoutSOKitLIRec.QtyNeeded}} - <span>{{ 'Unit_price' | translate }}:{{checkoutSOKitLIRec.KitPrice | currency}}</span></span>
+                                                </div>
+                                                <div class="price bp-font-12">{{checkoutSOKitLIRec.KitPrice * checkoutSOKitLIRec.QtyNeeded | currency}}</div>
+                                            </div>
+                                            <div class="level2-name" ng-if="checkoutSOKitHeaderRec.TotalShopSupplies">
+                                                <div class="name"> {{ 'Shop_Supplies' | translate }} </div>
+                                                <div class="price bp-font-12">{{checkoutSOKitHeaderRec.TotalShopSupplies | currency}}</div>
+                                            </div>
+                                        </li>
+                                        
+                                        <li ng-if="invItem.CheckoutItemType == 'Deal' && M_CO.showCheckOutLineItem == checkoutRecIndex" ng-repeat = "checkoutDealRec in M_CO.checkOutLineItem"  ng-class="{'historyjob': M_CO.showCheckOutLineItem == checkoutRecIndex}">
+                                           
+                                           <div class = "level2-name" ng-repeat = "unit in checkoutDealRec.UnitList" ng-class="{'checkoutKit_LIItemPadding': checkoutSOKitHeaderRec.Id}">
+                                                <div  class = "name">
+                                                    {{unit.DealItemObj.StockNumber}} <span class="qty">{{unit.DealItemObj.FormattedName}}</span>
+                                                </div>
+                                                <div class="price bp-font-12">{{unit.Total | currency}}</div>
+                                           </div>
+                                           <div class = "level2-name" ng-repeat = "tradeIn in checkoutDealRec.TradeInsList" ng-class="{'checkoutKit_LIItemPadding': checkoutSOKitHeaderRec.Id}">
+                                                <div  class = "name">
+                                                    {{ 'Trade_in' | translate }}  <span class="qty">{{tradeIn.FormattedName}}</span>
+                                                </div>
+                                                <div class="price bp-font-12">({{tradeIn.AgreedValue | currency}})</div>
+                                           </div>
+                                           <div class = "level2-name" ng-repeat = "financeObj in checkoutDealRec.DealFinanceObj.FIProductList" ng-class="{'checkoutKit_LIItemPadding': checkoutSOKitHeaderRec.Id}">
+                                                <div  class = "name">
+                                                    {{financeObj}} <span class="qty">{{tradeIn.FormattedName}}</span>
+                                                </div>
+                                                <div class="price bp-font-12">({{tradeIn.AgreedValue | currency}})</div>
+                                           </div>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="right">
+                            <h2 class="section-heading">{{ 'CHOOSE_A_PAYMENT_METHOD' | translate }}</h2>
+                            <div class="col-lg-6">
+                                <div class="payment-methods">
+                                    <div class="col-xs-6 col-md-3 col-lg-4">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Cash');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Cash'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/Cash_V2.svg'" class="paymentMethod"></i></div>
+                                            <h3>{{ 'Cash' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Debit');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Debit'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/payment.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'Debit' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-xs-6 col-md-3 col-lg-4">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Visa');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Visa'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/visa_V2.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'Visa' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Mastercard');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Mastercard'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/master-card_V2.svg'" class="paymentMethod  bp-fill_FFF"></i></div>
+                                            <h3>{{ 'Mastercard' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4" >
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Amex');"
+                                        ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Amex'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/amex_V2.svg'" class="paymentMethod  bp-fill_FFF"></i></div>
+                                            <h3>{{ 'Amex' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4" >
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Cheque');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Cheque'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/cheque_V2.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'Cheque' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4" >
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Gift card');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Gift card'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/gift-card.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'Gift_card' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-xs-6 col-md-3 col-lg-4" >
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Direct Deposit');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Direct Deposit'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/direct-deposit.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'Direct_Deposit' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-xs-6 col-md-3 col-lg-4 M0" ng-If = "(CheckoutInfoModel.CustomerStoreCredit > 0 || CheckoutInfoModel.BalanceDue < 0) && M_CO.coHeaderRec.COType != 'Cash Sale'">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Store Credit');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Store Credit'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/store_V2.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'Store_Credit' | translate }}</h3>  
+                                            <p class="bp-white-font bp-font-12">{{CheckoutInfoModel.CustomerStoreCredit | currency}}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4" ng-if="M_CO.coHeaderRec.COType === 'Customer'">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Charge Account');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Charge Account'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/charge-on-account.svg'" class="paymentMethod "></i></div>
+                                            <h3 class="text-center">{{ 'Charge_on_account' | translate }}</h3>
+                                        </div>
+                                    </div>
+                                    <!--<div class="col-xs-6 col-md-3 col-lg-4 M0" ng-If="M_CO.Deposit.TotalDepositAmout > 0 && !F_CO.isOnlyDealSelectedForCheckout() && F_CO.isDealSelectedForCheckout()">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Use Deposit');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Use Deposit'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/Add-deposit.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'DEPOSIT' | translate }}</h3>
+                                            <p class="bp-white-font bp-font-12">{{M_CO.Deposit.TotalDepositAmout | currency}}</p>
+                                        </div>
+                                    </div>-->
+                                    <div class="col-xs-6 col-md-3 col-lg-4 M0" ng-If="M_CO.Deposit.TotalCustomerDepositAmount > 0 && !F_CO.isDealSelectedForCheckout()">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Use Deposit');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Use Deposit'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/Add-deposit.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'DEPOSIT' | translate }}</h3>
+                                            <p class="bp-white-font bp-font-12">{{M_CO.Deposit.TotalCustomerDepositAmount | currency}}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4 M0" ng-If="M_CO.Deposit.TotalDepositAmout > 0 && F_CO.isDealSelectedForCheckout()">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Use Deal Deposit');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Use Deal Deposit'}">
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/Add-deposit.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'DEPOSIT' | translate }}</h3>
+                                            <p class="bp-white-font bp-font-12">{{M_CO.Deposit.TotalDepositAmout | currency}}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-6 col-md-3 col-lg-4" ng-If="M_CO.Deal.DealInfo.DealType == 'Financed' && F_CO.isDealSelectedForCheckout()">
+                                        <div class="box" ng-click="F_CO.selectPaymentMethod('Financing');"
+                                            ng-class="{'active': CheckoutInfoModel.selectedOptionForCheckout == 'Financing'} ">            
+                                            <div class="icon"><i ng-include="'{!Application_Images}/Icons/Deal-financing.svg'" class="paymentMethod "></i></div>
+                                            <h3>{{ 'Financing' | translate }}</h3>
+                                        </div>
+                                    </div>                                    
+                                </div>
+                            </div>
+                            <div class="col-lg-6 payment-input-wrap">
+                                <div class="payment-input" ng-class="{typing0: (!CheckoutInfoModel.amountPaying || !CheckoutInfoModel.paymentMethod), typing: (CheckoutInfoModel.amountPaying && CheckoutInfoModel.paymentMethod), 
+                                                            typing1: CheckoutInfoModel.paymentMethod}">
+                                    <div class="input-wrap" ng-class="{'bp-light-grey2-bg' : CheckoutInfoModel.BalanceDue < 0, 'bp-font40' : (CheckoutInfoModel.amountPaying.toString()).length >= 7}">
+                                        {{ 'Currency_Symbol' | translate }}
+                                        <numbers-only id-value = "CheckoutAmount"
+                                            class-value = ""
+                                            input-model-value = "CheckoutInfoModel.amountPaying" 
+                                            include-negative = "(CheckoutInfoModel.BalanceDue < 0)"
+                                            include-zero = "true"
+                                            place-holder-value ="0.00"
+                                            precision-length = "2"
+                                            force-precision-length = "false"
+                                            disabled-value="CheckoutInfoModel.BalanceDue < 0"
+                                            input-keyup-value = "M_CO.checkoutPaymentByEnter($event,'Checkout')"
+                                            include-blank="true"/>  <!-- min-value = "0"  include-zero = "false"-->
+                                        <!-- <input type="text" placeholder="0.00" ng-model=""/> -->
+                                    </div>
+                                     <div class="cash-drawer" >
+                                        <i class="cash-drawer-img" ng-include="'{!Application_Images}/Icons/cash-drawer-light.svg'"></i>
+                                        <span class="bp-dark-grey2-font cash-drawer-info">{{M_CO.selectedcashDrawer}}</span>
+                                        <a class="bp-blue-font bp-bold-font" ng-if = "F_CO.checkCashDrawerPermission()" ng-click = "F_CO.showChangeCashDrawerModalWindow()">change</a>
+                                    <div ng-if = "M_CO.showChangeModalWindow" class="change-cash-drawer-modal-window">
+                                        <div class="chnage-cash-drawer-container">
+                                            <label>Change cash drawer for this work station</label>
+                                            <div class="col-xs-12 P0">
+                                               <div class = "bp-autocomplete-Wrapper autocomplete_v2">
+                                                   <span class = "bp-autocomplete-image-icon">
+                                                       <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" 
+                                                           class="bp-blue bp-cursor-pointer svg_width_2px" 
+                                                           ng-click = "F_CO.setFocusOnInput('cashDrawer')"></i>
+                                                    </span>
+                                                                 <input  type="text" id="cashDrawer" class="bp-autocomplete-input bp-cursor-pointer 
+                                                                    bp-input-text " placeholder="{{'Please_select' | translate }}"
+                                                                    autocomplete="off" ng-keyup="F_CO.keyPressNavigationOnDropdownElements($event, 'cashDrawerDropdownDiv', 'cashDrawer', M_CO.cashDrawerList)"
+                                                                     ng-model="M_CO.cashDrawerName" ng-focus = "M_CO.showCashDrawerList = true;"
+                                                                     ng-blur="M_CO.showCashDrawerList = false; F_CO.hideDropdown();"  
+                                                                      readonly="readonly" />                       
+                                                                 <div class = "bp-autocomplete-dropdown-wrapper" ng-if="M_CO.showCashDrawerList" id="cashDrawerDropdownDiv">
+                                                                     <ul>
+                                                                         <li ng-repeat="cashDrawerRec in M_CO.cashDrawerList track by $index" id="cashDrawer_{{$index}}"
+                                                                            ng-class="{'selected-row': $index == M_CO.currentDropDownIndex}"
+                                                                            ng-mousedown="F_CO.selectCashDrawer(cashDrawerRec)">
+                                                                             <div class="form-group-info col-xs-12 P0">
+                                                                                 <span >{{cashDrawerRec.CashDrawerName}}</span>
+                                                                             </div>
+                                                                         </li> 
+                                                                     </ul>
+                                                                      <ul ng-If="M_CO.showCashDrawerList.length == 0">
+                                                                         <li id="cashDrawerNoResults" class="BP_angucomplete-row-NoResults-Msg">
+                                                                             <div class="">{{'No_Results_Found' | translate}}</div>
+                                                                         </li>
+                                                                     </ul>
+                                                                 </div>
+                                                              </div>         
+                                                    </div>
+                                            <button class="bp-btn bp-btn-normal" ng-click="F_CO.saveDeviceInfo()">CONFIRM</button>
+                                            <a class="cancel-change-cash-drawer" ng-click="F_CO.hideChangeCashDrowerModalWindow()">Cancel</a>
+                                        </div>
+                                    </div>
+                               </div>
+                                   <div class="cash-drawer payment-date" >
+                                        <i class="cash-drawer-img dark-grey1" ng-include="'{!Application_Images}/Icons/calendar.svg'"></i>
+                                        <div class="payment-date-container" id = "paymentDateContainer">
+                                        <span class="bp-dark-grey2-font cash-drawer-info">Payment date: {{ CheckoutInfoModel.tempPaymentDate == M_CO.todayDate ? 'Today' : CheckoutInfoModel.tempPaymentDate.replace('/', '-').replace('/', '-')}}</span>
+                                         <a class ="bp-blue-font bp-bold-font change-invoice-date" ng-if = "GroupOnlyPermissions['Backdating']['enabled']" ng-click="M_CO.ishowPaymentDatePicker = true;">change</a>
+                                         <div class="date-picker-container" id="datepickerDiv" ng-click="F_CO.stopHideDatePicker()" ng-class= "{'adjust-container-for-datepicker': F_CO.checkDatePickerVisible() }" ng-if="M_CO.ishowPaymentDatePicker">
+	                                         <h4>Change payment date</h4>
+	                                         <input type="text"   id="paymentDate" ui-date="M_CO.paymentDate" 
+	                                          ng-focus="F_CO.showDatePickerActionBut('paymentDateContainer', 'confirmPayemntDateButtonContainer', 'paymentDate', 'change-invoice-date', $event)" 
+	                                          ui-date-format="{{M_CO.dateFormat}}"
+	                                          class="bp-in	put-text  datePickerColor datepicker payment-date-picker"
+	                                          ng-model="CheckoutInfoModel.tempPaymentDate" placeholder="{{ 'Please_select' | translate }}" readonly="readonly"/>        
+                                        	 <i ng-click="M_CO.showCalander('paymentDate')" ng-include="'{!Application_Images}/Icons/calendar.svg'" class="UnitOrderingMFDateicon dark-grey1 payment-date-cal-icon" ng-class= "{'adjust-cal-icon': F_CO.checkDatePickerVisible() }"
+                                                                        id="paymentDateBtn">
+                                                                    </i>
+                                        </div>  
+                                        </div>
+                                    </div>
+                                    <button class="bp-btn bp-btn-secondaryCTA" ng-click="F_CO.addPayment()" ng-disabled="!CheckoutInfoModel.amountPaying || CheckoutInfoModel.amountPaying == 0 || !(CheckoutInfoModel.paymentMethod)" ng-if = "CheckoutInfoModel.BalanceDue > 0">{{ 'Add_Payment' | translate }}</button>
+                                    <button class="bp-btn bp-btn-secondaryCTA" ng-click="F_CO.RefundPayment()" ng-disabled="!CheckoutInfoModel.amountPaying || CheckoutInfoModel.amountPaying == 0 || !(CheckoutInfoModel.paymentMethod)" ng-if = "CheckoutInfoModel.BalanceDue < 0">{{ 'REFUND_PAYMENT' | translate }}</button>
+                                </div>
+                               
+                            </div>
+                            <div class="payment-info">
+                                <div class="payment-info-left">
+                                    <div class="payment-box received">
+                                        <h3>{{ 'Payment_received' | translate }}</h3>
+                                        <p class="amount">{{CheckoutInfoModel.PaymentReceived | currency}}</p>
+                                        <ul>
+                                            <li id="LIDeleteBtn_{{$index}}" ng-repeat="invPayment in CheckoutInfoModel.InvoicePaymentList"
+                                                ng-if="invPayment.PaymentMethod != 'Cash Rounding'">
+                                                <span>{{invPayment.PaymentMethod}} {{ 'Payment_Section_Display_Label' | translate }}</span>
+                                                <span class = "pull-right" ng-class = "{'bp-coral-font': invPayment.Amount < 0}">{{invPayment.Amount | currency}} 
+                                                    <span class = "bp-reverse-icon-tag bp-reverse_new">
+                                                      <i data-toggle="tooltip" title="Reverse payment " 
+                                                          ng-if = "!invPayment.ReverseLink" 
+                                                          ng-include="'{!Application_Images}/Icons/Reverse.svg'" class="bp-blue bp-reverseSvg LIDeleteBtn" 
+                                                          ng-click="F_CO.openDeleteConfirmationPopupForReversePayment(invPayment, 'ChekoutReversePaymentGrid', $index);">
+                                                      </i><!-- ng-if = "invPayment.ReverseLink == undefined || invPayment.ReverseLink == null && invPayment.ReverseLink == '' "  -->
+                                                        <div class = "bp-modal-backdrop bp-popup-delete-backdrop-hide" id = "backDrop_Id_{{$index}}" ng-click = "F_CO.hideDeleteConfirmationPopup()"></div>
+                                                        <div class="deleteConfiramtionPopupforCheckOut" id = "deleteConfiramtionPopupforCheckOut_{{$index}}">
+                                                            <div class="delete-confirm-container">
+                                                                <div class="heading">{{ 'Are_you_sure_you_wish_to' | translate }} <span ng-if="M_CO.deletedItemGridName == 'ChekoutReversePaymentGrid'">{{ 'reverse' | translate }}</span><span ng-if="M_CO.deletedItemGridName != 'ChekoutReversePaymentGrid'" class="text-lowercase">{{ 'Delete_Label' | translate }}</span> {{M_CO.deletedItemName}} <span ng-if="M_CO.deletedItemGridName != 'ChekoutReversePaymentGrid'">{{ 'permanently' | translate }}</span>?</div>
+                                                                <div class="deletePopupActionBtns">
+                                                                    <button class="bp-btn deleteBtn" ng-if="M_CO.deletedItemGridName == 'ChekoutReversePaymentGrid'" ng-disabled ="M_CO.isDeleteDisabled" ng-click = "F_CO.deleteItem()">{{ 'Label_Yes' | translate }}</button>
+                                                                    <button class="bp-btn cancelBtn" ng-click = "F_CO.hideDeleteConfirmationPopup()">{{ 'Cancel_Label' | translate }}</button>
+                                                                </div>
+                                                            </div>                                                            
+                                                            
+                                                            <div class="reverse-payment-cash-drawer MT18" >
+                                                                <i class="cash-drawer-img" ng-include="'{!Application_Images}/Icons/cash-drawer-light.svg'"></i>
+                                                                <span class="bp-dark-grey2-font cash-drawer-info bp-set-text-ellipses">{{M_CO.selectedcashDrawer}}</span>
+                                                                <a class="bp-blue-font bp-bold-font" ng-if = "F_CO.checkCashDrawerPermission() && GroupOnlyPermissions['Set cash drawer']['enabled']" ng-click = "F_CO.showChangeCashDrawerModalWindow(true)">change</a>
+                                                                <div ng-if = "M_CO.showReverseChangeModalWindow" class="change-cash-drawer-modal-window reverse-change-cash-drawer">
+                                                                    <div class="chnage-cash-drawer-container ">
+                                                                        <label>Change cash drawer for this work station</label>
+                                                                        <div class="col-xs-12 P0">
+                                                                           <div class = "bp-autocomplete-Wrapper autocomplete_v2 text-left">
+                                                                               <span class = "bp-autocomplete-image-icon">
+                                                                                   <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" 
+                                                                                       class="bp-blue bp-cursor-pointer svg_width_2px" 
+                                                                                       ng-click = "F_CO.setFocusOnInput('cashDrawer')"></i>
+                                                                                </span>
+                                                                                 <input  type="text" id="cashDrawer" class="bp-autocomplete-input bp-cursor-pointer bp-input-text " 
+                                                                                    placeholder="{{'Please_select' | translate }}" autocomplete="off" 
+                                                                                    ng-keyup="F_CO.keyPressNavigationOnDropdownElements($event, 'cashDrawerDropdownDiv', 'cashDrawer', M_CO.cashDrawerList)"
+                                                                                    ng-model="M_CO.cashDrawerName" ng-focus = "M_CO.showCashDrawerList = true;"
+                                                                                    ng-blur="M_CO.showCashDrawerList = false; F_CO.hideDropdown();"  
+                                                                                      readonly="readonly" />                       
+                                                                                  <div class = "bp-autocomplete-dropdown-wrapper" ng-show="M_CO.showCashDrawerList" id="cashDrawerDropdownDiv">
+                                                                                     <ul>
+                                                                                         <li ng-repeat="cashDrawerRec in M_CO.cashDrawerList track by $index" id="cashDrawer_{{$index}}"
+                                                                                            ng-class="{'selected-row': $index == M_CO.currentDropDownIndex}"
+                                                                                            ng-mousedown="F_CO.selectCashDrawer(cashDrawerRec)">
+                                                                                             <div class="form-group-info col-xs-12 P0">
+                                                                                                 <span >{{cashDrawerRec.CashDrawerName}}</span>
+                                                                                             </div>
+                                                                                         </li> 
+                                                                                     </ul>
+                                                                                      <ul ng-If="M_CO.showCashDrawerList.length == 0">
+                                                                                         <li id="cashDrawerNoResults" class="BP_angucomplete-row-NoResults-Msg">
+                                                                                             <div class="">{{'No_Results_Found' | translate}}</div>
+                                                                                         </li>
+                                                                                     </ul>
+                                                                                 </div>
+                                                                              </div>        
+                                                                            </div>
+                                                                            <button class="bp-btn bp-btn-normal" ng-click="F_CO.saveDeviceInfo()">CONFIRM</button>
+                                                                            <a class="cancel-change-cash-drawer text-left" ng-click = "F_CO.hidereverseCancelModalWindow();">Cancel</a>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                        </div>
+                                                  </span>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="payment-box due"
+                                        ng-class="{'bp-coral' : CheckoutInfoModel.BalanceDue != 0, 'bp-green' : CheckoutInfoModel.BalanceDue == 0, 
+                                                    'bp-border-bottom' : F_CO.isDealSelectedForCheckout() && M_CO.Deal.DealInfo.DealType == 'Financed'}">
+                                        <div class="amt">
+                                            <h3>{{ 'Balance_Due' | translate }}</h3>
+                                            <p class="amount">{{CheckoutInfoModel.BalanceDue | currency}}</p>
+                                        </div>
+                                        <div class="amt" ng-if="CheckoutInfoModel.ChangeDue > 0 && CheckoutInfoModel.BalanceDue == 0">
+                                            <h3>{{ 'Change_Due' | translate }}</h3>
+                                            <p class="amount">{{CheckoutInfoModel.ChangeDue | currency}}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <!-- <div class="payment-box due" ng-If="(F_CO.isDealSelectedForCheckout() && M_CO.Deal.DealInfo.DealType == 'Financed')"
+                                        ng-class="{'bp-coral' : CheckoutInfoModel.BalanceDue != 0, 'bp-green' : CheckoutInfoModel.BalanceDue == 0}">
+                                        <div class="amt">
+                                            <h3>{{ 'Balance_Due_from_financing' | translate }}</h3>
+                                            <p class="amount">{{( F_CO.calculateDueFromFinance ? F_CO.calculateDueFromFinance : 0 ) | currency}}</p>
+                                        </div>
+                                        <div class="amt" ng-if="CheckoutInfoModel.paymentMethod == 'Cash' && CheckoutInfoModel.RoundedBalanceDue > 0">
+                                            <h3>{{ 'Change_Due' | translate }}</h3>
+                                            <p class="amount">
+                                            </p>
+                                        </div>
+                                    </div> -->
+                                </div>
+                                <div class="payment-info-right">
+                                <!-- Total section for Deal CheckoutInfoModel.InvoiceItemList.CheckoutItemType == 'Deal' -->
+                                    <div ng-If="F_CO.isDealSelectedForCheckout()">
+                                        <table class="bp-checkout-detail-table" >
+                                            <tr ng-If="M_CO.Deal.DealInfo.UnitsTotal">
+                                                <td>{{ 'SalesTaxGridItem_Units' | translate }}</td>
+                                                <td>{{M_CO.Deal.DealInfo.UnitsTotal | currency}}</td>
+                                            </tr>
+                                            <tr ng-If="M_CO.Deal.DealInfo.TradeInsTotal">
+                                                <td>{{ 'Trade_ins' | translate }}</td>
+                                                <td>{{M_CO.Deal.DealInfo.TradeInsTotal != null ? M_CO.Deal.DealInfo.TradeInsTotal : 0  | currency}}</td>
+                                            </tr>
+                                            <tr ng-If="M_CO.Deal.DealInfo.LienPayoutTotal">
+                                                <td>{{ 'Lien_payout' | translate }}</td>
+                                                <td>{{M_CO.Deal.DealInfo.LienPayoutTotal != null ? M_CO.Deal.DealInfo.LienPayoutTotal : 0  | currency}}</td>
+                                            </tr>
+                                            <tr ng-If="M_CO.Deal.DealInfo.PartsAndLabourTotals">
+                                                <td>{{ 'Parts_labor' | translate }}</td>
+                                                <td>{{M_CO.Deal.DealInfo.PartsAndLabourTotals != null ? M_CO.Deal.DealInfo.PartsAndLabourTotals : 0  | currency}}</td>
+                                            </tr>
+                                            <tr ng-If="M_CO.Deal.DealInfo.OtherProductsTotal">
+                                                <td>{{ 'Other_products' | translate }}</td>
+                                                <td>{{M_CO.Deal.DealInfo.OtherProductsTotal != null ? M_CO.Deal.DealInfo.OtherProductsTotal : 0  | currency}}</td>
+                                            </tr>
+                                            <tr ng-If="M_CO.Deal.DealInfo.FIProductTotal">
+                                                <td>{{ 'Financing_Products' | translate }}</td>
+                                                <td ng-if="!M_CO.Deal.DealSummaryObj.IsTaxIncludingPricing">{{M_CO.Deal.DealInfo.FIProductTotal ? M_CO.Deal.DealInfo.FIProductTotal : 0  | currency}}</td>
+                                                <td ng-if="M_CO.Deal.DealSummaryObj.IsTaxIncludingPricing">{{(F_CO.DealFinance.getFIProductTotal() ? F_CO.DealFinance.getFIProductTotal() : 0) | currency}}</td>
+                                                        
+                                            </tr>
+                                            <tr  ng-If="M_CO.Deal.DealInfo.FeesTotal">
+                                                <td>{{ 'Fees' | translate }}</td>
+                                                <td>{{M_CO.Deal.DealInfo.FeesTotal != null ? M_CO.Deal.DealInfo.FeesTotal : 0 | currency}}</td>
+                                            </tr>
+                                            <tr ng-If="M_CO.Deal.DealInfo.StampDutyTotal">
+                                                    <td>{{ 'Stamp_duty' | translate }}</td>
+                                                    <td>{{(M_CO.Deal.DealInfo.StampDutyTotal != null ? M_CO.Deal.DealInfo.StampDutyTotal : 0)| currency}}</td>
+                                            </tr>
+                                            <tr ng-repeat="tax in CheckoutInfoModel.TaxDetails"
+                                                ng-if="!M_CO.coHeaderRec.IsTaxIncludedPricing">
+                                                <td>{{tax.TaxName}}</td>
+                                                <td>{{tax.TaxAmount | currency}}</td>
+                                            </tr>
+                                            <tr class="total">
+                                                <td>{{ 'Label_Total' | translate }}</td>
+                                                <td>{{(CheckoutInfoModel.Total != null ? CheckoutInfoModel.Total : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-repeat="tax in CheckoutInfoModel.TaxDetails"
+                                                ng-if="M_CO.coHeaderRec.IsTaxIncludedPricing">
+                                                <td>{{tax.TaxName}} {{ 'included' | translate }}</td>
+                                                <td>{{tax.TaxAmount | currency}}</td>
+                                            </tr>
+                                             <!-- <tr ng-If="M_CO.Deal.DealInfo.DealType == 'Financed'">
+                                                    <td>Due From Customer</td>
+                                                    <td>{{(F_CO.calculateDueFromCustomer() ?  F_CO.calculateDueFromCustomer() : 0)| currency}}</td>
+                                            </tr>
+                                            <tr ng-If="M_CO.Deal.DealInfo.DealType == 'Financed'">
+                                                    <td>Due From Financing</td>
+                                                    <td>{{(F_CO.calculateDueFromFinance() ? F_CO.calculateDueFromFinance() : 0) | currency}}</td>
+                                            </tr> -->
+                                        </table>
+                                    </div>
+                                    <!-- End of total section for deal -->  
+                                    <div ng-If="!F_CO.isDealSelectedForCheckout()">
+                                        <table class="bp-checkout-detail-table" >
+                                            <tr ng-if="CheckoutInfoModel.TotalPart">
+                                                <td>{{ 'Total_parts' | translate }}</td>
+                                                <td>{{(CheckoutInfoModel.TotalPart != null ? CheckoutInfoModel.TotalPart : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-if="CheckoutInfoModel.TotalLabor">
+                                                <td>{{ 'Total_labour' | translate }}</td>
+                                                <td>{{(CheckoutInfoModel.TotalLabor != null ? CheckoutInfoModel.TotalLabor : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-if="CheckoutInfoModel.TotalFee">
+                                                <td>{{ 'Total_Fee' | translate }}</td>
+                                                <td>{{(CheckoutInfoModel.TotalFee != null ? CheckoutInfoModel.TotalFee : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-if="CheckoutInfoModel.TotalSublet">
+                                                <td>{{ 'Total_sublet' | translate }}</td>
+                                                <td>{{(CheckoutInfoModel.TotalSublet != null ? CheckoutInfoModel.TotalSublet : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-if="M_CO.totalDeductibleAmount > 0">
+                                                <td>{{ 'Deductible' | translate }}</td>
+                                                <td>{{(M_CO.totalDeductibleAmount != null ? M_CO.totalDeductibleAmount : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-if="CheckoutInfoModel.TotalShopSupplies != null && CheckoutInfoModel.TotalShopSupplies != 0">
+                                                <td class="text-capitalize">{{ 'Total_shop_supplies' | translate }}</td>
+                                                <td>{{(CheckoutInfoModel.TotalShopSupplies != null ? CheckoutInfoModel.TotalShopSupplies : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-repeat="tax in CheckoutInfoModel.TaxDetails"
+                                                ng-if="!M_CO.coHeaderRec.IsTaxIncludedPricing && (M_CO.isCheckOutPartialSelect || M_CO.isAllInvoiceItemsSelected)">
+                                                <td>{{tax.TaxName}}</td>
+                                                <td>{{tax.TaxAmount | currency}}</td>
+                                            </tr>
+                                            <tr class="total">
+                                                <td>{{ 'Label_Total' | translate }}</td>
+                                                <td>{{(CheckoutInfoModel.Total != null ? CheckoutInfoModel.Total : 0) | currency}}</td>
+                                            </tr>
+                                            <tr ng-repeat="tax in CheckoutInfoModel.TaxDetails"
+                                                ng-if="M_CO.coHeaderRec.IsTaxIncludedPricing && (M_CO.isCheckOutPartialSelect || M_CO.isAllInvoiceItemsSelected)">
+                                                <td>{{tax.TaxName}} {{ 'included' | translate }}</td>
+                                                <td>{{tax.TaxAmount | currency}}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <!-- End of total section for deal -->
+                                    <div>
+                                   <table class="bp-checkout-detail-table" ng-if="(M_CO.isCheckOutPartialSelect || M_CO.isAllInvoiceItemsSelected) && !F_CO.isDisabledCheckoutBtn()">
+                                     <!-- ng-Ifs needed to be added for checkbox -->
+                                            <tr>
+                                                <td class="text-left"> 
+                                                    <span class="chk_tick" ng-click="F_CO.invoiceChkboxClicked('Print')">
+                                                        <i class="green_00A3DB  svg_width tickiconWidth"
+                                                            ng-include="'{!Application_Images}/Icons/check-1.svg'" ng-If="M_CO.isPrintInvoice"></i>
+                                                    </span>
+                                                    <span class="align-with-checkbox">{{ 'Print_invoice' | translate }}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-left">
+                                                    <span class="chk_tick" ng-click="F_CO.invoiceChkboxClicked('Email')">
+                                                        <i class="green_00A3DB  svg_width tickiconWidth"
+                                                            ng-include="'{!Application_Images}/Icons/check-1.svg'" ng-If="M_CO.isEmailInvoice"></i>
+                                                    </span>
+                                                    <span class="align-with-checkbox">{{ 'Email_invoice_to_customer' | translate }}</span>
+                                                </td>
+                                            </tr>  
+                                            <tr ng-If="M_CO.coHeaderRec.COType != 'Internal Service' && CheckoutInfoModel.TotalDiscount() > 0">
+                                                <td class="text-left">
+                                                    <span class="chk_tick" ng-click="M_CO.isShowDiscount = !M_CO.isShowDiscount"> 
+                                                        <i class="green_00A3DB  svg_width tickiconWidth"
+                                                            ng-include="'{!Application_Images}/Icons/check-1.svg'" ng-If="M_CO.isShowDiscount"></i>
+                                                    </span>
+                                                    <span class="align-with-checkbox">{{ 'Show_amount_saved' | translate }}
+                                                        <span ng-If="M_CO.isShowDiscount" class="PL5">-
+                                                            <span class="bp-bold-font">{{CheckoutInfoModel.TotalDiscount() | currency}}</span>
+                                                        </span>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                            	<td class="invoice-backdating-td">
+                                            		<div class="cash-drawer payment-date invoice-backdating-container payment-input-wrap" >
+				                                        <i class="cash-drawer-img invoice-payment-date-svg dark-grey1" ng-include="'{!Application_Images}/Icons/calendar.svg'"></i>
+				                                        <div class="payment-date-container" id = "invoicePaymentDateContainer">
+					                                        <span class="bp-dark-grey2-font cash-drawer-info">Invoice date: {{ M_CO.tempInvoicePaymentDate == M_CO.todayDate ? 'Today' : M_CO.tempInvoicePaymentDate.replace('/', '-').replace('/', '-')}}</span>
+					                                         <a class ="bp-blue-font bp-bold-font change-payment-date" ng-if = "GroupOnlyPermissions['Backdating']['enabled']"  ng-click="M_CO.ishowInvoiceDatePicker = true; F_CO.animateFunction($event, 'invoiceDatePicker')">change</a>
+					                                         <div class="date-picker-container" ng-if="M_CO.ishowInvoiceDatePicker" id="invoiceDatePicker" ng-click="F_CO.stopHideDatePicker()" ng-class= "{'adjust-container-for-datepicker': F_CO.checkDatePickerVisible() }" >
+						                                         <h4>Change invoice date</h4>
+						                                         <input type="text"  id="invoicepaymentDate" ui-date="M_CO.invoicepaymentDate" 
+						                                          ng-focus="F_CO.showDatePickerActionBut('invoicePaymentDateContainer', 'invoicePayemntDateButtonContainer', 'invoicepaymentDate', 'change-payment-date', $event)"
+						                                          ui-date-format="{{M_CO.dateFormat}}" 
+						                                          class="bp-in	put-text  datePickerColor datepicker payment-date-picker"
+						                                          ng-model = "M_CO.tempInvoicePaymentDate" placeholder="{{ 'Please_select' | translate }}" readonly="readonly"/>        
+					                                        	<i ng-click="M_CO.showCalander('invoicepaymentDate')" ng-include="'{!Application_Images}/Icons/calendar.svg'" class="UnitOrderingMFDateicon dark-grey1 payment-date-cal-icon invoice-date-icon" ng-class= "{'adjust-cal-icon': F_CO.checkDatePickerVisible() }"
+                                                                        id="invoicePaymentDateBtn">
+                                                                    </i>
+					                                        </div>  
+				                                        </div>
+				                                    </div>
+                                            	</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <button class="btn bp-btn-normal"
+                                        ng-disabled="F_CO.isDisabledCheckoutBtn()"
+                                        ng-click="F_CO.doCheckout()">{{ 'Finalize_checkout' | translate }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</apex:component>

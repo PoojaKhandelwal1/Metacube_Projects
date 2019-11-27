@@ -1,0 +1,68 @@
+<apex:component controller="GlobalController">
+ <!-- Start Internal Comments -->
+                     <div class="bp-accordion-entry internal-comment-container expanded"  ng-class = "{'bp-collapse' : M_CO.expandedSectionName != 'InternalComments'}" >
+                        <div class="bp-accordion-header bp-blue bp-white-font">
+                            <div class="bp-accordion-toggle"  ng-if = "M_CO.expandedSectionName != 'InternalComments'" ng-click = "F_CO.expandOrCollapseSection('InternalCommentsSectionId','InternalComments','', '')">
+                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="white_FFF_NewCO"></i>
+                            </div>
+                            <div class="bp-accordion-toggle" ng-if = "M_CO.expandedSectionName == 'InternalComments'" ng-click = "F_CO.expandOrCollapseSection('InternalCommentsSectionId','InternalComments','', '')">
+                                <i  ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="white_FFF_NewCO"></i>
+                            </div>
+                            <div class="bp-accordion-header-left " ng-click = "F_CO.expandOrCollapseSection('InternalCommentsSectionId','InternalComments','', '')">
+                                <div class="bp-accordion-name">
+                                    <i ng-include="'{!Application_Images}/Icons/internal-comments.svg'" class="white_FFF_NewCO  left-icon"></i>{{'Internal_comments' | translate}}
+                                </div>
+                                <div class="bp-accordian-right-content bp-accordian-right-noborder">
+                                    <span ng-if="M_CO.internalCommentList.length == 1">{{ 'total_comment' | translate : {totalNoOfComments: M_CO.internalCommentList.length} }}</span>
+                                    <span ng-if="M_CO.internalCommentList.length > 1">{{ 'total_comments' | translate : {totalNoOfComments: M_CO.internalCommentList.length} }}</span>
+                                </div>
+                            </div> 
+                        </div>
+                        <div class="bp-accordion-detail bp-collapse-div-transition  bp-light-gray4" id="InternalCommentsSectionId" 
+                         ng-class = "{'inetrnal-comment-section-open': M_CO.expandedSectionName == 'InternalComments'}">
+                            <!-- ng-if="M_CO.expandedSectionName == 'customer' &&  " -->
+                            <div class="internal-comments-section-grid">
+                                <button class="bp-normal-button secondary-btn add-new-comment"
+                               ng-disabled = "M_CO.addNewInternalCommentDisable"   ng-if="M_CO.coHeaderRec.OrderStatus !== 'Closed'" 
+                                   ng-click="F_CO.createAddNewCommentSection()">{{'Add_a_new__comment' | translate}}</button>
+                                <div class="comment-section section-container" ng-if="M_CO.addNewComment">
+                                    <label class="col-xs-12 P0 H400">{{'Your_comment' | translate}}:</label>
+                                    <textarea rows="4" ng-blur="F_CO.saveInternalComment(M_CO.internalComment)" 
+                                    id="addnewInternalComment" ng-model="M_CO.internalComment.Comment" placeholder="Type your comment here"
+                                    maxlength ="255"  ng-class="{'bp-redborder': M_CO.isInternalCommentError}"></textarea>
+                                    <div class="button-container">
+                                        <button class="link-subtle  cancel-comment" id="cancelInternalComment" ng-click = "F_CO.removeAddNewCommentSection();">{{'Cancel_Label' | translate}}</button>
+                                        <button class="bp-normal-button primary save-comment H000"  id = "postInternalComment">{{'Post' | translate}}</button> <!--  ng-click = "F_CO.saveInternalComment(M_CO.internalComment)" -->
+                                    </div>
+                                </div>
+                                <div class="comments-section-container">
+                                    <div id="comment{{intComm.Id}}Id" class="comments-section-inner-container bp-expanded-deletable-div-transition" ng-repeat="intComm in M_CO.internalCommentList">
+                                        <div>
+                                            <div class="col-xs-12 P0">
+                                                <span  class="col-xs-10 col-sm-11 P0 line-height-medium notes-updated-date" ng-if="!intComm.isEdited">{{ 'date_at_time' | translate : {date: intComm.CreatedDate, time: intComm.CreatedTime} }}</span> 
+                                                <span class="col-xs-10 col-sm-11 P0 line-height-medium notes-updated-date" ng-if="intComm.isEdited">{{ 'date_at_time' | translate : {date: intComm.CreatedDate, time: intComm.CreatedTime} }} - {{ 'Last_edited_on_date_at_time' | translate : {date: intComm.LastModifiedDate, time: intComm.LastModifiedTime} }}</span>
+                                                <span class="col-xs-2 col-sm-1 P0 pull-right text-right" ng-if="(M_CO.coHeaderRec.OrderStatus !== 'Closed') && (M_CO.currentUserId == intComm.CreatedById)">
+                                                   <i ng-include="'{!Application_Images}/Icons/edit_filled.svg'"  id="editInternalComment_{{$index}}" data-toggle="tooltip" title=" Edit" ng-click="F_CO.editInternalComment($index)" class="bp-svg-16 icon_fill_blue bp-pointer-cursor internal-comment-edit"></i>
+                                                    <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" id="deleteInternalComment_{{$index}}"  data-toggle="tooltip" title="Delete" ng-click="F_CO.deleteInternalComment(intComm.Id)" class="bp-svg-16 icon_fill_blue bp-pointer-cursor"></i>
+                                                </span>
+                                             </div>
+                                             <label class="col-xs-12 P0 H400 M0" ng-if="M_CO.currentUserId == intComm.CreatedById">{{'You_commented' | translate}}:</label>
+                                             <label class="col-xs-12 P0 H400 M0" ng-if="M_CO.currentUserId != intComm.CreatedById">{{ 'creator_commented' | translate : {creator: intComm.CreatedByName} }}:</label>
+                                             <p class="notes" ng-if = "!intComm.isEditMode">{{intComm.Comment}}</p>
+                                             <div ng-if = "intComm.isEditMode" class="section-container edit-commit-section-container">
+                                                <textarea rows="4" ng-model="M_CO.internalComment.Comment" maxlength ="255" placeholder="Type your comment here"
+                                                id= "commentTextArea_{{$index}}" ng-blur="F_CO.saveInternalComment(M_CO.internalComment, $index,$event)" ng-class="{'bp-redborder': M_CO.isInternalCommentError}"></textarea>
+                                                <div class="button-container">
+                                                 <button class="link-subtle  cancel-comment" id="cancelInternalComment_{{$index}}" ng-click = "F_CO.cancelEditInternalCommentAction()">{{'Cancel_Label' | translate}}</button>
+                                                    <button class="bp-normal-button primary  save-comment H000" id="saveInternalComment_{{$index}}">{{'Save_Label' | translate}}</button> <!-- ng-click = "F_CO.saveInternalComment(M_CO.internalComment,$index,$event)" -->
+                                                </div>
+                                             </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>                    
+                    <!-- End Internal Commnets -->
+</apex:component>

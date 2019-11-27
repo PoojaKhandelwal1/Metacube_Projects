@@ -1,0 +1,321 @@
+<apex:component controller="GlobalController" >
+                        <div class="table-responsive" ng-if="M_CO.Deal.UnitList[0].DealKitHeaderList.length > 0" ng-init="unitIndex = 0">
+                            <table class="bp-editable-table SOJobItemsGrid">
+                                <col width="5%" />
+                                <col width="16%" />
+                                <col width="7%" />
+                                <col width="15%" />
+                                <col width="17%" />
+                                <col width="14%" />
+                                <col width="18%" />
+                                <col width="8%" />
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th class="bp-text-uppercase">Item/description</th>
+                                        <th class="bp-text-uppercase text-center">Install</th>
+                                        <th class="bp-text-uppercase text-center">QTY needed</th>
+                                        <th class="bp-text-uppercase text-center">Status</th>
+                                        <th class="bp-text-uppercase text-center">Price</th>
+                                        <th class="bp-text-uppercase text-center">Subtotal</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody ng-repeat="dealKitHeader in M_CO.Deal.UnitList[unitIndex].DealKitHeaderList" ng-init="kitHeaderIndex = $index">
+                                    <!-- Start: Kit Header Row -->
+                                    <tr ng-if="dealKitHeader.Id" class="bp-expanded-deletable-div-transition kitHeaderTr" id="deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}">
+                                        <td ng-class="{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <i ng-include="'{!Application_Images}/Icons/kit.svg'" class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                        </td>
+                                        <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <div class="liItemDesc_setTextEllipsis">
+                                                <span class="">{{dealKitHeader.ItemDescription}}</span>
+                                            </div>
+                                        </td>
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                        </td>
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                        </td>
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                        </td>
+                                        
+                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <span ng-if = "M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex"
+                                                ng-class="{'fixedPriceWithLock': (dealKitHeader.IsFixedPrice || dealKitHeader.IsFixedPriceForCO), 'pull-left': (dealKitHeader.IsFixedPrice || dealKitHeader.IsFixedPriceForCO)}">{{dealKitHeader.Price | currency}}</span>
+                                            
+                                            <span ng-if = "M_CO.editLineItem == 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex">
+                                                <numbers-only id-value = "deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_Price"
+                                                    class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                    input-model-value = "dealKitHeader.Price" 
+                                                    include-negative = "false"
+                                                    include-zero = "true"
+                                                    precision-length = "2"
+                                                    blur-value = "F_CO.updateSOKHItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, event)"/>
+                                            </span>
+                                            <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(dealKitHeader.IsFixedPrice) && (M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index)"
+                                                class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                            <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(dealKitHeader.IsFixedPriceForCO) && (M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex)"
+                                                class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                        </td>
+                                        <td class="text-center boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <span>{{dealKitHeader.Price | currency}}</span>
+                                        </td>
+                                        
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <i ng-if = "M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex && !dealKitHeader.IsFixedPrice"
+                                                ng-include="'{!Application_Images}/Icons/edit_filled.svg'" data-toggle="tooltip" title="Edit "
+                                                class="gray_DDDDDD bp-pointer-cursor" ng-click="F_CO.editDealKHItem('deal', unitIndex, kitHeaderIndex);"></i> 
+                                            <span data-toggle="tooltip" title="Delete" ng-if="!false">
+                                                <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="gray_DDDDDD bp-pointer-cursor LIDeleteBtn"
+                                                    ng-click="F_CO.openDeleteConfirmationPopupForSOLineItem(SoHeaderIndex, soHeader.SOInfo.Id, SoKitHeaderIndex, SOKHitem.Id, '', '', 'Service Job');"></i>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <!-- End: Kit Header Row -->
+                                    
+                                    <!-- Start: Line Items Row with Kit Header -->
+                                    <tr class="bp-expanded-deletable-div-transition kitLITr" id="deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{$index}}"
+                                        ng-repeat="optionFee in dealKitHeader.OptionAndFeeList" ng-init="optionFeeIndex = $index" ng-if="dealKitHeader.Id">
+                                        
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                        </td>
+                                        <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <div class="liItemDesc_setTextEllipsis" 
+                                                ng-if="(M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex) || (optionFee.PartId)">
+                                                <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="optionFee.PartId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                <i ng-include="'{!Application_Images}/Icons/labor.svg'" ng-if="optionFee.LabourId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                <i ng-include="'{!Application_Images}/Icons/fee_V2.svg'" ng-if="optionFee.FeeId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                <i ng-include="'{!Application_Images}/Icons/sublet.svg'" ng-if="optionFee.ProductId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                    
+                                                <span>{{optionFee.ItemCode}} - {{optionFee.ItemDescription}}</span>
+                                            </div>
+                                            
+                                            <div class="liItemDesc" ng-if="(M_CO.editLineItem == 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex) && (!optionFee.PartId)">
+                                                <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="optionFee.PartId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                <i ng-include="'{!Application_Images}/Icons/labor.svg'" ng-if="optionFee.LabourId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                <i ng-include="'{!Application_Images}/Icons/fee_V2.svg'" ng-if="optionFee.FeeId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                <i ng-include="'{!Application_Images}/Icons/sublet.svg'" ng-if="optionFee.ProductId"
+                                                    class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                        
+                                                <span class="editableDescInput editableKitDescInput">
+                                                    <span class="itemCode">{{optionFee.ItemCode}} - </span>
+                                                    <input id="deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}_itemDesc"
+                                                        class="bp-input-text text-center"
+                                                        type="text" ng-model="optionFee.ItemDescription" />
+                                                </span>
+                                            </div>
+                                        </td>
+                                        
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                        </td>
+                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <span ng-if="M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex">{{optionFee.Qty}}</span>
+                                            <span ng-if="M_CO.editLineItem == 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex">
+                                                <numbers-only id-value="deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}_QtyNeeded"
+                                                    class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                    min-value = "1"
+                                                    input-model-value="optionFee.Qty" 
+                                                    include-negative = "true"
+                                                    include-zero = "false"
+                                                    precision-length = "2"
+                                                    force-precision-length = "false"/>
+                                            </span>
+                                        </td>
+                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <!-- <div class="InnerFlexContainer">
+                                                <span class ="setTextEllipsis text-right" ng-class = "{'bp-green-text': SOLI.Status == 'In Stock','bp-yellow-dark-text': SOLI.Status == 'Required'}"> {{SOLI.Status}}</span>
+                                            </div> -->
+                                            
+                                            <span ng-if="SOLI.IsPart && !SOLI.IsNonInventoryPart" ng-class = "{'bp-green-font': SOLI.Status == 'In Stock','bp-red-font': SOLI.Status == 'Required', 'bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{SOLI.Status}}</span>
+                                            <span ng-if="SOLI.IsPart && SOLI.IsNonInventoryPart" ng-class = "{'bp-green-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{soHeader.SOInfo.WorkStatus == "Invoiced"  ? "Invoiced" : "In Stock" }}</span>
+                                            <span ng-if="!SOLI.IsPart" ng-class = "{'bp-cyan-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{soHeader.SOInfo.WorkStatus == "Invoiced"  ? "Invoiced" : "Ready" }}</span>
+                                        </td>
+                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <span ng-if = "M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex"
+                                            ng-class="{'fixedPriceWithLock': (optionFee.IsFixedPrice || optionFee.IsFixedPriceForCO), 'pull-left': (optionFee.IsFixedPrice || optionFee.IsFixedPriceForCO)}">{{optionFee.Price | currency}}</span>
+                                            <span ng-if = "M_CO.editLineItem == 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex">
+                                                <numbers-only id-value = "deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}_Price"
+                                                    class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                    input-model-value = "optionFee.Price" 
+                                                    include-negative = "false"
+                                                    include-zero = "true"
+                                                    precision-length = "2"
+                                                    blur-value = "F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, event)"/>
+                                            </span>
+                                            
+                                            <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(optionFee.IsFixedPrice) && (M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex)"
+                                                    class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                            <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(optionFee.IsFixedPriceForCO) && (M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex)"
+                                                class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                        </td>
+                                        <td class="text-center boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                            <span ng-if="!optionFee.Total">{{(optionFee.Qty * optionFee.Price) | currency}}</span>
+                                            <span ng-if="optionFee.Total">{{optionFee.Total | currency}}</span>
+                                        </td>
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}' || M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}'}">
+                                             <i ng-if = "M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex && !optionFee.IsFixedPrice"
+                                                ng-include="'{!Application_Images}/Icons/edit_filled.svg'" data-toggle="tooltip" title="Edit "
+                                                class="gray_DDDDDD bp-pointer-cursor" ng-click="F_CO.editOptionFee('deal', unitIndex, kitHeaderIndex, optionFeeIndex)"></i> 
+                                            <!-- <span data-toggle="tooltip" title="Delete" ng-if="!false">
+                                                <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="gray_DDDDDD bp-pointer-cursor"
+                                                    ng-click="F_CO.openDeleteConfirmationPopup(SoHeaderIndex, soHeader.SOInfo.Id, SoKitHeaderIndex, SOKHitem.Id, SoLIIndex, SOLI.Id);"></i> data-target="#PayrollDeleteConfiramtionPopup" data-toggle="modal"
+                                            </span> -->
+                                        </td>
+                                    </tr>
+                                    <!-- End: Line Items Row with Kit Header -->
+                                    
+                                    <!-- Start: Line Items Row without Kit Header -->
+                                    <tr class="bp-expanded-deletable-div-transition" id="deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{$index}}"
+                                        ng-repeat-start="OptionFee in dealKitHeader.OptionAndFeeList" ng-init="optionFeeIndex = $index" ng-if="!dealKitHeader.Id">
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="OptionFee.PartId"
+                                                class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                            <i ng-include="'{!Application_Images}/Icons/labor.svg'" ng-if="OptionFee.LabourId"
+                                                class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                            <i ng-include="'{!Application_Images}/Icons/fee_V2.svg'" ng-if="OptionFee.FeeId"
+                                                class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                            <i ng-include="'{!Application_Images}/Icons/sublet.svg'" ng-if="OptionFee.ProductId"
+                                                class="grey bp-pointer-cursor pull-left itemSvg"></i>    
+                                        </td>
+                                        <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <div class="liItemDesc_setTextEllipsis"
+                                                ng-if="(M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex) || (OptionFee.PartId)">
+                                                <span>{{OptionFee.ItemCode}} - {{OptionFee.ItemDescription}}</span>
+                                            </div>
+                                            
+                                            <div class="liItemDesc" ng-if="(M_CO.editLineItem == 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex) && (!OptionFee.PartId)">
+                                                <span class="editableDescInput">
+                                                    <span class="itemCode">{{OptionFee.ItemCode}} - </span>
+                                                    <input id="deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}_itemDesc"
+                                                        class="bp-input-text text-center"
+                                                        type="text" ng-model="OptionFee.ItemDescription"/>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        
+                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <span ng-if="((OptionFee.LabourId != null && OptionFee.LabourId != '')  || (OptionFee.PartId != null && OptionFee.PartId != '') || (OptionFee.ProductId != null && OptionFee.ProductId != '' && OptionFee.ProductType == 'Sublet'))">
+                                               <label class="bp-switch">
+                                                  <input type="checkbox" ng-model="OptionFee.IsInstall"/>
+                                                  <div class="bp-slider round"></div>
+                                               </label>
+                                           </span>
+                                        </td>
+                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <span ng-if="M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex">{{OptionFee.Qty}}</span>
+                                            <span ng-if="M_CO.editLineItem == 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex">
+                                                <numbers-only id-value = "deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}_Qty"
+                                                    class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                    min-value = "1"
+                                                    input-model-value = "OptionFee.Qty" 
+                                                    include-negative = "true"
+                                                    include-zero = "false"
+                                                    precision-length = "2"
+                                                    force-precision-length = "false"/>
+                                            </span>
+                                        </td>
+                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <span ng-if="SOLI.IsPart && !SOLI.IsNonInventoryPart && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo" ng-class = "{'bp-green-font': SOLI.Status == 'In Stock','bp-red-font': SOLI.Status == 'Required', 'bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{OptionFee.Status}}</span>
+                                            <span ng-if="SOLI.IsPart && SOLI.IsNonInventoryPart" ng-class = "{'bp-green-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{soHeader.SOInfo.WorkStatus == "Invoiced"  ? "Invoiced" : "In Stock" }}</span>
+                                            <span ng-if="!SOLI.IsPart" ng-class = "{'bp-cyan-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{soHeader.SOInfo.WorkStatus == "Invoiced"  ? "Invoiced" : "Ready" }}</span>
+                                        </td>
+                                        
+                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <span ng-if = "M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex">{{OptionFee.Price | currency}}</span>
+                                            <span ng-if = "M_CO.editLineItem == 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex">
+                                                <numbers-only id-value = "deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}_Price"
+                                                    class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                    input-model-value = "OptionFee.Price" 
+                                                    include-negative = "false"
+                                                    include-zero = "true"
+                                                    precision-length = "2"
+                                                    blur-value = "F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, event)"/>
+                                            </span>
+                                        </td>
+                                        <td class="text-center boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <span ng-if="!OptionFee.Total">{{(OptionFee.Qty * OptionFee.Price) | currency}}</span>
+                                            <span ng-if="OptionFee.Total">{{OptionFee.Total | currency}}</span>
+                                        </td>
+                                        
+                                        <td class="partInvIconAdjustment" ng-class = "{'setBgColor' : M_CO.editLineItem == 'deal_unit{{unitIndex}}_kit{{kitHeaderIndex}}_of{{optionFeeIndex}}'}">
+                                            <i ng-if="M_CO.editLineItem != 'deal_unit' + unitIndex + '_kit' + kitHeaderIndex + '_of' + optionFeeIndex"
+                                               ng-include="'{!Application_Images}/Icons/edit_filled.svg'" data-toggle="tooltip" title="Edit " 
+                                               class="gray_DDDDDD bp-pointer-cursor" ng-click="F_CO.editOptionFee('deal', unitIndex, kitHeaderIndex, optionFeeIndex);"></i>
+                                            
+                                            <span data-toggle="tooltip" title="Delete" ng-if="!false">
+                                                <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="gray_DDDDDD bp-pointer-cursor LIDeleteBtn"
+                                                    ng-click="F_CO.openDeleteConfirmationPopupForOptionFeeLineItem(unitIndex, kitHeaderIndex, optionFeeIndex, M_CO.Deal.UnitList[unitIndex].DealItemObj.Id, dealKitHeader.Id, OptionFee.Id, 'deal');"></i> <!-- data-target="#PayrollDeleteConfiramtionPopup" data-toggle="modal" -->
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr class = "bp-expanded-deletable-div-transition itemOrderInfoTR" id = "SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}"
+                                        ng-init="SoLIIndex = $index" ng-if="!SOKHitem.Id && SOLI.IsPart && !SOLI.IsNonInventoryPart &&
+                                        M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo">
+                                        <td></td>
+                                        <td class="boldText">
+                                            <div class="liItemDesc_setTextEllipsis">
+                                                <span>Committed from the stock</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span>
+                                                <numbers-only id-value = "ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_QtyNeeded"
+                                                    class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                    min-value = "1"
+                                                    input-model-value = "SOLI.StockCommited" 
+                                                    include-negative = "true"
+                                                    include-zero = "false"
+                                                    precision-length = "2"
+                                                    force-precision-length = "false"/>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class = "bp-green-font">In stock</span>
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr class = "bp-expanded-deletable-div-transition itemOrderInfoTR" id = "SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}"
+                                        ng-repeat-end="ng-repeat-end" ng-init="SoLIIndex = $index" ng-if="!SOKHitem.Id && SOLI.IsPart && !SOLI.IsNonInventoryPart && 
+                                                                                M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo">
+                                        <td></td>
+                                        <td class="boldText">
+                                            <div class="liItemDesc_setTextEllipsis bp-red-font">
+                                                <span>Quantity to order</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                        <span>{{SOLI.QtyOrder}}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class = "bp-red-font">Required</span>
+                                        </td>
+                                       <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    
+                                    <!-- End: Line Items Row without Kit Header -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="search-entity-wrapper-deal">
+                            <p class="search-entity-text">Scan or search to add a items</p>
+                            <autocompletev2 id="autocompletev2DealId"
+                                template-name="Entity"
+                                section-name="Deal"
+                                soheader-index="0"
+                                unit-index="0"
+                                section-id="ServiceJob0"
+                                is-disabled="false" />
+                        </div>
+         </apex:component>

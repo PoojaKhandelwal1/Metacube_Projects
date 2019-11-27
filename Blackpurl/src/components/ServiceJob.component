@@ -1,0 +1,1391 @@
+<apex:component controller="GlobalController">
+ <!-- Start: Service Job -->
+                    <div class="bp-accordion-entry expanded service-job-section" ng-repeat="soHeader in M_CO.SOHeaderList" 
+                        ng-class = "{'bp-collapse' : M_CO.expandedSectionName != 'ServiceJob{{$index}}','disable-accordion' : !F_CO.getSOPermissionType()['view']}" ng-init="SoHeaderIndex = $index">
+                        <div class="bp-accordion-header bp-cyan">
+                            <div class="bp-accordion-toggle bp-cyan-dark" ng-if = "M_CO.expandedSectionName != 'ServiceJob'+$index" 
+                                ng-click = "F_CO.expandOrCollapseSection('ServiceJob'+$index+'_SectionId', 'ServiceJob'+$index, $index, F_CO.getSOPermissionType()['view'])">
+                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="white_FFF_NewCO"></i>
+                            </div>
+                            <div class="bp-accordion-toggle bp-cyan-dark" ng-if = "M_CO.expandedSectionName == 'ServiceJob'+$index" 
+                                ng-click = "F_CO.expandOrCollapseSection('ServiceJob'+$index+'_SectionId', 'ServiceJob'+$index, $index, F_CO.getSOPermissionType()['view'])">
+                                <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="white_FFF_NewCO"></i>
+                            </div>
+                            <div class="bp-accordion-header-left" ng-click = "F_CO.expandOrCollapseSection('ServiceJob'+$index+'_SectionId', 'ServiceJob'+$index, $index, F_CO.getSOPermissionType()['view'],$event)">
+                               <div class="bp-width-0">
+                                    <span class="bp-req-icon bp-req-icon-left bp-font-14 bp-bold-font" ng-if="F_CO.isServiceJobRequired(SoHeaderIndex)">
+                                        !
+                                    </span>
+                                </div>
+                                <div class="bp-accordion-name">
+                                    <i ng-include="'{!Application_Images}/Icons/ServiceJob_V2.svg'" class="white_FFF_NewCO left-icon"></i>
+                                    <span class="non-edit" ng-if="(M_CO.expandedSectionName != 'ServiceJob' + $index) || M_CO.isServiceJobDisabled($index)">
+                                    {{::soHeader.SOInfo.Name}}
+                                    </span>
+                                    <span class="edit-mode bp-title-name" ng-if="(M_CO.expandedSectionName == 'ServiceJob' + $index) && !M_CO.isServiceJobDisabled($index)">
+                                    <input type="text" class="bp-input-text" ng-model="soHeader.SOInfo.Name" value="soHeader.SOInfo.Name" ng-blur="F_CO.updateSOHeader($index)"/>
+                                    </span>
+                                </div>
+                                <div class="edit-mode-text-cause">
+                                    <span ng-repeat="kitCause in soHeader.SOInfo.KitHeaderConcern track by $index"> 
+                                    {{kitCause}}<span ng-if="(!$last || soHeader.SOInfo.ManualConcern.length != 0)">,</span>
+                                    </span>
+                                    <span ng-repeat="cause in soHeader.SOInfo.ManualConcern track by $index"> 
+                                    {{cause}}<span ng-if="!$last">,</span>
+                                    </span>
+                                </div>
+                               <div class="bp-accordian-right-content" ng-class="{'adjustTotalAccToFontSize' : (soHeader.SOInfo.Total.toString()).length >= 7 } ">
+                                    <span class="total-calculation">{{ 'Label_Total' | translate }}: {{soHeader.SOInfo.Total | currency}}</span>
+                                    <span class="customer-pay">{{soHeader.SOInfo.TransactionTypeLabel}}</span>
+                                     <p data-toggle="tooltip" ng-if = "M_CO.isTechSchedulingEnable && M_CO.soAppointments[soHeader.SOInfo.Id] && !M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianId" 
+                                      data-original-title="Appointement booked on  {{M_CO.soAppointments[soHeader.SOInfo.Id].StartDate}} for {{M_CO.soAppointments[soHeader.SOInfo.Id].EstimatedHours}} {{(M_CO.soAppointments[soHeader.SOInfo.Id].EstimatedHours > 1) ? 'hrs' : 'hr'}}"    
+                                      class=" header-add-appontment" >
+                                                     <span><i ng-include="'{!Application_Images}/Icons/calendar-check.svg'" class="clock-appoitment-icon icon_fill_white"></i></span>
+                                       </p>
+                                                     
+                                        <p data-toggle="tooltip" ng-if = "M_CO.isTechSchedulingEnable && M_CO.soAppointments[soHeader.SOInfo.Id] && M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianId" 
+                                      data-original-title="{{M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianName}} is scheduled on {{M_CO.soAppointments[soHeader.SOInfo.Id].StartDate}} at {{ M_CO.soAppointments[soHeader.SOInfo.Id].StartTime}} for {{M_CO.soAppointments[soHeader.SOInfo.Id].EstimatedHours}} {{(M_CO.soAppointments[soHeader.SOInfo.Id].EstimatedHours > 1) ? 'hrs' : 'hr'}} "    
+                                      class=" header-add-appontment">             
+                                        <span ><i ng-include="'{!Application_Images}/Icons/calendar-clock.svg'" class="clock-appoitment-icon icon_fill_white"></i></span>
+                                                    <!-- <span>{{M_CO.soAppointments[soHeader.SOInfo.Id].StartDate}}-{{M_CO.soAppointments[soHeader.SOInfo.Id].EstimatedHours}} hrs</span> 
+                                                    <p ng-if = "M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianId">{{M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianName}}-{{M_CO.soAppointments[soHeader.SOInfo.Id].StartTime}}</p> -->
+                                     </p>
+                                     
+                                     <div ng-If="!M_CO.showQuote" class="bp-pointer-cursor badge-container {{M_CO.changeStatusCssConfig[soHeader.SOInfo.WorkStatus]}}"
+                                        ng-click="M_CO.selectedSOHeaderIndex = $index; M_CO.SOHeaderList[M_CO.selectedSOHeaderIndex].SOInfo.newWorkStatus=soHeader.SOInfo.WorkStatus;F_CO.openJobStausPopUp(M_CO.selectedSOHeaderIndex,$event);"
+                                        ng-class = "{'showTopWorkStatue' : soHeader.SOInfo.TransactionType == 'Third-Party','bp-cursor-default': !F_CO.getSOPermissionType()['create/modify'] }">
+                                         <span class="text-capitalize">Status: </span> {{soHeader.SOInfo.WorkStatus}}
+                                    </div>
+                                     <div ng-If="M_CO.showQuote" class="bp-pointer-cursor badge-container {{M_CO.changeStatusCssConfig[soHeader.SOInfo.WorkStatus]}}" ng-class = "{'showTopWorkStatue' : soHeader.SOInfo.TransactionType == 'Third-Party'}">
+                                        {{soHeader.SOInfo.WorkStatus}}
+                                    </div>
+                                    <div class="badge-container {{M_CO.changeClaimStatusCssConfig[soHeader.SOInfo.ClaimStatus]}}" 
+                                     ng-click="F_CO.openClaimPopup(SoHeaderIndex)" 
+                                     ng-class = "{'showClaimStatue' : soHeader.SOInfo.TransactionType == 'Third-Party'}" ng-if = "soHeader.SOInfo.TransactionType == 'Third-Party'">
+                                        <span>Claim:</span> {{soHeader.SOInfo.ClaimStatus}}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bp-accordion-detail bp-collapse-div-transition" id="ServiceJob{{$index}}_SectionId" ng-class="{'bp-expand-div-transition': M_CO.expandedSectionName == 'ServiceJob{{$index}}'}">
+                            <div>
+                                <!-- Job Details accordian start here -->
+                                <div class="bp-inner-accordian open"  ng-class="{'bp-inner-accordian-opened': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_Details'}">
+                                    <div class="inner-accordian-header col-md-12" ng-click = "F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_DetailsSectionId', 'ServiceJob'+$index+'_Details','','',$event)">
+                                        <div class="inner-accordian-header-left">
+                                            <h2 class="accordian-left-details">{{ 'Job_details' | translate }}</h2>
+                                            <div class="show-onclse"  ng-if="F_CO.isSelectUnitTextVisible(SoHeaderIndex) && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_Details'">
+                                                {{ 'Select_a_unit_and_add_details_to_your_order' | translate }}
+                                            </div>
+                                        </div>
+                                        <div class="accordian-right-details add-edit-appointment-container-co">
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_Details'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1"></i>
+                                            </a>  <!-- href="#"  -->  
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_Details'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="blue_008DC1"></i>
+                                            </a>    
+                                            <div class="accordian-right-details-text">
+                                                <p class="right-text hide">{{ 'Please_add_details' | translate }}</p>
+                                                <p class="right-text required"  ng-if="F_CO.isSelectUnitTextVisible(SoHeaderIndex) && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_Details'">
+                                                    <span>{{ 'Part_Object_Status_Required' | translate }}</span> 
+                                                    <span class="req-icon">!</span>
+                                                </p>
+                                                  <p class="event-prevent-default" ng-click="F_CO.openAddEditAppointment('AddEditAppointment',soHeader.SOInfo.Id,soHeader.SOInfo,SoHeaderIndex)"
+                                                  	ng-if="M_CO.isTechSchedulingEnable && M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_Details' && !M_CO.soAppointments[soHeader.SOInfo.Id] && soHeader.SOInfo.WorkStatus != 'Complete' && soHeader.SOInfo.WorkStatus != 'Invoiced' && soHeader.SOInfo.UnitName && M_CO.coHeaderRec.OrderStatus != 'Quote'">
+                                                    <span><i ng-include="'{!Application_Images}/Icons/calendar-add.svg'" class="add-appoitment-icon"></i></span>
+                                                    <span class="H300 line-height-medium bp-blue-font bp-blue-hover create-new-appointment">{{ 'Create_an_appointment' | translate }} </span> 
+                                                </p>
+                                                
+                                                <div  class="event-prevent-default edit-event-container" ng-click="F_CO.openAddEditAppointment('AddEditAppointment',soHeader.SOInfo.Id,soHeader.SOInfo,SoHeaderIndex,M_CO.soAppointments[soHeader.SOInfo.Id])" ng-if="M_CO.isTechSchedulingEnable && M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_Details' && M_CO.soAppointments[soHeader.SOInfo.Id]">
+                                                     <span ng-if = "!M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianId"><i ng-include="'{!Application_Images}/Icons/calendar-check.svg'" class="clock-appoitment-icon"></i></span>
+                                                     <span ng-if = "M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianId"><i ng-include="'{!Application_Images}/Icons/calendar-clock.svg'" class="clock-appoitment-icon"></i></span>
+                                                    <div>
+                                                        <span class="H300">{{M_CO.soAppointments[soHeader.SOInfo.Id].FormattedStartDate}} - {{M_CO.soAppointments[soHeader.SOInfo.Id].EstimatedHours}} {{(M_CO.soAppointments[soHeader.SOInfo.Id].EstimatedHours > 1) ? 'hrs' : 'hr'}}</span> 
+                                                        <p class = "M0" ng-if = "M_CO.isTechSchedulingEnable && M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_Details' && M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianId">{{M_CO.soAppointments[soHeader.SOInfo.Id].TechnicianName}} - {{M_CO.soAppointments[soHeader.SOInfo.Id].StartTime}}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="inner-accordian-body bp-light-gray4 col-md-12 bp-collapse-div-transition" id="ServiceJob{{$index}}_DetailsSectionId"
+                                        ng-class="{'bp-expand-div-transition': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_Details'}">
+                                        <div>
+                                        <div class="expandableContainer">
+                                            <div class = "col-xs-12 col-sm-6 form-container">
+                                                <div class = "col-xs-12" ng-if="M_CO.coHeaderRec.COType != 'Internal Service' && !soHeader.SOInfo.DealId">
+                                                    <label class = "col-xs-12">{{ 'Customer_unit' | translate }}</label>
+                                                    <div class="col-xs-12 P0">
+                                                        <div class="bp-cell bp-unitSearch-area  searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_CO.DropDownFocusId == 'CustomerUnit_{{$index}}'}">
+                                                            <!-- <i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797"></i> -->
+                                                            <input type="text" id="ServiceJob{{$index}}_customerUnitInput" class="searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                                name="customerUnitInput"
+                                                                ng-focus="F_CO.setFocusOnCustomerUnit('CustomerUnit_', $index)"
+                                                                ng-blur="F_CO.setBlurOnCustomerUnit($index)"
+                                                                ng-keyup="F_CO.changeSeletedclockingStaff($event)"  
+                                                                ng-model="soHeader.SOInfo.UnitName" readonly="readonly" ng-disabled="M_CO.isServiceJobDisabled($index)"/> <!-- autocomplete="off" -->
+                                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click="F_CO.setFocusOnInput('ServiceJob'+$index+'_customerUnitInput')"></i>
+                                                            <div class="searchResultOverlay dropdown-wrapper" id="autocompleteScrollDiv" ng-class="{'JobNoResult' : M_CO.COUList.length != 0 }">
+                                                                    <ul>
+                                                                        <li ng-repeat="unit in M_CO.COUList"
+                                                                            ng-class="{'selected-row': $index == F_CO.currentSelectedClockingStaffIndex}"
+                                                                            ng-mousedown="F_CO.selectCustomerUnit($index, SoHeaderIndex)" >
+                                                                                <div class="customer-icon">
+                                                                                    <i ng-include= "'{!Application_Images}/Icons/Unit_V2.svg'" class="blue_3384FF"></i>
+                                                                                </div>
+                                                                                <div class="customer-info">
+                                                                                    <span class="bp-autocomplete-text">{{::unit.FormattedName}}</span>
+                                                                                    <span class="bp-section-info">{{ 'Unit_number' | translate }}:</span>
+                                                                                    <span class="bp-section-info">{{::unit.UnitId}}</span>
+                                                                                    <span class="bp-section-info"> - {{ 'Label_VIN' | translate }}:</span>
+                                                                                    <span class="bp-section-info">{{::unit.VIN}}</span>
+                                                                                </div>
+                                                                                <div class = "customer-type">
+                                                                                    <span class="bp-autocomplete-title">{{ 'Label_Unit' | translate }} </span>
+                                                                                </div>
+                                                                        </li>
+                                                                    </ul>
+                                                                <ul ng-If="M_CO.COUList.length == 0" class = "no_COU_Seleted_UL" >
+                                                                    <li  class="BP_angucomplete-row-NoResults-Msg">
+                                                                        <div>{{ 'No_customer_unit_found' | translate }}</div>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                        <!-- <input type="text" class="bp-input-text" placeholder="Please select"/>
+                                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1 dd-arrow"></i> -->
+                                                    </div>
+                                                    <span ng-if="soHeader.SOInfo.UnitId != null">
+                                                        <a class = "viewUnitFromServiceJob" ng-click = "F_CO.openCOUpopup($event,soHeader.SOInfo.UnitId, SoHeaderIndex, $index)">{{ 'View_unit' | translate }}</a>
+                                                    </span>
+                                                    <span ng-if="!M_CO.isServiceJobDisabled($index)" >
+                                                        <a href="" ng-click="F_CO.openAddEditTempUnitPopup(soHeader.SOInfo.Id, SoHeaderIndex, 'Service Job', 'COU')">{{ 'Add_a_new_unit' | translate }}</a>
+                                                    </span>
+                                                </div>
+                                                
+                                                
+                                                                                        
+                                                <div class = "col-xs-12" ng-if="M_CO.coHeaderRec.COType == 'Internal Service' && !soHeader.SOInfo.UnitId">
+                                                    <label class = "col-xs-12">{{ 'Search_for_a_stock_unit' | translate }}</label>
+                                                    <div class="col-xs-12 P0">
+                                                        <autocompletev2 id="autocompletev2SKUInternalServiceId"
+                                                            template-name="Entity"
+                                                            section-name="Stock Unit"
+                                                            soheader-index="{{SoHeaderIndex}}"
+                                                            section-id="ServiceJob{{SoHeaderIndex}}"
+                                                            is-disabled="M_CO.isServiceJobDisabled($index)" />
+                                                    </div>
+                                                </div>
+                                                
+                                                
+                                                <div class = "col-xs-12" ng-if="(M_CO.coHeaderRec.COType == 'Internal Service' && soHeader.SOInfo.UnitId) || soHeader.SOInfo.DealId">
+                                                    <label class = "col-xs-12">{{ 'Stock_unit' | translate }}</label>
+                                                    <div class="col-xs-12 P0">
+                                                       <info-card-component id-value="couInfoCardInternalServiceId" override-css="altered-info-card"
+                                                            header-link-action="F_CO.moveToState('ViewUnit', {Id : soHeader.SOInfo.UnitId}, true)" 
+                                                            object-payload="M_CO.unitIdToUnitImagesJsonMap[soHeader.SOInfo.UnitId].unitCardInfoPayload"
+                                                            hyperlink-action="F_CO.replaceUnitFromInternalService(SoHeaderIndex)"
+                                                            image-action="F_CO.openImageCarousel(soHeader.SOInfo.UnitId)">
+                                                            <div class="bp-dark-grey1-font bp-flex-col">
+                                                                <span class="bp-filled-circle sku-status-circle" ng-class="{'bp-coral-filled-circle': soHeader.SOInfo.UnitStatus == 'Reserved', 'bp-cyan-filled-circle': soHeader.SOInfo.UnitStatus == 'Sold', 'bp-orange-filled-circle' : soHeader.SOInfo.UnitStatus == 'On Order'}"></span>
+                                                                <span class="bp-bold-font bp-grey-font text-uppercase bp-font-14 sku-status">{{soHeader.SOInfo.UnitStatus}}</span>
+                                                            </div>
+                                                         </info-card-component>
+                                                       <div>
+                                                           <span ng-if="soHeader.SOInfo.UnitId != null">
+                                                            <a class = "viewUnitFromServiceJob" ng-click = "F_CO.openCOUpopup($event,soHeader.SOInfo.UnitId)">{{ 'View_unit' | translate }}</a>
+                                                            </span>
+                                                       </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                
+                                                
+                                                <div class = "col-xs-12">
+                                                    <label class = "col-xs-12">{{ 'Who_is_paying_for_the_job' | translate }}?</label>
+                                                    <div class="col-xs-12 P0">
+                                                        <!-- <input type="text" class="bp-input-text" placeholder="Please select"/> ng-disabled="M_CO.isServiceJobDisabled($index) || soHeader.SOInfo.DealId || ( soHeader.SOGridItems.length != 0 && !M_CO.showQuote )"
+                                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1 dd-arrow"></i> -->
+                                                        <div class="bp-cell  searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_CO.DropDownFocusId == 'JobType_{{$index}}', 'bp-unitSearch-area' : M_CO.DropDownFocusId == 'JobType_{{$index}}'}">
+                                                            <!-- <i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797"></i> -->
+                                                            <input type="text" id="ServiceJob{{$index}}_jobTypeInput" class="searchInput" placeholder="Please select"
+                                                                name="jobTypeInput"
+                                                                ng-focus="F_CO.setFocusOnCustomerUnit('JobType_', $index)"
+                                                                ng-blur="F_CO.setBlurOnCustomerUnit($index)"
+                                                                ng-keyup="F_CO.changeSeletedclockingStaff($event)"  
+                                                                ng-model="soHeader.SOInfo.TransactionTypeLabel" readonly="readonly" ng-disabled="!F_CO.isSOTransactionTypeChangeable($index)"/>
+                                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click="F_CO.setFocusOnInput('ServiceJob'+$index+'_jobTypeInput')"></i>
+                                                            <div class="searchResultOverlay" id="autocompleteScrollDiv">
+                                                                <ul>
+                                                                    <!-- <li ng-repeat="ttItem in M_CO.TTList"
+                                                                        ng-class="{'selected-row': $index == F_CO.currentSelectedClockingStaffIndex}"
+                                                                        ng-mousedown="F_CO.selectJobType($index, SoHeaderIndex)" >
+                                                                        <div class="fullName">{{ttItem.CodeLabel}}</div>
+                                                                    </li> -->
+                                                                    
+                                                                    <li ng-repeat="ttItem in M_CO.TTOptionsList"
+                                                                        ng-if = "soHeader.SOInfo.DealId == null && M_CO.coHeaderRec.OrderStatus !== 'Quote' && !F_CO.isShowCOAsQuote()"
+                                                                        ng-class="{'selected-row': $index == F_CO.currentSelectedClockingStaffIndex}"
+                                                                        ng-mousedown="F_CO.selectJobType($index, SoHeaderIndex, 'TTOptionsList')" >
+                                                                        <div class="fullName">{{ttItem.CodeLabel}}</div>
+                                                                    </li> <!-- ng-if = "soHeader.SOInfo.DealId == null && CustomerOrderModel.coHeaderDetails.OrderStatus != 'Quote' && 
+                                                                            (!CustomerOrderModel.isDisplaySetCOAsQuote || !CustomerOrderModel.isShowCOAsQuote())" -->
+                                                                    
+                                                                    <li ng-repeat="ttItem in M_CO.TTOptionListWithDeal"
+                                                                        ng-if = "soHeader.SOInfo.DealId != null"
+                                                                        ng-class="{'selected-row': $index == F_CO.currentSelectedClockingStaffIndex}"
+                                                                        ng-mousedown="F_CO.selectJobType($index, SoHeaderIndex, 'TTOptionListWithDeal')" >
+                                                                        <div class="fullName">{{ttItem.CodeLabel}}</div>
+                                                                    </li>
+                                                                    
+                                                                    <li ng-repeat="ttItem in M_CO.TTOptionsListWithQuote"
+                                                                        ng-if = "soHeader.SOInfo.DealId == null  && F_CO.isShowCOAsQuote()"
+                                                                        ng-class="{'selected-row': $index == F_CO.currentSelectedClockingStaffIndex}"
+                                                                        ng-mousedown="F_CO.selectPayingType($index, SoHeaderIndex )" >
+                                                                        <div class="fullName">{{ttItem.CodeLabel}}</div>
+                                                                    </li>
+                                                                    <!--  | filter:soHeader.SOInfo.TransactionTypeLabel -->
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class = "col-xs-12" ng-if = "soHeader.SOInfo.TransactionType == 'Internal'">
+                                                    <label class = "col-xs-12">{{ 'Category_Object_Display_Label' | translate }}</label>
+                                                   <div class="col-xs-12 P0">
+                                                        <div class="bp-cell searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_CO.DropDownFocusId == 'CategoryName_{{$index}}', 'bp-unitSearch-area' : M_CO.DropDownFocusId == 'CategoryName_{{$index}}' }">
+                                                            <input type="text" id="ServiceJob{{$index}}_categoryInput" class="searchInput" placeholder="Please select"
+                                                                name="categoryInput"
+                                                                ng-focus="F_CO.setFocusOnCustomerUnit('CategoryName_', $index)"
+                                                                ng-blur="F_CO.setBlurOnCustomerUnit($index)"
+                                                                ng-model="soHeader.SOInfo.CategoryName" readonly="readonly" ng-disabled="M_CO.isServiceJobDisabled($index) || M_CO.coHeaderRec.COType == 'Internal Service'"/>
+                                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click="F_CO.setFocusOnInput('ServiceJob'+$index+'_categoryInput')"></i>
+                                                            <div class="searchResultOverlay" id="autocompleteScrollCategoryDiv">
+                                                                <ul>
+                                                                    <li ng-repeat="category in M_CO.CategoryList"
+                                                                        ng-mousedown="F_CO.selectCategory($index, SoHeaderIndex)" >
+                                                                        <div class="fullName">{{category.Name}}</div>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class = "col-xs-12" ng-if = "soHeader.SOInfo.TransactionType == 'Third-Party'">
+                                                    <label class = "col-xs-12">{{ 'Provider' | translate }}</label>
+                                                    <div class="col-xs-12 P0">
+                                                        <!-- <input type="text" class="bp-input-text" placeholder="Please select"/>
+                                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1 dd-arrow"></i> -->
+                                                        <div class="bp-cell  searchInputArea  selectableDropdown" ng-class="{'showingOverlay' : M_CO.DropDownFocusId == 'ProviderType_{{$index}}', 'bp-unitSearch-area' : M_CO.DropDownFocusId == 'ProviderType_{{$index}}' }">
+                                                            <!-- <i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797"></i> -->
+                                                            <input type="text" id="ServiceJob{{$index}}_providerTypeInput" class="searchInput" placeholder="Please select"
+                                                                name="jobTypeInput"
+                                                                ng-focus="F_CO.setFocusOnCustomerUnit('ProviderType_', $index)"
+                                                                ng-blur="F_CO.setBlurOnCustomerUnit($index)"
+                                                                ng-model="soHeader.SOInfo.ProviderName" readonly="readonly" ng-disabled="M_CO.isServiceJobDisabled($index)"/>
+                                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click="F_CO.setFocusOnInput('ServiceJob'+$index+'_providerTypeInput')"></i>
+                                                            <div class="searchResultOverlay" id="autocompleteScrollDiv">
+                                                                <ul>
+                                                                    <li ng-repeat="ProviderItem in M_CO.ProviderList"
+                                                                        ng-mousedown="F_CO.selectProvider($index, SoHeaderIndex)" >
+                                                                        <div class="fullName">{{ProviderItem.Name}}</div>
+                                                                    </li>
+                                                                    <!--  | filter:soHeader.SOInfo.TransactionTypeLabel -->
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class = "col-xs-12" ng-if = "soHeader.SOInfo.TransactionType == 'Third-Party'">
+                                                    <label class = "col-xs-12">{{ 'Deductible' | translate }}</label>
+                                                    <numbers-only 
+                                                        class-value="bp-input-text"
+                                                        placeHolderValue="{{ 'Please_select' | translate }}"
+                                                        precision-length="2"
+                                                        blur-value="F_CO.addDeductibleAmount(SoHeaderIndex)"
+                                                        input-model-value="soHeader.DeductibleItem.DeductibleAmount" 
+                                                        disabled-value="M_CO.isServiceJobDisabled($index) || M_CO.coHeaderRec.COType == 'Internal Service'"/>
+                                                </div>
+                                                <div class = "col-xs-12" ng-if="!M_CO.showQuote">
+                                                    <label class="col-xs-12 ">{{ 'Job_status' | translate }}</label>
+                                                    <div class="col-md-12 MT5 PL0">
+                                                        <a class="badge-style bp-font-13 P3p12p pull-left col-xs-3 {{M_CO.changeStatusCssConfig[soHeader.SOInfo.WorkStatus]}}">{{soHeader.SOInfo.WorkStatus}}</a>
+                                                        <span>
+                                                        <a class="col-xs-5 pull-right PT2" ng-if="F_CO.getSOPermissionType()['create/modify']"
+                                                            ng-click="M_CO.selectedSOHeaderIndex = $index; M_CO.SOHeaderList[M_CO.selectedSOHeaderIndex].SOInfo.newWorkStatus=soHeader.SOInfo.WorkStatus;F_CO.openJobStausPopUp(M_CO.selectedSOHeaderIndex,$event)">{{ 'Change_job_status' | translate }}</a> 
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class = "col-xs-12" ng-if = "soHeader.SOInfo.TransactionType == 'Third-Party'">
+                                                    <label class="col-xs-12">{{ 'Claim_status' | translate }}</label>
+                                                    <div class="col-md-12 MT5 PL0">
+                                                        <a class="badge-style bp-font-13  col-xs-3 pull-left {{M_CO.changeClaimStatusCssConfig[soHeader.SOInfo.ClaimStatus]}}">{{soHeader.SOInfo.ClaimStatus}}</a>
+                                                        <span>
+                                                            <a ng-if="F_CO.showClaimLinks('SubmitClaim', soHeader);" data-toggle="modal" data-target="#ServiceJobClaimPopup" class="col-xs-5 pull-right PT2" ng-click="F_CO.openClaimPopup(SoHeaderIndex)"
+                                                            >{{ 'Submit_claim' | translate }}</a>
+                                                            <a ng-if="F_CO.showClaimLinks('ClaimResponse', soHeader);" data-toggle="modal" class="col-xs-5 pull-right PT2" ng-click="F_CO.openClaimResponsePopup(SoHeaderIndex)"
+                                                            >{{ 'Claim_Response' | translate }}</a> 
+                                                        </span>
+                                                     </div>
+                                                </div>
+                                                <div class = "col-xs-12 bp-orange-dark-font dealStatusValue" ng-if = "soHeader.SOInfo.DealId != null && soHeader.SOInfo.WorkStatus == 'Complete'">
+                                                    <span class="req-icon">!</span>
+                                                    <span class="warning-msg">
+                                                        <span class = "dealquation M0 bp-bold-font">{{ 'Label_Action_Required' | translate }}:</span>
+                                                        <span class = "dealquation action-text"> {{ 'Finalize_job' | translate }}</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class = "col-xs-12 col-sm-6 form-container">
+                                                <div class = "col-xs-12">
+                                                    <label class = "col-xs-12">{{ 'Label_Concern' | translate }}</label>
+                                                    <div class="bp-multiselect" ng-click="F_CO.displayInput($event, $index, 'NewConcern', 'ManualConcern', 'Concern')">
+                                                        <div ng-class="{'padding10': soHeader.SOInfo.KitHeaderConcern.length > 0 || soHeader.SOInfo.ManualConcern.length > 0, 'PB0': !(displayCauseConcernCorrectionInput(SoHeaderIndex, 'ManualConcern') || M_CO.toDisplayInput[SoHeaderIndex] == 'ManualConcern')}">
+                                                            <div ng-repeat="kitConcern in soHeader.SOInfo.KitHeaderConcern track by $index" class="d-flex">
+                                                                <span rel="Concern"> 
+                                                                {{kitConcern}}
+                                                                <i class="blue_3384FF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/lock-fill.svg'"></i>
+                                                                </span>
+                                                            </div>
+                                                            <div ng-repeat="concern in soHeader.SOInfo.ManualConcern track by $index" ng-init="concernIndex = $index" class="d-flex">
+                                                                <input id="Concern{{SoHeaderIndex}}Tag{{concernIndex}}" type="text" class="bp-input-text MB10" ng-show="M_CO.editModeIndexMultiSelect['Concern'] == concernIndex" 
+                                                                   ng-model="soHeader.SOInfo.ManualConcern[concernIndex]" ng-blur="F_CO.updateMultiSelect($event,SoHeaderIndex,concernIndex, 'ManualConcern', 'Concern')"
+                                                                   ng-keydown="F_CO.updateMultiSelect($event, SoHeaderIndex, concernIndex, 'ManualConcern', 'Concern')"
+                                                                   ng-disabled="isSOItemDisabled()"/>
+                                                                <span ng-click="F_CO.editMultiselectTag($event,'ManualConcern','Concern',SoHeaderIndex,concernIndex)" ng-show="M_CO.editModeIndexMultiSelect['Concern'] != concernIndex">
+                                                                {{concern}}
+                                                                <i class="blue_3384FF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'" 
+                                                                    ng-if="!M_CO.isServiceJobDisabled(SoHeaderIndex)"
+                                                                    ng-click="F_CO.removeFromMultiSelect($index, SoHeaderIndex, 'ManualConcern','Concern',$event)"></i>
+                                                                </span>
+                                                            </div>
+                                                            <input id="Concern{{SoHeaderIndex}}" type="text" class="bp-input-text" ng-show="displayCauseConcernCorrectionInput(SoHeaderIndex, 'ManualConcern') || M_CO.toDisplayInput[SoHeaderIndex] == 'ManualConcern'" ng-model="soHeader.SOInfo.NewConcern"  ng-blur="F_CO.addAndRemoveFromMultiSelect($event, $index, 'NewConcern', 'ManualConcern', 'Concern')"
+                                                                ng-keydown="F_CO.addAndRemoveFromMultiSelect($event, $index, 'NewConcern', 'ManualConcern', 'Concern')"
+                                                                placeholder="{{ 'Type_concern' | translate }} " ng-disabled="M_CO.isServiceJobDisabled($index)"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class = "col-xs-12">
+                                                    <label class = "col-xs-12">{{ 'Label_Cause' | translate }}</label>
+                                                    <div class="bp-multiselect" ng-click="F_CO.displayInput($event, $index, 'NewCause', 'ManualCause', 'Cause')">
+                                                        <div ng-class="{'padding10': soHeader.SOInfo.KitHeaderCause.length > 0 || soHeader.SOInfo.ManualCause.length > 0, 'PB0': !(displayCauseConcernCorrectionInput(SoHeaderIndex, 'ManualCause') || M_CO.toDisplayInput[SoHeaderIndex] == 'ManualCause')}">
+                                                            <div ng-repeat="kitCause in soHeader.SOInfo.KitHeaderCause track by $index" class="d-flex">
+                                                                <span> 
+                                                                {{kitCause}}
+                                                                <i class="blue_3384FF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/lock-fill.svg'"></i>
+                                                                </span>
+                                                            </div>
+                                                            <div ng-repeat="cause in soHeader.SOInfo.ManualCause track by $index" ng-init="causeIndex = $index" class="d-flex">
+                                                                <input id="Cause{{SoHeaderIndex}}Tag{{causeIndex}}" type="text" class="bp-input-text MB10" ng-show="M_CO.editModeIndexMultiSelect['Cause'] == causeIndex" 
+                                                                   ng-model="soHeader.SOInfo.ManualCause[causeIndex]" ng-blur="F_CO.updateMultiSelect($event,SoHeaderIndex, causeIndex, 'ManualCause', 'Cause')"
+                                                                   ng-keydown="F_CO.updateMultiSelect($event, SoHeaderIndex, causeIndex, 'ManualCause', 'Cause')"
+                                                                ng-disabled="isSOItemDisabled()"/>
+                                                                <span ng-click="F_CO.editMultiselectTag($event,'ManualCause','Cause',SoHeaderIndex,causeIndex)" ng-show="M_CO.editModeIndexMultiSelect['Cause'] != causeIndex"> 
+                                                                {{cause}}
+                                                                <i class="blue_3384FF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'" ng-if="!M_CO.isServiceJobDisabled(SoHeaderIndex)"
+                                                                    ng-click="F_CO.removeFromMultiSelect($index, SoHeaderIndex, 'ManualCause','Cause',$event)"></i>
+                                                                </span>
+                                                            </div>
+                                                            <input id="Cause{{SoHeaderIndex}}" type="text" class="bp-input-text" ng-show="displayCauseConcernCorrectionInput(SoHeaderIndex, 'ManualCause') || M_CO.toDisplayInput[SoHeaderIndex] == 'ManualCause'" ng-model="soHeader.SOInfo.NewCause" ng-blur="F_CO.addAndRemoveFromMultiSelect($event, $index, 'NewCause', 'ManualCause', 'Cause')"
+                                                                ng-keydown="F_CO.addAndRemoveFromMultiSelect($event, $index, 'NewCause', 'ManualCause', 'Cause')"
+                                                                placeholder="{{ 'Type_cause' | translate }}" rel="Cause" ng-disabled="M_CO.isServiceJobDisabled(SoHeaderIndex)"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class = "col-xs-12">
+                                                    <label class = "col-xs-12">{{ 'Label_Correction' | translate }}</label>
+                                                    <div class="bp-multiselect" ng-click="F_CO.displayInput($event, $index, 'NewCorrection', 'ManualCorrection', 'Correction')">
+                                                        <div ng-class="{'padding10': soHeader.SOInfo.KitHeaderCorrection.length > 0 || soHeader.SOInfo.ManualCorrection.length > 0, 'PB0': !(displayCauseConcernCorrectionInput(SoHeaderIndex, 'ManualCorrection') || M_CO.toDisplayInput[SoHeaderIndex] == 'ManualCorrection')}">
+                                                            <div ng-repeat="kitCorrection in soHeader.SOInfo.KitHeaderCorrection track by $index" class="d-flex">
+                                                                <span> 
+                                                                {{kitCorrection}}
+                                                                <i class="blue_3384FF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/lock-fill.svg'"></i>
+                                                                </span>
+                                                            </div>
+                                                            <div ng-repeat="correction in soHeader.SOInfo.ManualCorrection track by $index" ng-init="correctionIndex = $index" class="d-flex">
+                                                                <input id="Correction{{SoHeaderIndex}}Tag{{correctionIndex}}" type="text" class="bp-input-text MB10" ng-show="M_CO.editModeIndexMultiSelect['Correction'] === correctionIndex" 
+                                                                   ng-model="soHeader.SOInfo.ManualCorrection[correctionIndex]" ng-blur="F_CO.updateMultiSelect($event,SoHeaderIndex, correctionIndex, 'ManualCorrection', 'Correction')"
+                                                                   ng-keydown="F_CO.updateMultiSelect($event, SoHeaderIndex, correctionIndex, 'ManualCorrection', 'Correction')"
+                                                                ng-disabled="isSOItemDisabled()"/> 
+                                                                <span ng-click="F_CO.editMultiselectTag($event,'ManualCorrection','Correction',SoHeaderIndex,correctionIndex)" ng-show="M_CO.editModeIndexMultiSelect['Correction'] != correctionIndex"> 
+                                                                {{correction}}
+                                                                <i class="blue_3384FF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'" ng-if="!M_CO.isServiceJobDisabled(SoHeaderIndex)"
+                                                                    ng-click="F_CO.removeFromMultiSelect($index, SoHeaderIndex, 'ManualCorrection','Correction',$event)"></i>
+                                                                </span>
+                                                            </div>
+                                                            <input id="Correction{{SoHeaderIndex}}" type="text" class="bp-input-text" ng-show="displayCauseConcernCorrectionInput(SoHeaderIndex, 'ManualCorrection') || M_CO.toDisplayInput[SoHeaderIndex] == 'ManualCorrection'" 
+                                                                ng-model="soHeader.SOInfo.NewCorrection" ng-blur="F_CO.addAndRemoveFromMultiSelect($event, $index, 'NewCorrection', 'ManualCorrection', 'Correction')"
+                                                                ng-keydown="F_CO.addAndRemoveFromMultiSelect($event, $index, 'NewCorrection', 'ManualCorrection', 'Correction')"
+                                                                placeholder="{{ 'Type_correction' | translate }}" rel="Correction" ng-disabled="M_CO.isServiceJobDisabled($index)"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class = "col-xs-6 bp-odometer-box">
+                                                    <label class = "col-xs-12">{{ 'Odometer_on_arrival' | translate }}</label>
+                                                    <numbers-only 
+                                                        class-value="bp-input-text"
+                                                        placeHolderValue="{{ 'Please_select' | translate }}"
+                                                        precision-length="1"
+                                                        blur-value="F_CO.saveOdometerValue($index, 'OdometerIn')"
+                                                        input-model-value="soHeader.SOInfo.OdometerIn" 
+                                                        disabled-value="isSOItemDisabled()"/>
+                                                </div>
+                                                <div class = "col-xs-6">
+                                                    <label class = "col-xs-12">{{ 'Odometer_on_departure' | translate }}</label>
+                                                    <numbers-only 
+                                                        class-value="bp-input-text"
+                                                        placeHolderValue="{{ 'Please_select' | translate }}"
+                                                        precision-length="1"
+                                                        blur-value="F_CO.saveOdometerValue($index, 'OdometerOut')"
+                                                        input-model-value="soHeader.SOInfo.OdometerOut"
+                                                        focus-value = "F_CO.saveServiceJobOdometerOutValue($index)" 
+                                                        disabled-value="isSOItemDisabled()"/>
+                                                </div>
+                                                <a ng-click = "F_CO.openCloseDetailSectionAndAddItemSection($index,$event)" 
+                                                ng-if = "(soHeader.SOInfo.UnitName && soHeader.SOInfo.ManualConcern.length >0 && soHeader.SOInfo.TransactionType != 'Third-Party') || 
+                                                            (soHeader.SOInfo.UnitName && soHeader.SOInfo.ManualConcern.length >0 && 
+                                                            soHeader.SOInfo.TransactionType == 'Third-Party' && soHeader.SOInfo.ProviderName)" class="pull-right bp-blue-font continue-text">Continue and add items</a>
+                                                
+                                            </div>
+                                            
+                                            <div class="select-customer-section unit internal-service-unit" ng-if="M_CO.isReplaceUnit == true">
+                                                <div class="left">
+                                                    <label>{{ 'Search_for_a_stock_unit' | translate }}</label>
+                                                     <autocompletev2 id="autocompletev2SKUInternalServiceId"
+                                                            template-name="Entity"
+                                                            section-name="Stock Unit"
+                                                            soheader-index="{{SoHeaderIndex}}"
+                                                            section-id="ServiceJob{{SoHeaderIndex}}"
+                                                            is-disabled="M_CO.isServiceJobDisabled($index)" />
+                                                </div>
+                                                <div class="right">
+                                                    <button class="bp-btn bp-btn-normal" ng-click="M_CO.isReplaceUnit = false">{{ 'Cancel_Label' | translate }}</button>
+                                                </div>
+                                            </div>
+                                            
+                                        
+                                        </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Job Details accordian end here -->
+                                <!-- Job Items accordian start here -->
+                                <div class="bp-inner-accordian open" ng-class="{'bp-inner-accordian-opened': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_JobItems'}">
+                                    <div class="inner-accordian-header col-md-12" ng-click = "F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_JobItemsSectionId', 'ServiceJob'+$index+'_JobItems')">
+                                        <div class="inner-accordian-header-left">
+                                            <h2 class="accordian-left-details">{{ 'Job_items' | translate }}
+                                                <span class="badge" ng-if="soHeader.SOGridItems.length > 0 && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_JobItems'">{{soHeader.SOGridItems.length}}</span>
+                                            </h2>
+                                            <div class="show-onclse" ng-if="soHeader.SOGridItems.length == 0 && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_JobItems'">
+                                                {{ 'Start_building_your_order_by_adding_parts_or_labor' | translate }}
+                                            </div>
+                                        </div>
+                                        <div class="accordian-right-details">
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_JobItems'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1"></i>
+                                            </a>  <!-- href="#"  -->  
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_JobItems'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="blue_008DC1"></i>
+                                            </a>    
+                                            <div class="accordian-right-details-text">
+                                                <p class="right-text required" ng-if="soHeader.SOGridItems.length == 0 && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_JobItems'">
+                                                    <span>{{ 'Part_Object_Status_Required' | translate }}</span> 
+                                                    <span class="req-icon">!</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="inner-accordian-body bp-light-gray4 col-md-12 bp-collapse-div-transition ServiceJobLineItemWrapper"  
+                                        id="ServiceJob{{$index}}_JobItemsSectionId"
+                                        ng-class="{'bp-expand-div-transition': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_JobItems'}">
+                                        <div class="expandableContainer PB0">
+                                            <div class="table-responsive" ng-if="soHeader.SOGridItems.length != 0" ng-class = "{'PB67' : M_CO.coHeaderRec.OrderStatus === 'Closed' || soHeader.SOInfo.WorkStatus == 'Invoiced'}">
+                                                <table class = "bp-editable-table SOJobItemsGrid">
+                                                    <col width="5%"  />
+                                                    <col width="20%" />
+                                                    <col width="15%" />
+                                                    <col width="15%" />
+                                                    <col width="15%" />
+                                                    <col width="15%" />
+                                                    <col width="15%" />
+                                                    <thead>
+                                                        <tr>
+                                                            <th></th>
+                                                            <th class = "bp-text-uppercase">{{ 'Item_description' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'Qty_needed' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'Label_Status' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'Label_Price' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'Label_Subtotal' | translate }}</th>
+                                                            <th class = "bp-text-uppercase"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody ng-repeat="SOKHitem in soHeader.SOGridItems" ng-init="SoKitHeaderIndex = $index"> <!-- ng-if="!SOKHitem.Id"  -->
+                                                        
+                                                        <!-- Start: Kit Header Row -->
+                                                        <tr ng-if="SOKHitem.Id" class = "bp-expanded-deletable-div-transition kitHeaderTr bp-tr-hover" 
+                                                            id = "SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}"
+                                                            ng-click="F_CO.editLineItem(SOKHitem, 'ServiceJob', SoHeaderIndex, SoKitHeaderIndex)">
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}' 
+                                                                    && !F_CO.displayEditBtnOnLineItem('SO', 'KHItem', SoHeaderIndex, SoKitHeaderIndex) || soHeader.SOInfo.ClaimStatus == 'Approved' }">
+                                                                <i ng-include="'{!Application_Images}/Icons/kit.svg'" class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                                            </td>
+                                                            <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}' 
+                                                                    && !F_CO.displayEditBtnOnLineItem('SO', 'KHItem', SoHeaderIndex, SoKitHeaderIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'  }">
+                                                                <div class="liItemDesc_setTextEllipsis"> <!-- InnerFlexContainer -->
+                                                                    <span class ="">{{::SOKHitem.ItemDescription}}</span> <!-- setTextEllipsis -->
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}' 
+                                                                    && !F_CO.displayEditBtnOnLineItem('SO', 'KHItem', SoHeaderIndex, SoKitHeaderIndex) || soHeader.SOInfo.ClaimStatus == 'Approved' }">
+                                                             </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}' 
+                                                                    && !F_CO.displayEditBtnOnLineItem('SO', 'KHItem', SoHeaderIndex, SoKitHeaderIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                             </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}' 
+                                                                    && !F_CO.displayEditBtnOnLineItem('SO', 'KHItem', SoHeaderIndex, SoKitHeaderIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <span ng-if = "M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex"
+                                                                    ng-class="{'fixedPriceWithLock': (SOKHitem.IsFixedPrice || SOKHitem.isFixedKitHeaderSO), 'pull-left': (SOKHitem.IsFixedPrice || SOKHitem.isFixedKitHeaderSO)}">{{::SOKHitem.FixedPrice | currency}}</span>
+                                                                <span ng-if = "M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex">
+                                                                    <numbers-only id-value = "ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_Price"
+                                                                        class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                                        input-model-value = "SOKHitem.FixedPrice" 
+                                                                        include-negative = "false"
+                                                                        include-zero = "true"
+                                                                        precision-length = "2"
+                                                                        blur-value = "F_CO.updateSOKHItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, $event)"
+                                                                        input-keydown-value="F_CO.setFlagOnTabForBlurHandling($event)"/>
+                                                                </span>
+                                                                <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(SOKHitem.IsFixedPrice) && (M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index)"
+                                                                        class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                                                 <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(SOKHitem.isFixedKitHeaderSO) && (M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex)"
+                                                                    class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                                            </td>
+                                                            <td class="text-center boldText" 
+                                                                ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}' 
+                                                                    && !F_CO.displayEditBtnOnLineItem('SO', 'KHItem', SoHeaderIndex, SoKitHeaderIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <span>{{::SOKHitem.FixedPrice | currency}}</span>
+                                                            </td>
+                                                            <td class="partInvIconAdjustment" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': (M_CO.isServiceJobDisabled(SoHeaderIndex) || soHeader.SOInfo.ClaimStatus == 'Approved') || (soHeader.SOInfo.DealId && F_CO.isDealInvoiced())}" >
+                                                                 <span data-toggle="tooltip" title="More actions" ng-if="!M_CO.isServiceJobDisabled(SoHeaderIndex)"
+                                                                    id="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_deleteBtn">
+                                                                    <i ng-if="M_CO.coHeaderRec.COType != 'Internal Service' && !soHeader.SOInfo.DealId" ng-include="'{!Application_Images}/Icons/More-actions.svg'" class="icon_fill_blue bp-pointer-cursor LIDeleteBtn"
+                                                                        ng-click="F_CO.openMoveLineItemModalWindowAction(soHeader.SOInfo.Id, SOKHitem.Id, SOKHitem.IsServiceKit); F_CO.openDeleteConfirmationPopupForSOLineItem(SoHeaderIndex, soHeader.SOInfo.Id, SoKitHeaderIndex, SOKHitem.Id, '', '', 'Service Job', true,$event);"></i>
+                                                                     <i ng-if="M_CO.coHeaderRec.COType == 'Internal Service' || soHeader.SOInfo.DealId" ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="icon_fill_blue bp-pointer-cursor LIDeleteBtn"
+                                                                        ng-click="F_CO.openDeleteConfirmationPopupForSOLineItem(SoHeaderIndex, soHeader.SOInfo.Id, SoKitHeaderIndex, SOKHitem.Id, '', '', 'Service Job', false, $event);"></i>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <!-- End: Kit Header Row -->
+                                                        
+                                                        <!-- Start: Kit Line Items Row with Kit Header -->
+                                                        <tr class = "bp-expanded-deletable-div-transition kitLITr bp-tr-hover" id = "SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}"
+                                                            ng-click="F_CO.editLineItem(SOLI, 'ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, '', (SOLI.IsPart))"
+                                                            ng-repeat-start="SOLI in SOKHitem.SOLIList" ng-init="SoLIIndex = $index" ng-if="SOKHitem.Id">
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                    'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' 
+                                                                        && !F_CO.displayEditBtnOnLineItem('SO', 'KitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex) || soHeader.SOInfo.ClaimStatus == 'Approved' }">
+                                                            </td>
+                                                            <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                    'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' 
+                                                                        && !F_CO.displayEditBtnOnLineItem('SO', 'KitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <div class="liItemDesc_setTextEllipsis" 
+                                                                    ng-if="(M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index) || (SOLI.IsPart)"> <!-- InnerFlexContainer -->
+                                                                    <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="SOLI.IsPart"
+                                                                        class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                                    <i ng-include="'{!Application_Images}/Icons/labor.svg'" ng-if="SOLI.IsLabour"
+                                                                        class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                                    <i ng-include="'{!Application_Images}/Icons/fee_V2.svg'" ng-if="SOLI.IsFee"
+                                                                        class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                                    
+                                                                    <span class="bp-blue-font" ng-class="{'bp-blue-hover' : SOLI.IsPart}" 
+                                                                        id="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_itemDesc"
+                                                                        ng-click="F_CO.moveToState('ViewPart',{Id:SOLI.PartId},SOLI.IsPart)">{{::SOLI.ItemCode}} - {{SOLI.ItemDescription}}</span> <!--  class ="setTextEllipsis"; {{SOLI.ItemDesc}}-->
+                                                                </div>
+                                                                
+                                                                <div class="liItemDesc" ng-if="(M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index) && (!SOLI.IsPart)">
+                                                                    <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="SOLI.IsPart"
+                                                                        class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                                    <i ng-include="'{!Application_Images}/Icons/labor.svg'" ng-if="SOLI.IsLabour"
+                                                                        class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                                    <i ng-include="'{!Application_Images}/Icons/fee_V2.svg'" ng-if="SOLI.IsFee"
+                                                                        class="grey bp-pointer-cursor pull-left itemSvg kitItemSvg"></i>
+                                                                        
+                                                                    <span class="editableDescInput editableKitDescInput" ng-class="{'focusInput': setBotrderOnSpan}">
+                                                                        <span class="itemCode">{{::SOLI.ItemCode}} - </span>
+                                                                        <input id = "ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_itemDesc"
+                                                                            class = "bp-input-text text-center"
+                                                                            ng-focus="setBotrderOnSpan = true;"
+                                                                            ng-blur="setBotrderOnSpan = false; F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, $event);"
+                                                                            ng-keydown="F_CO.setFlagOnTabForBlurHandling($event)"
+                                                                            type="text" ng-model = "SOLI.ItemDescription"/>
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                    'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' 
+                                                                        && !F_CO.displayEditBtnOnLineItem('SO', 'KitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <span>{{::SOLI.QtyNeeded}}</span>
+                                                            </td>
+                                                            <td class="text-center bp-bold-font" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                    'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' 
+                                                                        && !F_CO.displayEditBtnOnLineItem('SO', 'KitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <span ng-if="M_CO.coHeaderRec.OrderStatus != 'Quote' && SOLI.IsPart && SOLI.Status !== 'Ordered' && !SOLI.IsNonInventoryPart && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo
+                                                                     && (SOLI.StockCommited == 0 && SOLI.QtyOrder > 0)" class="bp-red-font">{{ 'Part_Object_Status_Required' | translate }}</span>
+                                                                <span ng-if="M_CO.coHeaderRec.OrderStatus != 'Quote' && SOLI.IsPart && !SOLI.IsNonInventoryPart && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo 
+                                                                    && (SOLI.StockCommited > 0 && SOLI.QtyOrder > 0)" class="bp-orange-font">{{ 'Part_Object_Status_Multiple' | translate }}</span>
+                                                                
+                                                                <!-- Start: Status for kit LI - Inventory part -->
+                                                                <span ng-if="(SOLI.IsPart && !SOLI.IsNonInventoryPart && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo && (M_CO.coHeaderRec.OrderStatus === 'Quote' || (SOLI.Status ==='Ordered' && SOLI.StockCommited === 0 ) || !(SOLI.StockCommited >= 0 && SOLI.QtyOrder > 0))) " 
+                                                                    ng-class = "{'bp-green-font': SOLI.Status == 'In Stock', 'bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced',
+                                                                    'bp-red-font': (SOLI.Status == 'Required' || SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-coral-light-bg': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-status-bubble': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-orange-font': (SOLI.Status === 'Ordered'),
+                                                                    'bp-first-letter-capitalize': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold')}">{{::SOLI.Status}}</span>
+                                                                <!-- End: Status for kit LI - Inventory part -->
+                                                                
+                                                                <!-- Start: Status for kit LI - Non Inventory part (For kit LI qty can't be edited so can't be -ve and can't be oversold for non inventory part, hence no handling for 'Return' & 'Oversold' status)-->
+                                                                <span ng-if="SOLI.IsPart && SOLI.IsNonInventoryPart" 
+                                                                    ng-class = "{'bp-green-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{soHeader.SOInfo.WorkStatus == "Invoiced"  ? "Invoiced" : "In Stock" }}</span>
+                                                                <!-- End: Status for kit LI - Non Inventory part (For kit LI qty can't be edited so can't be -ve and can't be oversold for non inventory part, hence no handling for 'Return' & 'Oversold' status)-->
+                                                                
+                                                               <span ng-if="!SOLI.IsPart && !SOLI.IsSublet" ng-class = "{'bp-cyan-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{soHeader.SOInfo.WorkStatus == "Invoiced"  ? "Invoiced" : "Ready" }}</span>
+                                                                <span ng-if="SOLI.IsSublet" ng-class = "{'bp-cyan-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{SOLI.Status}}</span>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                    'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' 
+                                                                        && !F_CO.displayEditBtnOnLineItem('SO', 'KitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <span ng-if = "(M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index
+                                                                                || !GroupOnlyPermissions['Override price'].enabled || SOLI.IsFixedPrice)"
+                                                                ng-class="{'fixedPriceWithLock': (SOLI.IsFixedPrice || SOLI.isFixedKitHeaderLineItemSO), 'pull-left': (SOLI.IsFixedPrice || SOLI.isFixedKitHeaderLineItemSO)}">{{SOLI.KitPrice | currency}}</span>
+                                                                <span ng-if = "(M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index
+                                                                                && GroupOnlyPermissions['Override price'].enabled && !SOLI.IsFixedPrice)">
+                                                                    <numbers-only id-value = "ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_Price"
+                                                                        class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                                        input-model-value = "SOLI.KitPrice" 
+                                                                        include-negative = "false"
+                                                                        include-zero = "true"
+                                                                        precision-length = "2"
+                                                                        blur-value = "F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, $event)"
+                                                                        input-keydown-value="F_CO.setFlagOnTabForBlurHandling($event)"/>
+                                                                </span>
+                                                                
+                                                                <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(SOLI.IsFixedPrice) && (M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index)"
+                                                                   class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                                                <i ng-include="'{!Application_Images}/Icons/lock-fill.svg'" ng-if="(SOLI.isFixedKitHeaderLineItemSO) && (M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index)"
+                                                                   class="grey bp-pointer-cursor pull-left lockSvg"></i>
+                                                            </td>
+                                                            <td class="text-center boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                    'bp-disabled': M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' 
+                                                                        && !F_CO.displayEditBtnOnLineItem('SO', 'KitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex) || soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <span ng-if="!SOLI.SubTotal" ng-class="{'bp-red-font': (SOLI.QtyNeeded * SOLI.KitPrice) < 0}">{{(SOLI.QtyNeeded * SOLI.KitPrice) | currency}} <span ng-if = "SOLI.IsVariance">~</span></span>
+                                                                <span ng-if="SOLI.SubTotal" ng-class="{'bp-red-font': SOLI.SubTotal < 0}">{{::SOLI.SubTotal | currency}}<span ng-if = "SOLI.IsVariance">~</span></span>
+                                                            </td>
+                                                            <td class="partInvIconAdjustment" ng-class="{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}',
+                                                                'bp-disabled': (SOLI.Status == 'Invoiced' || soHeader.SOInfo.ClaimStatus == 'Approved') }">
+                                                                 <i ng-include="'{!Application_Images}/Icons/expandBadge.svg'" data-toggle="tooltip" title="{!$Label.More_options}" 
+                                                                   class="bp-chevron icon_fill_blue bp-pointer-cursor" 
+                                                                   ng-class="{'bp-chevron-up' : M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo, 'bp-chevron-down' : !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo}"
+                                                                   ng-if="SOLI.IsPart && !SOLI.IsNonInventoryPart && SOLI.Status != 'Invoiced'"
+                                                                   ng-click="F_CO.showHideKitItemInfo(SoHeaderIndex, SoKitHeaderIndex, $index)"
+                                                                   id="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_moreOptions"></i>
+                                                            </td>
+                                                        </tr>
+                                                        
+                                                        <!-- Start: Special Order Section for Kit Line Item -->
+                                                        <tr class="bp-expanded-deletable-div-transition itemOrderInfoTR" id="SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_StockCommitted" 
+                                                          ng-if="(SOLI.IsPart && !SOLI.IsNonInventoryPart && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo) && !M_CO.showQuote">
+                                                         <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                            <div class="liItemDesc_setTextEllipsis bp-dark-grey2-font">
+                                                                <span>{{' Committed_from_the_stock' | translate }}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                            <span ng-if = "M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index">{{SOLI.StockCommited}}</span>
+                                                            <span ng-if = "M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index">
+                                                                <numbers-only id-value="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_StockCommited"
+                                                                    class-value="bp-input-text inTimeEdit timeField text-center"
+                                                                    min-value="0"
+                                                                    max-value="{{F_CO.getMaxCommitedValue(SOLI)}}"
+                                                                    input-model-value="SOLI.StockCommited" 
+                                                                    include-negative="false"
+                                                                    include-zero="true"
+                                                                    precision-length="2"
+                                                                    force-precision-length="false"
+                                                                    blur-value = "F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, $index, $event)"
+                                                                    input-keydown-value="F_CO.setFlagOnTabForBlurHandling($event)"
+                                                                    input-keyup-value="F_CO.calculateSpecialOrderValue('ServiceJobKit', 'StockCommited', SoHeaderIndex, SoKitHeaderIndex, $index, (SOLI.IsPart && !SOLI.IsNonInventoryPart));"/>
+                                                            </span> <!-- max-value="{{SOLI.QtyNeeded}}" -->
+                                                        </td>
+                                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                            <span class="bp-green-font bp-bold-font">{{ 'Part_Object_Status_InStock' | translate }}</span>
+                                                        </td>
+                                                         <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        </tr>
+                                                        <tr class="bp-expanded-deletable-div-transition itemOrderInfoTR" id="SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_QtyOrder"
+                                                        ng-if="(SOLI.IsPart && !SOLI.IsNonInventoryPart && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo) && !M_CO.showQuote">
+                                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                            <div class="liItemDesc_setTextEllipsis bp-red-font">
+                                                                <span>{{ 'Quantity_to_order' | translate }}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                            <span>{{::SOLI.QtyOrder}}</span>
+                                                        </td>
+                                                        <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                            <span class="bp-red-font bp-bold-font" ng-if="SOLI.Status !== 'Ordered'">{{ 'Part_Object_Status_Required' | translate }}</span>
+                                                            <span class="bp-orange-font bp-bold-font" ng-if="SOLI.Status === 'Ordered'">{{ 'Label_Ordered' | translate }}</span>
+                                                        </td>
+                                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        </tr>
+                                                        <tr class="inventory-status-liItem" id="SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_AvailableInventory" 
+                                                            ng-class="{ 'liItem-bg-white': ((SOLI.ActualAvailableParts - SOLI.QtyNeeded) > 0 && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo), 'liItem-bg-red': (SOLI.ActualAvailableParts - SOLI.QtyNeeded <= 0 && SOLI.ActualAvailableParts - SOLI.StockCommited <= 0), 'liItem-bg-orange': (SOLI.ActualAvailableParts - SOLI.StockCommited > 0) && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo }"
+                                                            ng-repeat-end="ng-repeat-end" 
+                                                            ng-if="SOKHitem.Id && SOLI.IsPart && !SOLI.IsNonInventoryPart && (M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo || M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index) && soHeader.SOInfo.WorkStatus != 'Complete'">
+                                                            <td colspan="3" class="helper-text-label">
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.StockCommited) > 0 && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo" class="label-text">{{ 'Available_inventory' | translate }}: {{SOLI.AvailablePart}}</span>
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.QtyNeeded <= 0 && SOLI.ActualAvailableParts - SOLI.StockCommited <= 0)" class="label-text red">{{ 'Available_inventory' | translate }}: 0 - <span class="text-uppercase">{{ 'Part_Object_Status_OutofStock' | translate }}</span></span>
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.StockCommited > 0) && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo" class="label-text orange">{{ 'Quantity_remaining' | translate }}: {{SOLI.ActualAvailableParts - SOLI.StockCommited}}</span>
+                                                            </td>
+                                                            <td colspan="3">
+                                                                <button class="bp-btn bp-btn-normal" data-target="#SupersededPart" data-toggle="modal" ng-click="showAlternatePartDialog=true; F_CO.getAlternateParts(SOLI, soHeader.SOInfo.Id, 'ServiceOrder', SoHeaderIndex);">{{ 'View_related_parts' | translate }}</button>
+                                                            	<button class="bp-btn secondary-btn" ng-if="SOLI.IsBRPPart" ng-click="F_CO.openPartLocatorWindow(SOLI)" >{{ 'BRP_Availability' | translate }}</button>
+                                                            </td>
+                                                            <td class="helper-text-label" ng-class="{ 'bg-white': ((SOLI.ActualAvailableParts - SOLI.StockCommited) > 0 && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo), 'bg-red': (SOLI.ActualAvailableParts - SOLI.QtyNeeded <= 0 && SOLI.ActualAvailableParts - SOLI.StockCommited <= 0), 'bg-orange': (SOLI.ActualAvailableParts - SOLI.StockCommited > 0) && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].SOLIList[$index].ShowItemInfo }"></td>
+                                                        </tr>
+                                                        <!-- End: Special Order Section for Kit Line Item -->
+                                                        
+                                                        <tr ng-if="SOKHitem.Id && (soHeader.SOInfo.DealId == undefined || soHeader.SOInfo.DealId == null || soHeader.SOInfo.DealId == '')">
+                                                            <td></td>
+                                                            <td colspan="5" class="breakUpKit" 
+                                                            ng-class = "{'bp-disabled': soHeader.SOInfo.ClaimStatus == 'Approved'}">
+                                                                <span ng-click="F_CO.splitSOKHItem(SoHeaderIndex, soHeader.SOInfo.Id, SOKHitem.Id)">{{ 'Break_up_kit' | translate }}</span>
+                                                            </td>
+                                                            <td class="bg-white"></td>
+                                                        </tr>
+                                                        <!-- End: Kit Line Items Row with Kit Header -->
+                                                        
+                                                        <!-- Start: Line Items Row without Kit Header -->
+                                                        <tr class = "bp-expanded-deletable-div-transition bp-tr-hover" id = "SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}"
+                                                            ng-repeat-start="SOLI in SOKHitem.SOLIList" ng-init="SoLIIndex = $index" ng-if="!SOKHitem.Id"
+                                                            ng-click="F_CO.editLineItem(SOLI, 'ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, '', (SOLI.IsPart))">
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}',
+                                                                    'bp-disabled': (!F_CO.displayEditBtnOnLineItem('SO', 'NonKitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex)
+                                                                        && M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || soHeader.SOInfo.ClaimStatus == 'Approved') }">
+                                                                <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="SOLI.IsPart"
+                                                                    class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                                                <i ng-include="'{!Application_Images}/Icons/labor.svg'" ng-if="SOLI.IsLabour"
+                                                                    class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                                                <i ng-include="'{!Application_Images}/Icons/fee_V2.svg'" ng-if="SOLI.IsFee"
+                                                                    class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                                                <i ng-include="'{!Application_Images}/Icons/sublet.svg'" ng-if="SOLI.IsSublet"
+                                                                    class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                                            </td>
+                                                            <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}',
+                                                                    'bp-disabled': (!F_CO.displayEditBtnOnLineItem('SO', 'NonKitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex)
+                                                                        && M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || soHeader.SOInfo.ClaimStatus == 'Approved') }">
+                                                                <div class="liItemDesc_setTextEllipsis"
+                                                                    ng-if="(M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index) || (SOLI.IsPart)"> <!-- InnerFlexContainer -->
+                                                                    <span class="bp-blue-font" ng-class="{'bp-blue-hover' : SOLI.IsPart}" 
+                                                                        id="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_itemDesc"
+                                                                        ng-click="F_CO.moveToState('ViewPart',{Id:SOLI.PartId},SOLI.IsPart)">{{::SOLI.ItemCode}} - {{::SOLI.ItemDescription}}</span> <!--  class ="setTextEllipsis"; {{SOLI.ItemDesc}}-->
+                                                                </div>
+                                                                
+                                                                <div class="liItemDesc" ng-if="(M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index) && (!SOLI.IsPart)">
+                                                                    <span class="editableDescInput" ng-class="{'focusInput': setBotrderOnSpan}">
+                                                                        <span class="itemCode">{{::SOLI.ItemCode}} - </span>
+                                                                        <input id = "ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_itemDesc"
+                                                                            class = "bp-input-text text-center"
+                                                                            ng-focus="setBotrderOnSpan = true;"
+                                                                            ng-blur="setBotrderOnSpan = false; F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, $event);"
+                                                                            ng-keydown="F_CO.setFlagOnTabForBlurHandling($event)"
+                                                                            type="text" ng-model = "SOLI.ItemDescription"/>
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}',
+                                                                    'bp-disabled': (!F_CO.displayEditBtnOnLineItem('SO', 'NonKitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex)
+                                                                        && M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || soHeader.SOInfo.ClaimStatus == 'Approved') }">
+                                                                <span ng-show = "M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index 
+                                                                                || (!(SOLI.QtyNeeded >= 0) && !GroupOnlyPermissions['Returns']['enabled']) || (SOLI.IsSublet && SOLI.POStatus == 'On Order')">{{::SOLI.QtyNeeded}}</span>
+                                                                <span ng-show = "M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index 
+                                                                    && (((!SOLI.IsSublet && SOLI.QtyNeeded >= 0) || (SOLI.IsSublet && (!SOLI.VONumber || SOLI.POStatus == 'Open'))) || (!(SOLI.QtyNeeded >= 0) && GroupOnlyPermissions['Returns']['enabled'])) ">
+                                                                    <numbers-only id-value = "ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_QtyNeeded"
+                                                                        class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                                        min-value = "{{F_CO.getMinAttributeValueBasedOnReturnFlag('SO', SoHeaderIndex,SOLI)}}"
+                                                                        default-value = "1"
+                                                                        input-model-value = "SOLI.QtyNeeded" 
+                                                                        include-negative = "F_CO.allowReturn('SO', SoHeaderIndex,SOLI)"
+                                                                        include-zero = "false"
+                                                                        precision-length = "2"
+                                                                        force-precision-length = "false"
+                                                                        blur-value="F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, $event)"
+                                                                        input-keydown-value="F_CO.setFlagOnTabForBlurHandling($event)"
+                                                                        input-keyup-value="F_CO.calculateSpecialOrderValue('ServiceJob', 'QtyNeeded', SoHeaderIndex, SoKitHeaderIndex, $index, (SOLI.IsPart && !SOLI.IsNonInventoryPart));"/>
+                                                                </span>
+                                                            </td>
+                                                            <td class="text-center bp-bold-font" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}',
+                                                                    'bp-disabled': (!F_CO.displayEditBtnOnLineItem('SO', 'NonKitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex)
+                                                                        && M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || soHeader.SOInfo.ClaimStatus == 'Approved') }">
+                                                                <span ng-if="M_CO.coHeaderRec.OrderStatus != 'Quote' && SOLI.Status!=='Ordered' && SOLI.IsPart && !SOLI.IsNonInventoryPart && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo && (SOLI.StockCommited == 0 && SOLI.QtyOrder > 0)" class="bp-red-font">{{ 'Part_Object_Status_Required' | translate }}</span>
+                                                                <span ng-if="M_CO.coHeaderRec.OrderStatus != 'Quote' && SOLI.IsPart && !SOLI.IsNonInventoryPart && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo && (SOLI.StockCommited > 0 && SOLI.QtyOrder > 0)" class="bp-orange-font">{{ 'Part_Object_Status_Multiple' | translate }}</span>
+                                                                
+                                                                <!-- Start: Status for Non kit LI - Inventory part -->
+                                                                <span ng-if="(SOLI.IsPart && !SOLI.IsNonInventoryPart && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo && (M_CO.coHeaderRec.OrderStatus === 'Quote' || (SOLI.Status === 'Ordered' && SOLI.StockCommited === 0 ) || !(SOLI.StockCommited >= 0 && SOLI.QtyOrder > 0)))"
+                                                                    ng-class="{'bp-green-font': SOLI.Status == 'In Stock', 'bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced',
+                                                                    'bp-red-font': (SOLI.Status == 'Required' || SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'), 
+                                                                    'bp-coral-light-bg': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-status-bubble': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-orange-font': (SOLI.Status === 'Ordered'),
+                                                                    'bp-first-letter-capitalize': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold')}">{{::SOLI.Status}}</span>
+                                                                <!-- End: Status for Non kit LI - Inventory part -->
+                                                                
+                                                                <!-- Start: Status for Non kit LI - Non Inventory part -->
+                                                                <span ng-if="SOLI.IsPart && SOLI.IsNonInventoryPart" 
+                                                                    ng-class = "{'bp-green-font': (soHeader.SOInfo.WorkStatus != 'Invoiced' && (SOLI.QtyNeeded >= 0)),
+                                                                    'bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced', 
+                                                                    'bp-red-font': (soHeader.SOInfo.WorkStatus != 'Invoiced' && !(SOLI.QtyNeeded >= 0)),
+                                                                    'bp-coral-light-bg': (soHeader.SOInfo.WorkStatus != 'Invoiced' && !(SOLI.QtyNeeded >= 0)),
+                                                                    'bp-status-bubble': (soHeader.SOInfo.WorkStatus != 'Invoiced' && !(SOLI.QtyNeeded >= 0))}">
+                                                                    {{(soHeader.SOInfo.WorkStatus == "Invoiced")  ? "Invoiced" : ((SOLI.QtyNeeded >= 0) ? "In Stock" : "Return")}}
+                                                                </span>
+                                                                <!-- End: Status for Non kit LI - Non Inventory part -->
+                                                                <span ng-if="!SOLI.IsPart && !SOLI.IsSublet" ng-class = "{'bp-cyan-font': soHeader.SOInfo.WorkStatus != 'Invoiced','bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced'}">{{soHeader.SOInfo.WorkStatus == "Invoiced"  ? "Invoiced" : "Ready" }}</span>
+                                                                <span ng-if="SOLI.IsSublet" ng-class = "{'bp-green-font':  SOLI.Status == 'In Stock',
+                                                                    'bp-green-dark-font': soHeader.SOInfo.WorkStatus == 'Invoiced',
+                                                                    'bp-cyan-font': SOLI.Status == 'Ready' ,
+                                                                    'bp-red-font': (SOLI.Status == 'Required' || SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-coral-light-bg': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-status-bubble': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold'),
+                                                                    'bp-orange-font': (SOLI.Status === 'Ordered'),
+                                                                    'bp-first-letter-capitalize': (SOLI.Status === 'RETURN' || SOLI.Status === 'Oversold')}">{{::SOLI.Status}}</span>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}',
+                                                                    'bp-disabled': (!F_CO.displayEditBtnOnLineItem('SO', 'NonKitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex)
+                                                                        && M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || soHeader.SOInfo.ClaimStatus == 'Approved') }">
+                                                                <span ng-if = "(M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index
+                                                                                || !GroupOnlyPermissions['Override price'].enabled)">{{SOLI.KitPrice | currency}}</span>
+                                                                <span ng-if = "(M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index
+                                                                                && GroupOnlyPermissions['Override price'].enabled)">
+                                                                    <numbers-only id-value = "ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_Price"
+                                                                        class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                                        input-model-value = "SOLI.KitPrice" 
+                                                                        include-negative = "false"
+                                                                        include-zero = "true"
+                                                                        precision-length = "2"
+                                                                        blur-value = "F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex, $event)"
+                                                                        input-keydown-value="F_CO.setFlagOnTabForBlurHandling($event)"/>
+                                                                </span>
+                                                            </td>
+                                                            <td class="text-center boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}',
+                                                                    'bp-disabled': (!F_CO.displayEditBtnOnLineItem('SO', 'NonKitLI', SoHeaderIndex, SoKitHeaderIndex, SoLIIndex)
+                                                                        && M_CO.editLineItem !== 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}' || soHeader.SOInfo.ClaimStatus == 'Approved') }">
+                                                                <span ng-if="!SOLI.SubTotal" ng-class="{'bp-red-font': (SOLI.QtyNeeded * SOLI.KitPrice) < 0}">{{(SOLI.QtyNeeded * SOLI.KitPrice) | currency}} <span ng-if = "SOLI.IsVariance">~</span></span>
+                                                                <span ng-if="SOLI.SubTotal" ng-class="{'bp-red-font': SOLI.SubTotal < 0}">{{::SOLI.SubTotal | currency}} <span ng-if = "SOLI.IsVariance">~</span></span>
+                                                            </td>
+                                                            <td class="partInvIconAdjustment" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}',
+                                                                'bp-disabled': (SOLI.Status === 'Invoiced' || soHeader.SOInfo.ClaimStatus == 'Approved') || (soHeader.SOInfo.DealId && F_CO.isDealInvoiced())}">
+                                                                <i ng-include="'{!Application_Images}/Icons/expandBadge.svg'" data-toggle="tooltip" title="{!$Label.More_options}" 
+                                                                   id="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_moreOptions"
+                                                                   class="bp-chevron bp-pointer-cursor" 
+                                                                   ng-class="{'bp-chevron-up' : M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo, 'bp-chevron-down' : !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo}"
+                                                                   ng-if="(SOLI.IsPart && !SOLI.IsNonInventoryPart && (SOLI.QtyNeeded >= 0) && SOLI.Status != 'Invoiced') || (SOLI.IsSublet && GroupOnlyPermissions['Costs']['read only'])"
+                                                                   ng-click="F_CO.showHideItemInfo(SoHeaderIndex, SoKitHeaderIndex,$event)"></i>
+                                                               <span data-toggle="tooltip" title="More actions" ng-if="!M_CO.isServiceJobDisabled(SoHeaderIndex)"
+                                                                    id="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_deleteBtn">
+                                                                    <i ng-if="M_CO.coHeaderRec.COType != 'Internal Service' && !soHeader.SOInfo.DealId" ng-include="'{!Application_Images}/Icons/More-actions.svg'" class="icon_fill_blue bp-pointer-cursor LIDeleteBtn"
+                                                                        ng-click="F_CO.openMoveLineItemModalWindowAction(soHeader.SOInfo.Id, SOLI.Id, SOLI.IsLabour || SOLI.IsSublet); F_CO.openDeleteConfirmationPopupForSOLineItem(SoHeaderIndex, soHeader.SOInfo.Id, SoKitHeaderIndex, SOKHitem.Id, SoLIIndex, SOLI.Id, 'Service Job', true,$event);"> </i>
+                                                                       <!-- ng-click="F_CO.openDeleteConfirmationPopupForSOLineItem(SoHeaderIndex, soHeader.SOInfo.Id, SoKitHeaderIndex, SOKHitem.Id, SoLIIndex, SOLI.Id, 'Service Job');" -->
+                                                                     <i ng-if="M_CO.coHeaderRec.COType == 'Internal Service' || soHeader.SOInfo.DealId" ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="icon_fill_blue bp-pointer-cursor LIDeleteBtn"
+                                                                        ng-click="F_CO.openDeleteConfirmationPopupForSOLineItem(SoHeaderIndex, soHeader.SOInfo.Id, SoKitHeaderIndex, SOKHitem.Id, SoLIIndex, SOLI.Id, 'Service Job', false, $event)"></i>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <!-- End: Line Items Row without Kit Header -->
+                                                        
+                                                        <!-- Start: Special Order Section without Kit Header -->
+                                                        <tr ng-if="SOLI.IsSublet && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo && GroupOnlyPermissions['Costs']['read only']">
+                                                            <td colspan="4"></td>
+                                                            <td class="text-center bp-first-letter-capitalize">
+                                                                <span>{{ 'Cost' | translate }}: {{::SOLI.Cost | currency}}</span>
+                                                            </td>
+                                                            <td colspan="2" class="bg-white"></td>
+                                                        </tr>
+                                                        <tr class="bp-expanded-deletable-div-transition itemOrderInfoTR" id="SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_StockCommitted" 
+                                                            ng-if="(!SOKHitem.Id && SOLI.IsPart && !SOLI.IsNonInventoryPart && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo && (SOLI.QtyNeeded >= 0)) && !M_CO.showQuote">
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                            <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                                <div class="liItemDesc_setTextEllipsis bp-dark-grey2-font">
+                                                                    <span>{{ 'Committed_from_the_stock' | translate }}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                                <span ng-if = "M_CO.editLineItem != 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index">{{::SOLI.StockCommited}}</span>
+                                                                <span ng-if = "M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index">
+                                                                    <numbers-only id-value="ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_StockCommited"
+                                                                        class-value="bp-input-text inTimeEdit timeField text-center"
+                                                                        min-value="0"
+                                                                        max-value="{{F_CO.getMaxCommitedValue(SOLI)}}"
+                                                                        input-model-value="SOLI.StockCommited" 
+                                                                        include-negative="false"
+                                                                        include-zero="true"
+                                                                        precision-length="2"
+                                                                        force-precision-length="false"
+                                                                        blur-value="F_CO.updateSOLineItem('ServiceJob', SoHeaderIndex, SoKitHeaderIndex, $index, $event)"
+                                                                        input-keydown-value="F_CO.setFlagOnTabForBlurHandling($event)"
+                                                                        input-keyup-value="F_CO.calculateSpecialOrderValue('ServiceJob', 'StockCommited', SoHeaderIndex, SoKitHeaderIndex, $index, (SOLI.IsPart && !SOLI.IsNonInventoryPart));"/>
+                                                                </span> <!-- max-value="{{SOLI.QtyNeeded}}" -->
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                                <span class="bp-green-font bp-bold-font">{{ 'Part_Object_Status_InStock' | translate }}</span>
+                                                            </td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        </tr>
+                                                        <tr class="bp-expanded-deletable-div-transition itemOrderInfoTR" id="SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_QtyOrder"
+                                                            ng-if="!SOKHitem.Id && SOLI.IsPart && !SOLI.IsNonInventoryPart && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo && (SOLI.QtyNeeded >= 0) && !M_CO.showQuote">
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                            <td class="boldText" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                                <div class="liItemDesc_setTextEllipsis bp-red-font">
+                                                                    <span>{{ 'Quantity_to_order' | translate }}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                                <span>{{::SOLI.QtyOrder}}</span>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}">
+                                                                <span class="bp-red-font bp-bold-font"  ng-if="SOLI.Status !== 'Ordered'">{{ 'Part_Object_Status_Required' | translate }}</span>
+                                                                <span class="bp-orange-font bp-bold-font" ng-if="SOLI.Status === 'Ordered'">{{ 'Label_Ordered' | translate }}</span>
+                                                            </td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}'}"></td>
+                                                        </tr>
+                                                        <tr class="inventory-status-liItem" id="SOHeader{{SoHeaderIndex}}_SOKitHeader{{SoKitHeaderIndex}}_SOLI{{$index}}_AvailableInventory" 
+                                                            ng-class="{ 'liItem-bg-white': ((SOLI.ActualAvailableParts - SOLI.StockCommited) > 0 && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo), 'liItem-bg-red': (SOLI.ActualAvailableParts - SOLI.QtyNeeded <= 0 && SOLI.ActualAvailableParts - SOLI.StockCommited <= 0), 'liItem-bg-orange': (SOLI.ActualAvailableParts - SOLI.StockCommited > 0) && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo }"
+                                                            ng-repeat-end="ng-repeat-end" 
+                                                            ng-if="!SOKHitem.Id && SOLI.IsPart && !SOLI.IsNonInventoryPart && (M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo || M_CO.editLineItem == 'ServiceJob_SOHeader' + SoHeaderIndex + '_SOKitHeader' + SoKitHeaderIndex + '_SOLI' + $index) && soHeader.SOInfo.WorkStatus != 'Complete'">
+                                                            <td colspan="3" class="helper-text-label" ng-if="(SOLI.QtyNeeded >= 0)">
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.StockCommited) > 0 && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo" class="label-text">{{ 'Available_inventory' | translate }}: {{SOLI.AvailablePart}}</span>
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.QtyNeeded <= 0 && SOLI.ActualAvailableParts - SOLI.StockCommited <= 0)" class="label-text red">{{ 'Available_inventory' | translate }}: 0 - <span class="text-uppercase">{{ 'Part_Object_Status_OutofStock' | translate }}</span></span>
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.StockCommited > 0) && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo" class="label-text orange">{{ 'Quantity_remaining' | translate }}: {{SOLI.ActualAvailableParts - SOLI.StockCommited}}</span>
+                                                            </td>
+                                                            <td colspan="3" class="helper-text-label" ng-if="!(SOLI.QtyNeeded >= 0)">
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.StockCommited) > 0  && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo" class="label-text">{{ 'Available_inventory' | translate }}: {{SOLI.AvailablePart}}</span>
+                                                                <span ng-if="(SOLI.ActualAvailableParts - SOLI.StockCommited) <= 0  && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo" class="label-text red">{{ 'Available_inventory' | translate }}: 0 - <span class="text-uppercase">{{ 'Part_Object_Status_OutofStock' | translate }}</span></span>
+                                                            </td>
+                                                            
+                                                            <td colspan="3">
+                                                                <button class="bp-btn bp-btn-normal" data-target="#SupersededPart" data-toggle="modal" ng-click="showAlternatePartDialog=true; F_CO.getAlternateParts(SOLI, soHeader.SOInfo.Id, 'ServiceOrder', SoHeaderIndex);">{{ 'View_related_parts' | translate }}</button>
+                                                            	<button class="bp-btn secondary-btn" ng-if="SOLI.IsBRPPart" ng-click="F_CO.openPartLocatorWindow(SOLI)" >{{ 'BRP_Availability' | translate }}</button>
+                                                            </td>
+                                                            <td class="helper-text-label" ng-class="{ 'bg-white': ((SOLI.ActualAvailableParts - SOLI.StockCommited) > 0 && !M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo), 'bg-red': (SOLI.ActualAvailableParts - SOLI.QtyNeeded <= 0 && SOLI.ActualAvailableParts - SOLI.StockCommited <= 0), 'bg-orange': (SOLI.ActualAvailableParts - SOLI.StockCommited > 0) && M_CO.SOHeaderList[SoHeaderIndex].SOGridItems[SoKitHeaderIndex].ShowItemInfo }"></td>
+                                                        </tr>
+                                                        <!-- End: Special Order Section without Kit Header -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="search-entity-wrapper PB55" ng-if="F_CO.showAutoComplete(soHeader.SOInfo.WorkStatus,soHeader.SOInfo.ClaimStatus) && !soHeader.SOInfo.DealId"
+                                                ng-class="{'pull-left autocomplete-wrapper-left': (M_CO.IsARIPartSmartEnabled && !M_CO.isServiceJobDisabled(SoHeaderIndex))}">
+                                                <p class="search-entity-text">{{ 'Scan_or_search_to_add_a_part_labor_kit_fee_or_merchandise' | translate }}</p>
+                                                <autocompletev2 id="autocompletev2ServiceJobId"
+                                                    template-name="Entity"
+                                                    section-name="Service Job"
+                                                    soheader-index="{{SoHeaderIndex}}"
+                                                    section-id="ServiceJob{{SoHeaderIndex}}"
+                                                    is-disabled="M_CO.isServiceJobDisabled(SoHeaderIndex)" />
+                                            </div>
+                                            <div class="autocomplete-wrapper-right pull-left"
+                                                ng-if="F_CO.showAutoComplete(soHeader.SOInfo.WorkStatus,soHeader.SOInfo.ClaimStatus) && !M_CO.isServiceJobDisabled(SoHeaderIndex) && !soHeader.SOInfo.DealId && M_CO.IsARIPartSmartEnabled">
+                                                <droplet class ="part-smart-droplet" ng-model="FileUpload.interface"> 
+                                                    <div class="search-entity-wrapper browse_but"> 
+                                                        <droplet-upload-single ng-model="FileUpload.interface" ng-click="F_CO.setPartSmartFileReadData('Service Job', soHeader.SOInfo.Id)"> 
+                                                        </droplet-upload-single> 
+                                                        <i ng-include="'{!Application_Images}/Icons/part-smart.svg'" class="icon_fill_blue bp-pointer-cursor pull-left bp-svg-15"
+                                                       ng-click="F_CO.setPartSmartFileReadData('Service Job', soHeader.SOInfo.Id)"></i>
+                                                         <a class="bp-blue-font bp-bold-font bp-font-14 pull-left line-height-small" ng-click="F_CO.setPartSmartFileReadData('Service Job', soHeader.SOInfo.Id)">
+                                                        {{ 'Add_items_with_PartSmart' | translate }}
+                                                         </a> 
+                                                   </div> 
+                                                </droplet>
+                                            </div>
+                                            <div class="search-entity-wrapper" ng-if="F_CO.showAutoComplete(soHeader.SOInfo.WorkStatus,soHeader.SOInfo.ClaimStatus) && soHeader.SOInfo.DealId"
+                                                ng-class="{'pull-left autocomplete-wrapper-left': (M_CO.IsARIPartSmartEnabled && !M_CO.isServiceJobDisabled(SoHeaderIndex))}">
+                                                <p class="search-entity-text">{{ 'Scan_or_search_to_add_a_part_labor_kit_or_merchandise' | translate }}</p>
+                                                <autocompletev2 id="autocompletev2ServiceJobId"
+                                                    template-name="Entity"
+                                                    section-name="DealService Section"
+                                                    soheader-index="{{SoHeaderIndex}}"
+                                                    section-id="ServiceJob{{SoHeaderIndex}}"
+                                                    is-disabled="M_CO.isServiceJobDisabled(SoHeaderIndex) || (soHeader.SOInfo.DealId && F_CO.isDealInvoiced())" />
+                                            </div>
+                                            <div class="autocomplete-wrapper-right pull-left"
+                                                ng-if="F_CO.showAutoComplete(soHeader.SOInfo.WorkStatus,soHeader.SOInfo.ClaimStatus) && !M_CO.isServiceJobDisabled(SoHeaderIndex) && soHeader.SOInfo.DealId && M_CO.IsARIPartSmartEnabled">
+                                                <droplet class ="part-smart-droplet" ng-model="FileUpload.interface"> 
+                                                    <div class="search-entity-wrapper browse_but"> 
+                                                        <droplet-upload-single ng-model="FileUpload.interface" ng-click="F_CO.setPartSmartFileReadData('Deal Service Job', soHeader.SOInfo.Id)"> 
+                                                        </droplet-upload-single> 
+                                                        <i ng-include="'{!Application_Images}/Icons/part-smart.svg'" class="icon_fill_blue bp-pointer-cursor pull-left bp-svg-15"
+                                                       ng-click="F_CO.setPartSmartFileReadData('Deal Service Job', soHeader.SOInfo.Id)"
+                                                       ng-if="!F_CO.isDealInvoiced()"></i>
+                                                         <a class="bp-blue-font bp-bold-font bp-font-14 pull-left line-height-small" ng-if="!F_CO.isDealInvoiced()" ng-click="F_CO.setPartSmartFileReadData('Deal Service Job', soHeader.SOInfo.Id)">
+                                                        {{ 'Add_items_with_PartSmart' | translate }}
+                                                         </a> 
+                                                   </div> 
+                                                </droplet>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Job Items accordian end here -->
+                                <!-- Attachment Accordion -->
+                                <!--  <div class="bp-inner-accordian open job-item-attachments" ng-if="soHeader.AttachmentList.length > 0"
+                                    ng-class="{'bp-inner-accordian-opened': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_Attachment'}">
+                                    <div class="inner-accordian-header col-md-12" ng-click = "F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_AttachmentSectionId', 'ServiceJob'+$index+'_Attachment')">
+                                        <div class="inner-accordian-header-left">
+                                            <h2 class="accordian-left-details">{{ 'Attachments' | translate }}
+                                                <span class="badge" ng-if="soHeader.AttachmentList.length > 0 && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_Attachment'">{{soHeader.AttachmentList.length}}</span>
+                                            </h2>
+                                        </div>
+                                        <div class="accordian-right-details">
+                                            <a href="#" class="down-arrow-icon">
+                                                <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="blue_3384FF"></i>
+                                                </a>   
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_Attachment'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1"></i>
+                                            </a>  href="#"   
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_Attachment'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="blue_008DC1"></i>
+                                            </a>  
+                                        </div>
+                                    </div>
+                                    <div class="inner-accordian-body bp-light-gray4 col-md-12 bp-collapse-div-transition" id="ServiceJob{{$index}}_AttachmentSectionId">
+                                        <div class = "padding-bottom30">
+                                            <div class="table-responsive">
+                                                <table class="table table-attachments">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>&nbsp;</th>
+                                                            <th>{{ 'FILE_NAME' | translate }}</th>
+                                                            <th>{{ 'DATE_UPLOAD' | translate }}</th>
+                                                            <th>{{ 'Label_Source' | translate }}</th>
+                                                            <th>&nbsp;</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr ng-repeat="attach in soHeader.AttachmentList" class = "bp-expanded-deletable-div-transition" 
+                                                            id = "SOHeader{{SoHeaderIndex}}_Attachment{{$index}}" ng-init="AttachmentIndex = $index">
+                                                             <td ng-if="F_CO.getFileExtension(attach.AttachmentName)"><img ng-src="{{attach.AttachmentURL}}" class="attachment-thumbnail" height="49px" width="79px" ng-click="F_CO.viewAttachment(attach.AttachmentURL,attach.AttachmentName)"/></td>
+                                                            <td ng-if="!F_CO.getFileExtension(attach.AttachmentName)"><img src="{!Application_Images}/thumbnail.jpg" class="attachment-thumbnail" height="49px" width="79px" ng-click="F_CO.viewAttachment(attach.AttachmentURL,attach.AttachmentName)"/></td>
+                                                            <td>{{attach.AttachmentName}}</td>
+                                                            <td>{{attach.UploadedDate}}</td>
+                                                            <td>{{attach.Source}}</td>
+                                                            <td>
+                                                                <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" 
+                                                                    class="gray_DDDDDD bp-pointer-cursor"
+                                                                    ng-click="F_CO.removeAttachment(attach.AttachmentId, SoHeaderIndex)"></i>
+                                                                <span data-toggle="tooltip" title="Delete" ng-if="!M_CO.isServiceJobDisabled(SoHeaderIndex)">
+                                                                <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="gray_DDDDDD bp-pointer-cursor"
+                                                                    ng-click="F_CO.openDeleteConfirmationPopupForAttachment(SoHeaderIndex, soHeader.SOInfo.Id, AttachmentIndex, attach.AttachmentId);"></i>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="add-attachment-btn">
+                                                <button class="bp-btn bp-btn-secondaryCTA" ng-disabled="M_CO.isServiceJobDisabled(SoHeaderIndex)"
+                                                    ng-click="F_CO.serviceJobopenAttachment(SoHeaderIndex)">{{ 'ADD_ATTACHMENTS' | translate }}</button>            
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                 --><!-- Attachment Accordion Ends-->  
+                                <!-- Notes Accordion -->
+                                <div class="bp-inner-accordian open job-item-notes" ng-if="(soHeader.SOInfo.NotesForCustomer != null || soHeader.SOInfo.ShowNotesForCustomer)"
+                                    ng-class="{'bp-inner-accordian-opened': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_NotesForCustomer'}">
+                                    <div class="inner-accordian-header col-md-12" ng-click = "F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_NotesForCustomerSectionId', 'ServiceJob'+$index+'_NotesForCustomer')">
+                                        <div class="inner-accordian-header-left">
+                                            <h2 class="accordian-left-details">{{ 'Notes_for_customer' | translate }}</h2>
+                                        </div>
+                                        <div class="accordian-right-details">
+                                            <a href="" class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_NotesForCustomer'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_3384FF"></i>
+                                            </a>    
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_NotesForCustomer'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="blue_008DC1"></i>
+                                            </a>    
+                                        </div>
+                                    </div>
+                                    <div class="inner-accordian-body bp-light-gray4 col-md-12 bp-collapse-div-transition" id="ServiceJob{{$index}}_NotesForCustomerSectionId"
+                                        ng-class="{'bp-expand-div-transition': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_NotesForCustomer'}">
+                                        <div class="col-md-7 padding-bottom30 padding-top1">
+                                            <div class="bp-multiselect" ng-click="F_CO.displayInput($event, $index, 'NewNote', 'NotesForCustomer', 'Notes')">
+                                                <div ng-class="{'padding10': soHeader.SOInfo.NotesForCustomer.length > 0,'PB0':!(M_CO.toDisplayInput[SoHeaderIndex] == 'NotesForCustomer' || displayCauseConcernCorrectionInput(SoHeaderIndex, 'NotesForCustomer'))}">
+                                                    <div ng-repeat="note in soHeader.SOInfo.NotesForCustomer track by $index" class="d-flex"> 
+                                                        <input id="Notes{{SoHeaderIndex}}Tag{{$index}}" type="text" class="bp-input-text MB10" ng-show="M_CO.editModeIndexMultiSelect['Notes'] == $index" 
+                                                               ng-model="soHeader.SOInfo.NotesForCustomer[$index]"
+                                                               ng-blur="F_CO.updateMultiSelect($event,SoHeaderIndex,$index, 'NotesForCustomer', 'Notes')"
+                                                               ng-keydown="F_CO.updateMultiSelect($event, SoHeaderIndex,$index, 'NotesForCustomer', 'Notes')"
+                                                               ng-disabled="!(F_CO.getSOPermissionType()['create/modify'])"
+                                                               maxlength="1500" />
+                                                        <span ng-click="F_CO.editMultiselectTag($event,'NotesForCustomer','Notes',SoHeaderIndex,$index);" ng-show="M_CO.editModeIndexMultiSelect['Notes'] != $index">
+                                                            {{note}}
+                                                        <i class="blue_3384FF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'" 
+                                                            ng-click="F_CO.removeFromMultiSelect($index, SoHeaderIndex, 'NotesForCustomer','Notes',$event)"
+                                                            ng-if="(F_CO.getSOPermissionType()['create/modify'])"></i>
+                                                        </span>
+                                                    </div>
+                                                    <input type="text" class="bp-input-text" ng-show="M_CO.toDisplayInput[SoHeaderIndex] == 'NotesForCustomer' || displayCauseConcernCorrectionInput(SoHeaderIndex, 'NotesForCustomer')" id="Notes{{SoHeaderIndex}}"
+                                                        ng-model="soHeader.SOInfo.NewNotesForCustomer"
+                                                        ng-keydown="F_CO.addAndRemoveFromMultiSelect($event, $index,'NewNotesForCustomer','NotesForCustomer','Notes')"
+                                                        ng-blur="F_CO.addAndRemoveFromMultiSelect($event, $index,'NewNotesForCustomer','NotesForCustomer','Notes')"
+                                                        placeholder="{{ 'Label_Notes' | translate }}" rel="Note"
+                                                        ng-disabled="!(F_CO.getSOPermissionType()['create/modify'])"
+                                                        maxlength="1500" />
+                                                </div>  
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Notes Accordion Ends-->
+                                <!-- Log Technician Time accordian start here -->
+                                <div class="bp-inner-accordian open" ng-class="{'bp-inner-accordian-opened': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_LogTechnicianTime'}" ng-if="soHeader.HoursLoggedList.length > 0">
+                                    <div class="inner-accordian-header col-md-12" ng-click = "F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_LogTechnicianTimeSectionId', 'ServiceJob'+$index+'_LogTechnicianTime')">
+                                        <div class="inner-accordian-header-left">
+                                            <h2 class="accordian-left-details">{{ 'Technician_time' | translate }}
+                                                <span class="badge" ng-if="soHeader.HoursLoggedList.length > 0 && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_LogTechnicianTime'">{{::soHeader.HoursLoggedList.length}}</span>
+                                            </h2>
+                                        </div>
+                                        <div class="accordian-right-details">
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_LogTechnicianTime'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1"></i>
+                                            </a>  
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_LogTechnicianTime'">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="blue_008DC1"></i>
+                                            </a>    
+                                        </div>
+                                    </div>
+                                    <div class="inner-accordian-body bp-light-gray4 col-md-12 bp-collapse-div-transition ServiceJobLineItemWrapper SOHoursLogWrapper"  
+                                        id="ServiceJob{{$index}}_LogTechnicianTimeSectionId"
+                                        ng-class="{'bp-expand-div-transition': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_LogTechnicianTime'}">
+                                        <div class="expandableContainer">
+                                            <div class="table-responsive" ng-if="soHeader.HoursLoggedList.length != 0">
+                                                <table class = "bp-editable-table SOJobItemsGrid SOHoursLogGrid">
+                                                    <col width="5%" />
+                                                    <col width="13%" />
+                                                    <col width="10%" />
+                                                    <col width="15%" />
+                                                    <col width="9%" />
+                                                    <col width="9%" />
+                                                    <col width="8%" />
+                                                    <col width="21%" />
+                                                    <col width="10%" />
+                                                    <thead>
+                                                        <tr>
+                                                            <th></th>
+                                                            <th class = "bp-text-uppercase">{{ 'Label_Log' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'Label_Date' | translate }}</th>
+                                                            <th class = "bp-text-uppercase">{{ 'Technician' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'In' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'Out' | translate }}</th>
+                                                            <th class = "bp-text-uppercase text-center">{{ 'Label_Hours' | translate }}</th>
+                                                            <th class = "bp-text-uppercase">{{ 'Label_Notes' | translate }}</th>
+                                                            <th class = "bp-text-uppercase"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr class = "bp-expanded-deletable-div-transition" id = "SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}" 
+                                                            ng-repeat="HoursLogged in soHeader.HoursLoggedList" ng-init="HoursLoggedIndex = $index">
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <i ng-include="'{!Application_Images}/Icons/log-time.svg'"
+                                                                    class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                                            </td>
+                                                            <td class="boldText LogTechId" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <div class="InnerFlexContainer">
+                                                                    <span  ng-if = "!M_CO.isSOItemDisabled()" ng-click="F_CO.editHourLogged('ServiceJob', SoHeaderIndex, soHeader.SOInfo.Id, HoursLoggedIndex)">{{::HoursLogged.Log}}</span> <!-- blue color -->
+                                                                    <span class =" hursLogged" ng-if = "M_CO.isSOItemDisabled()" >{{::HoursLogged.Log}}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <span>{{::HoursLogged.StartDate}}</span>
+                                                             </td>
+                                                            <td class="" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <div class="liItemDesc_setTextEllipsis">
+                                                                    <span> {{::HoursLogged.EmployeeName}}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <span>{{::HoursLogged.TimeIn}}</span> 
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <span>{{::HoursLogged.TimeOut}}</span>
+                                                            </td>
+                                                            <td class="text-center" ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <span>{{::HoursLogged.TotalHours}}</span>
+                                                            </td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}">
+                                                                <div class="liItemDesc_setTextEllipsis logTechNotes">
+                                                                    <span class ="notes" ng-if = "HoursLogged.Notes">{{::HoursLogged.Notes}}</span>
+                                                                    <span ng-if = "!HoursLogged.Notes">- - - - - - - - -</span>
+                                                                </div>
+                                                            </td>
+                                                            <td ng-class = "{'setBgColor' : M_CO.editLineItem == 'ServiceJob_SOHeader{{SoHeaderIndex}}_HoursLogged{{$index}}'}" >
+                                                                <a class="save-btn T0" ng-if="!M_CO.isSOItemDisabled()"
+                                                                    ng-click="F_CO.editHourLogged('ServiceJob', SoHeaderIndex, soHeader.SOInfo.Id, HoursLoggedIndex)">{{ 'Edit_Label' | translate }}</a>
+                                                               <span data-toggle="tooltip" title="Delete" ng-if="!M_CO.isSOItemDisabled()">
+                                                                <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="icon_fill_blue bp-pointer-cursor LIDeleteBtn"
+                                                                    ng-click="F_CO.openDeleteConfirmationPopupForHoursLogged(SoHeaderIndex, soHeader.SOInfo.Id, HoursLoggedIndex, HoursLogged.Id, 'LogTechnicianTimeGrid');"></i>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="add-LogHours-btn">
+                                                <button class="bp-btn bp-btn-secondaryCTA" ng-disabled="M_CO.isSOItemDisabled()"
+                                                    ng-click="F_CO.openAddLogTechnicianTimePopUp(soHeader.SOInfo.Id, SoHeaderIndex)">{{ 'LOG_MORE_TIME' | translate }}</button>            
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Log Technician Time accordian end here -->
+                                
+                                <!-- Customer Approval accordian start here -->
+                                <div class="bp-inner-accordian open customer-approval-section" ng-class="{'bp-inner-accordian-opened': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_CustomerApprovalSection'}" 
+                                    ng-if="M_CO.SOHeaderList[SoHeaderIndex].CustomerApprovalList.length">
+                                    <div class="inner-accordian-header col-md-12">
+                                        <div class="inner-accordian-header-left" ng-click="F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_CustomerApprovalSectionId', 'ServiceJob'+$index+'_CustomerApprovalSection')">
+                                            <h2 class="accordian-left-details customer-approval-label">{!$Label.customer_approval_label}
+                                                <span class="badge" ng-if="M_CO.SOHeaderList[SoHeaderIndex].CustomerApprovalList.length && M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_CustomerApprovalSection'">{{::M_CO.SOHeaderList[SoHeaderIndex].CustomerApprovalList.length}}</span>
+                                            </h2>
+                                        </div>
+                                        <div class="accordian-right-details">
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName != 'ServiceJob'+$index+'_CustomerApprovalSection'" 
+                                                ng-click = "F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_CustomerApprovalSectionId', 'ServiceJob'+$index+'_CustomerApprovalSection')">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="blue_008DC1"></i>
+                                            </a>  
+                                            <a class="down-arrow-icon" ng-if = "M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_CustomerApprovalSection'" 
+                                                ng-click = "F_CO.collapseInnerSection(); M_CO.SOHeaderList[SoHeaderIndex].addNewCustomerApproval = false;">
+                                            <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="blue_008DC1"></i>
+                                            </a>    
+                                        </div>
+                                    </div>
+                                    <div class="inner-accordian-body bp-light-gray4 col-md-12 bp-collapse-div-transition ServiceJobLineItemWrapper"  
+                                        id="ServiceJob{{$index}}_CustomerApprovalSectionId" ng-class="{'bp-expand-div-transition': M_CO.expandedInnerSectionName == 'ServiceJob{{$index}}_CustomerApprovalSection'}">
+                                        <div class="expandableContainer customer-approval-list" ng-if="M_CO.SOHeaderList[SoHeaderIndex].CustomerApprovalList.length">
+                                            <div class="table-responsive">
+                                                <table class="bp-editable-table customer-approval-table SOJobItemsGrid">
+                                                    <col width="5%"  />
+                                                    <col width="30%"  />
+                                                    <col width="25%" />
+                                                    <col width="25%" />
+                                                    <col width="15%" />
+                                                    <thead>
+                                                        <tr>
+                                                            <th></th>
+                                                            <th class="bp-text-uppercase">{{' Label_Approval' | translate }}</th>
+                                                            <th class="bp-text-uppercase">{{' Date_Time ' | translate }}</th>
+                                                            <th class="bp-text-uppercase">{{' Method_of_Approval' | translate }}</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr class="bp-expanded-deletable-div-transition" id="SOHeader{{SoHeaderIndex}}_CustomerApproval{{$index}}" 
+                                                            ng-repeat="customerApproval in M_CO.SOHeaderList[SoHeaderIndex].CustomerApprovalList" ng-init="CustomerApprovalIndex = $index">
+                                                            <td ng-class="{'highLightCA':M_CO.CustomerApproval.highlightLastAddedCAIndex == $index }"></td>
+                                                            <td class="boldText" ng-class="{'highLightCA':M_CO.CustomerApproval.highlightLastAddedCAIndex == $index}">
+                                                                <span class="setTextEllipsis cutomer-approval-id bp-cursor-pointer" ng-click = "F_CO.getCustomerApprovalHistoryForSelectedSO(customerApproval.Id);">{{::customerApproval.ApprovalId}}</span>
+                                                            </td>
+                                                            <td ng-class="{'highLightCA':M_CO.CustomerApproval.highlightLastAddedCAIndex == $index }">
+                                                                <span>{{::customerApproval.ApprovalDate}}</span>
+                                                            </td>
+                                                            <td ng-class="{'highLightCA':M_CO.CustomerApproval.highlightLastAddedCAIndex == $index }">
+                                                                <span>{{::customerApproval.ApprovalType}}</span>
+                                                            </td>
+                                                            <td ng-class="{'highLightCA':M_CO.CustomerApproval.highlightLastAddedCAIndex == $index }">
+                                                                <i ng-include="'{!Application_Images}/Icons/print.svg'" 
+                                                                    class="bp-blue3384ff bp-pointer-cursor size-of-customer-apporval-icons" ng-click = "F_CO.getCustomerApprovalHistoryForSelectedSO(customerApproval.Id);" ></i> 
+                                                                <span data-toggle="tooltip" title="Email">
+                                                                    <i ng-include="'{!Application_Images}/Icons/email.svg'" class="bp-blue3384ff bp-pointer-cursor size-of-customer-apporval-icons"
+                                                                        ng-click="F_CO.openEmailPopUpForCustomerApproval(customerApproval.Id,customerApproval.ApprovalDetailJson)"></i>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="add-more-btn" ng-if = "soHeader.SOInfo.WorkStatus != 'Invoiced' ">
+                                                <button class="bp-btn bp-btn-secondaryCTA bp-text-uppercase line-height-medium bp-font-13"  ng-click="F_CO.openCustomerApprovalModal(SoHeaderIndex)"
+                                                    >{{' Get_Another_Approval' | translate }}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div> 
+                                <!-- Customer Approval accordian end here -->
+                                
+                                <!-- Start: SO: Document Section -->
+                                <co-document-section inner-accordian-wrapper-class-value="bp-inner-accordian open" 
+                                    expand-collapse-inner-accordian="F_CO.expandOrCollapseInnerSection('ServiceJob'+$index+'_DocumentSectionId', 'ServiceJob'+$index+'_DocumentSection')"
+                                    is-inner-section-expanded="M_CO.expandedInnerSectionName == 'ServiceJob'+$index+'_DocumentSection'"
+                                    inner-accordian-body-wrapper-id-value="ServiceJob{{$index}}_DocumentSectionId"
+                                    is-co-closed="M_CO.coHeaderRec.OrderStatus === 'Closed'"
+                                    form-list="M_CO.documents.forms.so[soHeader.SOInfo.Id]"
+                                    attachment-list="M_CO.documents.attachments.so[soHeader.SOInfo.Id]"
+                                    add-form-action="F_CO.addFormsToSection(soHeader.SOInfo.Id, 'so');"
+                                    delete-form-action="F_CO.deleteFormsFromSection(formId, soHeader.SOInfo.Id, 'so');"
+                                    delete-attachment-action="F_CO.deleteAttachmentFromSection(attachmentId, soHeader.SOInfo.Id, 'so');"
+                                    print-document-action="F_CO.printDocument(docUrl);"
+                                    attachment-file-upload-interface-modal="FileUpload.interface"
+                                    set-add-attachment-data="F_CO.setAttachmentData(soHeader.SOInfo.Id, 'so');"
+                                    active-form-count="M_CO.documents.sectionNameToActiveFormCountMap['Service']"
+                                    active-forms="M_CO.documents.activeForms.so[soHeader.SOInfo.Id]" />
+                                <!-- End: SO: Document Section -->
+                                
+                                <!-- Job Actions accordian start here -->
+                                <div class="bp-inner-accordian open always-open bp-inner-accordian-last-child" ng-If="F_CO.showActionSubSection('Service job', soHeader)">
+                                    <div class="inner-accordian-header col-md-12">
+                                        <div class="inner-accordian-header-left">
+                                            <h2 class="accordian-left-details">{{ 'Job_actions' | translate }}</h2>
+                                        </div>
+                                        <div class="accordian-action-right" ng-if="GroupOnlyPermissions['Service job']['create/modify'] && (!soHeader.SOGridItems.length && soHeader.SOInfo.WorkStatus != 'Complete' && soHeader.SOInfo.WorkStatus != 'Reviewed' && soHeader.SOInfo.WorkStatus != 'Invoiced' && soHeader.SOInfo.WorkStatus != 'Signed Out' && soHeader.HoursLoggedList.length == 0)">
+                                            <span class="icon-container" ng-click="F_CO.openConfirmationDialog('RemoveSection', false, 'ServiceJob', soHeader.SOInfo.Id);">
+                                                <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="icon_fill_blue bp-pointer-cursor bp-svg-19"></i>
+                                                <span class="bp-font-14 bp-blue-font bp-cursor-pointer">{{ 'Remove_service_job_Label' | translate }}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="inner-accordian-body col-md-12" ng-if="M_CO.coHeaderRec.OrderStatus != 'Quote'">
+                                        <ul class="job-actions-buttons">
+                                            <li ng-repeat="action in M_CO.ServiceJobAction " ng-if="F_CO.displayServiceJobAction(action,soHeader,SoHeaderIndex)"
+                                                id="serviceJobAction{{$index}}" ng-click = "F_CO.serviceJobActionToBePerformed(action,soHeader,SoHeaderIndex)">
+                                                <a>
+                                                <i ng-include="'{!Application_Images}/Icons/Add.svg'" class="cyan_dark bp-pointer-cursor"></i>
+                                                {{action}}  </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- Job Actions accordian end here -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End: Service Job -->
+</apex:component>

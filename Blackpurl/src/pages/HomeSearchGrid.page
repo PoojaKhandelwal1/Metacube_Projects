@@ -1,0 +1,954 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"
+    controller="GlobalController">
+    <!-- <apex:stylesheet value="{!Application}/css/homesearch.css"/> -->
+      <route-loading-indicator></route-loading-indicator>
+      <div ng-cloak="ng-cloak"> <!-- data-ng-controller="searchTableController" data-ng-init="HomeSearchGrid.LoadGrid()" ng-cloak="ng-cloak" commented by kajal 9 Mar. 2017 -->
+         <!-- content start here -->
+        <div style="margin-top: 48px;">
+            <div class="row M0"> 
+                   <!-- Side panel start -->
+                   <div class="col-lg-2 col-md-3 P0 sidepanel">  
+                        <div class="navbar-default col-md-12 P0"> <!-- ng-show="HomeSearchGrid.displayGrid": Added By Pooja 6 Mar. 2017  -->
+                                                                    <!-- Ticket#2333: ng-show="HomeSearchGrid.displayGrid" : Removed By pooja 14 Jun 2017 -->
+                            <div class="sidebarSearchbox col-md-12 P0">
+                                <i class="fa fa-search fa-flip-horizontal"></i>
+                                <input type="search" class="sideBarSearch" placeholder="{{ 'Sidebar_search' | translate }}" ng-model="HomeSearchGrid.sidebarSearch.FilterLabel"
+                                    ng-keyup = "HomeSearchGrid.collapseAllFilter()"/>
+                            </div>  
+                            <div class="P0 col-md-12 MB2" >
+                                <div class="filterHeaddingWrapper P0 col-md-12" ng-click="HomeSearchGrid.isfavorite= !HomeSearchGrid.isfavorite" >
+                                    <span class="col-md-3"> 
+                                        <i class="fa fa-angle-down downArrow" ng-show="HomeSearchGrid.isfavorite"></i>
+                                        <i class="fa fa-angle-right downArrow" ng-show="!HomeSearchGrid.isfavorite"></i>
+                                    </span>
+                                    <p class="filterHeadding text-uppercase T3 col-md-8 P0">{{ 'favorite_search' | translate }}</p>
+                                </div>
+                                <div class="homeSearchFilterListwrapper P0 col-md-12 filterWrapper" ng-show="HomeSearchGrid.isfavorite"  >
+                                    <ul class="homeSearchFilterList P0 col-md-12" >
+                                        <li class="P0 col-md-12"  ng-mouseover="show = true" ng-mouseleave="show = false" 
+                                            ng-repeat="favoriteFilter  in HomeSearchGrid.filterList.FilterType.Favorite | orderBy:'FilterLabel' | filter:HomeSearchGrid.sidebarSearch"
+                                            ng-class="{'activeFilter' : HomeSearchGrid.isfilterActive(favoriteFilter.Id, 'favorite')}">
+                                            <span class="col-md-3"> <i class="fa fa-star pull-left"></i></span>
+                                            <p class="text-uppercase T3 col-md-7 P0" data-original-title="{{favoriteFilter.FilterLabel}}" data-toggle="tooltip" ng-click="HomeSearchGrid.applySavedFilter(favoriteFilter, 'favorite' )">
+                                                {{favoriteFilter.FilterLabel}}
+                                            </p>
+                                            <span class="col-md-1 P0 dropdown-toggle" data-toggle="dropdown" role="button"  ng-show="show"><i class="fa fa-cog PT5 "></i></span>
+                                             <ul class="dropdown-menu" role="menu">
+                                                <li ng-click="HomeSearchGrid.markFilterFav(favoriteFilter.Id, false)">
+                                                    <a  class="T7" >{{ 'Remove_From_Favorites' | translate }}</a>
+                                                </li>
+                                                <li ng-click="HomeSearchGrid.renameOrCopyCustomFilter(favoriteFilter.Id, favoriteFilter.FilterLabel, false)"
+                                                    ng-hide="favoriteFilter.IsCommon">
+                                                    <a class="T7">{{ 'Rename' | translate }}</a>
+                                                </li>
+                                                <li ng-click="HomeSearchGrid.renameOrCopyCustomFilter(favoriteFilter.Id, favoriteFilter.FilterLabel, true)">
+                                                    <a class="T7">{{ 'Copy' | translate }}</a>
+                                                </li>
+                                                <li ng-click="HomeSearchGrid.confirmDelete(favoriteFilter.Id, favoriteFilter.FilterLabel)"
+                                                    ng-hide="favoriteFilter.IsCommon">
+                                                    <a class="T7">{{ 'Delete_Label' | translate }}</a>
+                                                </li>
+                                                
+                                            </ul>
+                                        </li>
+                                    </ul>
+                            </div>
+                            </div>
+                            <div class="P0 col-md-12 MB2">
+                                <div class="filterHeaddingWrapper P0 col-md-12" ng-click="HomeSearchGrid.iscommon= !HomeSearchGrid.iscommon">
+                                    <span class="col-md-3"> 
+                                        <i class="fa fa-angle-down downArrow" ng-show="HomeSearchGrid.iscommon"></i>
+                                        <i class="fa fa-angle-right downArrow" ng-show="!HomeSearchGrid.iscommon"></i>
+                                    </span>
+                                    <p class="filterHeadding text-uppercase T3 col-md-8 P0">{{ 'COMMON_SEARCH' | translate }}</p>
+                                </div>
+                                
+                                <div class="col-md-12 P0 filterWrapper " ng-repeat="commonFilter  in HomeSearchGrid.filterList.FilterType.Common | orderBy : 'Order'" ng-show="HomeSearchGrid.iscommon">
+                                    <div class="filterHeadding P0 col-md-12  ">
+                                        <span class="col-md-3"  ng-if="commonFilter.FilterLabel=='Customer Sales'"> <i class="fa fa-male"></i></span>
+                                        <span class="col-md-3" ng-if="commonFilter.FilterLabel=='Product'"> <i class="fa fa-suitcase" ></i></span>
+                                        <span class="col-md-3" ng-if="commonFilter.FilterLabel=='People'"> <i class="fa fa-users" ></i></span>
+                                        <span class="col-md-3" ng-if="commonFilter.FilterLabel=='Settings'"> <i class="fa fa-wrench" ></i></span>
+                                        <span class="col-md-3" ng-if="commonFilter.FilterLabel=='Vendor Orders'"> <i class="fa fa-shopping-cart" ></i></span>
+                                            <!-- START: Added by Dinesh Kumar - #1154 - 10/06/2016 -->
+                                            <span class="col-md-3" ng-if="commonFilter.FilterLabel=='Reporting'"> <i class="fa fa-times" ></i></span>
+                                            <!-- END: Added by Dinesh Kumar - #1154 - 10/06/2016 -->
+    
+    
+                                        <p class="filterHeadding MT9  text-uppercase T3 col-md-8 P0 commonHeadding">{{commonFilter.FilterLabel}}</p>
+    
+                                    </div>
+                                    <div class="homeSearchFilterListwrapper commonSearchFilterWrapper P0 col-md-12">
+                                        <ul class="homeSearchFilterList P0 col-md-12 commonSearchFilter">
+                                            <li class="P0 col-md-12" ng-repeat="commonfilterval in commonFilter.subgroupList | orderBy : 'Order' | filter:HomeSearchGrid.sidebarSearch" 
+                                                ng-mouseover="show = true" ng-mouseleave="show = false"
+                                                ng-class="{'activeFilter' : HomeSearchGrid.isfilterActive(commonfilterval.Id, 'Common')}">
+                                                <p class="text-uppercase FT col-md-7 P0 col-md-offset-3" 
+                                                ng-click="HomeSearchGrid.applySavedFilter(commonfilterval, 'Common')"><!-- data-original-title="{{commonfilterval.FilterLabel}}" data-toggle="tooltip" removed 7th march, 2017 by kajal #1587 -->
+                                                    {{commonfilterval.FilterLabel}}
+                                                </p>
+                                                <span class="col-md-1 P0 dropdown-toggle" data-toggle="dropdown" role="button" ng-show="show"><i class="fa fa-cog "></i></span>
+                                                 <ul class="dropdown-menu" role="menu">
+                                                    <li><a class="T7" ng-click="HomeSearchGrid.renameOrCopyCustomFilter(commonfilterval.Id, commonfilterval.FilterLabel, true)">{{ 'Copy' | translate }}</a></li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    </div>
+                            </div>
+                            </div>
+                            <div class="P0 col-md-12 MB2">
+                                <div class="filterHeaddingWrapper P0 col-md-12" ng-click="HomeSearchGrid.iscustom= !HomeSearchGrid.iscustom">
+                                    <span class="col-md-3"> 
+                                        <i class="fa fa-angle-down downArrow" ng-show = "HomeSearchGrid.iscustom"></i>
+                                        <i class="fa fa-angle-right downArrow" ng-show = "!HomeSearchGrid.iscustom"></i>
+                                    </span>
+                                    <p class="filterHeadding text-uppercase T3 col-md-8 P0">{{ 'Custom_Search' | translate }}</p>
+                                </div>
+                                <div class="homeSearchFilterListwrapper P0 col-md-12 filterWrapper" ng-show = "HomeSearchGrid.iscustom"
+                                    style="margin-bottom: 100px;">
+                                    <ul class="homeSearchFilterList P0 col-md-12">
+                                        <li class="P0 col-md-12" ng-repeat="customFilter  in HomeSearchGrid.filterList.FilterType.Custom | orderBy:'FilterLabel' | filter:HomeSearchGrid.sidebarSearch" 
+                                            ng-mouseover="show = true" ng-mouseleave="show = false"
+                                            ng-class="{'activeFilter' : HomeSearchGrid.isfilterActive(customFilter.Id, 'Custom')}">
+                                            <span class="col-md-3 text-center"> <i class="fa fa-square squaretrans"></i></span>
+                                            <p class="text-uppercase T3 col-md-7 P0"  
+                                            ng-click="HomeSearchGrid.applySavedFilter(customFilter, 'Custom')"><!-- data-original-title="{{customFilter.FilterLabel}}" data-toggle="tooltip" removed 7th march, 2017 by kajal #1587 -->
+                                                {{customFilter.FilterLabel}}
+                                            </p>
+                                            <span class="col-md-1 P0 dropup  dropdown-toggle" data-toggle="dropdown" role="button" ng-show="show">
+                                                <i class="fa fa-cog PT5  "></i>
+                                            </span>
+                                             <ul class="dropdown-menu" role="menu">
+                                                <li><a class="T7" ng-click="HomeSearchGrid.renameOrCopyCustomFilter(customFilter.Id, customFilter.FilterLabel, false)">Rename</a></li>
+                                                <li><a class="T7" ng-click="HomeSearchGrid.renameOrCopyCustomFilter(customFilter.Id, customFilter.FilterLabel, true)">Copy</a></li>
+                                                <li><a class="T7" ng-click="HomeSearchGrid.confirmDelete(customFilter.Id, customFilter.FilterLabel)">Delete</a></li>
+                                                <li><a class="T7">{{ 'Share_a_Copy' | translate }}</a></li>
+                                                <li><a class="T7">{{ 'Change_Visibility' | translate }}</a></li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                            </div>
+                            </div>
+                        </div> 
+                    </div>
+                    <!-- Side panel End Here -->
+    
+    
+    
+    
+    
+                    <!-- center Div start here -->
+                    <div class="col-lg-10 col-md-9 col-sm-9 contentDiv">
+                        <div>
+                            <div class="row M0 top_row">
+                                <div class="col-md-10 homeSearchTopBar">
+                                    <div class="homeSearchTopBarContaint">  
+                                        <div class="col-md-7 P0">
+                                            <img class="starimg pull-left" src="{!Application_Images}/star.png" 
+                                                ng-show="HomeSearchGrid.currentActiveFilter.Type == 'favorite'"
+                                                ng-click="HomeSearchGrid.markFilterFav(HomeSearchGrid.currentActiveFilter.Id, false)"/>
+                                                <!-- <div class="sprite star pull-left handCursor" ng-show="HomeSearchGrid.currentActiveFilter.Type == 'favorite'"
+                                                ng-click="HomeSearchGrid.markFilterFav(HomeSearchGrid.currentActiveFilter.Id, false)"></div> -->
+                                            <i class="fa fa-star pull-left"
+                                                ng-show="HomeSearchGrid.currentActiveFilter.Type != 'favorite' && HomeSearchGrid.isFilterMatched"
+                                                ng-click="HomeSearchGrid.markFilterFav(HomeSearchGrid.currentActiveFilter.Id, true)"></i>
+                                            <p class="T3 text-uppercase pull-left" ng-show="!HomeSearchGrid.isFilterMatched">{{ 'Label_Search' | translate }}</p>
+                                            <p class="T3 text-uppercase pull-left" ng-show="HomeSearchGrid.isFilterMatched">{{HomeSearchGrid.currentActiveFilter.Name}}</p>
+                                            <i class="fa fa-question-circle pull-left" data-original-title="Search" data-toggle="tooltip"
+                                                data-placement="right"></i>
+                                            <div class="col-md-3 homeSearchTopSaveBtn"> 
+                                            <button class="btn C11 T4 active_btn" ng-click="HomeSearchGrid.saveAsAction()"
+                                                ng-class="{'grayBtn': HomeSearchGrid.isFilterMatched, 'addmoreinfoBtn' : !HomeSearchGrid.isFilterMatched} " 
+                                                ng-if="!HomeSearchGrid.isFilterMatched"
+                                                style="margin: auto; width: 80%;" tabindex="112">{{ 'Save_As' | translate }}</button>
+                                            </div>
+                                            <p class="homeSearchcriteriaerror T3"
+                                                ng-show="!HomeSearchGrid.isFilterMatched"> {{ 'New_Search_criteria_has_not_been_saved' | translate }}</p>
+                                        </div> 
+                                        
+                                    </div>
+                                
+                                </div>
+        
+                                  <div class="rightHeaderIcon pull-right col-md-3">
+                                            <div class="pull-right P0  homeSearchTopBarIcon">
+                                                <i class="fa fa-pie-chart" ng-click = "HomeSearchGrid.showSummarySidePanel()"></i>
+                                                <i class="fa fa-print" ng-click = "HomeSearchGrid.showExportSidePanel()"></i>
+    
+                                                <!-- <div class="tripleDotDropdown">
+                                                    <i class="fa fa-ellipsis-v dropdown-toggle pull-right" style="cursor: pointer;"  data-toggle="dropdown" ></i>
+                                                    <ul class="dropdown-menu headerCustomeDropDown">
+                                                        <li ng-click="HomeSearchGrid.showSummarySidePanel()"><a  class="col-md-12"><i class="fa fa-pie-chart pull-left"></i> <span class="T7 pull-left">Summary</span></a></li>
+                                                        <li ng-click = "HomeSearchGrid.showExportSidePanel()"><a  class="col-md-12"><i class="fa fa-print pull-left"></i><span class="T7 pull-left">Export / Print</span> </a></li>
+                                                        <li><a  class="col-md-12"><i class="fa fa-tachometer pull-left"></i><span class="T7 pull-left">Dashboard</span> </a></li>
+                                                        <li><a  class="col-md-12"><i class="fa fa-print pull-left"></i><span class="T7 pull-left">Action</span> </a></li>
+                                                        <li><a  class="col-md-12"><i class="fa fa-calendar pull-left"></i><span class="T7 pull-left">Scheduling</span> </a></li>
+                                                    </ul>
+                                                </div> -->
+                                            </div>
+                                        </div>
+                                   
+        
+                            </div>
+                            <!-- filter Div start here -->
+                            <div class="row M0 filter_row">
+                                    <div  ng-class="{'searchBoxMultiselectWrappereNew': HomeSearchGrid.isSidePanelToggle, 'searchBoxMultiselectWrappereNewDiv' : !HomeSearchGrid.isSidePanelToggle} ">
+                                        <div class="searchBoxMultiselectWrappere pull-left">
+                                            <div class="searchBoxMultiselect pull-left" ng-click="HomeSearchGrid.showFilterForm()">
+                                                <div class="searchCriteriaWrapper"
+                                                    ng-mouseover="showMore = false" ng-mouseleave="showMore = true">
+                                                    <div class="searchCriteria pull-left" ng-repeat="filter in HomeSearchGrid.searchCriteriaJson">
+                                                        <label class="T3 pull-left" ng-if="filter.Label != undefined && filter.Label != null && filter.Label != ''">{{filter.Label}}:</label>
+                                                        <span class="T7 filterValue" data-original-title="{{HomeSearchGrid.getFilterValue(filter.Value)}}" data-toggle="tooltip" ng-bind="HomeSearchGrid.getFilterValue(filter.Value)">
+                                                        </span>
+                                                        <span class="crossIcon" ng-click="HomeSearchGrid.removeFilterCriteria($event, filter.Key, $index)">&#10006;</span>   
+                                                    </div>
+                                                </div>
+                                                <span class="moreState" ng-show="HomeSearchGrid.isDisplayMore() && showMore">{{ 'More' | translate }} ...</span>
+                                                <span class="pull-right dropdownicon">
+                                                    <i class="fa fa-caret-down"></i>
+                                                </span>
+                                            </div>
+                                            <div class="pull-left searchBoxIcondiv">
+                                                <i class="fa fa-search"></i>
+                    
+                    
+                                            </div>
+                                            <c:HomeSearchFilterForm />
+                                        </div>
+                                        <div class="sortingDiv">
+                                            <span class="T3 pull-left" style="margin-top: 3px;">{{ 'Sorting' | translate }}:</span>
+                                            <div class="pull-left">
+                                                <div class="sorting-badge pull-left" ng-repeat="sort in HomeSearchGrid.searchResultPageSortAttrsJSON.Sorting">
+                                                    <label>
+                                                        <i class="fa fa-chevron-up" ng-if="sort.SortDirection == 'ASC'"></i>
+                                                        <i class="fa fa-chevron-down" ng-if="sort.SortDirection == 'DESC'"></i>
+                                                    </label>  
+                                                    <span class="T7" style="font-size:12px; color: #fff;">
+                                                        <span ng-if="HomeSearchGrid.LabelChangeMap[sort.FieldLabel]">{{HomeSearchGrid.LabelChangeMap[sort.FieldLabel]}}</span>
+                                                        <span ng-if="!HomeSearchGrid.LabelChangeMap[sort.FieldLabel]">{{sort.FieldLabel}}</span>
+                                                    </span>
+                                                    <span class="crossIcon" ng-click="HomeSearchGrid.removeSortCriteria($index)">&#10006;</span>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="extraBackDropDiv" ng-class="{'extraBackDropDivHide': HomeSearchGrid.isSidePanelToggle, 'extraBackDropDiv' : !HomeSearchGrid.isSidePanelToggle} "></div>
+                                    
+                                    <!-- Side Panel Div start here -->
+                                    <div class="rightSidePanel"  ng-class="{'summaryDivShow': HomeSearchGrid.isSidePanelToggle, 'summaryDivHide' : !HomeSearchGrid.isSidePanelToggle} " >
+                                        <div class = "summaryInner" ng-show = "HomeSearchGrid.isSidePanelToggle">
+                                         <div class = "summaryWrapper" ng-show = "HomeSearchGrid.summaryDiv">
+                                            <div  class="summaryHeader col-md-12">
+                                                <p class="col-md-12 P0 BBW">
+                                                    <i class="fa fa-pie-chart F25 color727983 pull-left summaryIcon"></i>
+                                                    <span class="summaryHeadding T3 pull-left">{{ 'Summary_Total' | translate }}</span>
+                                                    <i class="fa fa-times pull-right color727983 CP F20 PB5 closeSummary" aria-hidden="true" 
+                                                        ng-click = "HomeSearchGrid.hideSidePanel()"></i>
+                                                    <i class="fa fa-cloud-upload pull-right color727983 CP F20 PB5 closeSummary" aria-hidden="true" 
+                                                        ng-show="HomeSearchGrid.isFilterMatched"
+                                                        ng-click = "HomeSearchGrid.saveSummarySidePanel()"></i>
+                                                </p> 
+                                            </div>
+    
+    
+                                            <div class="col-md-12">
+                                            <p class="col-md-12 P0 sectionText" translate="Summary_for_record_s" translate-values="{{ { number_of_records: HomeSearchGrid.TotalRecords } }}"></p>
+                                            <table class="col-md-12 P0 summartTotal" ng-show = "HomeSearchGrid.summaryDisplayedColumns.length>0">
+                                                <thead class="summary-totals-section-header">
+                                                    <tr>
+                                                        <th class="color727983 text-capitalize col-md-8 P0">{{ 'visible_columns' | translate }}</th>
+                                                        <th class="color727983 text-capitalize col-md-4 P0">{{ 'Label_Total' | translate }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="color727983"  ng-repeat="totalRec in HomeSearchGrid.summaryDisplayedColumns track by $index" ng-if="totalRec.IsDisplayed && HomeSearchGrid.showExportDisplayColumns(totalRec.Label)">
+                                                        <td class="text-capitalize">
+                                                             <span ng-if="HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{HomeSearchGrid.LabelChangeMap[totalRec.Label]}}</span>
+                                                             <span ng-if="!HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{totalRec.Label}}</span>
+                                                        </td>
+                                                        <td ng-if="totalRec.Type == 'Number'">{{totalRec.TotalValue | number:2}}</td>
+                                                        <td ng-if="totalRec.Type == 'Currency'">{{totalRec.TotalValue | currency}}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <div class="col-md-12 P0 MT20 summaryDropdownList" 
+                                                ng-show = "HomeSearchGrid.dropdownSummaryDisplayedColumns.length != 0 || HomeSearchGrid.summaryHiddenColumns.length != 0">
+                                                <button class = "btn btn-default grayBtn col-md-12 text-uppercase" data-toggle="dropdown" ng-click="HomeSearchGrid.seeMoreTotalsDropdown()">{{ 'see_more_totals' | translate }}</button>
+                                                <ul class="add_info_dropdown dropdown-menu keep_open summaryDropDown" id = "summaryDropDown">
+                                                    <div class="right-inner-addon" style="margin: 0 10px;">
+                                                        <i class="glyphicon glyphicon-search"></i> 
+                                                        <input class="form-control" ng-model="HomeSearchGrid.summaryMoreTotal.Label" 
+                                                                 placeholder="{{ 'Search' | translate }}" type="search" />
+                                                    </div>
+    
+                                                    <li  ng-repeat="totalRec in HomeSearchGrid.dropdownSummaryDisplayedColumns | filter: HomeSearchGrid.summaryMoreTotal track by $index" ng-click="totalRec.IsDisplayed = !totalRec.IsDisplayed" >
+                                                        <p class="chk_tick" ng-attr-tabindex="100" ng-class="{'chked' : totalRec.IsDisplayed}">
+                                                            <i class="fa fa-check-square chksqure"></i>
+                                                        </p>
+                                                        <span class = "seeMoreSummaryText T7">
+                                                            <span ng-if="HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{HomeSearchGrid.LabelChangeMap[totalRec.Label]}}</span>
+                                                            <span ng-if="!HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{totalRec.Label}}</span>
+                                                        </span>
+                                                    </li>
+                                                    <li  ng-repeat="totalRec in HomeSearchGrid.summaryHiddenColumns | filter: HomeSearchGrid.summaryMoreTotal " ng-click="totalRec.IsDisplayed = !totalRec.IsDisplayed" >
+                                                        <p class="chk_tick" ng-attr-tabindex="100" ng-class="{'chked' : totalRec.IsDisplayed}">
+                                                            <i class="fa fa-check-square chksqure"></i>
+                                                        </p>
+                                                        <span class = "seeMoreSummaryText T7">
+                                                            <span ng-if="HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{HomeSearchGrid.LabelChangeMap[totalRec.Label]}}</span>
+                                                            <span ng-if="!HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{totalRec.Label}}</span>
+                                                        </span>
+                                                    </li>
+                                                <div class="summaryHeader col-md-12">
+                                                    <div class="savecancle_btncntnr">
+                                                        <button class="btn btn-default greenBtn text-uppercase" ng-click = "HomeSearchGrid.updateSummaryRecord()" > {{ 'Label_Apply' | translate }} </button>
+                                                     </div>
+                                                </div>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        </div>
+                                    
+                                    
+                                    
+                                        <div class = "exportWrapper" ng-show = "HomeSearchGrid.exportDiv">
+                                            <div  class="summaryHeader col-md-12">
+                                                <p class="col-md-12 P0 BBW">
+                                                    <i class="fa fa-print F25 color727983 pull-left summaryIcon"></i>
+                                                    <span class="summaryHeadding T3 pull-left">{{ 'export_Print' | translate }}</span>
+                                                    <i class="fa fa-times pull-right color727983 CP F20 PB5 closeSummary" aria-hidden="true" 
+                                                        ng-click = "HomeSearchGrid.hideSidePanel()"></i>
+                                                    <i class="fa fa-cloud-upload pull-right color727983 CP F20 PB5 closeSummary" aria-hidden="true" 
+                                                        ng-show="HomeSearchGrid.isFilterMatched"
+                                                        ng-click = "HomeSearchGrid.saveSummarySidePanel()"></i>
+                                                    
+                                                </p>
+                                            </div>
+                                            <div class="col-md-12">
+                                            <p class="col-md-12 P0 sectionText" translate="Export_for_record_s" translate-values="{{ { total_records: HomeSearchGrid.TotalRecords } }}"></p>
+                                            <table class="col-md-12 P0 summartTotal" 
+                                                 ng-show = "HomeSearchGrid.exportDisplayedColumns.length>0">
+                                                <thead class="export-totals-section-header">
+                                                    <tr>
+                                                        <th class="color727983 text-capitalize col-md-8 P0">{{ 'Totals_to_include' | translate }}:</th>
+                                                        <th class="color727983 text-capitalize col-md-4 P0">{{ 'Label_Total' | translate }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+    
+                                                    <tr class="color727983" ng-repeat="totalRec in HomeSearchGrid.exportDisplayedColumns track by $index" ng-if="totalRec.IsDisplayed && HomeSearchGrid.showExportDisplayColumns(totalRec.Label)">
+                                                        <td class="text-capitalize">
+                                                             <span ng-if="HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{HomeSearchGrid.LabelChangeMap[totalRec.Label]}}</span>
+                                                             <span ng-if="!HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{totalRec.Label}}</span>
+                                                        </td>
+                                                        <td ng-if="totalRec.Type == 'Number'">{{totalRec.TotalValue | number:2}}</td>
+                                                        <td ng-if="totalRec.Type == 'Currency'">{{totalRec.TotalValue | currency}}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <div class="col-md-12 P0 MT20 exportDropdownList"
+                                                ng-show = "HomeSearchGrid.dropdownExportDisplayedColumns.length != 0 || HomeSearchGrid.exportHiddenColumns != 0">
+                                                <button class = "btn btn-default grayBtn col-md-12 text-uppercase uppercase" data-toggle="dropdown"  ng-click="HomeSearchGrid.ExportTotalsDropdown()" >{{ 'select_totals_to_include' | translate }}</button>
+                                                <ul class="add_info_dropdown dropdown-menu keep_open summaryDropDown" id="exportDropDown">
+                                                    <div class="right-inner-addon" style="margin: 0 10px;">
+                                                        <i class="glyphicon glyphicon-search"></i> 
+                                                        <input class="form-control" ng-model="HomeSearchGrid.summaryMoreTotal.Label" 
+                                                                 placeholder="{{ 'Search' | translate }}" type="search" />
+                                                    </div>
+                                                    
+                                                    <li  ng-repeat="totalRec in HomeSearchGrid.dropdownExportDisplayedColumns | filter: HomeSearchGrid.summaryMoreTotal track by $index" 
+                                                            ng-if="HomeSearchGrid.showExportDisplayColumns(totalRec.Label)" ng-click="totalRec.IsDisplayed = !totalRec.IsDisplayed"  >
+                                                        <p class="chk_tick" ng-attr-tabindex="100" ng-class="{'chked' : totalRec.IsDisplayed}">
+                                                         <i class="fa fa-check-square chksqure"></i>
+    
+                                                       </p>
+                                                        <span class = "seeMoreSummaryText T7">
+                                                            <span ng-if="HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{HomeSearchGrid.LabelChangeMap[totalRec.Label]}}</span>
+                                                            <span ng-if="!HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{totalRec.Label}}</span>
+                                                        </span>
+    
+                                                    </li>
+                                                    <li  ng-repeat="totalRec in HomeSearchGrid.exportHiddenColumns | filter: HomeSearchGrid.summaryMoreTotal " 
+                                                            ng-if="HomeSearchGrid.showExportDisplayColumns(totalRec.Label)" ng-click="totalRec.IsDisplayed = !totalRec.IsDisplayed"  >
+                                                        <p class="chk_tick" ng-attr-tabindex="100" ng-class="{'chked' : totalRec.IsDisplayed}">
+                                                         <i class="fa fa-check-square chksqure"></i>
+                                                       </p>
+                                                        <span class = "seeMoreSummaryText T7">
+                                                            <span ng-if="HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{HomeSearchGrid.LabelChangeMap[totalRec.Label]}}</span>
+                                                            <span ng-if="!HomeSearchGrid.LabelChangeMap[totalRec.Label]">{{totalRec.Label}}</span>
+                                                        </span>
+                                                    </li>
+                                                <div class="summaryHeader col-md-12">
+                                                    <div class="savecancle_btncntnr">
+                                                        <button class="btn btn-default greenBtn text-uppercase" ng-click="HomeSearchGrid.updateExportRecord()"> {{ 'Label_Apply' | translate }} </button>
+                                                     </div>
+                                                </div>
+                                                    
+                                            </ul>
+                                            
+                                            </div>
+                                        </div>
+                                            <div class="summaryHeader col-md-12">
+                                                <p class="col-md-12 P0 BBW"></p>
+                                                <table class="col-md-12 P0 summartTotal">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="color727983 text-capitalize col-md-8 P0">{{ 'Group_Records_By' | translate }}:</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="color727983" >
+                                                        <td class="text-capitalize">{{HomeSearchGrid.groupNameResult}}  <span ng-show="HomeSearchGrid.ClearGroupIcon()" class="fa fa-times CP"  ng-click="HomeSearchGrid.ClearGroup()" style="color:#727983"></span> </td>
+                                                        
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <div class="col-md-12 P0 MT20 customDropdownDiv">
+                                                <button class = "btn btn-default grayBtn col-md-12 text-uppercase" data-toggle="dropdown" >{{ 'select_column_to_group' | translate }}</button>
+                                                <ul class="add_info_dropdown dropdown-menu keep_open summaryDropDown">
+                                                    <div class="right-inner-addon" style="margin: 0 10px;">
+                                                        <i class="glyphicon glyphicon-search"></i> 
+                                                        <input class="form-control" ng-model="HomeSearchGrid.summaryMoreTotal.Label" 
+                                                                 placeholder="{{ 'Search' | translate }}" type="search" />
+                                                    </div>
+                                                    
+                                                    <li  ng-repeat="totalRec in HomeSearchGrid.GridSummaryDataForExport | filter : HomeSearchGrid.summaryMoreTotal "
+                                                    ng-class="{'activeFilter' : HomeSearchGrid.groupNameResult == totalRec.Label}" ng-if="((HomeSearchGrid.showFieldToGroup(totalRec.Type, totalRec.Label) || 
+                                                                            (totalRec.Type == 'Text' || (totalRec.Type == 'Link' && totalRec.Label == 'Item') && 
+                                                                            (totalRec.Label != 'Active' || HomeSearchGrid.IsIncludeInactiveRecords))) || 
+                                                                            totalRec.Type == 'Date')" ng-click = "HomeSearchGrid.GroupExport(totalRec.Label, totalRec.RecordKey)">
+                                                        <span class = "seeMoreSummaryText T7 PL10">{{totalRec.Label}}</span>
+                                                        
+                                                    </li>
+                                            </ul>
+                                            
+                                            </div>
+                                            </div>
+                                        
+                                            <div class="summaryHeader col-md-12">
+                                                <p class="col-md-12 P0 BBW"></p>
+                                                <table class="col-md-12 P0 summartTotal">
+                                                <thead> 
+                                                    <tr>
+                                                        <th class="color727983 text-capitalize col-md-8 P0">{{ 'output_results_to' | translate }}:</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="color727983" >
+                                                        <td class="text-capitalize">{{HomeSearchGrid.outputResult}}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <div class="col-md-12 P0 MT20 customDropdownDiv">
+                                                <button class = "btn btn-default grayBtn col-md-12 text-uppercase" data-toggle="dropdown" >{{ 'select_output_results' | translate }}</button>
+                                                <ul class="add_info_dropdown dropdown-menu keep_open summaryDropDown">
+    <!--                                                <li ng-click = "HomeSearchGrid.outputExport('Excel (.xls)')" -->
+    <!--                                                    ng-class="{'activeFilter' : HomeSearchGrid.outputResult == 'Excel (.xls)'}"><span class = "seeMoreSummaryText T7 PL10">Excel (.xls)</span> -->
+    <!--                                                </li> -->
+                                                    <li ng-click = "HomeSearchGrid.outputExport('Excel (.csv)')" 
+                                                    ng-class="{'activeFilter' : HomeSearchGrid.outputResult == 'Excel (.csv)'}">
+                                                    <span class = "seeMoreSummaryText T7 PL10">{{ 'Excel_csv' | translate }}</span>
+                                                    </li>
+                                                    <li ng-click = "HomeSearchGrid.outputExport('PDF File')"
+                                                    ng-class="{'activeFilter' : HomeSearchGrid.outputResult == 'PDF File'}" ><span class = "seeMoreSummaryText T7 PL10">{{ 'PDF_File' | translate }}</span>
+                                                    </li>
+                                                    <li ng-click = "HomeSearchGrid.outputExport('Printer')" 
+                                                    ng-class="{'activeFilter' : HomeSearchGrid.outputResult == 'Printer'}"><span class = "seeMoreSummaryText T7 PL10">{{ 'Printer' | translate }}</span>
+                                                    </li>       
+                                            </ul>
+                                            
+                                            </div>
+                                            </div>
+                                        
+                                        
+                                        
+                                        <div class="summaryHeader col-md-12">
+                                                <p class="col-md-12 P0 BBW"></p>
+                                            <div class="savecancle_btncntnr">
+                                                <button class="btn btn-default grayBtn text-uppercase" ng-click="HomeSearchGrid.PreviewGridRecordsAction('Preview')"> {{ 'Preview' | translate }} </button>
+                                                <button class="btn btn-default greenBtn text-uppercase" ng-if = "HomeSearchGrid.outputResult != '' && HomeSearchGrid.outputResult != undefined" ng-click="HomeSearchGrid.PreviewGridRecordsAction('Export')"> {{ 'Label_Apply' | translate }} </button>
+                                                <button class="btn btn-default grayBtn text-uppercase" ng-if = "HomeSearchGrid.outputResult == '' || HomeSearchGrid.outputResult == undefined"> {{ 'Label_Apply' | translate }} </button>
+                                             </div>
+                                       </div>
+                                        
+                                        </div>
+                                    </div>
+                                    </div>    
+                             
+                                    <!-- Side Panel Div end here -->
+                             
+                                  <!--  Export/Print Div start here -->
+                                  
+                                  
+                                 <!--  Export/Print Div end here -->
+                             
+                             </div>
+                             <!-- filter Div End here --> 
+                             <div class="row M0 gid_container_wrapper ">
+                            <div class="gid_container_Customer pull-left">
+                                <div class="resultDiv" ng-if="HomeSearchGrid.SearchedResult.length != 0">
+                                    <i class="fa fa-caret-down" id="dropArrowIcon"></i>
+                                    <div class = "pull-right" style="width: 5%; margin-top: 6px;" id = "HomeSearchresultDiv">
+                                    <div style="padding: 0;background: #fff;"> 
+                                                    <div class="customDropdown" ng-class="{'colDynamicWidth': HomeSearchGrid.isSidePanelToggle} ">       
+                                                        <div class="dropdown">
+                                                             <button type="button" data-toggle="dropdown"
+                                                                class="my-dropdown btn btn-default dropdown-toggle"
+                                                                ng-click="HomeSearchGrid.openColumnsDropdown()">
+                                                                <span class="filter-wrap"> 
+                                                                    <span class="filterLabel" ng-show="!HomeSearchGrid.loadingColumn"><i class="fa fa-plus"></i></span>
+                                                                </span>   
+                                                                <span class="caret"></span>
+                                                            </button>
+                                                             <ul class="column_dropdown chkbox_dropdown dropdown-menu keep_open " ng-class="{'dropDownAfterSummary': HomeSearchGrid.isSidePanelToggle} "  id="column_dropdown">
+                                                                    <h4 class="columnHeading">{{ 'Columns' | translate }}</h4>
+                                                                     <div class="right-inner-addon">
+                                                                       <i class="glyphicon glyphicon-search"></i> <input type="search"
+                                                                           class="form-control" placeholder="{{ 'Search' | translate }}"
+                                                                           ng-model="HomeSearchGrid.columnSearch.Label" />
+                                                                   </div>
+                                                                   <hr />
+                                                                   <a class="restoreDefaultTxt" ng-click="HomeSearchGrid.restoreColumns()">{{ 'Restore_Defaults' | translate }}</a>
+                                                                   <div class="column_fixHeight" id="additional_column_fix">
+                                                                       <li ng-repeat="displayedCol in HomeSearchGrid.columns.DisplayedColumns | filter:HomeSearchGrid.columnSearch"
+                                                                            ng-click="displayedCol.IsDisplayed = !displayedCol.IsDisplayed" ng-if="HomeSearchGrid.showColumn(displayedCol.Label);"> 
+                                                                           <label>
+                                                                             <p class="chk_tick" ng-class="{'chked': displayedCol.IsDisplayed}">
+                                                                                <i class="fa fa-check-square chksqure"></i>
+                                                                             </p>
+                                                                             <label class="css-label"></label>
+                                                                             <span ng-if="HomeSearchGrid.LabelChangeMap[displayedCol.Label]">{{HomeSearchGrid.LabelChangeMap[displayedCol.Label]}}</span>
+                                                                             <span ng-if="!HomeSearchGrid.LabelChangeMap[displayedCol.Label]">{{displayedCol.Label}}</span>
+                                                                         </label>
+                                                                       </li>
+                                                                       <li ng-repeat="hiddenCol in HomeSearchGrid.columns.HiddenColumns  | filter:HomeSearchGrid.columnSearch"
+                                                                            ng-click="hiddenCol.IsDisplayed = !hiddenCol.IsDisplayed" ng-if="HomeSearchGrid.showColumn(hiddenCol.Label);">
+                                                                           <label>
+                                                                             <p class="chk_tick" ng-class="{'chked': hiddenCol.IsDisplayed}">
+                                                                                <i class="fa fa-check-square chksqure"></i>
+                                                                             </p>
+                                                                             <label class="css-label"></label>
+                                                                             <span ng-if="HomeSearchGrid.LabelChangeMap[hiddenCol.Label]">{{HomeSearchGrid.LabelChangeMap[hiddenCol.Label]}}</span>
+                                                                             <span ng-if="!HomeSearchGrid.LabelChangeMap[hiddenCol.Label]">{{hiddenCol.Label}}</span>
+                                                                         </label>
+                                                                       </li>
+                                                                   </div>
+                                                                   <div class="btnWrapper pull-right">
+                                                                    <button type="button" class="greenBtn btn btn-default btnDone"
+                                                                        ng-click="HomeSearchGrid.updateColumnsDropdown()">{{ 'Done_Label' | translate }}</button>
+                                                                    <a  class="grayBtn btn btn-default btnCancel"
+                                                                        ng-click="HomeSearchGrid.closeColumnsDropdown()">{{ 'Cancel_Label' | translate }}</a>
+                                                                </div>
+                                                             </ul>
+                                                        </div>
+                                                  </div>
+                                                    
+                                                    
+                                                    
+                                                </div>
+                                    </div>
+                                    <table class="table table-striped" id="myTable">
+                                        <thead>
+                                            <tr class="tableHeader T3 insideDroppable1"
+                                                ui-sortable="HomeSearchGrid.insideSortable"
+                                                ng-model="HomeSearchGrid.columns.DisplayedColumns">
+                                                <th class="draggable" ng-repeat="col in HomeSearchGrid.columns.DisplayedColumns"  ng-if="HomeSearchGrid.showColumn(col.Label);">
+                                                    <div class="thtext" ng-class="{'sort_enabled' : (col.FieldAPIName && !HomeSearchGrid.IsSummaryFormat)}">
+                                                        <div class="sortIcons" ng-if="col.FieldAPIName && !HomeSearchGrid.IsSummaryFormat">
+                                                            <span class="Up-arrow"
+                                                                ng-click="HomeSearchGrid.changeSort(col, 'ASC')"
+                                                                ng-class="{'activeSort' : HomeSearchGrid.getSortDirection(col.FieldAPIName, col.RecordKey) == 'ASC'}">
+                                                                <i class="fa fa-chevron-up"></i> 
+                                                            </span>
+                                                            <span class="Down-arrow"
+                                                                ng-click="HomeSearchGrid.changeSort(col, 'DESC')"
+                                                                ng-class="{'activeSort' : HomeSearchGrid.getSortDirection(col.FieldAPIName, col.RecordKey) == 'DESC'}">
+                                                                <i class="fa fa-chevron-down"></i>
+                                                            </span>
+                                                        </div>
+                                                        <span class="colLabel" ng-if="HomeSearchGrid.LabelChangeMap[col.Label]">{{HomeSearchGrid.LabelChangeMap[col.Label]}}</span>
+                                                        <span class="colLabel" ng-if="!HomeSearchGrid.LabelChangeMap[col.Label]">{{col.Label}}</span>
+                                                    </div> 
+                                                </th>
+                                                
+                                            </tr>        
+                                        </thead>    
+                                        <tbody class="parentBody">
+                                            <tr data-ng-repeat="data in HomeSearchGrid.SearchedResult">
+                                                <td ng-repeat="col in HomeSearchGrid.columns.DisplayedColumns" ng-if="HomeSearchGrid.showColumn(col.Label);">
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 1"
+                                                        data-toggle="tooltip" title="Customer">
+                                                        <i class="fa fa-users  Plr5 FC7"></i>
+                                                    </span> 
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 2"
+                                                        data-toggle="tooltip" title="Vendor">
+                                                        <i class="fa fa-industry  Plr5 FC7 F18"></i>
+                                                    </span> 
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 3"
+                                                        data-toggle="tooltip" title="Part">
+                                                        <img src="{!Application_Images}/sparkplug.png" style="height: 26px;width: 26px;"/>
+                                                        <!-- <div class='sprite sparkplug'></div> -->
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 4"
+                                                        data-toggle="tooltip" title="Kit">
+                                                        <i class="fa fa-link  Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 5"
+                                                        data-toggle="tooltip" title="Fee">
+                                                             <img src="{!Application_Images}/dollor.png" style="height: 26px;width: 26px;border-radius: 13px;" />
+                                                        <!-- <div class='sprite dollor' style="border-radius: 50%;"></div> -->
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 6"
+                                                        data-toggle="tooltip" title="Labour Code">
+                                                        <img src="{!Application_Images}/hammer.png"  style="height: 26px;width: 26px;"/> 
+                                                        <!-- <div class='sprite hammer'></div> --> 
+                                                        
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 7"
+                                                        data-toggle="tooltip" title="User">
+                                                        <i class="fa fa-user  Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 8"
+                                                        data-toggle="tooltip" title="Customer Order">
+                                                        <i class="fa fa-list  Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 9"
+                                                        data-toggle="tooltip" title="Customer Invoice">
+                                                        <i class="fa fa-file-text-o  Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 10"
+                                                        data-toggle="tooltip" title="Vendor Order">
+                                                        <i class="fa fa-list Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 11"
+                                                        data-toggle="tooltip" title="Vendor Receiving">
+                                                        <!-- <img src="https://cloud.githubusercontent.com/assets/11593748/6771103/40ccb170-d0ab-11e4-9f26-808d5fcaef11.png"  style="height: 26px;width: 26px;"/> --> 
+                                                        <img src="{!Application_Images}/Vendor_Receiving.png" style="height: 26px;width: 26px;"/>
+                                                        <!-- <div class='sprite Vendor_Receiving'></div> -->
+                                                    </span> 
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 12"
+                                                        data-toggle="tooltip" title="Vendor Invoice">
+                                                        <i class="fa fa-file-text-o  Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 13"
+                                                        data-toggle="tooltip" title="Category">
+                                                        <i class="fa fa-tags Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 14"
+                                                        data-toggle="tooltip" title="Price Level">
+                                                        <i class="fa fa-money Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 15"
+                                                        data-toggle="tooltip" title="Sales Tax">
+                                                        <i class="fa fa-percent Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 16"
+                                                        data-toggle="tooltip" title="Sublet">
+                                                        <!-- <i class="fa fa-scribd Plr5 FC7 F18"></i> -->
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/sublet.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 23"
+                                                        data-toggle="tooltip" title="Financing Product">
+                                                        <!-- <i class="fa fa-scribd Plr5 FC7 F18"></i> -->
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/financing-product.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 24"
+                                                        data-toggle="tooltip" title="Deal Product">
+                                                        <!-- <i class="fa fa-scribd Plr5 FC7 F18"></i> -->
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/deal-product.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 25"
+                                                        data-toggle="tooltip" title="Warranty Plan">
+                                                        <!-- <i class="fa fa-scribd Plr5 FC7 F18"></i> -->
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/Warranty-product.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 17"
+                                                        data-toggle="tooltip" title="Customer Payment">
+                                                        <i class="fa fa-money Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 18"
+                                                        data-toggle="tooltip" title="Service Job">
+                                                        <i class="fa fa-wrench Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 19"
+                                                        data-toggle="tooltip" title="Inventory Unit">
+                                                        <i class="fa fa-wrench Plr5 FC7 F18"></i>
+                                                    </span>
+                                                      <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 20"
+                                                        data-toggle="tooltip" title="Parts Needed">
+                                                        <i class="fa fa-money Plr5 FC7 F18"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 22"
+                                                        data-toggle="tooltip" title="Customer Unit">
+                                                        <i class="fa fa-wrench Plr5 FC7 F18"></i>
+                                                    </span>  
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 26"
+                                                        data-toggle="tooltip" title="Vendor Return">
+                                                         <i ng-include="'{!Application_Images}/Icons/vendor-return.svg'" class="black_808080"></i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 27"
+                                                        data-toggle="tooltip" title="Other Product">
+                                                        <!-- <i class="fa fa-scribd Plr5 FC7 F18"></i> -->
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/sublet.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    
+                                                     <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 28"
+                                                        data-toggle="tooltip" title="Technician Hours">
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/job-clocking.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 30"
+                                                        data-toggle="tooltip" title="Technician">
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/user.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Icon' && data[col.RecordKey] == 29"
+                                                        data-toggle="tooltip" title="Payroll Hours">
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/payroll-clocking.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span class="unit-filter-rec" ng-if="col.Type == 'Icon' && data[col.RecordKey] == 31"
+                                                        data-toggle="tooltip" title="Unit Deals">
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/Unit_V2.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span class="unit-filter-rec" ng-if="col.Type == 'Icon' && data[col.RecordKey] == 32"
+                                                        data-toggle="tooltip" title="Deal Units">
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/Unit_V2.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    <span class="unit-filter-rec" ng-if="col.Type == 'Icon' && data[col.RecordKey] == 33"
+                                                        data-toggle="tooltip" title="Parts Order">
+                                                        <i class="black_808080"
+                                                            ng-include="'{!Application_Images}/Icons/part.svg'" >
+                                                        </i>
+                                                    </span>
+                                                    
+                                                    <a ui-sref="ViewCustomer({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 1"> 
+                                                        <span>{{data[col.RecordKey]}}</span>    <!--  target="_blank" -->
+                                                    </a>
+                                                    <a ui-sref="ViewVendor({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 2"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewPart({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 3"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewKit({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 4"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewFee({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 5"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewLabour({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 6"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ng-if="col.Type == 'Link' && data['Type'] == 7" href="" target="_blank"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <span ng-if="{!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder_V2({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 8"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 8"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <span ng-if="{!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder_V2({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 9"> <!-- {NewCustomerOrder({Id: data['Id']}) -->
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 9"> <!-- {NewCustomerOrder({Id: data['Id']}) -->
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <a ui-sref="VendorOrder({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 10"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="VendorOrderReceiving({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 11"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="VendorOrderInvoicing({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 12"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ng-click="HomeSearchGrid.MoveToPage('CategoryMgmt')"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 13"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ng-click="HomeSearchGrid.MoveToPage('SystemSettings')"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 14"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ng-click="HomeSearchGrid.MoveToPage('SystemSettings')" 
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 15">  <!--  {BlackPurlHome}?pageName=SystemSettings -->
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewVendor({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && (data['Type'] == 16 || data['Type'] == 27)"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewVendor({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 23"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewVendor({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 24"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewVendor({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 25"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <span ng-if="{!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder_V2({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 17"> 
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 17"> 
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <span ng-if="{!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder_V2({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && (data['Type'] == 18 || data['Type'] == 31 || (data['Type'] == 32 &&  col.RecordKey=='Order_Number') || data['Type'] == 33 )"> 
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && (data['Type'] == 18 || data['Type'] == 31 || (data['Type'] == 32 &&  col.RecordKey=='Order_Number') || data['Type'] == 33)"> 
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <a ui-sref="ViewUnit({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 19"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <span ng-if="{!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder_V2({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 20 && data[col.RecordKey] != 'STOCK'"> 
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                                        <a ui-sref="CustomerOrder({Id: data['Id']})" href="" target="_blank" ng-if="col.Type == 'Link' && data['Type'] == 20 && data[col.RecordKey] != 'STOCK'"> 
+                                                            <span>{{data[col.RecordKey]}}</span>
+                                                        </a>
+                                                    </span>
+                                                    <a ui-sref="ViewPart({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 20 && data[col.RecordKey] == 'STOCK'"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ViewUnit({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && (data['Type'] == 22)"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                     <a ui-sref="ViewUnit({Id: data['Unit_Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && (data['Type'] == 32) && col.RecordKey=='Stock_Number'"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <a ui-sref="ReturnVO({Id: data['Id']})" href="" target="_blank"
+                                                        ng-if="col.Type == 'Link' && data['Type'] == 26"> 
+                                                        <span>{{data[col.RecordKey]}}</span>
+                                                    </a>
+                                                    <span ng-if="col.Type == 'Number'">
+                                                         {{data[col.RecordKey] | number:2}}
+                                                    </span>
+                                                    
+                                                    <span ng-if="col.Type == 'Currency'">
+                                                         {{data[col.RecordKey] | currency}}
+                                                    </span>
+                                                    
+                                                    <span ng-if="col.Type == 'Dynamic Currency'">
+                                                         {{ col.RecordKey.includes('Taxable:') ? data['TaxItemRecs'][col.Label.split(":").pop()][0] : data['TaxItemRecs'][col.Label.split(":").pop()][1]  | currency }}
+                                                    </span>
+                                                    
+                                                    <span ng-if="col.Type == 'Text' || col.Type == 'Email'  || col.Type == 'Date'">
+                                                         {{data[col.RecordKey]}}
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Phone'">
+                                                         {{data[col.RecordKey] }}
+                                                    </span>
+                                                    <span ng-if="col.Type == 'Boolean'">
+                                                         {{data[col.RecordKey] ? 'Yes' : 'No'}}
+                                                    </span>
+                                               </td>
+                                            </tr> 
+                                        </tbody> 
+                                    </table>
+                                    
+                                    <!-- Pagination container -->
+                                    <div class="row M0 pagination_container" id="HSGrid_Pagination" ng-if="HomeSearchGrid.SearchedResult.length != 0 && !HomeSearchGrid.isObjectSelected('Technician Performance') && !HomeSearchGrid.isObjectSelected('Part FIFO') && !HomeSearchGrid.isObjectSelected('Tax Detail')" ng-class="{'paginationDynamicWidth': HomeSearchGrid.isSidePanelToggle} ">
+                                        <list-pagination id-value = "HSGrid_Pagination_" 
+                                                        total-records-length = "(HomeSearchGrid.Total_Records != -1) ? HomeSearchGrid.Total_Records : HomeSearchGrid.TotalRecords"
+                                                        page-size = "HomeSearchGrid.searchResultPageSortAttrsJSON.PageSize"
+                                                        current-page = "HomeSearchGrid.searchResultPageSortAttrsJSON.CurrentPage"
+                                                        changes-count = "HomeSearchGrid.searchResultPageSortAttrsJSON.ChangesCount"
+                                                        pagination-control-method = "HomeSearchGrid.HSGrid_paginationControlsAction" />
+                                    </div>
+                                    <div class="row M0 pagination_container" id="HSGrid_Pagination" ng-if="HomeSearchGrid.SearchedResult.length != 0 && HomeSearchGrid.isObjectSelected('Technician Performance')&& !HomeSearchGrid.isObjectSelected('Part FIFO')  && !HomeSearchGrid.isObjectSelected('Tax Detail')" ng-class="{'paginationDynamicWidth': HomeSearchGrid.isSidePanelToggle} ">
+                                        <div class="divMiddleText col-lg-4 col-md-4 T6" style="padding-left: 20px; text-transform:none;">
+                                             ({{(HomeSearchGrid.Total_Records != -1) ? HomeSearchGrid.Total_Records : HomeSearchGrid.TotalRecords}} 
+                                                 {{((HomeSearchGrid.Total_Records != -1) ? HomeSearchGrid.Total_Records : HomeSearchGrid.TotalRecords) == 1 ? 'Record returned' : 'Record(s) returned'}})
+                                        </div>
+                                    </div>
+                                    <div class="row M0 pagination_container" id="HSGrid_Pagination" ng-if="HomeSearchGrid.SearchedResult.length != 0 && HomeSearchGrid.isLocalPaginationAdded" ng-class="{'paginationDynamicWidth': HomeSearchGrid.isSidePanelToggle} ">
+                                        <list-pagination id-value = "HSGrid_Pagination_" 
+                                                        total-records-length = "HomeSearchGrid.TotalRecords"
+                                                        page-size = "HomeSearchGrid.DEFAULT_PAGE_SIZE"
+                                                        current-page = "HomeSearchGrid.currentPageNumber"
+                                                        pagination-control-method = "HomeSearchGrid.getPaginatedRecords"
+                                                        max-size = "100000"  
+                                                        is-local-pagination = "true"/>
+                                    </div>
+                                </div> 
+                                <div class="noResult" ng-if="HomeSearchGrid.SearchedResult.length == 0">
+                                    <h3 style="color: #939CA9; text-align: center;">{{ 'No_result_found' | translate }}.</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gridLoadingDiv" ng-show="!HomeSearchGrid.displayGrid">
+                        <div class="loadingIconContainer">
+                            <c:BPLoading />
+                        </div>
+                    </div>   
+                </div>   
+              <!-- center Div End here -->
+        </div>
+        
+      </div>
+        
+        <div style="height: 50px;" id="VO_dummydiv"></div>
+        <div class="modal modal-fullscreen fade backdropsSearchFilter" ng-click="HomeSearchGrid.closeFilterForm()" ></div>
+        <!-- content end here -->
+    </div>  
+
+    
+</apex:page>

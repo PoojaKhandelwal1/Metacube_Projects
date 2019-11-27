@@ -1,0 +1,1524 @@
+<apex:component controller="BPGlobalHeaderCtrl">
+    <apex:attribute name="Application_Images" Description="" required="true" type="String"/>
+    <c:AutoCompleteSuggestion />
+    <c:AutoComplete1 />
+     <script>
+        
+        var BPGlobalHeader = angular.module('BPGlobalHeader', ['autocomplete', 'autocomplete1','globalSearchModule']);/*, 'globalSearchModule' *//* Added by pooja */ /* 'addNewCOUModule' Added by kajal - 11/16/2016 - #1291 */
+        BPGlobalHeader.controller('BPGlobalHeader', function ($scope,$rootScope, $q, NavigationService,$timeout, $document, $location,$state, $stateParams, CustomerActiveOrdersServiceForSta) {
+
+             $document.ready(function(){
+                $('#searchIconOnly').click(function(){
+                    $(this).hide();
+                    angular.element('#advanceSearchDropdownBtnSpan').hide();
+                    $('#searchInputDiv').animate({width:'toggle'},350,function() {
+                        $scope.$broadcast('searchIconClickEvent', ""); /* Added to perform actions when search input div is dispalyed */
+                        
+                    });
+                });
+                $('#HeaderSearchIcon').click(function(){
+                    angular.element('#searchInputDiv').animate({width:'toggle'},350 , function(){
+                        angular.element('#searchIconOnly').show();
+                        angular.element('#advanceSearchDropdownBtnSpan').show();
+                        $scope.$broadcast('searchIconClickForCloseEvent', ""); /* Added to perform actions when search input div is closed */
+                    });
+                }); 
+            }); 
+
+            $rootScope.GroupOnlyPermissions = $Global.Permission.GroupOnlyPermissions;
+            $scope.BPGlobalHeader = {};
+            $scope.CustomerModal = {};
+            $scope.BPGlobalHeader.IsTrialOrg = {!IsTrialOrg}; 
+            $scope.BPGlobalHeader.TrailOrgDays = $Global.TrailOrgDays;
+            $scope.BPGlobalHeader.showNotificationSidePanel = false;
+            $scope.BPGlobalHeader.pageToOpenForCreateBtn = null; // Added by richa
+            $scope.BPGlobalHeader.ActiveOrders = [];//Added by kv 01/21/2017
+            $scope.BPGlobalHeader.communityURL = $Global.communityURL;
+            $rootScope.CompanyLocale = $Global.CompanyLocale;
+            $scope.BPGlobalHeader.isLoadCustomerOrder_V2 = {!Load_Customer_Order_V2};
+            $scope.isLoadTechScheduling = $Global.IsLoadTechScheduling;
+            $scope.BPGlobalHeader.IsFusionMappingEnabled = $Global.IsFusionMappingEnabled;
+            
+            $scope.BPGlobalHeader.initialize =function(){
+                var currentdate = new Date(); 
+                var datetime = "Last Sync: " + currentdate.getDate() + "/"
+                + (currentdate.getMonth()+1)  + "/" 
+                + currentdate.getFullYear() + " @ "  
+                + currentdate.getHours() + ":"  
+                + currentdate.getMinutes() + ":"           
+                + currentdate.getSeconds();
+                setTimeout(function(){ angular.element('[data-toggle="tooltip"]').tooltip({placement : 'bottom'}); }, 2000);
+            }
+            $scope.BPGlobalHeader.loadScheduler = function(){
+            	if( $scope.isLoadTechScheduling ){
+                	if($rootScope.currentStateName === 'TechScheduler.JobScheduler') {
+            			$state.go('TechScheduler', {}, {reload: true});
+            		} else {
+            			$state.go('TechScheduler');
+            		}
+               	} else {
+               		$state.go('JobScheduling');
+                }
+            }
+             $scope.BPGlobalHeader.MoveToState = function(stateName, attr)  {
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                if(stateName == 'CustomerOrder_V2' && $rootScope.currentStateName == 'CustomerOrder_V2' && ($stateParams.Id || $stateParams.AppointmentId)) {
+                   $rootScope.CustomerOrder_V2Parms = {};
+                   $state.go('CustomerOrder_V2', {Id:'', AppointmentId: ''});
+                } else {
+                    if(attr != undefined && attr != null && attr != '') {
+                       loadState($state, stateName, attr); 
+                    } else  {
+                        loadState($state, stateName);
+                    }
+                }
+            }
+            // Navigation Methods
+            $scope.BPGlobalHeader.createCOHeader = function(type,Id){
+
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                 $scope.BPGlobalHeader.hideDropdown ();
+                $scope.BPGlobalHeader.type = type;
+                if($scope.BPGlobalHeader.type == "Part Sale" || $scope.BPGlobalHeader.type == "Service Order" || $scope.BPGlobalHeader.type == "Unit Deal"){
+                    var selectCustomer_Json = { type : $scope.BPGlobalHeader.type};
+                    if(Id != undefined && Id != null && Id != ''){
+                        selectCustomer_Json.AppointmentId = Id;
+                    }
+                    $scope.BPGlobalHeader.MoveToState('SelectCustomer', {myParams: selectCustomer_Json}); 
+                }
+                else{
+                    $scope.BPGlobalHeader.createCO(null);
+                }
+            }
+            
+            $scope.BPGlobalHeader.showDropdown = function(id){
+                angular.element("#"+ id).find(".bp-dropdown-content").css("transform", " scale(1, 1)");
+            }
+            
+            $scope.BPGlobalHeader.hideDropdown = function(){
+                angular.element(".bp-dropdown-content").css("transform", " scale(1, 0)");
+            }
+            
+            $rootScope.$on('CreateVendorPopUpEvent', function (event, args) {
+               $scope.BPGlobalHeader.createVOHeader(args);
+            });
+             $rootScope.$on('addServiceJobAppointment', function (event, args) {
+                var Type = args.Type;
+               var AppointmentId = args.AppointmentId
+               $scope.BPGlobalHeader.createCOHeader(Type,AppointmentId);
+            });
+                        
+            $scope.BPGlobalHeader.createVOHeader = function(type){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                $scope.BPGlobalHeader.type = type;
+                //$rootScope.$broadcast('SelectCustomerPopUpEvent',$scope.BPGlobalHeader.type);
+                var selectVendor_Json = {type : $scope.BPGlobalHeader.type};
+                $scope.BPGlobalHeader.MoveToState('SelectCustomer', {myParams: selectVendor_Json});
+                //window.open("{NewVendorOrder}","_blank"); //NIDS
+            }
+            
+            $scope.BPGlobalHeader.createVOReceiving = function(type){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                $scope.BPGlobalHeader.type = type;
+                var selectVendor_Json = {type : $scope.BPGlobalHeader.type};
+                $scope.BPGlobalHeader.MoveToState('SelectCustomer', {myParams: selectVendor_Json});
+                //$rootScope.$broadcast('SelectCustomerPopUpEvent',$scope.BPGlobalHeader.type);
+                //window.open("{NewVendorOrderReceiving}", "_blank"); //NIDS
+            } 
+            
+            $scope.BPGlobalHeader.createVOInvoicing = function(type){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                $scope.BPGlobalHeader.type = type;
+                var selectVendor_Json = {type : $scope.BPGlobalHeader.type};
+                $scope.BPGlobalHeader.MoveToState('SelectCustomer', {myParams: selectVendor_Json});
+            }
+            
+            $rootScope.$on('searchIconClickForCloseEvent1', function (event, args) {
+                $scope.$broadcast('searchIconClickForCloseEvent', "");
+            });
+            
+            $rootScope.$on('searchIconClickEvent1', function (event, args) {
+                $scope.$broadcast('searchIconClickEvent', "");
+            });
+            
+            $rootScope.$on('selectedCustomerCallback', function (event, args) {
+                if($scope.BPGlobalHeader.type == 'Part Sale' || $scope.BPGlobalHeader.type == 'Service Order' || $scope.BPGlobalHeader.type == 'Unit Deal'){
+                    $scope.BPGlobalHeader.getActiveCOForCustomer(args);
+                } else if($scope.BPGlobalHeader.type == $Label.Vendor_Order || $scope.BPGlobalHeader.type == $Label.Vendor_Order_Receiving 
+                    || $scope.BPGlobalHeader.type == $Label.Vendor_Order_Invoicing || $scope.BPGlobalHeader.type == 'Return Vendor Order'){
+                    $scope.BPGlobalHeader.createVendorForOrderOrReceivingOrInvoicing(args);
+                }
+            });
+            $scope.BPGlobalHeader.getActiveCOForCustomer = function (args) {
+                    var customerId;
+                      if(args != undefined && args != null && args != '')   {
+                         customerId = args.customerId;
+                      }else {
+                        customerId = null;
+                      }
+                CustomerActiveOrdersServiceForSta.getCustomerActiveOrders(customerId).then(function (successfulSearchResult) {
+                    //successfulSearchResult = JSON.parse(successfulSearchResult);
+                    console.log("search result for ");
+                    console.log(successfulSearchResult);
+                    console.log("successfulSearchResult.TotalRecords : " + successfulSearchResult.TotalRecords);
+                    $scope.BPGlobalHeader.ActiveOrders = successfulSearchResult.searchRecords;
+                    //alert(successfulSearchResult.TotalRecords)
+                    if(successfulSearchResult.TotalRecords > 0) {
+                        $scope.BPGlobalHeader.openActiveOrdersForCustomer(args);
+                    } else {
+                        $scope.BPGlobalHeader.createCO(args);
+                    }
+                },
+                function (errorSearchResult) {
+                    //Notification.error("Some error occurred, please refresh the page");
+                });
+            }
+            $scope.BPGlobalHeader.createVendorForOrderOrReceivingOrInvoicing = function (vendorId) {
+                if($scope.BPGlobalHeader.type == $Label.Vendor_Order) {
+                    CustomerActiveOrdersServiceForSta.createVendorOrder(vendorId).then(function (successfulSearchResult) {
+                        console.log(successfulSearchResult);
+                        //var myWindow = window.open("{NewVendorOrder}?id=" + successfulSearchResult, "_self");
+                        setTimeout(function(){
+                            $scope.BPGlobalHeader.MoveToState('VendorOrder', {Id: successfulSearchResult});
+                        }, 500);
+                    },
+                    function (errorSearchResult) {
+                        //Notification.error("Some error occurred, please refresh the page");
+                    });
+                } else if($scope.BPGlobalHeader.type == $Label.Vendor_Order_Receiving) {
+                    CustomerActiveOrdersServiceForSta.createVendorReceiving(vendorId).then(function (successfulSearchResult) {
+                        console.log(successfulSearchResult);
+                        //var myWindow = window.open("{NewVendorOrderReceiving}?id=" + successfulSearchResult, "_self");
+                        setTimeout(function(){
+                            $scope.BPGlobalHeader.MoveToState('VendorOrderReceiving', {Id: successfulSearchResult});
+                        }, 500);
+                    },
+                    function (errorSearchResult) {
+                        //Notification.error("Some error occurred, please refresh the page");
+                    });
+                } else if($scope.BPGlobalHeader.type == $Label.Vendor_Order_Invoicing) {
+                    CustomerActiveOrdersServiceForSta.createVendorInvoicing(vendorId).then(function (successfulSearchResult) {
+                        console.log("in bp global for vi");
+                        console.log(successfulSearchResult);
+                        //var myWindow = window.open("{NewVendorOrderInvoicing}?id=" + successfulSearchResult, "_self");
+                        setTimeout(function(){
+                            $scope.BPGlobalHeader.MoveToState('VendorOrderInvoicing', {Id: successfulSearchResult});
+                        }, 500);
+                    },
+                    function (errorSearchResult) {
+                        //Notification.error("Some error occurred, please refresh the page");
+                    });
+                }else if($scope.BPGlobalHeader.type  == 'Return Vendor Order'){
+                    console.log(vendorId);
+                    CustomerActiveOrdersServiceForSta.createReturnVO(vendorId).then(function (successfulSearchResult) {
+                        console.log("in bp global for RTN");
+                        console.log(successfulSearchResult);
+                        //var myWindow = window.open("{NewVendorOrderInvoicing}?id=" + successfulSearchResult, "_self");
+                        setTimeout(function(){
+                            $scope.BPGlobalHeader.MoveToState('ReturnVO', {Id: successfulSearchResult});
+                        }, 500);
+                    },
+                    function (errorSearchResult) {
+                        //Notification.error("Some error occurred, please refresh the page");
+                    });
+                    
+                }
+            }
+            $scope.BPGlobalHeader.openActiveOrdersForCustomer = function (args) {
+                /* $rootScope.$broadcast('ActiveOrdersOpenPopupEvent', {
+                    CoType : $scope.BPGlobalHeader.type,
+                    CustomerId : customerId
+                });
+                $rootScope.$broadcast('ActiveOrdersLoadJsonEvent', {
+                    ActiveOrdersJson : $scope.BPGlobalHeader.ActiveOrders
+                }); */
+                
+                 var ActiveOrdersForCustomer_Json = {
+                                                    CoType : $scope.BPGlobalHeader.type,
+                                                    CustomerId : args.customerId,
+                                                    ActiveOrdersJson : $scope.BPGlobalHeader.ActiveOrders,
+                                                    A_View_StateName : $rootScope.$previousState.name,
+                                                    A_View_StateParams : $rootScope.$previousStateParams,
+                                                    AppointmentId: args.AppointmentId
+                                                    };
+                $scope.BPGlobalHeader.MoveToState('ActiveOrdersForCustomer', {myParams: ActiveOrdersForCustomer_Json});
+                }
+            
+            /* END: edited by kajal 01/20/2017 */
+            $scope.BPGlobalHeader.createCO = function(args){
+                        var customerId;
+                        if(args != undefined && args != null && args != '') {
+                            customerId = args.customerId;
+                        }else   {
+                            customerId = null;
+                        }
+                
+                        console.log("inside call function");
+                        NavigationService.addNewCustomerOrder(customerId, $scope.BPGlobalHeader.type).then(function (successfulSearchResult) {
+                            console.log("search result");
+                            console.log(successfulSearchResult);
+                            console.log("-----------$scope.BPGlobalHeader.type------------------")
+                            console.log($scope.BPGlobalHeader.type)
+                            if($scope.BPGlobalHeader.type == 'Part Sale'){
+                                //var myWindow = window.open("{newCustomerOrder}?id=" + successfulSearchResult, "_self");
+                                $scope.BPGlobalHeader.MoveToState('CustomerOrder', {Id: successfulSearchResult});
+                            }else if($scope.BPGlobalHeader.type == 'Service Order') {
+                                var addServiceJobForJobSchedulingJson = {
+                                    COHeaderId: successfulSearchResult,
+                                    Id : args.AppointmentId
+                                }
+                                NavigationService.addServiceJobForJobScheduling(angular.toJson(addServiceJobForJobSchedulingJson)).then(function () {
+                                    },
+                                function (errorSearchResult) {
+                                    responseData = errorSearchResult;
+                                });
+                                //var myWindow = window.open("{newCustomerOrder}?id=" + successfulSearchResult, "_self");
+                                $scope.BPGlobalHeader.MoveToState('CustomerOrder', {Id: successfulSearchResult});
+                            }else if($scope.BPGlobalHeader.type == 'Unit Deal'){
+                                //var myWindow = window.open("{newCustomerOrder}?id=" + successfulSearchResult, "_self");
+                                $scope.BPGlobalHeader.MoveToState('CustomerOrder', {Id: successfulSearchResult});
+                            }else if($scope.BPGlobalHeader.type == 'Cash Sale'){
+                                /* var myWindow = window.open("{CashSaleCO}?id=" + successfulSearchResult, "_self"); */
+                                $scope.BPGlobalHeader.MoveToState('CashSaleCO', {Id: successfulSearchResult});
+                            }else if($scope.BPGlobalHeader.type == 'Internal Service'){
+                                //var myWindow = window.open("{newCustomerOrder}?id=" + successfulSearchResult, "_self");
+                                $scope.BPGlobalHeader.MoveToState('CustomerOrder', {Id: successfulSearchResult});
+                            } 
+                        },
+                        function (errorSearchResult) {
+                            responseData = errorSearchResult;
+                        });
+               
+            } 
+            
+            $scope.BPGlobalHeader.upgradeNow = function(){
+                var currentStateName = $state.current.name; // var currentPageName = '{!$CurrentPage.Name}';
+                var userSettingStateName = 'UserSetting'; // var userSettingPageName = 'UserSettings';
+                if(currentStateName.toUpperCase() === userSettingStateName.toUpperCase()){
+                    $rootScope.$broadcast('UpgradeAccount');
+                }else{
+
+                    /*var url = "{UserSettings}#/Billing";
+                    window.open(url, "_self");*/
+                    $scope.BPGlobalHeader.MoveToState('UserSetting', {Id: 'Billing'}); 
+                }
+            }
+            
+            $scope.BPGlobalHeader.closeCreateDropDown = function(){
+                angular.element(".dropdown_div").removeClass("open");
+            }
+            // load customer master data
+            $rootScope.$broadcast('LoadMasterData');
+            
+            // START: PART POPUP ATTRS AND METHODS
+            $scope.BPGlobalHeader.createPart = function(){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                $rootScope.$broadcast('AddPartEvent');
+            }
+            
+            // Modals for Add/Edit Vendor component
+            $scope.BPGlobalHeader.createVendor = function(){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                $rootScope.$broadcast('AddVendorEvent');
+            }
+            
+            // Modals for Add/Edit Customer component
+            $scope.BPGlobalHeader.createCustomer = function(){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                /* $rootScope.$broadcast('AddCustomerEvent'); */
+            }
+            
+            // START: KIT POPUP ATTRS AND METHODS
+            $scope.BPGlobalHeader.createKit = function() {
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                
+                $rootScope.$broadcast('AddKitEvent');
+            }
+            
+            // Modals for Add/Edit Labour component
+            $scope.BPGlobalHeader.createLabour = function(){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                $rootScope.$broadcast('AddLabourEvent');
+            }
+            
+            // Modals for Add/Edit Fee component
+            $scope.BPGlobalHeader.createFee = function(){
+                $scope.BPGlobalHeader.closeCreateDropDown();
+                $rootScope.$broadcast('AddFeeEvent');
+            }
+            
+            /* START: Added by kajal - 11/16/2016 - #1291 */
+            // Modals for Add/Edit Fee component
+            $scope.BPGlobalHeader.createStockUnit = function(){
+                /* $scope.BPGlobalHeader.closeCreateDropDown();
+                $rootScope.$broadcast('AddCustomerOwnedUnitEvent',{
+                    customerMasterData : null,
+                    customerId : null,
+                    unitType : 'STOCK'
+                }); */
+                var addSKU_Json = { customerMasterData : null,
+                                    customerId : null,
+                                    unitType : 'STOCK'
+                                 };
+                $scope.BPGlobalHeader.MoveToState('AddEditUnit', {AddEditUnitParams: addSKU_Json}); 
+                
+               
+            }
+              $scope.BPGlobalHeader.addSKU_Json = { customerMasterData : null,
+                                    customerId : null,
+                                    unitType : 'STOCK'
+                                 };
+            /* END: Added by kajal - 11/16/2016 - #1291 */
+            
+            $scope.BPGlobalHeader.searchText = function($event) {
+                if (getKeyboardEventResult($event) === 13
+                    && $event.currentTarget.attributes['ng-model'].nodeValue == 'BPGlobalHeader.TopLevelTextToSearch'
+                ) {
+                    var currentPageName = '{!$CurrentPage.Name}';
+                    if(currentPageName.indexOf('HomeSearch') == -1){
+                        if(currentPageName.toUpperCase() == 'newHomePage'.toUpperCase()){
+                            $scope.BPGlobalHeader.ConfirmBox_Response(true);
+                        }else{
+
+                            $scope.BPGlobalHeader.ShowConfirmBox();
+                        }
+                    } else {
+                        $scope.BPGlobalHeader.textToSearch = $scope.BPGlobalHeader.TopLevelTextToSearch;
+                        angular.element('#searchInputDiv').animate({width:'toggle'},350 , function(){
+                            angular.element('#searchIconOnly').show();
+                            //Added by pooja 01-09-2016 to hide advance search btn
+                            angular.element('#advanceSearchDropdownBtnSpan').show();;
+                            $rootScope.$broadcast('HomePage-SearchText', {textToSearch : $scope.BPGlobalHeader.textToSearch});
+                        });
+                    }
+                }
+            };
+            
+            
+            $scope.BPGlobalHeader.navigateTo = function(linkId){
+                if(linkId == 'Home'){
+                    window.open("{Homepage}","_self");
+                }else if(linkId == 'Selling'){
+                    window.open("{HomeSearch}?type=Customer Orders","_self");
+                }else if(linkId == 'Ordering'){
+                    window.open("{HomeSearch}?type=Vendor Orders","_self");
+                }else if(linkId == 'Actions'){
+                
+
+                }else if(linkId == 'Alerts'){
+                
+
+                }else if(linkId == 'Tasks'){
+                
+
+                }else if(linkId == 'Chatter'){
+                
+
+                }else if(linkId == 'Search'){
+                    window.open("{HomeSearch}","_self");
+                }else if(linkId == 'News'){
+                
+
+                }else if(linkId == 'Dashboards'){
+                
+
+                }else if(linkId == 'Report'){
+                
+
+                }else if(linkId == 'Integate'){
+                
+
+                }else if(linkId == 'My_Profile'){
+                    window.open("/{!$user.Id}","_self");
+                }else if(linkId == 'Setting'){
+                    window.open("{UserSettings}","_self");
+                }
+            
+            }
+
+
+
+            
+            // Confimation box popup
+            $scope.BPGlobalHeader.ShowConfirmBox = function() {
+                //angular.element('#SearchText_ConfirmBox').show();
+                angular.element('#SearchText_ConfirmBox').modal({
+                    backdrop : 'static',
+                    keyboard : false
+                });
+
+                setTimeout(function(){
+                    angular.element('#SearchText_ConfirmBox .YesBtn').focus();
+                }, 1000);
+            }
+            
+            $scope.BPGlobalHeader.toggleNotificationSidePanel = function(){
+                $scope.BPGlobalHeader.showNotificationSidePanel = !$scope.BPGlobalHeader.showNotificationSidePanel;
+            }
+            
+            // Confirm box selection call method
+            $scope.BPGlobalHeader.ConfirmBox_Response = function (response) {
+                // If YES:
+                if (response) {
+                    $scope.BPGlobalHeader.textToSearch = $scope.BPGlobalHeader.TopLevelTextToSearch;
+                    angular.element('#searchInputDiv').animate({width:'toggle'},350 , function(){
+                        angular.element('#searchIconOnly').show();
+                        //Added by pooja 01-09-2016 to hide advance search btn
+                        angular.element('#advanceSearchDropdownBtnSpan').show();;
+                        if($scope.BPGlobalHeader.TopLevelTextToSearch == undefined || $scope.BPGlobalHeader.TopLevelTextToSearch == ''){
+                            window.open("{HomeSearch}","_self");
+                        }else{ 
+                            window.open("{HomeSearch}?q="+$scope.BPGlobalHeader.textToSearch,"_self");
+                        }
+
+
+                    });
+                } else {
+                    /* commented by pooja */
+                     /* angular.element('#HeaderSearchInput').focus(); */ 
+                    /* Added by pooja */
+                     $('#globalSearchStrInput').focus(); 
+                }
+            
+                //angular.element('#SearchText_ConfirmBox').hide();
+                angular.element('#SearchText_ConfirmBox').modal('hide');
+            }
+            
+            
+            // Added by richa
+            // Confirm box selection call method for create button
+            $scope.BPGlobalHeader.CreateBtn_ConfirmBox_Response = function (response) {
+                // If YES:
+                if (response) {
+                    if($scope.BPGlobalHeader.pageToOpenForCreateBtn == "CO") {
+                        //window.open("{NewCustomerOrder}", "_parent");
+                    } else if($scope.BPGlobalHeader.pageToOpenForCreateBtn == "VO") {
+                        //window.open("{NewVendorOrder}", "_parent");
+                    } else if($scope.BPGlobalHeader.pageToOpenForCreateBtn == "VR") {
+                        //window.open("{NewVendorOrderReceiving}", "_parent");
+                    } else if($scope.BPGlobalHeader.pageToOpenForCreateBtn == "VI") {
+                        //window.open("{NewVendorOrderInvoicing}", "_parent");
+                    }
+                    
+                }
+                angular.element('#CreateBtn_ConfirmBox').modal('hide');
+            }
+            
+
+            var getKeyboardEventResult = function(keyEvent) {
+                return (window.event ? keyEvent.keyCode : keyEvent.which);
+            };
+            
+            
+            /*Start: Added by pooja */
+            /* $scope.globalSearchModal = {};
+            angular.element('#searchIconOnly').click(function(){
+                
+                debug($scope.globalSearchModal.showDropdown+"--------------------------");
+                debug($scope.globalSearchModal.results+"------------------------------");
+                debug($scope.globalSearchModal.globalSearchStr+"------------------------------");
+                //$scope.globalSearchModal.showDropdown = false;
+                $scope.globalSearchModal.results = [];
+                $scope.globalSearchModal.globalSearchStr = "";
+                
+                angular.element(this).hide();
+                angular.element('#searchInputDiv').animate({width:'toggle'},350);
+                angular.element('#HeaderSearchInput').focus();
+                debug($scope.globalSearchModal.showDropdown+"--------------------------");
+                debug($scope.globalSearchModal.results+"------------------------------");
+                debug($scope.globalSearchModal.globalSearchStr+"------------------------------");
+            });
+            angular.element('#HeaderSearchIcon').click(function(){
+                debug($scope.globalSearchModal.showDropdown+"--------------------------");
+                debug($scope.globalSearchModal.results+"------------------------------");
+                debug($scope.globalSearchModal.globalSearchStr+"------------------------------");
+                angular.element('#searchInputDiv').animate({width:'toggle'},350 , function(){
+                    angular.element('#searchIconOnly').show();
+                });
+            }); */
+            /*End: Added by pooja */
+            
+            /* Start: Added by pooja 01-09-2016*/
+             //to navigate to home search page when click on more results
+            $scope.BPGlobalHeader.NavigateToHomeSearch = function() {
+                location.href = '{HomeSearch}';
+            }   
+            /* End: Added by pooja 01-09-2016*/
+            
+            /* Start: Ticket#154: Added by pooja 16-09-2016 */
+            $scope.BPGlobalHeader.openGlobalSearchBar = function()  {
+                    $('#searchIconOnly').hide();
+                    angular.element('#advanceSearchDropdownBtnSpan').hide();
+                    $('#searchInputDiv').animate({width:'toggle'},350,function() {
+                        $scope.$broadcast('searchIconClickEvent', ""); /* Added to perform actions when search input div is dispalyed */
+                    });
+            }
+            /* End: Ticket#154: Added by pooja 16-09-2016 */
+            
+            $rootScope.setBpGlobalHeaderMenuItems = function(){
+                 $scope.BPGlobalHeader.BP_SellActionMenuItems = [
+                    {
+                        'isActive': true,
+                        'imgName': '{!Application_Images}/Icons/part.svg',
+                        'label': 'Part Sale',
+                        'value': 'Part Sale',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Merchandise']['create/modify']
+                    },
+                                
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/service-job.svg',
+                        'label': 'Service Job',
+                        'value': 'Service Order',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Service job']['create/modify']
+                    },
+                                
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/unit-deal.svg',
+                        'label': 'Unit Deal',
+                        'value': 'Unit Deal',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Deal']['create/modify']
+                    },
+                                
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/quick-sale.svg',
+                        'label': 'Quick Sale',
+                        'value': 'Cash Sale',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Quick sale']['enabled']
+                    },
+                                
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/internal-service.svg', 
+                        'label': 'Internal Service',
+                        'value': 'Internal Service',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Internal Service']['create/modify']
+                    }                                               
+                ];
+                
+                $scope.BPGlobalHeader.BP_OrderActionMenuItems = [
+                    {
+                        'isActive': true,
+                        'imgName': '{!Application_Images}/Icons/box-order.svg',
+                        'label': 'Parts',
+                        'value': 'VO',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Vendor order']['create/modify']
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/car-8.svg',
+                        'label': 'Units',
+                        'value': 'UO',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Unit ordering']['view']
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/receiving.svg',
+                        'label': 'Receive Parts',
+                        'value': 'VR',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Vendor receiving']['create/modify']
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/vendor-return.svg',
+                        'label': 'Return Parts',
+                        'value': 'RVO',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Vendor order']['create/modify']
+                    },
+                    
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/invoice.svg',
+                        'label': 'Reconcile Parts Invoice',
+                        'value': 'VI',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Vendor invoicing']['create/modify']
+                    }
+                ];
+                
+                $scope.BPGlobalHeader.BP_AddNewActionMenuItems = [
+                    {
+                        'isActive': true,
+                        'imgName': '{!Application_Images}/Icons/customer.svg',
+                        'label': 'Customer',
+                        'value': !$scope.BPGlobalHeader.isLoadCustomerOrder_V2 ? 'AddEditCustomer' : 'AddEditCustomerV2',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Customers'].enabled
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/vendor.svg',
+                        'label': 'Vendor',
+                        'value': 'AddEditVendor',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Vendors'].enabled
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/part.svg',
+                        'label': 'Part',
+                        'value': 'AddEditPart',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Parts'].enabled
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/labor.svg',
+                        'label': 'Labor Code',
+                        'value': 'AddEditLabour',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Labor'].enabled
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/kit.svg',
+                        'label': 'Kit',
+                        'value': 'AddEditKit',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Kits'].enabled
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/fee.svg',
+                        'label': 'Fee',
+                        'value': 'AddEditFee',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Fees'].enabled
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/car-8.svg',
+                        'label': 'Stock Unit',
+                        'value': 'AddEditUnit',
+                        'isAccessible': $rootScope.GroupOnlyPermissions['Stock units'].enabled
+                    }
+                ];  
+                
+                $scope.BPGlobalHeader.BP_Clocking_Item = [
+                    {
+                        'isActive': true,
+                        'imgName': '{!Application_Images}/Icons/job-clocking.svg',
+                        'label': 'Job Clocking',
+                        'value': 'JobClocking',
+                        'isAccessible': true
+                    },
+                    {
+                        'isActive': false,
+                        'imgName': '{!Application_Images}/Icons/payroll-clocking.svg',
+                        'label': 'Payroll Clocking',
+                        'value': 'PayrollClocking',
+                        'isAccessible': true
+                    }
+                ];  
+                
+                $scope.BPGlobalHeader.BP_SettingsActionMenuItems = {
+                    "0": [
+                            {
+                                'isActive': true,
+                                'imgName': '{!Application_Images}/Icons/account-settings.svg',
+                                'label': 'Account settings',
+                                'value': 'UserSetting',
+                                'isVisible':'true',
+                                'params':  {'Id':  'Home'},
+                                'isAccessible': $rootScope.GroupOnlyPermissions['System Settings'].enabled
+                            }
+                        ],
+                    "1": [
+                            {
+                                'isActive': false,
+                                'imgName': '{!Application_Images}/Icons/import-export.svg',
+                                'label': 'Import & export',
+                                'value': 'UserSetting',
+                                'isVisible':'true',
+                                'params':  {'Id':  'Import_And_Export'},
+                                'isAccessible': $rootScope.GroupOnlyPermissions['Accounting settings export'].enabled
+                            },
+                            {
+                                'isActive': false,
+                                'imgName': '{!Application_Images}/Icons/import.svg',
+                                'label': 'Price file import',
+                                'value': 'PriceFileImport',
+                                'isVisible':'true',
+                                'isAccessible': $rootScope.GroupOnlyPermissions['Price file import'].enabled
+                            },
+                            {
+                                'isActive': false,
+                                'imgName': '{!Application_Images}/Icons/cash-reconciliation.svg',
+                                'label': 'Cash reconciliation',
+                                'value': 'CashReconciliation',
+                                'isVisible':'true',
+                                'isAccessible': $rootScope.GroupOnlyPermissions['Cash reconciliation'].submit
+                            },
+                            {
+                                'isActive': false,
+                                'imgName': '{!Application_Images}/Icons/Fusion-mapping.svg',
+                                'label': 'Fusion benchmarking',
+                                'value': 'FusionBenchmarking',
+                                'isVisible':$scope.BPGlobalHeader.IsFusionMappingEnabled,
+                                'isAccessible': $scope.BPGlobalHeader.IsFusionMappingEnabled
+                            }
+                        ]
+                };
+            }
+            
+            /*$scope.BPGlobalHeader.BP_SellActionMenuItems = [
+                {
+                    'isActive': true,
+                    'imgName': '{!Application_Images}/Icons/part.svg',
+                    'label': 'Part Sale',
+                    'value': 'Part Sale',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Merchandise']['create/modify']
+                },
+                            
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/service-job.svg',
+                    'label': 'Service Job',
+                    'value': 'Service Order',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Service job']['create/modify']
+                },
+                            
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/unit-deal.svg',
+                    'label': 'Unit Deal',
+                    'value': 'Unit Deal',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Deal']['create/modify']
+                },
+                            
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/quick-sale.svg',
+                    'label': 'Quick Sale',
+                    'value': 'Cash Sale',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Quick sale']['enabled']
+                },
+                            
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/internal-service.svg', 
+                    'label': 'Internal Service',
+                    'value': 'Internal Service',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Internal Service']['create/modify']
+                }                                               
+            ];
+            
+            $scope.BPGlobalHeader.BP_OrderActionMenuItems = [
+                {
+                    'isActive': true,
+                    'imgName': '{!Application_Images}/Icons/box-order.svg',
+                    'label': 'Vendor Order',
+                    'value': 'VO',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Vendor order']['create/modify']
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/receiving.svg',
+                    'label': 'Receiving',
+                    'value': 'VR',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Vendor receiving']['create/modify']
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/invoice.svg',
+                    'label': 'Invoicing',
+                    'value': 'VI',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Vendor invoicing']['create/modify']
+                },{
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/vendor-return.svg',
+                    'label': 'Return to Vendor',
+                    'value': 'RVO',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Vendor order']['create/modify']
+                }
+            ];
+            
+            $scope.BPGlobalHeader.BP_AddNewActionMenuItems = [
+                {
+                    'isActive': true,
+                    'imgName': '{!Application_Images}/Icons/customer.svg',
+                    'label': 'Customer',
+                    'value': 'AddEditCustomer',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Customers'].enabled
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/vendor.svg',
+                    'label': 'Vendor',
+                    'value': 'AddEditVendor',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Vendors'].enabled
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/part.svg',
+                    'label': 'Part',
+                    'value': 'AddEditPart',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Parts'].enabled
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/labor.svg',
+                    'label': 'Labor Code',
+                    'value': 'AddEditLabour',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Labor'].enabled
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/kit.svg',
+                    'label': 'Kit',
+                    'value': 'AddEditKit',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Kits'].enabled
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/fee.svg',
+                    'label': 'Fee',
+                    'value': 'AddEditFee',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Fees'].enabled
+                },
+                
+                {
+                    'isActive': false,
+                    'imgName': '{!Application_Images}/Icons/car-8.svg',
+                    'label': 'Stock Unit',
+                    'value': 'AddEditUnit',
+                    'isAccessible': $rootScope.GroupOnlyPermissions['Stock units'].enabled
+                }
+            ];  
+            
+            $scope.BPGlobalHeader.BP_SettingsActionMenuItems = {
+                "0": [
+                        {
+                            'isActive': true,
+                            'imgName': '{!Application_Images}/Icons/account-settings.svg',
+                            'label': 'Account settings',
+                            'value': 'UserSetting',
+                            'params':  {'Id':  'Home'},
+                            'isAccessible': $rootScope.GroupOnlyPermissions['System Settings'].enabled
+                        }
+                    ],
+                
+                "1": [
+                        {
+                            'isActive': false,
+                            'imgName': '{!Application_Images}/Icons/import-export.svg',
+                            'label': 'Import & export',
+                            'value': 'UserSetting',
+                            'params':  {'Id':  'Import_And_Export'},
+                            'isAccessible': $rootScope.GroupOnlyPermissions['Accounting settings export'].enabled
+                        },
+                        
+                        {
+                            'isActive': false,
+                            'imgName': '{!Application_Images}/Icons/import.svg',
+                            'label': 'Price file import',
+                            'value': 'PriceFileImport',
+                            'isAccessible': $rootScope.GroupOnlyPermissions['Price file import'].enabled
+                        },
+                        
+                        {
+                            'isActive': false,
+                            'imgName': '{!Application_Images}/Icons/cash-reconciliation.svg',
+                            'label': 'Cash reconciliation',
+                            'value': 'CashReconciliation',
+                            'isAccessible': $rootScope.GroupOnlyPermissions['Cash reconciliation'].enabled
+                        }
+                    ]
+            };*/
+            
+            $scope.BPGlobalHeader.createOrderAction = function(orderActionName) {
+            $scope.BPGlobalHeader.hideDropdown();
+                if(orderActionName === 'VO')    {
+                    $scope.BPGlobalHeader.createVOHeader('{!$Label.Vendor_Order}');
+                } else if(orderActionName === 'VR') {
+                    $scope.BPGlobalHeader.createVOReceiving('{!$Label.Vendor_Order_Receiving}');
+                } else if(orderActionName === 'VI') {
+                    $scope.BPGlobalHeader.createVOInvoicing('{!$Label.Vendor_Order_Invoicing}');
+                } else if(orderActionName === 'RVO')    {
+                    $scope.BPGlobalHeader.createVOInvoicing('Return Vendor Order');
+                }else if(orderActionName === 'UO')  {
+                    $scope.BPGlobalHeader.MoveToState('UnitOrdering.UnitOrderingVendorList');
+                }
+            }
+            $scope.BPGlobalHeader.closeTrialOrgSection = function(){
+                console.log("closeTrialOrgSection");
+                angular.element("#BP_ExpirationDetailsAndUpgradeBtn_Wrapper_Id").hide();
+                $scope.BPGlobalHeader.calculateScreenMarginTop();
+            }
+            
+             $(window).resize(function(){
+                $scope.BPGlobalHeader.calculateScreenMarginTopResponsive();
+            });
+            $scope.BPGlobalHeader.addNewEntity = function(entityName)   {
+                $scope.BPGlobalHeader.hideDropdown();
+                if(entityName === 'AddEditUnit')    {
+                    $scope.BPGlobalHeader.createStockUnit();
+                } else  {
+                    $scope.BPGlobalHeader.MoveToState(entityName);
+                } 
+            }
+            
+            $scope.BPGlobalHeader.SettingsAction = function(settingsActionName, params) {
+                $scope.BPGlobalHeader.hideDropdown();
+                if(params != undefined && params != null && params != '')   {
+                    $scope.BPGlobalHeader.MoveToState(settingsActionName, params);
+                } else  {
+                    $scope.BPGlobalHeader.hideDropdown();
+                    $scope.BPGlobalHeader.MoveToState(settingsActionName);
+                }
+            }
+                
+            $scope.BPGlobalHeader.BP_navbarBrand_Action = function(event)   {
+                if(event.ctrlKey) {
+                    var url = $state.href('homePage');
+                    window.open(url,'_blank');
+                } else if($state.current.name === 'homePage')   {
+                    angular.element('html, body').stop().animate({
+                        scrollTop: 0
+                    }, 1);
+                } else  {
+                    $scope.BPGlobalHeader.MoveToState('homePage');
+                }
+            }
+            
+            $scope.BPGlobalHeader.calculateScreenMarginTop = function(){
+                $rootScope.wrapperHeight = angular.element("#BP_GlobalHeader_Container_Id").height();
+           //angular.element("#BP_Home_mainContainer").css("margin-top",$rootScope.wrapperHeight +'px');
+                if($scope.BPGlobalHeader.TrailOrgDays == 0){
+                    $rootScope.wrapperHeight -= angular.element("#BP_ExpirationDetailsAndUpgradeBtn_Wrapper_Id").height();
+                }
+                angular.element("#BP_Home_mainContainer").css("margin-top", $rootScope.wrapperHeight);
+            }
+            
+            $rootScope.setBpGlobalHeaderMenuItems();
+            $scope.BPGlobalHeader.calculateScreenMarginTopResponsive = function(){
+            $rootScope.wrapperHeight = angular.element("#BP_GlobalHeader_Container_Id").height();
+                angular.element("#BP_Home_mainContainer").css("margin-top", $rootScope.wrapperHeight);
+            }
+            
+            $scope.BPGlobalHeader.calculateScreenMarginTop();
+        });
+        BPGlobalHeader.service("CustomerActiveOrdersServiceForSta", function ($q) {
+            this.getCustomerActiveOrders = function (customerId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.getActiveCustomerOrdersById}', customerId);
+            },
+            this.createVendorOrder = function (vendorId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createNewVendorOrder}', vendorId);
+            },
+            
+            this.createVendorReceiving = function (vendorId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createNewVendorReceiving}', vendorId);
+            },
+            
+            this.createVendorInvoicing = function (vendorId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createNewVendorInvoicing}', vendorId);
+            },
+            
+            this.createReturnVO = function (vendorId) {
+                vendorId = encodeString(vendorId);
+                var deferred = $q.defer();
+                // make AJAX request to the remote service
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.BPGlobalHeaderCtrl.createNewReturnVO}',vendorId,
+                    function (result, event) {
+                        if (event.type == 'exception') {
+                            deferred.reject(event.message);
+                        } else {
+                            var vendorReceivingHeaderId = decodeString(result);
+                            deferred.resolve(vendorReceivingHeaderId);
+                        }
+                    }, {
+                        escape : true
+                });
+                return deferred.promise;
+            }
+        });
+        /* END: edited by kajal 01/20/2017 */
+        BPGlobalHeader.service("NavigationService", function ($q) {
+            this.createCOHeader = function () {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createCustomerOrder}');
+            },
+            
+            this.addNewCustomerOrder = function(custId, sellingGroup ){
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createNewCustomerOrder}', custId, sellingGroup);
+            },
+            
+            this.createVOHeader = function () {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createVendorOrder}');
+            },
+            
+            this.createVOReceivingHeader = function () {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createVOReceiving}');
+            },
+            
+            this.createVOInvoicing = function () {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createVOInvoicing}');
+            },
+
+            this.addServiceJobForJobScheduling = function (addServiceJobForJobScheduJson) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.addServiceJobForJobScheduling}', addServiceJobForJobScheduJson);
+            }
+        });
+      </script>
+      
+      
+    <!-- <div class="BP_GlobalHeader_Container"  ng-controller="BPGlobalHeader" 
+        ng-init="BPGlobalHeader.initialize()">
+        <div class="BP_ExpirationDetailsAndUpgradeBtn_Wrapper" id = "BP_ExpirationDetailsAndUpgradeBtn_Wrapper_Id"
+            ng-show ="BPGlobalHeader.TrailOrgDays > 0">
+            <span class="BP_ExpirationDetails">Your trial will expire in {{BPGlobalHeader.TrailOrgDays}} days</span>{{expirationDuration}} days
+            <button class="BP_UpgradeNowBtn text-uppercase" ng-click="BPGlobalHeader.upgradeNow()">
+                Upgrade Now
+            </button>
+            
+            <i ng-include="'{!Application_Images}/Icons/close.svg'" class="BP_ExpirationDetails_CloseIcon white" 
+                id="svgObject_BP_ExpirationDetails_CloseIcon"  
+                ng-click="BPGlobalHeader.closeTrialOrgSection()">
+            </i>
+        </div>
+        
+        <div class="BP_GlobalHeader_Wrapper" > 
+            <div class="row BP_HeaderNav_Row">
+                <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 P0 BP_HeaderNav_Col">
+                    <div class="row M0 BP_HeaderNav_Container-fluid">
+                        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1 P0 BP_navbarBrand_Container"> 
+                            <a class="BP_navbarBrand" ng-click="BPGlobalHeader.BP_navbarBrand_Action($event)"> ui-sref="homePage" use ng-click= redirect to home page or initiate any 
+                                                        necessary screen repositioning to ensure that the top left of the page 
+                                                        is being shown 
+                                <i ng-include="'{!Application_Images}/Icons/BP_logo_icon.svg'" class="BP_logoIcon" id="svgObject_BP_logoIcon"></i>
+                            </a>
+                        </div> 
+                        
+                        <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6 P0 BP_GlobalSearchBar_Container"> 
+                            <c:GlobalSearch Application_Images="{!Application_Images}"/>    
+                        </div>
+                         
+                        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1 P0 BP_navBarAction_Container BP_SellAction_Container dropdown"> 
+                            <div class="BP_navBarActionIcon_Container BP_SellIcon_Container dropbtn" >
+                                <i ng-include="'{!Application_Images}/Icons/sell.svg'" 
+                                    class="BP_navBarActionIcon BP_SellIcon white hover_blue_00A3DB" 
+                                    id="svgObject_BP_SellIcon">
+                                </i>
+                                <span class="BP_navBarActionIcon_label BP_SellIcon_label text-uppercase">Sell</span>
+                            </div>
+                            
+                            <div class="BP_navBarActionDropdown_Container BP_SellActionDropdown_Container dropdown-content">
+                                <div class="BP_navBarActionMenu BP_SellActionMenu"> 
+                                    <div class="BP_navBarActionMenuItem BP_SellActionMenuItem" 
+                                        ng-repeat="BP_SellActionItem in BPGlobalHeader.BP_SellActionMenuItems"
+                                        ng-class="{'isActive': BP_SellActionItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_SellActionItem.isAccessible}" 
+                                        ng-click="BPGlobalHeader.createCOHeader(BP_SellActionItem.value)">
+                                        <i ng-include="trustSrc(BP_SellActionItem.imgName)" 
+                                            class="BP_navBarActionMenuItemIcon BP_SellActionMenuItemIcon blue_008DC1" 
+                                            ng-class="{'disabledIcon': !BP_SellActionItem.isAccessible}" 
+                                            id="svgObject_BP_SellActionIcon{{$index}}">
+                                        </i>
+                                        <span class="BP_navBarActionMenuItem_label BP_SellActionMenuItem_label text-cpaitalize"
+                                            ng-class="{'DisabledText': !BP_SellActionItem.isAccessible}">{{BP_SellActionItem.label}}</span>
+                                    </div>
+                                </div>  
+                            </div>
+                        </div>
+                        
+                        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1 P0 BP_navBarAction_Container BP_OrderAction_Container dropdown"> 
+                            <div class="BP_navBarActionIcon_Container BP_OrderIcon_Container">
+                                <i ng-include="'{!Application_Images}/Icons/order.svg'" 
+                                    class="BP_navBarActionIcon BP_OrderIcon white hover_blue_00A3DB" 
+                                    id="svgObject_BP_OrderIcon">
+                                </i>
+                                <span class="BP_navBarActionIcon_label BP_OrderIcon_label text-uppercase">Order</span>
+                            </div>
+                            
+                            <div class="BP_navBarActionDropdown_Container BP_OrderActionDropdown_Container dropdown-content">
+                                <div class="BP_navBarActionMenu BP_OrderActionMenu"> 
+                                    <div class="BP_navBarActionMenuItem BP_OrderActionMenuItem" 
+                                        ng-repeat="BP_OrderActionItem in BPGlobalHeader.BP_OrderActionMenuItems"
+                                        ng-class="{'isActive': BP_OrderActionItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_OrderActionItem.isAccessible}"
+                                        ng-click="BPGlobalHeader.createOrderAction(BP_OrderActionItem.value)">
+                                        <i ng-include="trustSrc(BP_OrderActionItem.imgName)" 
+                                            class="BP_navBarActionMenuItemIcon BP_OrderActionMenuItemIcon blue_008DC1" 
+                                            ng-class="{'disabledIcon': !BP_OrderActionItem.isAccessible}"
+                                            id="svgObject_BP_OrderActionIcon{{$index}}">
+                                        </i>
+                                        <span class="BP_navBarActionMenuItem_label BP_OrderActionMenuItem_label text-cpaitalize"
+                                            ng-class="{'DisabledText': !BP_OrderActionItem.isAccessible}">{{BP_OrderActionItem.label}}</span>
+                                    </div>
+                                </div>  
+                            </div>
+                        </div>
+                        
+                        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1 P0 BP_navBarAction_Container BP_AddNewAction_Container dropdown"> 
+                            <div class="BP_navBarActionIcon_Container BP_AddNewIcon_Container">
+                                <i ng-include="'{!Application_Images}/Icons/add-circle.svg'" 
+                                    class="BP_navBarActionIcon BP_AddNewIcon white hover_blue_00A3DB" 
+                                    id="svgObject_BP_AddNewIcon">
+                                </i>
+                                <span class="BP_navBarActionIcon_label BP_AddNewIcon_label text-uppercase">Add New</span>
+                            </div>
+                            
+                            <div class="BP_navBarActionDropdown_Container BP_AddNewActionDropdown_Container dropdown-content">
+                                <div class="BP_navBarActionMenu BP_AddNewActionMenu"> 
+                                    <div class="BP_navBarActionMenuItem BP_AddNewActionMenuItem" 
+                                        ng-repeat="BP_AddNewActionItem in BPGlobalHeader.BP_AddNewActionMenuItems"
+                                        ng-class="{'isActive': BP_AddNewActionItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_AddNewActionItem.isAccessible}"
+                                        ng-click="BPGlobalHeader.addNewEntity(BP_AddNewActionItem.value)">
+                                        <i ng-include="trustSrc(BP_AddNewActionItem.imgName)" 
+                                            class="BP_navBarActionMenuItemIcon BP_AddNewActionMenuItemIcon blue_008DC1" 
+                                            ng-class="{'disabledIcon': !BP_AddNewActionItem.isAccessible}" 
+                                            id="svgObject_BP_AddNewActionIcon{{$index}}">
+                                        </i> 
+                                        <img class="BP_navBarActionMenuItemIcon BP_AddNewActionMenuItemIcon" id="svgObject_BP_AddNewActionIcon{{$index}}" src="{{BP_AddNewActionItem.imgName}}"></img>
+                                        <span class="BP_navBarActionMenuItem_label BP_AddNewActionMenuItem_label text-cpaitalize"
+                                            ng-class="{'DisabledText': !BP_AddNewActionItem.isAccessible}">{{BP_AddNewActionItem.label}}</span>
+                                    </div>
+                                </div>  
+                            </div>
+                            
+                        </div>
+                        
+                        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1 P0 BP_navBarAction_Container BP_ScheduleAction_Container" 
+                            ng-click = "BPGlobalHeader.MoveToState('JobScheduling')"> BP_ScheduleIcon_Container_hide
+                            <div class="BP_navBarActionIcon_Container BP_ScheduleIcon_Container">
+                                <i ng-include="'{!Application_Images}/Icons/schedule.svg'" 
+                                    class="BP_navBarActionIcon BP_ScheduleIcon white hover_blue_00A3DB" 
+                                    id="svgObject_BP_ScheduleIcon">
+                                </i>
+                                <span class="BP_navBarActionIcon_label BP_ScheduleIcon_label text-uppercase">Schedule</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1 P0 BP_navBarAction_Container BP_SettingsAndHelpAction_Container"> 
+                            <div class="BP_HelpAction_Container">
+                                <div class="BP_HelpIcon_Container FL">
+                                    <a class="pull-left" target="_blank" href="{{BPGlobalHeader.communityURL}}">
+                                        <i ng-include="'{!Application_Images}/Icons/help-circle.svg'" class="BP_navBarActionIcon BP_HelpIcon white hover_blue_00A3DB"
+                                            id="svgObject_BP_HelpIcon" data-toggle="tooltip" title="Help" >
+                                        </i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="BP_SettingsAction_Container dropdown">
+                                <div class="BP_SettingsIcon_Container FL">
+                                    <i ng-include="'{!Application_Images}/Icons/cog.svg'" class="BP_navBarActionIcon BP_SettingsIcon white hover_blue_00A3DB" 
+                                         id="svgObject_BP_SettingsIcon" data-toggle="tooltip" title="Settings"
+                                         ng-class="{'isActiveState': (currentStateName == 'UserSetting' || currentStateName == 'GroupSummary' || currentStateName == 'EditGroupPermissions')}">
+                                    </i>
+                                </div>
+                                    
+                                <div class="BP_navBarActionDropdown_Container BP_SettingsActionDropdown_Container dropdown-content">
+                                    <div class="BP_SettingsActionContent"> 
+                                        <div class="BP_UserInfoAndLogoutAction_Container">
+                                            <div class="BP_UserInfo_Wrapper">
+                                                <div class="BP_LoggedInUserName text-capitalize">
+                                                    {!JSENCODE($User.FirstName)} {!JSENCODE($User.LastName)}
+                                                </div>
+                                                <div class="BP_LoggedInUserRole text-capitalize">
+                                                    {!$UserRole.Name}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="BP_LogOutAction_Container">
+                                                <a class="text-uppercase" href="/secur/logout.jsp">Logout</a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="BP_SettingsActionMenu"> 
+                                            <div class="BP_SettingsActionFirstMenu">
+                                                <div class="BP_navBarActionMenuItem BP_SettingsActionMenuItem BP_SettingsActionFirstMenuItem"
+                                                    ng-repeat="BP_SettingsActionMenuItem in BPGlobalHeader.BP_SettingsActionMenuItems[0]"
+                                                    ng-class="{'isActive': BP_SettingsActionMenuItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_SettingsActionMenuItem.isAccessible}"
+                                                    ng-click="BPGlobalHeader.SettingsAction(BP_SettingsActionMenuItem.value, BP_SettingsActionMenuItem.params)">
+                                                    <i ng-include="trustSrc(BP_SettingsActionMenuItem.imgName)" 
+                                                        class="BP_SettingsActionMenuItemIcon blue_008DC1" 
+                                                        ng-class="{'disabledIcon': !BP_SettingsActionMenuItem.isAccessible}"
+                                                        id="svgObject_BP_SettingsActionMenu1Icon{{$index}}">
+                                                    </i> 
+                                                    <span class="BP_navBarActionMenuItem_label BP_SettingsActionMenuItem_label text-cpaitalize"
+                                                        ng-class="{'DisabledText': !BP_SettingsActionMenuItem.isAccessible}">{{BP_SettingsActionMenuItem.label}}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="BP_SettingsActionSecondMenu">
+                                                <div class="BP_navBarActionMenuItem BP_SettingsActionMenuItem BP_SettingsActionSecondMenuItem"
+                                                    ng-repeat="BP_SettingsActionMenuItem in BPGlobalHeader.BP_SettingsActionMenuItems[1]"
+                                                    ng-class="{'isActive': BP_SettingsActionMenuItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_SettingsActionMenuItem.isAccessible}"
+                                                    ng-click="BPGlobalHeader.SettingsAction(BP_SettingsActionMenuItem.value, BP_SettingsActionMenuItem.params)">
+                                                    <i ng-include="trustSrc(BP_SettingsActionMenuItem.imgName)" 
+                                                        class="BP_SettingsActionMenuItemIcon blue_008DC1" 
+                                                        ng-class="{'disabledIcon': !BP_SettingsActionMenuItem.isAccessible}"
+                                                        id="svgObject_BP_SettingsActionMenu2Icon{{$index}}">
+                                                    </i>
+                                                    <span class="BP_navBarActionMenuItem_label BP_SettingsActionMenuItem_label text-cpaitalize"
+                                                        ng-class="{'DisabledText': !BP_SettingsActionMenuItem.isAccessible}">{{BP_SettingsActionMenuItem.label}}</span>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>  
+                                </div>
+                        
+                            </div>
+                            
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div> 
+      -->
+  <!-- header wrapper start heare -->
+<div class = "bp-header-wrapper" id="BP_GlobalHeader_Container_Id" ng-controller="BPGlobalHeader" 
+        ng-init="BPGlobalHeader.initialize()">
+    <div class = "bp-upgrade-wrapper pull-left" id = "BP_ExpirationDetailsAndUpgradeBtn_Wrapper_Id" ng-show ="BPGlobalHeader.TrailOrgDays > 0">
+        <p class = "bp-upgrade-container">
+            <span class = "bp-upgradenow-text">
+                Your trial will expire in {{BPGlobalHeader.TrailOrgDays}} days
+            </span>
+            <button class = "bp-upgrade-button text-uppercase" ng-click="BPGlobalHeader.upgradeNow()">
+                Upgrade Now
+            </button>
+        </p>
+        <i ng-include="'{!Application_Images}/Icons/close.svg'" class="bp-upgrade-close-but white" ng-click="BPGlobalHeader.closeTrialOrgSection()"
+                id="svgObject_BP_ExpirationDetails_CloseIcon">
+            </i>
+    </div>
+    
+    <div class = "row bp-header-container M0">
+        <div class = "col-xs-2 col-md-1 bp-header-logo P0">
+            <a class="bp_navbar-logo pull-left " ng-click="BPGlobalHeader.BP_navbarBrand_Action($event)">  
+            <i ng-include="'{!Application_Images}/Icons/BP_logo_icon.svg'" class="bp-logo pull-left" id="svgObject_BP_logoIcon"></i>
+        </a>
+        </div>
+        <div class = "col-xs-8 col-md-4 col-lg-5  bp-header-search BP_GlobalSearchBar_Container">
+            <div class="col-xs-12 P0"> 
+                <c:GlobalSearch Application_Images="{!Application_Images}"/>    
+            </div>
+        </div>
+        <div class = "bp-navigation-top-bar">
+        <nav class = "bp-navigationbar">
+            <ul class = "bp-navigation-list">
+            
+            <li ng-if="!BPGlobalHeader.isLoadCustomerOrder_V2" class = "bp-dropdown"  ng-mouseover = "BPGlobalHeader.showDropdown('bp-sell')" ng-mouseleave = "BPGlobalHeader.hideDropdown()"
+             ng-class = "{'bp-active-state' : activeStateName == 'sell'}" id = "bp-sell">
+                    <a  >
+                        <i ng-include="'{!Application_Images}/Icons/sell.svg'" 
+                            class="white hover_blue_00A3DB  bp-logo-icon"  ng-class = "{'blue_00A3DB': activeStateName == 'sell' }"
+                            id="svgObject_BP_SellIcon">  
+                        </i>
+                        <span class = "bp-icon-text">Sell</span> 
+                </a>
+                <div class="bp-dropdown-content">
+                <p class = "bp-transparent"></p>
+                                <div class="BP_navBarActionMenu BP_SellActionMenu"> 
+                                    <div class="BP_navBarActionMenuItem BP_SellActionMenuItem" 
+                                        ng-repeat="BP_SellActionItem in BPGlobalHeader.BP_SellActionMenuItems"
+                                        ng-class="{'isActive': BP_SellActionItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_SellActionItem.isAccessible}" 
+                                        ng-click="BPGlobalHeader.createCOHeader(BP_SellActionItem.value)">
+                                        <i ng-include="trustSrc(BP_SellActionItem.imgName)" 
+                                            class="BP_navBarActionMenuItemIcon BP_SellActionMenuItemIcon blue_008DC1" 
+                                            ng-class="{'disabledIcon': !BP_SellActionItem.isAccessible}" 
+                                            id="svgObject_BP_SellActionIcon{{$index}}">
+                                        </i>
+                                        <span class="BP_navBarActionMenuItem_label BP_SellActionMenuItem_label text-cpaitalize"
+                                            ng-class="{'DisabledText': !BP_SellActionItem.isAccessible}">{{BP_SellActionItem.label}}</span>
+                                    </div>
+                                </div>  
+            </div>
+            </li>
+            <li ng-if="BPGlobalHeader.isLoadCustomerOrder_V2" ng-class = "{'bp-active-state' : activeStateName == 'CustomerOrder_V2'}" >
+                <a ng-click = "BPGlobalHeader.MoveToState('CustomerOrder_V2')">
+                    <i ng-include="'{!Application_Images}/Icons/sell.svg'" ng-class = "{'blue_00A3DB': activeStateName == 'CustomerOrder_V2' }"
+                                    class="white hover_blue_00A3DB  bp-logo-icon bp-hide" 
+                                    id="svgObject_BP_ScheduleIcon">
+                    </i><!-- ng-class = "{'orange_ff6600': activeStateName == 'CustomerOrder_V2' }" --> <!-- hover_orange_ff6600   -->
+                    <span class = "bp-icon-text">{{ 'Sell' | translate }}</span> 
+                </a>
+              
+            </li>
+            
+            <li class = "bp-dropdown" id = "bp-order"
+            ng-mouseover = "BPGlobalHeader.showDropdown('bp-order')" ng-mouseleave = "BPGlobalHeader.hideDropdown()" ng-class = "{'bp-active-state' : activeStateName == 'order'}">
+                    <a  >
+                    <i ng-include="'{!Application_Images}/Icons/order.svg'"  ng-class = "{'blue_00A3DB': activeStateName == 'order' }" 
+                                    class="white hover_blue_00A3DB bp-logo-icon bp-hide" 
+                                    id="svgObject_BP_OrderIcon">
+                                </i>    
+                <span class = "bp-icon-text">{{ 'Order' | translate }}</span>
+                </a>
+                
+            <div class="bp-dropdown-content">
+            <p class = "bp-transparent"></p>
+                                <div class="BP_navBarActionMenu BP_OrderActionMenu"> 
+                                    <div class="BP_navBarActionMenuItem BP_OrderActionMenuItem" 
+                                        ng-repeat="BP_OrderActionItem in BPGlobalHeader.BP_OrderActionMenuItems"
+                                        ng-class="{'isActive': BP_OrderActionItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_OrderActionItem.isAccessible}"
+                                        ng-click="BPGlobalHeader.createOrderAction(BP_OrderActionItem.value)">
+                                        <i ng-include="trustSrc(BP_OrderActionItem.imgName)" 
+                                            class="BP_navBarActionMenuItemIcon BP_OrderActionMenuItemIcon blue_008DC1" 
+                                            ng-class="{'disabledIcon': !BP_OrderActionItem.isAccessible}"
+                                            id="svgObject_BP_OrderActionIcon{{$index}}">
+                                        </i>
+                                        <span class="BP_navBarActionMenuItem_label BP_OrderActionMenuItem_label text-cpaitalize"
+                                            ng-class="{'DisabledText': !BP_OrderActionItem.isAccessible}">{{BP_OrderActionItem.label}}</span>
+                                    </div>
+                                </div>  
+                            </div>
+            </li>
+            <li class = "bp-dropdown" id = "bp-addnew" 
+            ng-mouseover = "BPGlobalHeader.showDropdown('bp-addnew')" ng-mouseleave = "BPGlobalHeader.hideDropdown()">
+                    <a >
+                    <i ng-include="'{!Application_Images}/Icons/add-circle.svg'"
+                                    class="white hover_blue_00A3DB  bp-logo-icon bp-hide" 
+                                    id="svgObject_BP_AddNewIcon">
+                                </i>
+                                <span class = "bp-icon-text">{{ 'Add_New' | translate }}</span>
+                    </a>
+                    
+                    <div class="bp-dropdown-content bp-addnew-drop-down">
+                    <p class = "bp-transparent"></p>
+                                <div class="BP_navBarActionMenu BP_AddNewActionMenu"> 
+                                    <div class="BP_navBarActionMenuItem BP_AddNewActionMenuItem" 
+                                        ng-repeat="BP_AddNewActionItem in BPGlobalHeader.BP_AddNewActionMenuItems"
+                                        ng-class="{'isActive': BP_AddNewActionItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_AddNewActionItem.isAccessible}"
+                                        ng-click="BPGlobalHeader.addNewEntity(BP_AddNewActionItem.value)">
+                                        <i ng-include="trustSrc(BP_AddNewActionItem.imgName)" 
+                                            class="BP_navBarActionMenuItemIcon BP_AddNewActionMenuItemIcon blue_008DC1" 
+                                            ng-class="{'disabledIcon': !BP_AddNewActionItem.isAccessible}" 
+                                            id="svgObject_BP_AddNewActionIcon{{$index}}">
+                                        </i> 
+                                        <!-- <img class="BP_navBarActionMenuItemIcon BP_AddNewActionMenuItemIcon" id="svgObject_BP_AddNewActionIcon{{$index}}" src="{{BP_AddNewActionItem.imgName}}"></img> -->
+                                        <span class="BP_navBarActionMenuItem_label BP_AddNewActionMenuItem_label text-cpaitalize"
+                                            ng-class="{'DisabledText': !BP_AddNewActionItem.isAccessible}">{{BP_AddNewActionItem.label}}</span>
+                                    </div>
+                                </div>  
+                            </div>
+            </li>
+             <li  ng-class = "{'bp-active-state' : activeStateName == 'schedule'}" >
+                <a ng-click = "BPGlobalHeader.loadScheduler()">
+                <i ng-include="'{!Application_Images}/Icons/schedule.svg'" ng-class = "{'blue_00A3DB': activeStateName == 'schedule' }"
+                                    class="white hover_blue_00A3DB  bp-logo-icon bp-hide" 
+                                    id="svgObject_BP_ScheduleIcon">
+                                </i>
+                                 <span class = "bp-icon-text">{{ 'Schedule' | translate }}</span> 
+            </a>
+              
+            </li>
+             <li class = "bp-dropdown bp-border-right bp-header-clocking-Icon" id = "bp-clocking"  ng-class = "{'bp-active-state' : activeStateName == 'Clocking'}"
+            ng-mouseover = "BPGlobalHeader.showDropdown('bp-clocking')" ng-mouseleave = "BPGlobalHeader.hideDropdown()">
+                    <a >
+                    <i ng-include="'{!Application_Images}/Icons/log-time.svg'" ng-class = "{'blue_00A3DB': activeStateName == 'Clocking' }" 
+                                    class="white hover_blue_00A3DB  bp-logo-icon" 
+                                    id="svgObject_BP_AddNewIcon">
+                                </i>
+                                
+                    </a>
+                    
+                    <div class="bp-dropdown-content">
+                    <p class = "bp-transparent"></p>
+                                <div class="BP_navBarActionMenu BP_AddNewActionMenu"> 
+                                    <div class="BP_navBarActionMenuItem BP_AddNewActionMenuItem" 
+                                        ng-repeat="BP_ClockingActionItem in BPGlobalHeader.BP_Clocking_Item"
+                                        ng-class="{'isActive': BP_ClockingActionItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_ClockingActionItem.isAccessible}"
+                                        ng-click="BPGlobalHeader.addNewEntity(BP_ClockingActionItem.value)">
+                                        <i ng-include="trustSrc(BP_ClockingActionItem.imgName)" 
+                                            class="BP_navBarActionMenuItemIcon BP_AddNewActionMenuItemIcon blue_008DC1" 
+                                            ng-class="{'disabledIcon': !BP_ClockingActionItem.isAccessible}" 
+                                            id="svgObject_BP_ClockingActionItem{{$index}}">
+                                        </i> 
+                                        <!-- <img class="BP_navBarActionMenuItemIcon BP_AddNewActionMenuItemIcon" id="svgObject_BP_AddNewActionIcon{{$index}}" src="{{BP_AddNewActionItem.imgName}}"></img> -->
+                                        <span class="BP_navBarActionMenuItem_label BP_AddNewActionMenuItem_label text-cpaitalize"
+                                            ng-class="{'DisabledText': !BP_ClockingActionItem.isAccessible}">{{BP_ClockingActionItem.label}}</span>
+                                    </div>
+                                </div>  
+                            </div>
+            </li>
+            </ul>
+        </nav>
+        </div>
+        
+        <div class = "col-xs-2 P0 col-md-1 bp-header-setting-icon" ng-class = "{'bp-active' : activeStateName == 'setting'}">
+            
+            <div id = "bp-setting" class = "bp-dropdown  bp-pointer pull-right bp-setting-icon-Wrapper" ng-mouseover = "BPGlobalHeader.showDropdown('bp-setting')" ng-mouseleave = "BPGlobalHeader.hideDropdown()">
+            <div class="dropbtn  bp-setting-icon-div pull-left">  
+                <i ng-include="'{!Application_Images}/Icons/cog.svg'" class="white hover_blue_00A3DB pull-left bp-logo-icon" 
+                         id="svgObject_BP_SettingsIcon" ng-class = "{'blue_00A3DB': activeStateName == 'setting' }"
+                        >
+                </i>
+            </div>  
+        <div class="bp-dropdown-content BP_SettingsActionDropdown_Container">
+        <p class = "bp-transparent"></p>
+                                    <div class="BP_SettingsActionContent"> 
+                                        <div class="BP_UserInfoAndLogoutAction_Container">
+                                            <div class="BP_UserInfo_Wrapper">
+                                                <div class="BP_LoggedInUserName text-capitalize">
+                                                    {!JSENCODE($User.FirstName)} {!JSENCODE($User.LastName)}
+                                                </div>
+                                                <!-- <div class="BP_LoggedInUserRole text-capitalize">
+                                                    {!$UserRole.Name}
+                                                </div> -->
+                                            </div>
+                                            
+                                            <div class="BP_LogOutAction_Container">
+                                                <a class="text-uppercase" href="/secur/logout.jsp">Logout</a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="BP_SettingsActionMenu"> 
+                                            <div class="BP_SettingsActionFirstMenu">
+                                                <div class="BP_navBarActionMenuItem BP_SettingsActionMenuItem BP_SettingsActionFirstMenuItem"
+                                                    ng-repeat="BP_SettingsActionMenuItem in BPGlobalHeader.BP_SettingsActionMenuItems[0]"
+                                                    ng-class="{'isActive': BP_SettingsActionMenuItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_SettingsActionMenuItem.isAccessible}"
+                                                    ng-if-="BP_SettingsActionMenuItem.isVisible"
+                                                    ng-click="BPGlobalHeader.SettingsAction(BP_SettingsActionMenuItem.value, BP_SettingsActionMenuItem.params)">
+                                                    <i ng-include="trustSrc(BP_SettingsActionMenuItem.imgName)" 
+                                                        class="BP_SettingsActionMenuItemIcon blue_008DC1" 
+                                                        ng-class="{'disabledIcon': !BP_SettingsActionMenuItem.isAccessible}"
+                                                        id="svgObject_BP_SettingsActionMenu1Icon{{$index}}">
+                                                    </i> 
+                                                    <span class="BP_navBarActionMenuItem_label BP_SettingsActionMenuItem_label text-cpaitalize"
+                                                        ng-class="{'DisabledText': !BP_SettingsActionMenuItem.isAccessible}">{{BP_SettingsActionMenuItem.label}}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="BP_SettingsActionSecondMenu">
+                                                <div class="BP_navBarActionMenuItem BP_SettingsActionMenuItem BP_SettingsActionSecondMenuItem"
+                                                    ng-repeat="BP_SettingsActionMenuItem in BPGlobalHeader.BP_SettingsActionMenuItems[1]"
+                                                    ng-class="{'isActive': BP_SettingsActionMenuItem.isActive, 'disabld_BP_navBarActionMenuItem': !BP_SettingsActionMenuItem.isAccessible,
+                                                    			'adjust-padding-for-name': BP_SettingsActionMenuItem.label == 'Fusion benchmarking'}"
+                                                    ng-if="BP_SettingsActionMenuItem.isVisible"
+                                                    ng-click="BPGlobalHeader.SettingsAction(BP_SettingsActionMenuItem.value, BP_SettingsActionMenuItem.params)">
+                                                    <i ng-include="trustSrc(BP_SettingsActionMenuItem.imgName)" 
+                                                        class="BP_SettingsActionMenuItemIcon blue_008DC1" 
+                                                        ng-class="{'disabledIcon': !BP_SettingsActionMenuItem.isAccessible}"
+                                                        id="svgObject_BP_SettingsActionMenu2Icon{{$index}}">
+                                                    </i>
+                                                    <span class="BP_navBarActionMenuItem_label BP_SettingsActionMenuItem_label text-cpaitalize"
+                                                        ng-class="{'DisabledText': !BP_SettingsActionMenuItem.isAccessible}">{{BP_SettingsActionMenuItem.label}}</span>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>  
+                                </div>
+        </div>
+        
+        
+        
+            
+            <div class="dropbtn bp-header-help-div pull-right">
+                <a class="pull-left" target="_blank" href="{{BPGlobalHeader.communityURL}}">
+                        <i ng-include="'{!Application_Images}/Icons/help-circle.svg'" class="white hover_blue_00A3DB pull-left bp-logo-icon"
+                            id="svgObject_BP_HelpIcon" data-toggle="tooltip" title="Help" >
+                        </i>
+                    </a>
+            </div>
+            
+        </div>
+    </div>
+
+</div>
+<!-- header wrapper end heare -->
+</apex:component>

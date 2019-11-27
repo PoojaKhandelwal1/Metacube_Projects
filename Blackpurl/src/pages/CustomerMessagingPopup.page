@@ -1,0 +1,169 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0" controller="GlobalController">
+    
+        <div class="modal fade bp-model-dialog CreateGroupModal SendSMSModal SendEmailModal CreateFeeModal" id="SendInvoiceModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close bp-close-but CreateGroupModalCloseIcon" data-dismiss="modal" aria-label="Close" ng-click="MessagePreviewModel.closePopUp();">
+                            <span aria-hidden="true">
+                                <i class="white_FFF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                            </span>
+                        </button>
+                    </div>       
+                    <div class="modal-body">
+                        <div class="userGroupInfoArea" ng-if="MessagePreviewModel.Activity == 'Email'">
+                            <div class="heading" ng-if="!MessagePreviewModel.IsEmailFromVendorOrder && MessagePreviewModel.SelectedDocuments && MessagePreviewModel.SelectedDocuments.length > 0">
+                                {{ 'Choose_email_address' | translate }}
+                            </div>
+                        	<div class="heading" ng-if="MessagePreviewModel.IsEmailFromVendorOrder && MessagePreviewModel.SelectedDocuments && MessagePreviewModel.SelectedDocuments.length > 0">
+                                {{ 'Email_order_to' | translate }}
+                            </div>
+                        <div ng-if="!(MessagePreviewModel.SelectedDocuments && MessagePreviewModel.SelectedDocuments.length > 0)">
+	                        <div class="heading text-uppercase" ng-if = "(!MessagePreviewModel.CustomerName || MessagePreviewModel.CustomerName == 'Cash Sale')" >{{ 'Email_invoice_to_customer' | translate }}</div>
+	                        <div class="heading text-uppercase" ng-if = "MessagePreviewModel.CustomerName && MessagePreviewModel.CustomerName != 'Cash Sale'">{{ 'Email_invoice_to' | translate }}
+                                                                {{MessagePreviewModel.CustomerInfo.Cust_Type == 'Individual' ? MessagePreviewModel.CustomerInfo.Cust_FirstName + ' ' +
+                                                                MessagePreviewModel.CustomerInfo.Cust_LastName : MessagePreviewModel.CustomerInfo.Cust_BusinessName}}</div>
+                        </div>
+                            <div class ="form">
+	                            <label class = "text-left H300 email-label-width" ng-if = "!MessagePreviewModel.IsEmailFromVendorOrder">{{ 'Select_Customer_Email' | translate }}</label>   
+	                        	<label class = "text-left H300 email-label-width" ng-if = "MessagePreviewModel.IsEmailFromVendorOrder">{{ 'Select_Vendor_Email' | translate }}</label> 	
+                                <div class="searchInputArea"
+                                     ng-class="{'showingOverlay' : MessagePreviewModel.isFocused && MessagePreviewModel.EmailAddressList.length > 1}" ng-if = "(MessagePreviewModel.IsEmailFromVendorOrder) || (MessagePreviewModel.CustomerName)">
+                                    <span class = "display-email-type-text" ng-if = "MessagePreviewModel.checkEmailType == 'Primary'">{{ 'Primary_email_type' | translate }}</span>
+                                    <span class = "display-email-type-text" ng-if = "MessagePreviewModel.checkEmailType == 'Alternate'">{{ 'Alternate_email_type' | translate }}</span>
+                                    <input type="text" class="searchInput" id="emailInput" ng-disabled = "MessagePreviewModel.IsemailListdisabled || MessagePreviewModel.emailSearchObj.Title == ''"
+                                            readonly="readonly" ng-click="MessagePreviewModel.setFocusOnInput()" ng-blur = "MessagePreviewModel.setBlurOnInput()"
+                                            ng-class="{'redborder' : MessagePreviewModel.FormValidationModal['emailSearchObj']['isError'] == true,'disabledText' : MessagePreviewModel.IsemailListdisabled}"
+                                           data-toggle="tooltip" title="{{MessagePreviewModel.FormValidationModal['emailSearchObj']['ErrorMessage']}}"
+                                           ng-model="MessagePreviewModel.emailSearchObj.Title" placeholder= "{{ 'No_email_address_provided' | translate }}"/>
+                                     <i ng-include="'{!Application_Images}/Icons/arrow-down-1.svg'" ng-class = "{'defaultCursor' :MessagePreviewModel.EmailAddressList.length <= 1 }" ng-if="!MessagePreviewModel.isFocused"
+                                         class="blue_008DC1" ng-click="MessagePreviewModel.setFocusOnInput()">
+                                     </i>
+                                     <i ng-include="'{!Application_Images}/Icons/arrow-up-1.svg'" ng-class = "{'defaultCursor' :MessagePreviewModel.EmailAddressList.length <= 1 }" ng-if="MessagePreviewModel.isFocused"
+                                                 ng-click = "MessagePreviewModel.setBlurOnInput()" class="blue_008DC1" >
+                                     </i>
+                                     <div class="searchResultOverlay" ng-if="MessagePreviewModel.EmailAddressList.length > 1">
+                                       <ul  ng-blur ="MessagePreviewModel.setBlurOnInput()" ng-if ="MessagePreviewModel.isFocused">
+                                           <li ng-repeat="emailAdress in MessagePreviewModel.EmailAddressList"
+                                              ng-if = "emailAdress.Title != MessagePreviewModel.emailSearchObj.Title" ng-mousedown = "MessagePreviewModel.selectEmail(emailAdress)"> 
+                                               <div class="fullName">{{emailAdress.Title}}</div>
+                                           </li>
+                                       </ul>
+                                       </div>
+                                    </div>      
+                                     <div class="mt2">
+                                     	<label class = "text-left H300 email-label email-label-width" ng-if = "">{{ 'Enter_new_Email' | translate }}</label>
+                                            <input type="text" id="AlternateEmailInput" class="bp-input-text form-control messageText" ng-if="(MessagePreviewModel.IsEmailFromVendorOrder) || (MessagePreviewModel.CustomerName != 'Cash Sale' && MessagePreviewModel.CustomerName) "
+                                            ng-class="{'redborder' : MessagePreviewModel.FormValidationModal['CustomerEmailAddress']['isError'] == true}"
+                                            data-toggle="tooltip" title="{{MessagePreviewModel.FormValidationModal['CustomerEmailAddress']['ErrorMessage']}}"   
+                                            placeholder="{{ 'Optional_enter_email_address' | translate }}" ng-keyup = "MessagePreviewModel.validateEmailAddress($event)" ng-model="MessagePreviewModel.CustomerEmailAddress" ng-readonly="MessagePreviewModel.showSentBtn" />
+                                         
+                                            <input type="text" id="EmailInput" class="bp-input-text form-control messageText" ng-if="(!MessagePreviewModel.IsEmailFromVendorOrder) && (!MessagePreviewModel.CustomerName || MessagePreviewModel.CustomerName == 'Cash Sale')" 
+                                            ng-class="{'redborder' : MessagePreviewModel.FormValidationModal['CustomerEmailAddress']['isError'] == true}"
+                                            data-toggle="tooltip" title="{{MessagePreviewModel.FormValidationModal['CustomerEmailAddress']['ErrorMessage']}}"  
+                                            placeholder= "{{ 'Enter_email_address' | translate }}" ng-keyup = "MessagePreviewModel.validateEmailAddress($event)" ng-model="MessagePreviewModel.CustomerEmailAddress" ng-readonly="MessagePreviewModel.showSentBtn" />
+                                    </div>
+                                    <div ng-if="(MessagePreviewModel.IsUpdateEmailToggleSectionEnabled == true && MessagePreviewModel.CustomerEmailAddress != '' && (MessagePreviewModel.COType != 'Cash Sale' && MessagePreviewModel.COType != 'Internal Service'))" class="pull-left"  >
+	                                    	<div class="pull-left email-toggel-container">
+					                            <label class="bp-switch pull-left"  >
+					                               <input type="checkbox" ng-model = "MessagePreviewModel.IsPrimaryEmail" ng-click ="MessagePreviewModel.toggleEmailSelect('PrimaryEmail')"/>
+					                               <div class="bp-slider round"></div>
+					                            </label>
+						                        <span class="bp-switchLabel bp-dark-grey2-font pull-left adjust-email-display" ng-if = "!MessagePreviewModel.IsEmailFromVendorOrder">{{ 'Update_customer_primary_email' | translate}}
+							                        <span class="bp-switchLabel bp-grey-font add-ellipsis-property" ng-if = "(!MessagePreviewModel.IsEmailFromVendorOrder && MessagePreviewModel.CustomerInfo.Cust_Type == 'Individual' && MessagePreviewModel.CustomerInfo.Cust_HomeEmail != ''  && MessagePreviewModel.CustomerInfo.Cust_HomeEmail != null)">({{MessagePreviewModel.CustomerInfo.Cust_HomeEmail }})</span>
+	                                    			<span class="bp-switchLabel bp-grey-font add-ellipsis-property" ng-if = "(!MessagePreviewModel.IsEmailFromVendorOrder && MessagePreviewModel.CustomerInfo.Cust_Type == 'Bussiness' && MessagePreviewModel.CustomerInfo.Cust_WorkEmail != '' && MessagePreviewModel.CustomerInfo.Cust_WorkEmail != null)">({{MessagePreviewModel.CustomerInfo.Cust_WorkEmail}})</span>
+						                        </span>
+		                        				<span class="bp-switchLabel bp-dark-grey2-font pull-left adjust-email-display" ng-if = "MessagePreviewModel.IsEmailFromVendorOrder">{{'Update_vendor_primary_email' | translate}}
+			                        				<span class="bp-switchLabel bp-grey-font add-ellipsis-property" ng-if = "MessagePreviewModel.IsEmailFromVendorOrder && MessagePreviewModel.CustomerInfo.Cust_WorkEmail != '' && MessagePreviewModel.CustomerInfo.Cust_WorkEmail != null">({{MessagePreviewModel.CustomerInfo.Cust_WorkEmail}})</span>	
+		                        				</span>
+                                    			
+                                    	</div>
+                                    	<div class="pull-left email-toggel-container">
+					                            <label class="bp-switch pull-left">
+					                               <input type="checkbox"  ng-model= "MessagePreviewModel.IsAlternateEmail" ng-click ="MessagePreviewModel.toggleEmailSelect('AlternateEmail')"/>
+					                               <div class="bp-slider round"></div>
+					                            </label>
+						                        <span class="bp-switchLabel bp-dark-grey2-font pull-left adjust-email-display" ng-if = "!MessagePreviewModel.IsEmailFromVendorOrder">{{'Update_customer_alternate_email' | translate}}
+						                        	<span class="bp-switchLabel bp-grey-font add-ellipsis-property" ng-if = "MessagePreviewModel.CustomerInfo.Cust_OtherEmail != '' && MessagePreviewModel.CustomerInfo.Cust_OtherEmail != null">({{MessagePreviewModel.CustomerInfo.Cust_OtherEmail}})</span>
+		                        				</span>
+		                        				<span class="bp-switchLabel bp-dark-grey2-font pull-left adjust-email-display" ng-if = "MessagePreviewModel.IsEmailFromVendorOrder">{{'Update_vendor_alternate_email' | translate}}
+		                        					<span class="bp-switchLabel bp-grey-font add-ellipsis-property" ng-if = "MessagePreviewModel.CustomerInfo.Cust_OtherEmail != '' && MessagePreviewModel.CustomerInfo.Cust_OtherEmail != null ">({{MessagePreviewModel.CustomerInfo.Cust_OtherEmail}})</span>
+		                        				</span>
+                                  	  </div>
+                                   </div>
+                                    <div class="text-center formBtn">
+                                        <button id="mail-now-btn" class="bp-btn text-now-but"
+                                        ng-class="{'bp-btn-normal' : !MessagePreviewModel.disableSendTextBtn && !MessagePreviewModel.showSentBtn,
+                                                    'send-msg-animation' : MessagePreviewModel.disableSendTextBtn && !MessagePreviewModel.showSentBtn, 
+                                                    'sentBtn' : MessagePreviewModel.showSentBtn}"
+                                            ng-click="MessagePreviewModel.disableSendTextBtn = true; MessagePreviewModel.emailAction(MessagePreviewModel.CustomerEmailAddress);" 
+                                            ng-disabled="MessagePreviewModel.IsEmailInvoiceBtnEnabled || MessagePreviewModel.disableSendTextBtn">
+                                            <span ng-if="(MessagePreviewModel.SelectedDocuments && MessagePreviewModel.SelectedDocuments.length > 0)">{{ 'Email_now' | translate }}</span>
+                                            <span ng-if="!(MessagePreviewModel.SelectedDocuments && MessagePreviewModel.SelectedDocuments.length > 0)">{{ 'Email_invoice' | translate }}</span>
+                                        </button> 
+                                        <i class="white_FFF chkCircle" ng-if="MessagePreviewModel.showSentBtn" ng-include="'{!Application_Images}/Icons/check-circle-2.svg'"></i>
+                                        <div class="bp-sendMsg-spinner" ng-if="MessagePreviewModel.disableSendTextBtn && !MessagePreviewModel.showSentBtn">
+                                          <div class="rect1"></div>
+                                          <div class="rect2"></div>
+                                          <div class="rect3"></div>
+                                        </div>  
+                                       
+                                    </div>
+                                </div>
+                        </div>
+                        <div class="userGroupInfoArea" ng-if="MessagePreviewModel.Activity == 'Text Message'">
+                        <div class="heading text-uppercase"> {{ 'Send_text_to_customer' | translate }} {{MessagePreviewModel.CustomerInfo.Cust_Name}} </div>
+                            <div class ="form">
+                                <div class="searchInputArea"
+                                            ng-class="{'showingOverlay' : MessagePreviewModel.isFocused}">
+                                            <input type="text" class="searchInput" id="numberInput"
+                                                ng-focus="MessagePreviewModel.setFocusOnInput()"
+                                                ng-blur="MessagePreviewModel.setBlurOnInput()" 
+                                                ng-model="MessagePreviewModel.MessageRec.Title"
+                                                readonly="readonly" ng-disabled="MessagePreviewModel.showSentBtn"/>
+                                                <i ng-include="'{!Application_Images}/Icons/arrow-down-1.svg'" ng-if="!MessagePreviewModel.isFocused && MessagePreviewModel.SMSNumberList.length> 1"
+                                                                        class="blue_008DC1" ng-click="MessagePreviewModel.setFocus('#numberInput')">
+                                                                    </i>
+                                               <i ng-include="'{!Application_Images}/Icons/arrow-up-1.svg'" ng-if="MessagePreviewModel.isFocused && MessagePreviewModel.SMSNumberList.length> 1"
+                                                  class="blue_008DC1" ng-click="MessagePreviewModel.setBlurOnInput()">
+                                                                    </i>
+                                            <div class="searchResultOverlay bp-search-result-overlay">
+                                                <ul ng-if="MessagePreviewModel.isFocused && MessagePreviewModel.SMSNumberList.length> 1">
+                                                    <li ng-repeat="smsNumber in MessagePreviewModel.SMSNumberList"
+                                                        ng-mousedown="MessagePreviewModel.selectNumber(smsNumber)"
+                                                         ng-if="MessagePreviewModel.MessageRec.Title != smsNumber.Title">
+                                                        <div class="fullName">{{smsNumber.Title}}</div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>      
+                                        
+                                <div class="margin-top-2">
+                                    <textarea type="text" id="TextBox" class="bp-input-text send-message-text-area" rows="4"  maxlength="255" 
+                                    placeholder="{{ 'Type_message_here' | translate }}" ng-model="MessagePreviewModel.MessageRec.Text" ng-disabled="MessagePreviewModel.showSentBtn"></textarea>
+                                </div>
+                               <div class="text-center formBtn">
+                                    <button id="text-now-btn" class="bp-btn text-now-but text-uppercase" 
+                                        ng-class="{'bp-btn-normal' : !MessagePreviewModel.disableSendTextBtn && !MessagePreviewModel.showSentBtn,
+                                                    'send-msg-animation' : MessagePreviewModel.disableSendTextBtn && !MessagePreviewModel.showSentBtn, 
+                                                    'sentBtn' : MessagePreviewModel.showSentBtn}"
+                                        ng-click="MessagePreviewModel.disableSendTextBtn = true; MessagePreviewModel.sendMessage();" 
+                                         ng-disabled="MessagePreviewModel.disableSendTextButton() || MessagePreviewModel.disableSendTextBtn">
+                                        {{ 'Text_now' | translate }}
+                                    </button>  
+                                    <i class="white_FFF chkCircle" ng-if="MessagePreviewModel.showSentBtn" ng-include="'{!Application_Images}/Icons/check-circle-2.svg'"></i>
+                                    <div class="bp-sendMsg-spinner" ng-if="MessagePreviewModel.disableSendTextBtn && !MessagePreviewModel.showSentBtn">
+                                      <div class="rect1"></div>
+                                      <div class="rect2"></div>
+                                      <div class="rect3"></div>
+                                    </div>
+                                </div>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+</apex:page>

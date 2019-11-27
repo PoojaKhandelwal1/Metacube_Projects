@@ -1,0 +1,686 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0" controller="GlobalController">
+  <!--   <apex:stylesheet value="{!Application}/css/VendorOrder.css"/>
+    <apex:stylesheet value="{!Application}/css/VendorReturn.css"/> --> 
+    <c:VendorOrderPopUp />
+    <c:VenderOrderLineItemPartDetail /> 
+    <c:COPopup />
+    <c:PartPopUpOnVendorOrder />
+    <c:VendorInfo />
+    <div>
+        <route-loading-indicator></route-loading-indicator>
+        <div ng-cloak="ng-cloak">  <!-- ng-if="!isRouteLoading" -->
+        <!-- content start here -->
+       <div class="content">
+          <!-- Side panel start --> 
+         <div class="col-lg-2 col-md-2 sidePanel ">
+            
+            <div class="clearfix"></div>
+            <div class="orderNumber row">
+                <span class="text-uppercase">Return #:  
+                    <span>{{RVO.Data.Name}}</span>
+                </span>
+            </div>
+            <div class="sidepaneluserinfo row">
+                <div class="userNameblock" style="margin-left: 4px;">
+                     <p ng-if="RVO.Data.VendorId == null"> <!-- class="T3" -->
+                          {!$label.Label_No} {!$label.Vendor_Object_Display_Label} &nbsp;<span class="T1_SubHeading"  >
+                            <a ng-click="RVO.RelatedList_addAction($event, 'Vendor')" id="Vo_workflow_sidepanel_add_vendor_link">{!$label.Label_Add} {!$label.Label_One}!</a>
+                        </span>
+                     </p>
+                     <p ng-if="RVO.Data.VendorId != null"> <!-- class="T3" -->
+                         <span class="vendorName">  
+                            <a ng-mouseover="RVO.showVendorInfoOverlay($event, RVO.Data.VendorId);" 
+                            	ng-mouseleave="RVO.hideVendorInfoOverlay();"
+                                id="CO_workflow_sidepanel_cust_name_link" >
+                                        {{RVO.Data.VendorName}} 
+                            </a>
+                         </span>
+                     </p>
+                 </div>
+            </div>
+            <div class="clearfix"></div>
+            <div class="row statusRow" ng-if="RVO.Data.Status != null && RVO.Data.Status != ''">    
+                <span class="userType T3">{!$label.Label_Status}</span>
+                <span class="divider"> | </span>
+                <span class="userStatus" 
+                    ng-class="{'FCRed' : RVO.Data.Status == 'Credited', 'FCOrange' : RVO.Data.Status == 'Submitted' || RVO.Data.Status == 'Approved'}">
+                    {{RVO.Data.Status}}
+                </span>
+            </div>
+            
+            <div class="clearfix"></div>
+                    
+            
+            <!-- <div class="row ownerInfo">
+                <img src="profile_default.jpg" style="height:30px; width:30px"/>
+                <span class="Name">{!$User.FirstName} {!$User.LastName}</span>      
+            </div> -->
+             
+            <div class="leftPanelLinks">
+                <a class="row T10 mainSectionLink" 
+                	ng-class="{'active' : RVO.activeSidepanelink =='#InfoSection'}" 
+                	href="#InfoSection"
+                    ng-click="RVO.sidepanelLink($event, 'Info')">
+                    <span class="alphabetLetter">{{RVO.LeftSideHeadingLables.Info}}</span>{!$Label.Page_Section_Info}
+                </a> 
+                <div ng-if="RVO.Data.VendorId != null && RVO.Data.VendorId != ''">
+	                <a class="row T10 mainSectionLink" 
+	                	ng-class="{'active' : RVO.activeSidepanelink =='#ReturnSection'}" 
+	                	href="#ReturnSection"
+	                    ng-click="RVO.sidepanelLink($event, 'Return')">
+	                    <span class="alphabetLetter">{{RVO.LeftSideHeadingLables.Return}}</span>Return
+	                </a> 
+	                
+	                <a class="row T10 subSectionLink" 
+	                	href="#Order_Items" 
+	                	ng-click="RVO.sidepanelLink($event, 'Order')"> 
+	                	<span class="alphabetLetter"></span>{!$Label.Items} 
+	                </a> 
+	                
+	                <a class="row T10 mainSectionLink" 
+	                	ng-class="{'active' : RVO.activeSidepanelink =='#FinalizeSection'}" 
+	                	href="#FinalizeSection"
+	                   	ng-show="RVO.showFinalizeSection()" 
+	                   	ng-click="RVO.sidepanelLink($event, 'Finalize')">
+	                   	<span class="alphabetLetter">{{RVO.LeftSideHeadingLables.Finalize}}</span>{!$Label.Finalize}
+	                </a>
+                </div>
+            </div>
+             <!-- Section Totals -->
+            <div class="sideBarTotals">
+            	<div class="C1 orderleftPanelLinks">
+                	<div class="ordertotal">
+                    	<a class= "T10 subSectionLink ">ITEMS</a>
+                        <a class= "T10 subSectionLink text-right">{{RVO.Data.SubTotal | currency}}</a>
+                   	</div>
+                            
+                    <div class="ordertotal">
+                    	<a class= "T10 subSectionLink ">TAXES</a>
+                    	<a class= "T10 subSectionLink text-right">{{RVO.Data.Tax | currency}}</a>
+                    </div>
+                        
+				</div>
+                <div class="mainSectionLink totalDue C1">
+                	<span class="T2 left">TOTAL RETURN:</span>
+                    <span class="T2 right text-right">{{RVO.Data.Total | currency}}</span> 
+				</div>
+			</div>
+        </div>
+        <!-- End Left Side Bar --> 
+        
+        
+        <!-- Start Center Panel -->
+        <div class="col-lg-10 col-md-10 mainSection">
+            <div class=" sectionHeader row fixedRow" >
+                <div class="col-lg-6 col-md-6" ng-show="RVO.activeSidepanelink =='#InfoSection'">
+                    <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!RVO.displaySections.Info"
+                            ng-Click="RVO.displaySections.Info = true">
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="RVO.displaySections.Info"
+                            ng-Click="RVO.displaySections.Info = false">
+                        </i> 
+                        <span class="divider">|</span>
+                        <span class="T2">{{RVO.LeftSideHeadingLables.Info}} {!$Label.Page_Section_Info}</span>
+                        </span>
+                        <span class="ActionIcons pull-left"
+                            ng-show="RVO.showDeleteOrderLink()"> 
+                            <div class="dropdown selectDropdown checkboxDropdown">
+                                <button class="btn dropdown-toggle" type="button" data-toggle="dropdown"
+                                	ng-disabled="!GroupOnlyPermissions['Vendor order']['create/modify']">Actions
+                                    <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a ng-click="RVO.deleteReturnVendorOrder()">Remove Return</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </span> 
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6" ng-show="RVO.activeSidepanelink =='#ReturnSection'">
+                    <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!RVO.displaySections.Return"
+                            ng-Click="RVO.displaySections.Return = true">
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="RVO.displaySections.Return"
+                            ng-Click="RVO.displaySections.Return = false">
+                        </i> 
+                        <span class="divider">|</span>
+                        <span class="T2">{{RVO.LeftSideHeadingLables.Return}} Return</span>
+                        </span>
+                          <span class="ActionIcons pull-left ">
+                               <div class="dropdown selectDropdown checkboxDropdown">
+                                  <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{!$Label.Label_Actions}
+                                  <span class="caret"></span></button> -->
+                            </div>
+                        </span>
+                        <span class="ActionIcons service_order_print_icon pull-left" 
+                        	ng-if="RVO.Data.ReturnVOLIList != undefined && RVO.Data.ReturnVOLIList.length != 0">
+                            <i class="fa fa-print"
+                                ng-click="RVO.PrintReturnPDF()">
+                            </i>
+                        </span>
+                        <span class="T3 pull-right total">
+                        	<p id="vendor_order_total">
+                            	{{RVO.Data.SubTotal | currency}}
+                          	</p>
+                        </span>
+                        
+                        <!-- END: added by kajal 30th march 2017 #1760 -->
+                        <span class="T3 pull-right total">
+                        	<p id="vendor_order_total">
+                            	{{RVO.GroupTotalCost | currency}}
+                            </p>
+                        </span> 
+                    </div>
+                </div>
+                <div ng-show="RVO.showFinalizeSection()">
+                    <div class="col-lg-6 col-md-6" ng-show="RVO.activeSidepanelink =='#FinalizeSection'">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!RVO.displaySections.Finalize"
+                                ng-Click="RVO.displaySections.Finalize = true">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="RVO.displaySections.Finalize"
+                                ng-Click="RVO.displaySections.Finalize = false">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{RVO.LeftSideHeadingLables.Finalize}} {!$Label.Finalize}</span>
+                            </span>
+                            <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{!$Label.Label_Actions}
+                                      <span class="caret"></span></button> -->
+                                </div>
+                            </span> 
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6 fixedContent">
+                    <div class="fa-icons">
+                        <i class="fa fa-refresh fa-2x fa-fw" 
+                        	ng-class="{'fa-spin' : RVO.isrefresh}"
+                            ng-click="RVO.refreshVendorOrder();">
+                        </i>
+                    </div>
+                    
+				<div class="col-lg-7 col-md-6 searchToAdd  pull-right searchBox">
+      				<div class="input-group" ng-class="{'activeSearchDiv' : RVO.searchDivActive}">
+                    	<div class="input-group-btn">
+                        	<button type="button" class="btn C5 LabelBtn">
+                            	<span class="T5 text-uppercase" style="color: #939CA9;">{!$Label.Label_To}:</span>
+                               	<span style="color: #FFFFFF;">{{RVO.selectedItem}}</span>
+                            </button>
+                           	<button type="button" class="btn C5 dropdown-toggle caretBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            	<span class="caret"></span>
+                                <span class="sr-only">{!$Label.Label_Toggle_Dropdown}</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                            	<li><a href="#InfoSection" ng-click="RVO.dropDownItem($event, 'Info')">{!$Label.Page_Section_Info}</a></li>
+                                <li><a href="#ReturnSection" ng-click="RVO.dropDownItem($event, 'Order')">Return</a></li>
+                                <li ng-show="RVO.showFinalizeSection()"><a href="#FinalizeSection" ng-click="RVO.dropDownItem($event, 'Finalize')">{!$Label.Finalize}</a></li>
+							</ul>
+						</div>
+                        
+            			<div class="inner-addon right-addon neVendorOrderAutocomplete-container"
+            				ng-class="{'disabledSearchToAddElement' : RVO.Data.Status  != 'In Progress' || !GroupOnlyPermissions['Vendor order']['create/modify']}">
+                        	<i class="fa fa-search fa-flip-horizontal"></i>
+                            <c:SearchToAddHtml />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+                
+                <!-- ******************************************************* start of info section ******************************************************* -->
+            
+                <div id="InfoSection" >
+                    <div class="main_section row main_section_margin_top" ng-show="RVO.displaySections.Info">
+                        <div id="Info_General">
+                            <div class="row rowGeneral" >
+                                <div class="col-lg-12 col-md-12 Pl24">    <!--  MB48 -->
+                                   <div class="col-lg-7 col-md-7 Plr12">
+                                      <p class="T3 MB24 F12 FC2">{!$Label.Vendor_Object_Display_Label}</p>
+                                      <div class="col-md-12 Plr0">
+                                         <div class="col-lg-2 col-md-3 Plr0 MB12  ">
+                                            <img class="Profile_pic" src="{!Application_Images}/profile_default.jpg" style="height:100px;width:100%"/>
+                                            <!-- <div class="sprite profile_defaultLarge pull-left"></div> -->
+                                         </div>
+                                         <div class="col-lg-8 col-md-9 Plr12 MB12 ">
+                                             <div ng-if="RVO.Data.VendorName==null" >
+                                                <span class="T1_SubHeading"  >
+                                                    <a ng-click="RVO.RelatedList_addAction($event, 'Vendor')" id="CO_workflow_sidepanel_add_cust_link">{!$Label.Label_Add} {!$Label.Vendor_Object_Display_Label}</a>
+                                                </span> 
+                                             </div> 
+                                             <div  ng-if="RVO.Data.VendorName!=null">
+                                                <p class="T1 vendorType" > 
+                                                    <a ng-mouseover="RVO.showVendorInfoOverlay($event, RVO.Data.VendorId);" 
+                                                             ng-mouseleave="RVO.hideVendorInfoOverlay();" id="CO_workflow_sidepanel_cust_name_link">
+                                                                {{RVO.Data.VendorName}} 
+                                                    </a>
+                                                </p>
+                                            </div>
+                                         </div>
+                                      </div>
+                                      
+                                      <div class="col-md-12  Plr0 dates-container">
+                                      	<div class="col-md-12 Plr0 MB12">
+                                            <label class="col-md-3 T3 Plr0">{!$Label.Label_Status}</label>
+                                            <span class="col-md-7 Plr0 FC10 T3"
+                                            	ng-class="{'FCRed' : RVO.Data.Status == 'Credited', 'FCOrange' : RVO.Data.Status == 'Submitted' || RVO.Data.Status == 'Approved'}">
+                                            	{{RVO.Data.Status}}
+                                            </span>
+                                         </div>
+                                         <div class="col-md-12 Plr0 MB12">
+                                            <label class="col-md-3 T7 Plr0 PT8">Returned Date:</label>
+                                            <div class="col-md-4 T7 Plr0">
+                                            	<input type="text" style="background: #FFF;" 
+                                                  	ui-date="RVO.ReturnedDate" 
+                                                  	ui-date-format="{{RVO.dateFormat}}"
+                                                  	class="form-control smallForm-control datepicker" 
+                                                  	id="ReturnedDate"
+                                                  	ng-model="RVO.Data.ReturnedDate"
+                                                  	ng-disabled="RVO.Data.Status != 'In Progress' || !GroupOnlyPermissions['Vendor order']['create/modify']"
+                                                    readonly="readonly" 
+                                                  	placeholder="RETURNED DATE" 
+                                                  	ng-change="RVO.compareInfoandSave('ReturnedDate')"/>
+                                                <span class="input-group-addon btn" 
+                                                	style="cursor:pointer; position: absolute;right:10%; top: 18%; padding: 0;font-size: 18px;">
+                                                	<span class="glyphicon glyphicon-calendar"
+                                                		ng-click="RVO.showCalendar('ReturnedDate');"></span> 
+                                               	</span> 
+                                            </div>
+                                         </div>
+                                         <div class="col-md-12 Plr0 MB12">
+                                            <label class="col-md-3 T7 Plr0 PT8 required_field">RMA #</label>
+                                            <div class="col-md-4 T7 Plr0">
+                                            	<input class="form-control" placeholder="" 
+                                            		ng-model="RVO.Data.RMANumber"
+                                            		ng-disabled="RVO.Data.Status  == 'Approved' || RVO.Data.Status  == 'Credited' || !GroupOnlyPermissions['Vendor order']['create/modify']"
+                                            		ng-blur="RVO.compareInfoandSave('RMANumber')"/>
+                                            </div>
+                                         </div>
+                                         <div class="col-md-12 Plr0 MB12">
+                                            <label class="col-md-3 T7 Plr0 PT8 required_field">Credit Memo #</label>
+                                            <div class="col-md-4 T7 Plr0">
+                                            	<input class="form-control" placeholder="" maxlength="21"
+                                            		ng-model="RVO.Data.CreditMemoNumber"
+                                            		ng-disabled="RVO.Data.Status  == 'Credited' || !GroupOnlyPermissions['Vendor order']['create/modify']"
+                                            		ng-blur="RVO.compareInfoandSave('CreditMemoNumber')"/>
+                                            </div>
+                                         </div>
+                                         <div class="col-md-12 Plr0 MB12">
+                                            <label class="col-md-3 T7 Plr0">Created Date:</label>
+                                            <span class="col-md-4 T7 Plr0">{{RVO.Data.CreatedDate}}</span>
+                                         </div>  
+                                         <div class="col-md-12 Plr0 MB12" ng-if="RVO.Data.SubmittedDate != ''">
+                                            <label class="col-md-3 T7 Plr0">Submitted Date:</label>
+                                            <span class="col-md-7 T7 Plr0">{{RVO.Data.SubmittedDate}}</span>
+                                         </div>                                         
+                                   		</div>
+                                   </div>
+                                </div>
+                                 <div class="col-lg-12 col-md-12 T3 addnewItem " id="CO_notanyitemadded" 
+                                        ng-if="RVO.Data.VendorId==null || RVO.Data.VendorId == ''"><!-- RVO.Data.VendorName -->
+                                      <a id="CO_notanyitemadded" ng-click="RVO.RelatedList_addAction($event, 'Vendor')">
+                                         {!$Label.Label_Add} {!$Label.New_Label} {!$Label.Vendor_Object_Display_Label}.<!--  You haven't added anything yet! Add something. -->
+                                      </a>
+                                 </div>
+                                
+                                
+                               
+                                
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- For : You haven't added anything yet! -->
+                <div ng-if="RVO.Data.VendorId!=null && RVO.Data.VendorId != ''">
+                <!-- For : You haven't added anything yet! -->
+                <!-- ******************************************************* end of info section ******************************************************* -->
+                <!-- ******************************************************* header for order section ******************************************************* -->
+                <div class="sectionHeader row" style="margin-top: 48px;">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                                <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                    ng-show="!RVO.displaySections.Return"
+                                    ng-Click="RVO.displaySections.Return = true">
+                                </i> 
+                                <i class="fa fa-angle-down" style="width:10px;"
+                                    ng-show="RVO.displaySections.Return"
+                                    ng-Click="RVO.displaySections.Return = false">
+                                </i> 
+                                <span class="divider">|</span>
+                                <span class="T2">{{RVO.LeftSideHeadingLables.Return}} Return</span>
+                            </span>
+                            <span class="ActionIcons pull-left ">
+                                <div class="dropdown selectDropdown checkboxDropdown">
+                                    <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{!$Label.Label_Actions}
+                                    <span class="caret"></span></button> -->
+                                    <!-- <ul class="dropdown-menu" ng-if = "CustomerOrderModel.isDeleteServiceOrder($index)">
+                                                <li><a  ng-click="CustomerOrderModel.deleteSoHeaderInfo(CustomerOrderModel.SOHeaderList[$index].SOHeaderInfo.Id)">Remove Item</a></li>
+                                            </ul> -->
+                                </div>
+                            </span>
+                            <span class="ActionIcons service_order_print_icon pull-left" 
+	                        	ng-if="RVO.Data.ReturnVOLIList != undefined && RVO.Data.ReturnVOLIList.length != 0">
+	                            <i class="fa fa-print"
+	                                ng-click="RVO.PrintReturnPDF()">
+	                            </i>
+	                        </span>
+                            <span class="T3 pull-right total">
+                            	<p id="vendor_order_total">
+                                	{{RVO.Data.SubTotal | currency}}
+                              	</p>
+                            </span>
+                            
+                             <span class="T3 pull-right total">
+	                             <p id="vendor_order_total">
+	                               {{RVO.GroupTotalCost | currency}}
+	                             </p>
+                 			 </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ******************************************************* header for order section ******************************************************* -->
+                
+                <!-- ******************************************************* body for order section ******************************************************* -->
+                <div id="ReturnSection" >
+                    <div ng-show="RVO.displaySections.Return">
+                    
+                        <!-- START: ITEMS section -->
+                        <div class="main_section_COU row" id="Order_Items">
+                            <div class="main_section_COU_Header row actionRowForOrder" >
+                                <div class="actionRow " > <!-- <p> -->
+                                    
+                                    <span class="sectionText T2">{!$Label.Items}
+                                        <i class="fa fa-plus cou_plus_icon " ng-if="RVO.Data.Status  == 'In Progress' && GroupOnlyPermissions['Vendor order']['create/modify']"
+                                                        ng-click="RVO.RelatedList_addAction($event, 'Merchandise')"></i>
+                                    </span>
+                                    
+                                    <span class="ActionIcons">
+                                        <i class="fa fa-question-circle" data-toggle="tooltip" title="Items" ></i>
+                                    </span> 
+                                </div><!-- </p> -->
+                            </div>
+                            <!-- Ticket #1888 -->
+                            <!-- <div class="gid_container T6" id="VO_Order_block_grid_container_Empty_Div" 
+                                        ng-show="RVO.vendorOrderLineItemGroupList.length == 0 || RVO.vendorOrderLineItemGroupList.length ==undefined ">
+                                       <span ng-click="RVO.createPart()" style= "cursor:pointer;" >{!$Label.Label_Add} {!$Label.New_Label} {!$Label.Label_Part} </span>
+                            </div> -->
+                           <div ng-show="RVO.Data.ReturnVOLIList.length != 0 && RVO.Data.ReturnVOLIList.length != undefined " > 
+                            <!-- <div> -->
+                                 <div class="gid_container_Customer" id="VO_Order_block_grid_container">
+                              
+                                <table class="table" id="VendorOrderItem_Grid">
+                                                    <col width="2%"/>
+                                                    <col width="4%"/>
+                                                    <col width="33%"/>
+                                                    <col width="10%"/>
+                                                    <col width="10%"/>
+                                                    <col width="10%"/>
+                                                    <col width="10%"/>
+                                                    <col width="20%"/>
+                                                    <col width="1%"/>
+                                                    <tr  class="tableHeader T3 C2">
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th>Item/Desc</th>
+                                                        <th class="text-center">Return Qty</th>
+                                                        <th class="text-center"></th>
+                                                        <th class="text-center">Item Cost</th>
+                                                        <th class="text-center"></th>
+                                                        <th class="text-center">Sub Total</th>
+                                                        <th class="text-center"></th>
+                                                    </tr>
+                                                    <tbody ng-repeat="rvoItem in RVO.Data.ReturnVOLIList" ng-init="RVOLIIndex = $index"><!-- track by $index" ng-init="AOHeaderIndex = $index" > -->
+                                                        <tr class="clickable_row" id="rowGroup{{$index}}" rel="vogroup_item_row{{$index}}_edit"  
+                                                            ng-click="RVO.editLineItem($event, $index);"
+                                                            ng-blur = "RVO.editGroupItem($event, $index); RVO.editGroupItemForCancel($event, $index);" 
+                                                            ng-show="!RVO.ReturnVOLIList_EditRow[$index].isEdit"
+                                                            ng-class-even="'C2'">
+                                                            <td style="background:#fff"></td>
+                                                            <td>
+                                                            	<a class="edite_btn" rel="row1_edit">
+		                                                			<img class="first_img" src="{!Application_Images}/sparkplug.png" />
+		                                                		</a>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}" class="T7 ">
+	                                                            <a ng-mouseover="RVO.openpartpopup($event, rvoItem.PartId);" ng-mouseleave="RVO.hidePartPopUp();"> 
+	                                                                {{ rvoItem.ItemDescription }}
+	                                                            </a>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}" class="T7 text-center">
+                                                                {{ rvoItem.ReturnQty}}
+                                                            </td>
+                                                            <td></td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}" class="T7 text-center">
+                                                                {{ rvoItem.ItemCost | currency}}
+                                                            </td>
+                                                            <td></td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" class="T7 text-center ">
+                                                                {{ (rvoItem.ReturnQty * rvoItem.ItemCost)  | currency}}
+                                                            </td>
+                                                            <td style="background:#fff"></td>
+                                                        </tr>
+                                                        <tr ng-show="RVO.ReturnVOLIList_EditRow[$index].isEdit"
+                                                        	ng-click="RVO.editLineItem($event, $index);"
+                                                        	class="clickable_row"
+                                                        	ng-class-even="'C2'" >
+                                                        	<td style="background:#fff"></td>
+                                                            <td>
+                                                            	<a class="edite_btn" rel="row1_edit">
+		                                                			<img class="first_img" src="{!Application_Images}/sparkplug.png" />
+		                                                		</a>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}" class="T7 ">
+	                                                            <a ng-mouseover="RVO.openpartpopup($event, rvoItem.PartId);" ng-mouseleave="RVO.hidePartPopUp();"> 
+	                                                                {{ rvoItem.ItemDescription }}
+	                                                            </a>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}" class="T7 text-center">
+                                                                <price-only-input id-value="returnQty_{{$index}}"
+                                                                	 ng-if="RVO.Data.Status  == 'In Progress'"
+			                                                         class-value = "form-control text-center"
+			                                                         place-holder-value = ""
+			                                                         max-length = "7"
+			                                                         rel-value="msrpId"
+			                                                         precision-length = "0"
+			                                                         input-value = "rvoItem.ReturnQty"
+			                                                         include-zero = "false"
+			                                                         packaged="true"/>
+			                                                     <span ng-if="RVO.Data.Status  != 'In Progress'">{{ rvoItem.ReturnQty}}</span>
+                                                            </td>
+                                                            <td></td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}" class="T7 text-center">
+                                                                <price-only-input id-value = "returnCost_{{$index}}"
+			                                                         class-value = "form-control text-center"
+			                                                         place-holder-value = ""
+			                                                         max-length = "7"
+			                                                         rel-value="msrpId"
+			                                                         precision-length = "2"
+			                                                         input-value = "rvoItem.ItemCost"
+			                                                         blur-function="RVO.editLineItemBlur($event, $index)"
+			                                                         packaged="true"/>
+                                                            </td>
+                                                            <td></td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" class="T7 text-center ">
+                                                                {{ (rvoItem.ReturnQty * rvoItem.ItemCost)  | currency }}
+                                                            </td>
+                                                            <td style="background:#fff"></td>
+                                                        </tr>
+                                                        
+                                                        <tr ng-show="RVO.ReturnVOLIList_EditRow[$index].isEdit
+                                                        	&& (RVO.Data.Status  == 'In Progress' || RVO.Data.Status  == 'Submitted')"
+                                                        	class="edit_panel sample-show-hide T7" 
+                                                        	id="vogroup_item_row{{$index}}_edit">
+			                                            	<td style="background-color:#fff"></td>
+		                                                    <!-- <td ng-class="{'BL': reqByStock.hasChildren}" style="background:#fff"></td> -->
+		                                                    <td style="background:#fff"></td>
+			                                            	<td colspan="6" class="edit-service-item" id="CO_Merchandise_block_grid_container_tbody_expandtr_td_1_{{$index}}" >
+				                                                <div id="vogroup_tbody_expandtr_edit_box_{{$index}}" class="edit_box serviceitemedit col-md-12 ">
+				                                                    <div class="its-heading" id="CO_Merchandise_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+				                                                        <!-- <img src="{!Application_Images}/edit_icon.png" class="img_action"/> -->
+				                                                        <i class="fa fa-angle-down"></i>
+				                                                        <span>{!$Label.Label_Actions} (1 {!$Label.Label_Available})</span>
+				                                                    </div>
+				                                                    <div id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}" class="edit-body">
+				                                                        <form class="ng-pristine ng-valid">
+				                                                            <!-- Remove link as action -->
+				                                                            <div class="radio" id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+				                                                                <label ng-click="RVO.ReturnVOLIList_EditRow[$index].radioValue = 1"><!-- AOHeaderIndex -->
+				                                                                    <p class="chk_tick edit-service-chek"
+			                                                                          ng-class="{'chked' : RVO.ReturnVOLIList_EditRow[$index].radioValue == 1 }" ><!-- AOHeaderIndex -->
+			                                                                            <i class="fa fa-check-square chksqure"></i>
+			
+			                                                                        </p>
+				                                                                <span>
+					                                                                Remove from Return
+				                                                                </span>
+				                                                                </label>
+				                                                            </div>
+				                                                            <!-- Action button (Go) -->
+				                                                            <a id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn" 
+				                                                                class="btn btn-default editform_btn" role="button"
+				                                                                ng-click="RVO.lineItemGoAction($index)">{!$Label.Label_Apply}</a>                                
+				                                                        </form>
+				                                                    </div>
+				                                                </div>
+				                                            </td>
+				                                            <td style="background:#fff"></td>
+			                                        	</tr>
+                                             
+                                                   </tbody>
+                                                </table>
+                                </div>
+                                <div class="row pagination_container" id="Vendor_Order_Items_Pagination" ng-if="RVO.TotalLineItemGroups != undefined" >
+                                <list-pagination id-value = "Vendor_Order_Items_Pagination_" 
+                                                 total-records-length = "RVO.TotalLineItemGroups"
+                                                 page-size = "RVO.itemsPageSortAttrsJSON.PageSize"
+                                                 current-page = "RVO.itemsPageSortAttrsJSON.CurrentPage"
+                                                 changes-count = "RVO.itemsPageSortAttrsJSON.ChangesCount"
+                                                 pagination-control-method = "RVO.Items_paginationControlsAction" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- END: ITEMS section -->
+                    </div>
+                    </div>
+                
+                <!-- ******************************************************* body for order section ******************************************************* -->
+                
+               
+                
+               <!-- ******************************************************* header for Finalize section ******************************************************* -->
+                <div class="sectionHeader row"
+                	ng-if="RVO.showFinalizeSection()">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!RVO.displaySections.Finalize"
+                            ng-Click="RVO.displaySections.Finalize = true">
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="RVO.displaySections.Finalize"
+                            ng-Click="RVO.displaySections.Finalize = false">
+                        </i> 
+                        <span class="divider">|</span>
+                        <!-- <span class = "headdingFirstText">{{RVO.LeftSideHeadingLables.Finalize}}</span> -->
+                        <span class="T2">{{RVO.LeftSideHeadingLables.Finalize}} {!$Label.Finalize}</span>
+                        </span>
+                        <span class="ActionIcons pull-left ">
+                               <div class="dropdown selectDropdown checkboxDropdown">
+                                  <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{!$Label.Label_Actions}
+                                  <span class="caret"></span></button> -->
+                            </div>
+                        </span> 
+                    </div>
+                    
+                    </div>
+                </div>
+                <!-- ******************************************************* header for Finalize section ******************************************************* -->
+                
+                <!-- ******************************************************* body for Finalize section ******************************************************* -->
+                <div id="FinalizeSection" class="Finalize_Container">
+                    <div ng-show="RVO.displaySections.Finalize && RVO.showFinalizeSection()">
+                        <!-- START: FINALIZE section -->
+                        <div class="main_section_COU row" id="FinalizeSection_General">
+                            <div class="main_section_COU_Header row" >
+                                <p class="actionRow T2">
+                                    <span class="sectionText">{!$Label.Finalize}</span>
+                                    <!-- <span class="actionText">{!$Label.Label_Actions}</span> -->
+                                    <span class="ActionIcons">
+                                    <!-- <i class="fa fa-th"></i> -->
+                                    <i class="fa fa-question-circle" data-toggle="tooltip" title="Finalize"></i>
+                                    </span> 
+                                </p> 
+                            </div>
+                            <div class="col-lg-3 col-md-3 col-lg-offset-9 col-md-offset-9 finalizeInvoiceBtnSection">  
+                                       <button id="CO_active_invoice_not_Invoiced_gid_container_finalize_btn" 
+                                       		ng-if="RVO.showSubmitReturnButton()"
+                                       		ng-disabled="RVO.disableButton || !GroupOnlyPermissions['Vendor order']['create/modify']"
+                                       		class="btn T4 addmoreinfoBtn text-uppercase" 
+                                           	style="margin: auto; width: 80%;" 
+                                           	ng-click="RVO.disableButton = true; RVO.SubmitReturn()">{!$Label.Label_Submit} Return
+                                               <i class="fa fa-angle-right" style="font-size: 15px; margin-left: 5px;"></i> <!-- RVO.Data.disableFinalizeOrderBtn Added by richa 21/01/2017 for disabling Finalize Order Button after click -->
+                                       </button>
+                                       
+                                       <button id="CO_active_invoice_not_Invoiced_gid_container_finalize_btn" 
+                                       		ng-if="RVO.showSetAsApprovedButton()"
+                                       		class="btn T4 addmoreinfoBtn text-uppercase" 
+                                       		ng-disabled="RVO.Data.RMANumber == null || RVO.Data.RMANumber == '' || RVO.disableButton || !GroupOnlyPermissions['Vendor order']['create/modify']"
+                                           	style="margin: auto; width: 80%;"
+                                           	ng-click="RVO.disableButton = true; RVO.SetAsApprovedReturnVO()">Set As Approved
+                                               <i class="fa fa-angle-right" style="font-size: 15px; margin-left: 5px;"></i> <!-- RVO.Data.disableFinalizeOrderBtn Added by richa 21/01/2017 for disabling Finalize Order Button after click -->
+                                       </button>
+                                       <p class = "packageslipNoRequired T7" 
+                                       		ng-if = "RVO.showSetAsApprovedButton() 
+                                       					&& (RVO.Data.RMANumber == null || RVO.Data.RMANumber == '')">
+                                       			RMA# missing
+                                       	</p>
+                                       
+                                       <button id="CO_active_invoice_not_Invoiced_gid_container_finalize_btn" 
+                                       		ng-if="RVO.showProcessCreditButton()"
+                                       		class="btn T4 addmoreinfoBtn text-uppercase" 
+                                       		ng-disabled="RVO.Data.CreditMemoNumber == null || RVO.Data.CreditMemoNumber == '' || RVO.disableButton || !GroupOnlyPermissions['Vendor order']['create/modify']"
+                                           	style="margin: auto; width: 80%;" 
+                                           	ng-click="RVO.disableButton = true; RVO.ProcessCreditReturnVO()">Process Credit
+                                               <i class="fa fa-angle-right" style="font-size: 15px; margin-left: 5px;"></i> <!-- RVO.Data.disableFinalizeOrderBtn Added by richa 21/01/2017 for disabling Finalize Order Button after click -->
+                                       </button>
+                                       <p class = "packageslipNoRequired T7" 
+                                       		ng-if = "RVO.showProcessCreditButton() 
+                                       					&& (RVO.Data.CreditMemoNumber == null || RVO.Data.CreditMemoNumber == '')">
+                                       			Credit Memo# is missing
+                                       	</p>
+       
+                                   </div>  
+                        </div>
+                        <!-- END: FINALIZE section -->
+                    </div>
+                </div>
+                
+               <!-- For : You haven't added anything yet! -->
+            </div>
+            <!-- For : You haven't added anything yet! -->
+                <!-- ******************************************************* body for Finalize section ******************************************************* -->
+           <div style="height:600px; background: #E6EBEC; margin: 0 -15px;" ></div>
+            
+        </div>
+       </div>
+     </div>
+    </div>
+</apex:page>

@@ -1,0 +1,245 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"
+    controller="GlobalController">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+    <script src = "https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+    <div class="fadein viewA" ui-view="AddEditTechnicianSchedule" autoscroll='false'></div> 
+    <div class="content bp-wrapper-container scehduler-container" ng-cloak = "M_JobScheduler.isLoading">
+        <div class="row container M0">
+            <div class="section-header-container">
+                <div class="bp-calendar-nav-bar-container">
+                    <bp-calendar-nav-bar id-value="{{M_JobScheduler.StateName}}" current-periodic-view="day" object-payload="M_JobScheduler.calPayload"
+                         is-loading="M_JobScheduler.isLoading" current-date="M_JobScheduler.currentDate" 
+                         on-load-action="F_JobScheduler.loadData(selectedDate)" >
+                    </bp-calendar-nav-bar>
+                </div>
+                <div class="bp-legend">
+                    <div class="bp-week-total-hour">
+                        <label class="total-count">{{M_JobScheduler.TotalBookedHours}} / {{M_JobScheduler.TotalAvailableHours}}</label>
+                        <span class="hour-text text-uppercase">{{ 'Hours_booked' | translate }}</span>
+                    </div>
+                    <div id="legend-dropdown" class="pull-left">
+                        <div class="bp-legend-container bp-cursor-pointer" ng-click = "F_JobScheduler.showHideLegendDropdown()">
+                            <div class="bp-legend-header">
+                                <span class="bp-circle bp-main-bg-cyan"></span>
+                                <span class="bp-circle bp-main-bg-purple"></span>
+                                <span class="bp-circle bp-main-bg-orange"></span>
+                                <span class="bp-circle bp-main-bg-green"></span>
+                                 <i class="bp-blue downArrow" ng-class = "{'bp-rotate-svg' :M_JobScheduler.isRotate }" ng-include="'{!Application_Images}/Icons/arrowDown.svg'"></i>
+                            </div>
+                        </div>
+                        <div class="legend-dropdown" ng-if="M_JobScheduler.isShowLegendDropdown">
+                            <nav>
+                                <li>
+                                    <span class="bp-font-16">{{'Legend' | translate }}</span>
+                                </li>
+                                <li>
+                                    <span class="bp-circle bp-main-bg-cyan"></span>
+                                    <span>{{ 'Service_or_repair' | translate }}</span>
+                                </li>
+                                 <li>
+                                    <span class="bp-circle bp-main-bg-purple"></span>
+                                    <span>{{ 'Deal' | translate }}</span>
+                                </li>
+                                <li>
+                                    <span class="bp-circle bp-main-bg-orange"></span>
+                                    <span>{{ 'Internal' | translate }}</span>
+                                </li>
+                                <li>
+                                    <span class="bp-circle bp-main-bg-green"></span>
+                                    <span>{{ 'Warranty' | translate }}</span>
+                                </li>
+                                <li>
+                                    <span class="bp-circle bp-dark-grey1 number-legend">2</span>
+                                    <span> {{ 'Estimated_hours' | translate }} </span>
+                                </li>
+                                <li>
+                                    <span class="bp-circle bp-red-bg number-legend">2</span>
+                                    <span>{{ 'Hours_to_be_re_assigned' | translate }}</span>
+                                </li>
+                            </nav>
+                            
+                        </div>
+                    </div>
+                	<div class="rectangle" > 
+		                        <div class="left-rectangle bp-cursor-pointer">
+		                        	<ul >
+		                        		<li ></li>
+		                        		<li ></li>  
+		                        	</ul>
+		                        </div>
+		                        <div class="right-rectangle bp-cursor-pointer">
+		                        	<ul >
+		                        		<li ></li>
+		                        		<li ></li>
+		                        		<li ></li>
+		                        	</ul>
+		                        </div>
+                       	</div>
+                </div>
+            </div>
+            
+             <div class="col-xs-12 overall-container P0">
+                 <div class="col-xs-1 col-sm-3 technician-list P0">
+                   <div class="asign-person" ng-class="{'lessbooked-state-hover': technicianRec.BookedHours <= technicianRec.AvailableHours}" rel ="overlappedTableTrId{{technicianRec.Id}}" ng-repeat="technicianRec in M_JobScheduler.technicianList track by $index">
+                        <div class="name-initials text-uppercase">{{technicianRec.NameInitials}}</div>
+                        <div class="technician-details">
+                            <a class="technician-name M0 bp-set-text-ellipses text-capitalize pull-left hidden-xs" 
+                                ng-click="F_JobScheduler.openAddEditTechnicianModal(technicianRec)">{{technicianRec.Name}}</a>
+                            <p class="technician-role M0 bp-set-text-ellipses bp-first-letter-capitalize pull-left hidden-xs">{{technicianRec.Role}}</p>
+                            <p class="hours M0 pull-left" ng-class="{'bp-coral-font': technicianRec.BookedHours > technicianRec.AvailableHours}"
+                            	>{{technicianRec.BookedHours}}/{{technicianRec.AvailableHours}}</p>
+                             <!--   <p class="hours M0 pull-left"
+                            	ng-if="technicianRec.IsFullDayLeave">N/A</p> -->
+                        </div>
+                    </div>
+                    
+                    <div class="add-new-tech-action-container">
+                        <a ui-sref="User({Id: 'timeClockingStaff'})" target='_blank'>{{'Add_new_technician' | translate}}</a>
+                    </div>
+                    
+                 </div>
+                 <div class="col-xs-11 col-md-9 grid-container P0">
+                    <table class="table table-bordered scale-table M0">
+                      <thead>
+                        <tr>
+                        	<th class="time-list" colspan="2" ng-if="$index != M_JobScheduler.ShopSettingData.length-1" ng-repeat="businessTimeRec in M_JobScheduler.ShopSettingData">{{F_JobScheduler.showBusinessHours(businessTimeRec.timeSlot)}}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr ng-repeat="technicianRec in M_JobScheduler.technicianList track by $index">
+                          <!-- <td class="slot-from-scaling-grid" ng-repeat="slot in [].constructor(M_JobScheduler.noOfSlotsOnScalingGrid) track by $index" ></td> -->
+                        </tr>
+                        
+                        <tr class="add-new-technician-action-row">
+                          <!-- <td colspan="{{M_JobScheduler.noOfSlotsOnScalingGrid}}"></td> -->
+                          <td  ng-repeat="slot in [].constructor(M_JobScheduler.noOfSlotsOnScalingGrid) track by $index" ></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                 </div>
+            </div>
+        
+            
+	        <div class="LoadingDiv" ng-show="M_JobScheduler.isLoading">
+	            <div class="loadingIconContainer">
+	                <c:BPLoading />
+	            </div>
+	        </div>
+	         
+			<div id="appointmentInfoPopup" for = "{{M_JobScheduler.flyOutAppointmentData.Id}}" class = "appointment-info-popup bp-cursor-pointer" ng-show="M_JobScheduler.showUnAssignedAppointmentPopUp" 
+		          ng-mouseover="M_JobScheduler.showUnAssignedAppointmentPopUp = true;"
+		          ng-mouseleave="M_JobScheduler.showUnAssignedAppointmentPopUp = false;"
+		          ng-class="{'right-arrrow': M_JobScheduler.appointmentPopoverPosition == 'left', 
+		                     'down-arrrow': M_JobScheduler.appointmentPopoverPosition == 'top',
+		                     'left-arrrow': M_JobScheduler.appointmentPopoverPosition == 'right',
+		                     'up-arrrow': M_JobScheduler.appointmentPopoverPosition == 'bottom',
+		                     'show-animate-appointmemt-popup':M_JobScheduler.showUnAssignedAppointmentPopUp}" >
+		          <h3>{{M_JobScheduler.flyOutAppointmentData.UnitFormattedName}}</h3>
+		          <div class = "col-xs-12 P0">
+		              <div class="user-group-info-area">
+		                   <div class="heading" >{{M_JobScheduler.flyOutAppointmentData.CustomerName}}</div>
+		                   <div class="warning-text-alignment" ng-if = "!M_JobScheduler.flyOutAppointmentData.CONumber" >
+		                           {{ 'UnAssigned' | translate }}
+		                   </div>
+		                   <a class="co-number bp-blue-font  " ui-sref="CustomerOrder_V2({Id:M_JobScheduler.flyOutAppointmentData.COId})" target='_blank' ng-if = "M_JobScheduler.flyOutAppointmentData.CONumber" >
+		                          {{M_JobScheduler.flyOutAppointmentData.CONumber}}
+		                   </a>
+		              </div>
+		              <div class="user-group-info-area appointment-detail">
+		                 <div class="appointment-detail-heading" >{{M_JobScheduler.flyOutAppointmentData.Title}}</div>
+		                 <div class ="concern-wrapper" ng-repeat="concern in M_JobScheduler.flyOutAppointmentData.Concern track by $index">
+		                        <div class="set-large-concerns">{{concern}}<span ng-if = " ($index < M_JobScheduler.flyOutAppointmentData.Concern.length -1 
+		                        														|| M_JobScheduler.flyOutAppointmentData.SOKitConcern.length > 0)">;</span></div>
+		                 </div>
+		                 <div class ="concern-wrapper" ng-repeat="soKitConcern in M_JobScheduler.flyOutAppointmentData.SOKitConcern track by $index">
+		                        <div class="set-large-concerns">{{soKitConcern}}<span ng-if = " ($index < M_JobScheduler.flyOutAppointmentData.SOKitConcern.length -1)">;</span></div>
+		                 </div>
+		                 <!-- <div class="warning-text-alignment" >
+		                        Very Loose brake
+		                 </div> -->
+		               </div>
+		          </div>	
+			</div>
+
+	        <div id="appointmentNav" class="appointment-nav collapse-div-width-transition bp-cursor-pointer"
+	        	 ng-click="F_JobScheduler.toggle('appointmentNav')"
+	        	 ng-class = "{'toggle-mobile-device': M_JobScheduler.isToggledInMobileView }" ng-mouseover="F_JobScheduler.setTooltipPosition($event)"
+	        	 ng-mouseleave="F_JobScheduler.resetTooltipPosition()">
+	                <div id="allignPullOutIcon" class="toggle-icon" ng-class="{'expanded-toggle-icon' : M_JobScheduler.isToggled || M_JobScheduler.isToggledInMobileView }">
+	                    <p id="pullOutIcon" class="allign-icon" ng-show ="!M_JobScheduler.isToggled" ><i class = "bp-blue pull-out-icon-width " ng-include="'{!Application_Images}/Icons/arrow-left-2.svg'"></i></p>
+	                    <p class="allign-icon"  ng-show  ="M_JobScheduler.isToggled"><i class = "bp-blue pull-out-icon-width " ng-include="'{!Application_Images}/Icons/arrow-right-2.svg'"></i></p>
+	                </div>
+	                <p class="heading desktop-heading" ng-show="M_JobScheduler.isToggled">Un-assigned appointments</p>
+	                <p class="mobile-heading heading">{{M_JobScheduler.noOfUnassignedAppointment}} <sapn>Un-assigned appointments</sapn></p>
+	                <div ng-repeat = "segment in notSorted(M_JobScheduler.unAssignedAppointments) track by $index" class="un-assigned-infopopup" ng-class="{'expanded-pull-out' : M_JobScheduler.isToggled,'align-appointmentcard-with-table' : !M_JobScheduler.isToggled ,'adjust-last-appointment' : M_JobScheduler.unAssignedAppointments.Afternoon.length > 0}" ng-init="unAssignedAppointmentList = M_JobScheduler.unAssignedAppointments[segment]">
+	                    <p class="appointment-section-heading desktop-heading text-uppercase"  ng-show ="M_JobScheduler.isToggled && unAssignedAppointmentList.length > 0">{{segment}}</p>
+	                    <p class="appointment-section-heading mobile-heading text-uppercase"  ng-show ="unAssignedAppointmentList.length > 0">{{segment}}</p>
+	                    <div class="appointment-card" id="{{unAssignedAppointment.Id}}" ng-repeat = "unAssignedAppointment in unAssignedAppointmentList track by $index"
+		                    ng-class = "{'bp-main-bg-cyan': unAssignedAppointment.TransactionType == 'Customer',
+		                                 'bp-main-bg-purple' : unAssignedAppointment.TransactionType == 'Deal Service',
+		                                 'bp-main-bg-orange' : (unAssignedAppointment.TransactionType == 'Internal' || unAssignedAppointment.TransactionType == 'Stock Unit'),
+		                                 'bp-main-bg-green' :  unAssignedAppointment.TransactionType == 'Third-Party',
+		                                 'appointment-card-expanded-width' : M_JobScheduler.isToggled ,
+		                                 'allign-appointment-card' : M_JobScheduler.isToggled,
+		                                 }"
+		                     ng-click="F_JobScheduler.openEditAppointmentPopup(true,$event)" 
+		                     ng-mouseover="F_JobScheduler.showUnAssignedAppointmentInfo(true,$event, unAssignedAppointment.Id,unAssignedAppointment.AppointmentDaySegment, true)" 
+	                        ng-mouseleave="F_JobScheduler.showUnAssignedAppointmentInfo(false,$event)">
+                            <div class="no-of-hours estimated-hours"> 
+	                            {{unAssignedAppointment.EstimatedHours}}
+	                        </div>
+	                        <div class="appointment-list-container bp-set-text-ellipses"  ng-show ="M_JobScheduler.isToggled" >
+	                            <div class="bp-set-text-ellipses col-xs-12 P0 un-assigned-semi-bold">{{unAssignedAppointment.UnitFormattedName}}</div>
+	                            <div class="bp-set-text-ellipses col-xs-12 P0 un-assigned-semi-bold">{{unAssignedAppointment.CustomerName}}</div>
+	                            <div id="CONumberId" class="bp-set-text-ellipses col-xs-12 P0 un-assigned-semi-bold text-underline" ng-click="F_JobScheduler.moveToState('CustomerOrder_V2',{Id:unAssignedAppointment.COId})">
+	                            	<span ng-if="unAssignedAppointment.CONumber" >{{unAssignedAppointment.CONumber}}</span>
+	                            	<span ng-if="unAssignedAppointment.CONumber && unAssignedAppointment.Title">- {{unAssignedAppointment.Title}}</span>
+                            	</div>
+	                        </div>
+	                    </div>
+	                </div>
+	            </div>
+             </div>
+		 	<div class="tooltipUnassigned" id ="tooltipUnassigned"  ng-if="M_JobScheduler.showToolTip && !M_JobScheduler.showUnAssignedAppointmentPopUp && !M_JobScheduler.isToggled" >
+			  <span  class="tooltiptext">Un-assigned appointments</span>
+			</div>
+			
+		 <!-- MObile view -->
+           <!-- <div id="appointmentPullOutNavMobileView" 
+            class="appointment-pull-outnav-mobile-view un-assigned-mobile-view collapse-div-bottom-transition" 
+            ng-class="{ 'tranform-height-unassigned-mobile' : M_JobScheduler.unAssignedAppointments.Afternoon.length > 0}"
+            ng-click="F_JobScheduler.toggle('appointmentPullOutNavMobileView')">
+                    <div class="un-assigned-appointment-info-expanded-mobile">
+                    <p class="heading" >{{M_JobScheduler.noOfUnassignedAppointment}} <span class="padding-left-5"> Un-assigned appointments</span></p>
+                    <div>
+                        <p id = "allignIconPullOut" class="allign-icon " ng-if="!M_JobScheduler.isToggledInMobileView"><i class = "bp-blue rotate-icon-to-down pull-out-icon-width " ng-include="'{!Application_Images}/Icons/arrow-left-2.svg'"></i></p>
+                        <p class="allign-icon " ng-if="M_JobScheduler.isToggledInMobileView"><i class = "bp-blue rotate-icon-to-down pull-out-icon-width " ng-include="'{!Application_Images}/Icons/arrow-right-2.svg'"></i></p>
+                    </div>
+                    </div>
+                    <div class="allign-heading-icon" ng-show = "M_JobScheduler.isToggledInMobileView">
+                        <div class = "expanded-mobile-appointment-data" ng-repeat = "segment in notSorted(M_JobScheduler.unAssignedAppointments) track by $index" ng-init="unAssignedAppointmentList = M_JobScheduler.unAssignedAppointments[segment]">
+                        <p class="appointment-section-heading text-uppercase" ng-if="M_JobScheduler.isToggledInMobileView && unAssignedAppointmentList.length > 0">{{segment}}</p>
+                        <div class="un-assigned-appointment-info-expanded-mobile appointment-info-mobile" >
+                            <div class="appointment-info-card-mobile" ng-repeat = "unAssignedAppointment in unAssignedAppointmentList track by $index"
+                            ng-class = "{'bp-main-bg-cyan': unAssignedAppointment.JobType == 'Customer Pay' ,
+                                         'bp-main-bg-purple' : unAssignedAppointment.JobType == 'Deal',
+                                         'bp-main-bg-orange' : unAssignedAppointment.JobType == 'Internal Expense',
+                                         'bp-main-bg-green' :  unAssignedAppointment.JobType == 'Third-Party',
+                                         }"
+                            ng-click="F_JobScheduler.openEditAppointmentPopup(true)" >
+                                 <div class="no-of-hours estimated-hours"> 
+                                    {{unAssignedAppointment.EstimatedHours}} 
+                                </div>
+                               <div class="unAssignedAppointment" ng-if="M_JobScheduler.isToggled" ng-mouseover="F_JobScheduler.showUnAssignedAppointmentInfo(true,unAssignedAppointment.Id,unAssignedAppointment.AppointmentDaySegment,$event, true)" >
+                                    <div>{{unAssignedAppointment.UnitFormattedName}}</div>
+                                    <div>{{unAssignedAppointment.CustomerName}}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>  -->
+        <div class = "bp-grid-backdrop" ng-if = "M_JobScheduler.isShowLegendDropdown" ng-click = "F_JobScheduler.hideLegendDropDown()"></div> 
+		<!-- <div class = "bp-flyout-backdrop" ng-if = "M_JobScheduler.showUnAssignedAppointmentPopUp" ng-mouseleave="M_JobScheduler.showUnAssignedAppointmentPopUp = false;" ng-click = "F_JobScheduler.hideLegendDropDown()"></div> -->
+    </div>
+</apex:page>

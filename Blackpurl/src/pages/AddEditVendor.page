@@ -1,0 +1,1075 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"  controller="GlobalController">
+    <!-- <apex:stylesheet value="{!Application}/css/AddEditVendor.css"/>
+    <apex:stylesheet value="{!Application}/css/global.css"/> -->
+    <div>
+        <route-loading-indicator></route-loading-indicator>
+        <div class="modal fade" ng-if="!isRouteLoading" ng-cloak="ng-cloak" id="newVendor"> 
+        <div class="modal-dialog" >
+            <div class="modal-content vendor_container ">
+                <div class="modal-body popup_container" ng-class="{'popup_container_edit': VendorModal.IsEditMode}">
+                    <div class="popupinside">
+                        <div class="Customer-Suggestion-overlay">
+                            <div >
+                                <div class="text">{{ 'Insert_this_vendor_into_vendor_order' | translate }}?</div>
+                                <button class="square-btn greenBtn pull-right" ng-click="VendorModal.AddSimilarCustomer()" >{{ 'Label_Select' | translate }}</button>   
+                            </div>
+                        </div>
+
+                        <div class="ConfirmBox-overlay">
+                            <div >
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <button type="button" class="close" aria-label="Close" ng-click="VendorModal.DeactiveVendor(false)"><span aria-hidden="true">&times;</span></button>
+                                        <h4 class="modal-title">{{ 'Confirmation_inactive_status' | translate }}</h4>
+                                    </div>
+                                    <div class="modal-body" >
+                                        <p>  {{ 'This_will_deactive_the_vendor' | translate }}.</p>
+                                        <p>  {{ 'It_will_be_imposible_to_complete_vendor_orders_against' | translate }} </p>
+                                        <p>  {{ 'this_vendor_or_book_them_for_appointments' | translate }}.</p>
+                                        <br/>
+                                        {{ 'Are_you_sure_you_want_to_continue' | translate }}?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" id="confirmButton" class="btn btn-primary" ng-click="VendorModal.DeactiveVendor(true)">{{ 'Label_Yes' | translate }}</button>
+                                        <button type="button" class="btn btn-default" ng-click="VendorModal.DeactiveVendor(false)">{{ 'Label_No' | translate }}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="popupleft col-lg-4 col-lg-4" ng-if="!VendorModal.IsEditMode">
+                            <div class="popupleft_container" id="topsection" ng-show="VendorModal.IsEditMode == false || VendorModal.SimilarVendors == []">
+                                <h1 class="letpanel_heading">
+                                    {{ 'Existing_vendors_like_this' | translate }}
+                         </h1>
+                                <i class="fa fa-question-circle helptip" style=" float:left; font-weight: bold; color: #B7BEC6;  margin-top: 20px; margin-bottom: 10px;   font-size: 20px;"></i>
+                                
+                                <div class="goldbox col-lg-12 col-md-12"
+                                    ng-repeat="SimilarVendor in VendorModal.SimilarVendors">
+                                    <!-- <div class="leftgoldbox">
+                                        <img class="starimgMarkFav" src="{!Application_Images}/star.png" />
+                                        <div class="star_container">
+                                            <i class="fa fa-star" style="float: left;color: #B7BEC6;margin-top: 5px; font-size: 15px;"></i> 
+                                            <i class="fa fa-star" style="float: left;color: #B7BEC6;margin-top: 5px; font-size: 15px;"></i> 
+                                        </div>
+                                    </div> -->
+                                    <div class="rightgoldbox rightgoldboxML" id="VendorSugesstionDiv{{$index}}" style="margin-left: 0px;"
+                                        ng-mouseover="VendorModal.showInfoOverlay('VendorSugesstionDiv',$index)"   ng-mouseleave="VendorModal.hideVendorInfoOverlay();">
+                                        <div>
+
+                                            <p class="cust_name">{{SimilarVendor.VendorName}}</p>
+                                            <p>{{SimilarVendor.WorkEmail}}</p>
+                                            <p>{{SimilarVendor.WorkNumber}}</p>
+                                        </div>
+                                    </div>
+                                    <!-- <div class="bottomgoldbox">
+                                        <i>VENDOR ({{SimilarVendor.VendorCode}})</i> 
+                                    </div> -->
+                                </div>
+                            </div>
+                        </div> 
+                        
+                        <div class="popupright" ng-class="{'col-lg-8' : !VendorModal.IsEditMode, 'col-lg-12' : VendorModal.IsEditMode, 'noLeftBoder' : VendorModal.IsEditMode}">
+                            <div class="right_heading_container col-lg-12 col-md-12">
+                                <h1 class="right_panel_heading" ng-show="VendorModal.IsEditMode">{{ 'Edit_vendor' | translate }}</h1>
+                                <h1 class="right_panel_heading" ng-show="!VendorModal.IsEditMode">{{ 'New_vendor' | translate }}</h1>
+                                <div class="savecancle_btncntnr">
+                                    <button type="button" id="closemodal"
+                                        class="btn btn-default grayBtn"
+                                        ng-click="VendorModal.closePopup()"
+                                        ng-attr-tabindex="{{VendorModal.tabIndexValue + 204}}" ng-keydown = "VendorModal.adjustTabIndex($event);">{{ 'Cancel_Label' | translate }}</button>
+                                    <button type="button" class="btn btn-default greenBtn"
+                                        ng-click="VendorModal.SaveVendor()"
+                                        ng-disabled="VendorModal.disableSaveButton"
+                                        ng-attr-tabindex="{{VendorModal.tabIndexValue + 202}}">{{ 'Save_Label' | translate }}</button> <!-- ng-disabled Added by richa 21/01/2017 for disabling button after one click -->
+                                </div>
+                            </div>
+                            
+                            <div class="tabconainer AddEditVendortabconainer" style="min-height: 524px;">
+                                <form>
+                                    <div class="form-group" style="float: right;padding-left: 88px;">
+                                        <label for="required" class="FC9">* {{ 'Indicates_Required_Fields' | translate }}</label>
+                                    </div>
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            
+                                            <p class="req-label">{{ 'Company_name' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields" style="margin:4px 0 8px 0;">
+                                            <div class="form-group large" >
+                                                <input type="text" class="form-control" id="vendorName" ng-model="VendorModal.VendorInfo.VendorName" placeholder="{{'Company_name'| translate }}" rel="VendorName" ng-class="{'redborder' : VendorModal.VendorValidation['VendorName']['isError'] == true}"
+                                                ng-blur="VendorModal.validateForm('VendorName'); VendorModal.getOtherSimilarVendor();"
+                                                title="{{VendorModal.VendorValidation['VendorName']['ErrorMessage'] }} " ng-attr-tabindex="{{VendorModal.tabIndexValue + 1}}"
+                                                ng-focus="VendorModal.formFieldJustGotFocus('VendorName')" />
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="VendorName"  >
+                                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['VendorName']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('VendorName', 'vendorName')"></i>
+                                        </div> 
+                                    </div>
+                                    
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            
+                                            <p>{{ 'Vendor_code' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields" style="margin:4px 0 8px 0;">
+                                            <div class="form-group large" >
+                                                <input type="text" ng-disabled="true" class="form-control" id="vendorName" ng-model="VendorModal.VendorInfo.VendorCode" placeholder="{{'Vendor_code'| translate }}" rel="VendorCode" ng-class="{'redborder' : VendorModal.VendorValidation['VendorCode']['isError'] == true}"
+                                                        title="{{VendorModal.VendorValidation['VendorCode']['ErrorMessage'] }} " ng-attr-tabindex="{{VendorModal.tabIndexValue + 2}}"
+                                                        ng-focus="VendorModal.formFieldJustGotFocus('VendorCode')"/>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="VendorCode"  >
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{'Vendor_code'| translate }}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('VendorCode', 'vendorCode')"></i>
+                                            </div> 
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Vendor_account_number' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields" style="margin:4px 0 8px 0;">
+                                            <div class="form-group large" >
+                                                <input type="text" class="form-control" id="vendorAccountNumber" ng-model="VendorModal.VendorInfo.VendorAccountNumber" placeholder="{{'Vendor_account_number'| translate }}" rel="VendorAccountNumber" ng-class="{'redborder' : VendorModal.VendorValidation['VendorCode']['isError'] == true}"
+                                                    title="{{VendorModal.VendorValidation['VendorAccountNumber']['ErrorMessage'] }} " ng-attr-tabindex="{{VendorModal.tabIndexValue + 3}}"
+                                                    ng-focus="VendorModal.formFieldJustGotFocus('VendorAccountNumber')"/>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="VendorAccountNumber">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['VendorAccountNumber']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('VendorAccountNumber', 'vendorAccountNumber')"></i>
+                                            </div> 
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.VendorTaxId.isPrimary">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Vendor_Tax_ID' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields" style="margin:4px 0 8px 0;">
+                                            <div class="form-group large" >
+                                                <input type="text" class="form-control" maxlength="255" id="vendorTaxId" ng-model="VendorModal.VendorInfo.VendorTaxId" placeholder="{{'Vendor_Tax_ID'| translate }}" rel="VendorTaxId" ng-class="{'redborder' : VendorModal.VendorValidation['VendorTaxId']['isError'] == true}"
+                                                    title="{{VendorModal.VendorValidation['VendorTaxId']['ErrorMessage'] }} " ng-attr-tabindex="{{VendorModal.tabIndexValue + 3.5}}"
+                                                    ng-focus="VendorModal.formFieldJustGotFocus('VendorTaxId')"/>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="VendorTaxId">
+                                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['VendorTaxId']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('VendorTaxId', 'vendorTaxId')"></i>
+                                        </div> 
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            
+                                            <p>{{ 'Label_Email' | translate }}</p>
+                                        </div>
+                                         <div class="form_fields">
+                                            <div class="form-group large">
+                                                <input type="text" class="form-control " ng-model="VendorModal.VendorInfo.WorkEmail" ng-attr-tabindex="{{VendorModal.tabIndexValue + 4}}"
+                                                    ng-blur="VendorModal.getOtherSimilarVendor(); VendorModal.validateForm('WorkEmail');"  id="workEmail" placeholder="{{'Vendor_Work_Email'| translate }}" rel="AddEditVendorWorkEmail" 
+                                                    title="{{VendorModal.VendorValidation['HomeEmail']['ErrorMessage'] }}" 
+                                                    ng-class="{'redborder' : VendorModal.VendorValidation['WorkEmail']['isError'] == true}"
+                                                    ng-focus="VendorModal.formFieldJustGotFocus('AddEditVendorWorkEmail')"/>
+                                            
+                                                <a href="" class="bookmarklink">
+                                                    <img class="starimgMarkFav" src="{!Application_Images}/star.png" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredEmail == 'WorkEmail'"
+                                                        ng-click="VendorModal.markFavourite('PreferredEmail','WorkEmail');"/>
+                                                    <!-- <div class="sprite star pull-left handCursor preferredFieldStar" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredEmail == 'WorkEmail'"
+                                                        ng-click="VendorModal.markFavourite('PreferredEmail','WorkEmail');"></div> -->
+                                                    <i class="fa fa-star"
+                                                        ng-show="VendorModal.VendorInfo.PreferredEmail != 'WorkEmail'"
+                                                        ng-click="VendorModal.markFavourite('PreferredEmail','WorkEmail');"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="AddEditVendorWorkEmail">
+                                            <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{VendorModal.helpText['WorkEmail']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('WorkEmail','workEmail')"></i>
+                                        </div>
+                                    </div>
+                                
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.OtherEmail.isPrimary">
+                                        <div class="lable_fields">
+                                            
+                                            <p>{{ 'Vendor_Other_Email' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <input type="text" class="form-control " ng-model="VendorModal.VendorInfo.OtherEmail" ng-class="{'redborder' : VendorModal.VendorValidation['OtherEmail']['isError'] == true}" 
+                                                        ng-blur="VendorModal.validateForm('OtherEmail'); VendorModal.getOtherSimilarVendor();" id="otherEmail" placeholder="{{'Other_Email'| translate }}" rel="OtherEmail" ng-attr-tabindex="{{VendorModal.tabIndexValue + 5}}"
+                                                        title="{{VendorModal.VendorValidation['OtherEmail']['ErrorMessage'] }}" ng-focus="VendorModal.formFieldJustGotFocus('OtherEmail')"/>
+                                                <a href="" class="bookmarklink">
+                                                    <img class="starimgMarkFav" src="{!Application_Images}/star.png" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredEmail == 'OtherEmail'"
+                                                        ng-click="VendorModal.markFavourite('PreferredEmail','OtherEmail');"/>
+                                                    <!-- <div class="sprite star pull-left handCursor preferredFieldStar" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredEmail == 'OtherEmail'"
+                                                        ng-click="VendorModal.markFavourite('PreferredEmail','OtherEmail');"></div> -->
+                                                    <i class="fa fa-star"
+                                                        ng-show="VendorModal.VendorInfo.PreferredEmail != 'OtherEmail'"
+                                                        ng-click="VendorModal.markFavourite('PreferredEmail','OtherEmail');"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="OtherEmail">
+                                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['OtherEmail']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('OtherEmail','otherEmail')"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <div class="clearfix"></div>
+                                     
+                                    <div class="option_field" >
+                                        <div class="lable_fields">
+                                            
+                                            <p>{{ 'Label_Phone' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group medium">
+                                                <input type="text" class="form-control" id="workPhone" maxlength="10" ng-model="VendorModal.VendorInfo.WorkNumber" ng-class="{'redborder' : VendorModal.VendorValidation['WorkNumber']['isError'] == true}"
+                                                        ng-blur="VendorModal.getOtherSimilarVendor(); VendorModal.validateForm('WorkNumber');"  placeholder="{{'Placeholder_work_phone'| translate }}" rel="AddEditVendorWorkNumber"
+                                                        ng-focus="VendorModal.formFieldJustGotFocus('AddEditVendorWorkNumber')"  ng-attr-tabindex="{{VendorModal.tabIndexValue + 6}}"
+                                                        title="{{VendorModal.VendorValidation['WorkNumber']['ErrorMessage'] }}"/>
+                                                <a href="" class="bookmarklink">
+                                                    
+                                                    <img class="starimgMarkFav" src="{!Application_Images}/star.png" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredPhone == 'WorkNumber'"
+                                                        ng-click="VendorModal.markFavourite('PreferredPhone','WorkNumber');"/>
+                                                    <!-- <div class="sprite star pull-left handCursor preferredFieldStar" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredPhone == 'WorkNumber'"
+                                                        ng-click="VendorModal.markFavourite('PreferredPhone','WorkNumber');"></div> -->
+                                                    <i class="fa fa-star"
+                                                        ng-show="VendorModal.VendorInfo.PreferredPhone != 'WorkNumber'"
+                                                        ng-click="VendorModal.markFavourite('PreferredPhone','WorkNumber');"></i>
+                                                    
+                                                    
+                                                </a>
+                                            </div>
+                                            <div class="form-group small">
+                                                <label class="checkbox smschkbox">
+                                                    <span class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.WorkNumberSMS == true}"
+                                                         ng-click="VendorModal.markSMS('WorkNumberSMS');">
+                                                        <i class="fa fa-check-square chksqure" ></i>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                            <div class="form-group small2">
+                                                <label>{{ 'Label_SMS' | translate }} ?</label>
+                                                <a href="" class="bookmarklink">
+                                                    <img class="starimgMarkFav" src="{!Application_Images}/star.png" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredSMS == 'WorkNumber'"
+                                                        ng-click="VendorModal.markFavourite('PreferredSMS','WorkNumber');"/>
+                                                    <!-- <div class="sprite star pull-left handCursor preferredFieldStar" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredSMS == 'WorkNumber'"
+                                                        ng-click="VendorModal.markFavourite('PreferredSMS','WorkNumber');"></div> -->
+                                                    <i class="fa fa-star"
+                                                        ng-show="VendorModal.VendorInfo.PreferredSMS != 'WorkNumber'"
+                                                        ng-click="VendorModal.markFavourite('PreferredSMS','WorkNumber');"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="AddEditVendorWorkNumber">
+                                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['Phone']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('WorkNumber', 'workPhone')"></i>
+                                         </div>
+                                    </div>
+    
+                                    <div class="clearfix"></div>
+                                     
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.OtherPhone.isPrimary">
+                                        <div class="lable_fields" >
+                                            
+                                            <p>{{ 'Other_Phone' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group medium">
+                                                <input type="text" class="form-control" id="otherPhoneId" maxlength="10" ng-model="VendorModal.VendorInfo.OtherPhone" ng-class="{'redborder' : VendorModal.VendorValidation['OtherPhone']['isError'] == true}"
+                                                    ng-blur="VendorModal.validateForm('OtherPhone'); VendorModal.getOtherSimilarVendor();"  
+                                                    ng-focus="VendorModal.formFieldJustGotFocus('OtherNumber')" placeholder="{{'Other_Phone'| translate }}" rel="OtherNumber" ng-attr-tabindex="{{VendorModal.tabIndexValue + 7}}"
+                                                    title="{{VendorModal.VendorValidation['OtherPhone']['ErrorMessage'] }}"/>
+                                                <a href="" class="bookmarklink">
+                                                
+                                                    
+                                                    <img class="starimgMarkFav" src="{!Application_Images}/star.png" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredPhone == 'OtherPhone'"
+                                                        ng-click="VendorModal.markFavourite('PreferredPhone','OtherPhone');"/>
+                                                    <!-- <div class="sprite star pull-left handCursor preferredFieldStar" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredPhone == 'OtherPhone'"
+                                                        ng-click="VendorModal.markFavourite('PreferredPhone','OtherPhone');"></div> -->
+                                                    <i class="fa fa-star"
+                                                        ng-show="VendorModal.VendorInfo.PreferredPhone != 'OtherPhone'"
+                                                        ng-click="VendorModal.markFavourite('PreferredPhone','OtherPhone');"></i>
+                                                </a>
+                                            </div>
+                                            <div class="form-group small">
+                                                <label class="checkbox smschkbox">
+                                                    <span class="chk_tick"  ng-class="{'chked' : VendorModal.VendorInfo.MobileNumberSMS == true}"
+                                                         ng-click="VendorModal.markSMS('MobileNumberSMS');">
+                                                        <i class="fa fa-check-square chksqure" ></i>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                            <div class="form-group small2">
+                                                <label>{{ 'Label_SMS' | translate }} ?</label>
+                                                <a href="" class="bookmarklink">
+                                                    <img class="starimgMarkFav" src="{!Application_Images}/star.png" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredSMS == 'OtherPhone'"
+                                                        ng-click="VendorModal.markFavourite('PreferredSMS','OtherPhone');"/>
+                                                    <!-- <div class="sprite star pull-left handCursor preferredFieldStar" 
+                                                        ng-show="VendorModal.VendorInfo.PreferredSMS == 'OtherPhone'"
+                                                        ng-click="VendorModal.markFavourite('PreferredSMS','OtherPhone');"></div> -->
+                                                    <i class="fa fa-star"
+                                                        ng-show="VendorModal.VendorInfo.PreferredSMS != 'OtherPhone'"
+                                                        ng-click="VendorModal.markFavourite('PreferredSMS','OtherPhone');"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="OtherNumber">
+                                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['OtherPhone']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('OtherPhone', 'otherPhoneId')"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                     
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.Fax.isPrimary">
+                                        <div class="lable_fields" >
+                                            
+                                            <p>{{ 'Label_Fax' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group medium">
+                                                <input type="text" class="form-control" id="fax"  ng-model="VendorModal.VendorInfo.Fax" ng-class="{'redborder' : VendorModal.VendorValidation['Fax']['isError'] == true}"
+                                                    ng-blur="VendorModal.validateForm('Fax');"  placeholder="{{'Label_Fax'| translate }}" rel="Fax" ng-attr-tabindex="{{VendorModal.tabIndexValue + 8}}"
+                                                    title="{{VendorModal.VendorValidation['Fax']['ErrorMessage'] }}" ng-focus="VendorModal.formFieldJustGotFocus('Fax')"/>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="Fax">
+                                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['Fax']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('Fax', 'faxId')"></i>
+                                        </div>
+                                    </div>
+                                     
+                                    <div class="clearfix"></div>
+                                    
+                                    
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            
+                                            <p>{{ 'Billing_address' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <label for="exampleInputEmail1">{{ 'Address_line1' | translate }}</label>
+                                                <input type="text" class="form-control"  ng-model="VendorModal.VendorInfo.BillingStreet1" ng-focus="VendorModal.formFieldJustGotFocus('BillingAddLine1')"
+                                                    ng-blur="VendorModal.getOtherSimilarVendor()" id="billingAddress1" placeholder="{{'Placeholder_apartment_suite_office_address'| translate }}" rel="BillingAddLine1" ng-attr-tabindex="{{VendorModal.tabIndexValue + 10}}"/>
+                                                
+                                            </div>
+                                         </div>
+                                        <div class=" controls MT25" id="BillingAddLine1">
+                                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{'Helptext_apartment_suite_unit_building_floor_etc'| translate }}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('BillingAddLine1', 'billingAddress1')"></i>
+                                        </div>
+                                    </div>
+                                            
+                                         <div class="option_field">
+                                            <div class="lable_fields">
+                                                
+                                                <p></p>
+                                            </div>  
+                                              <div class="form_fields">
+                                                <div class="form-group large">
+                                                   <label for="exampleInputEmail1">{{ 'Address_line2' | translate }}</label>
+                                                   <input type="text" class="form-control"
+                                                   ng-focus="VendorModal.formFieldJustGotFocus('BillingAddLine2')"   ng-model="VendorModal.VendorInfo.BillingStreet2" id="billingAddress2" placeholder="{{'Street_address_line_1'| translate }}" rel="BillingAddLine2" ng-attr-tabindex="{{VendorModal.tabIndexValue + 11}}"/>
+                                                </div>
+                                            </div>
+                                            <div class=" controls MT25"  id="BillingAddLine2">
+                                                 <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{'Helptext_street_address_pobox_companyname'| translate }}"></i>
+                                                 <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('BillingAddLine2', 'billingAddress2')"></i> 
+                                            </div>
+                                          </div>    
+                                           <div class="option_field">
+                                                <div class="lable_fields">
+                                                    
+                                                    <p></p>
+                                                </div>  
+                                              <div class="form_fields">
+                                            <div class="form-group half">
+                                                <label for="exampleInputEmail1">{{ 'Label_City' | translate }}</label>
+                                                <input type="text" class="form-control" id="billingCity" ng-focus="VendorModal.formFieldJustGotFocus('CityState')"   ng-model="VendorModal.VendorInfo.BillingCity" placeholder="{{'Label_City'| translate }}" rel="CityState" ng-attr-tabindex="{{VendorModal.tabIndexValue + 12}}"/>
+                                            </div>
+                                            
+                                            <div class="form-group half">
+                                                <label for="exampleInputEmail1" >{{ 'Label_State' | translate }}</label>
+                                                <select class="form-control" rel="CityState" id="billingState" ng-model="VendorModal.SelectedState" ng-focus="VendorModal.formFieldJustGotFocus('CityState')" ng-options="state  as state.StateName for state in VendorModal.State track by state.Id" ng-attr-tabindex="{{VendorModal.tabIndexValue + 13}}">
+                                                </select>
+                                            </div>
+                                            </div>
+                                            <div class=" controls MT25" id="CityState">
+                                                 <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{'Helptext_select_city_state'| translate }}"></i>
+                                                 <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('CityState','billingCity')"></i>
+                                            </div>
+                                            </div>
+                                             <div class="option_field">
+                                            <div class="lable_fields">
+                                                
+                                                <p></p>
+                                            </div>  
+                                              <div class="form_fields">
+                                            <div class="form-group half">
+                                                <label for="exampleInputEmail1">{{ 'Label_Country' | translate }}</label>
+                                                <select class="form-control" rel="CountryPostal" id="billingCountry" ng-model="VendorModal.SelectedCountry" ng-options="country as country.CountryName for country in VendorModal.Country track by country.Id"
+                                                    ng-change="VendorModal.changeBillingCountry();VendorModal.validatePhone()" ng-attr-tabindex="{{VendorModal.tabIndexValue + 14}}" ng-focus="VendorModal.formFieldJustGotFocus('CountryPostal')">
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="form-group half">
+                                                <label for="exampleInputEmail1">{{ 'Label_Postal' | translate }}</label>
+                                                <input type="text" class="form-control" id="exampleInputEmail1" 
+                                                ng-blur="VendorModal.validateForm('BillingPostalCode');" maxlength="10"
+                                                ng-class="{'redborder' : VendorModal.VendorValidation['BillingPostalCode']['isError'] == true}" 
+                                                ng-model="VendorModal.VendorInfo.BillingPostalCode" placeholder="{{'Label_Postal'| translate }}"
+                                                data-toggle="tooltip"
+                                                title="{{VendorModal.VendorValidation['BillingPostalCode']['ErrorMessage'] }}" 
+                                                rel="CountryPostal" ng-attr-tabindex="{{VendorModal.tabIndexValue + 15}}" ng-focus="VendorModal.formFieldJustGotFocus('CountryPostal')"/>
+                                            </div>
+                                        </div>
+                                            <div class=" controls MT25" id="CountryPostal">
+                                                <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{'Helptext_add_country_postalcode'| translate }}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('CountryPostal','billingCountry')"></i>
+                                            </div>                       
+                                        </div>
+                                    
+                                     
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field">
+                                        <div class="lable_fields chkbox">
+                                            <p>{{ 'Shipping_address' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields" >
+                                            
+                                            
+                                            <div class="form-group large">
+                                                <label class="checkbox">
+                                                <span id="sameAsBA" ng-click="VendorModal.SetAddressData()" class="chk_tick" ng-class="{'chked': VendorModal.VendorInfo.IsBothAddressSame}" >
+                                                <i class="fa fa-check-square chksqure" ></i></span><span class="chk_txt" >{{ 'Same_as_billing_address' | translate }}</span></label>
+                                            </div>                      
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div ng-class="{'sameBillineAddress': VendorModal.VendorInfo.IsBothAddressSame, 'differentBillingAddress': !VendorModal.VendorInfo.IsBothAddressSame }">
+                                    <div class="option_field" id="billingaddress" >
+                                        <div class="lable_fields">
+                                            
+                                            <p>{{ 'Shipping_address' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields ">
+                                            <div class="form-group large">
+                                                <label for="exampleInputEmail1">{{ 'Address_line1' | translate }}</label>
+                                                <input type="text" class="form-control"  ng-model="VendorModal.VendorInfo.ShippingStreet1" ng-focus="VendorModal.formFieldJustGotFocus('ShippingAddLine1')"  id="shippingAddress1" placeholder="{{'Helptext_apartment_suite_number'| translate }}" rel="ShippingAddLine1" ng-attr-tabindex="{{VendorModal.tabIndexValue + 16}}"/>
+                                            </div>
+                                    </div>
+                                            <div class=" controls MT25" id="ShippingAddLine1">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{'Helptext_apartment_suite_number'| translate }}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('ShippingAddLine1', 'shippingAddress1')"></i>
+                                            </div>
+                                   </div>  
+                                        <div class="clearfix"></div>
+                                    <div class = "option_field">    
+                                      <div class="lable_fields">
+                                            
+                                            <p></p>
+                                        </div>
+                                      <div class="form_fields ">
+                                            <div class="form-group large">
+                                                <label for="exampleInputEmail1">{{ 'Address_line2' | translate }}</label>
+                                                <input type="text" class="form-control" ng-focus="VendorModal.formFieldJustGotFocus('ShippingAddLine2')" ng-model="VendorModal.VendorInfo.ShippingStreet2" id="shippingAddress2" placeholder="{{'Street_address_line_1'| translate }}" rel="ShippingAddLine2" ng-attr-tabindex="{{VendorModal.tabIndexValue + 17}}"/>
+                                            </div>
+                                    </div>
+                                            <div class=" controls MT25" id="ShippingAddLine2">
+                                                 <i class="fa fa-question-circle" data-toggle="tooltip" title="{{'Helptext_street'| translate }}"></i>
+                                                 <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('ShippingAddLine2', 'shippingAddress2')"></i>
+                                            </div>  
+                                        </div>     
+                                         <div class="clearfix"></div>
+                                    <div class = "option_field">    
+                                      <div class="lable_fields">
+                                            
+                                            <p></p>
+                                        </div>
+                                      <div class="form_fields ">
+                                            <div class="form-group half">
+                                                <label for="exampleInputEmail1">{{ 'Label_City' | translate }}</label>
+                                                <input type="text" class="form-control" ng-focus="VendorModal.formFieldJustGotFocus('ShippingCityState')"  ng-model="VendorModal.VendorInfo.ShippingCity" id="shippingCity" placeholder="{{'Label_City'| translate }}" rel="ShippingCityState" ng-attr-tabindex="{{VendorModal.tabIndexValue + 18}}"/>
+                                            </div>
+                                            <div class="form-group half"> 
+                                                <label for="exampleInputEmail1">{{ 'Label_State' | translate }}</label>
+                                                <select class="form-control" rel="ShippingCityState" ng-focus="VendorModal.formFieldJustGotFocus('ShippingCityState')" ng-model="VendorModal.SelectedShippingState"   ng-options="state  as state.StateName for state in VendorModal.ShippingState track by state.Id" ng-attr-tabindex="{{VendorModal.tabIndexValue + 19}}">
+                                                </select>
+                                            </div>
+                                    </div>
+                                            <div class=" controls MT25" id="ShippingCityState">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{'Helptext_select_city_state'| translate }}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('ShippingCityState', 'shippingCity')"></i>
+                                            </div>
+                                   </div>
+                                            <div class="clearfix"></div>
+                                        <div class = "option_field">    
+                                              <div class="lable_fields">
+                                                    
+                                                    <p></p>
+                                                </div>
+                                             <div class="form_fields ">
+                                            <div class="form-group half" >
+                                                <label for="exampleInputEmail1">{{ 'Label_Country' | translate }}</label>
+                                                <select class="form-control" rel="CountryStateShipping" ng-focus="VendorModal.formFieldJustGotFocus('CountryStateShipping')"  ng-model="VendorModal.SelectedShippingCountry"  id="shippingCity" ng-options="country as country.CountryName for country in VendorModal.ShippingCountry track by country.Id" 
+                                                        ng-change="VendorModal.changeShippingCountry()" ng-attr-tabindex="{{VendorModal.tabIndexValue + 20}}">
+                                                </select>
+                                            </div>
+                                            <div class="form-group half">
+                                                <label for="exampleInputEmail1">{{ 'Label_Postal' | translate }}</label>
+                                                <input type="text" class="form-control"  
+                                                ng-model="VendorModal.VendorInfo.ShippingPostalCode" 
+                                                ng-blur="VendorModal.validateForm('ShippingPostalCode');" maxlength="10"
+                                                ng-class="{'redborder' : VendorModal.VendorValidation['ShippingPostalCode']['isError'] == true}" 
+                                                id="exampleInputEmail1" placeholder="{{'Label_Postal'| translate }}" 
+                                                data-toggle="tooltip"
+                                                title="{{VendorModal.VendorValidation['ShippingPostalCode']['ErrorMessage'] }}"
+                                                rel="CountryStateShipping" ng-attr-tabindex="{{VendorModal.tabIndexValue + 21}}" ng-focus="VendorModal.formFieldJustGotFocus('CountryStateShipping')"/>
+                                            </div>
+                                    </div>
+                                            <div class=" controls MT25" id="CountryStateShipping">
+                                                 <i class="fa fa-question-circle" data-toggle="tooltip" title="{{'Helptext_add_country_postalcode'| translate }}"></i>
+                                                 <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('CountryPostalShipping', 'shippingCity')"></i>
+                                            </div>                      
+                                        </div>
+                                    
+                                  </div>  
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.ProductAndServices.isPrimary" id="ProductAndServicesId">
+                                        <div class="lable_fields chkbox">
+                                            <p>{{ 'Products_services' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields" >
+                                            <div class="form-group large">
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsPartPurchases == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('PartPurchase');">
+                                                            <i class="fa fa-check-square chksqure"></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Part_Purchases' | translate }}</span>
+                                                    </label>
+                                                </div>
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsMerchandisePurchases == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('MerchandisePurchase');">
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Merchandise_purchases' | translate }}</span>
+                                                    </label>
+                                                </div>
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsUnitPurchases == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('UnitPurchase');">
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Unit_Purchases' | translate }}</span>
+                                                    </label>
+                                                </div>
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsSubletPurchases == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('SubletPurchase');">
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Sublet_Purchases' | translate }}</span>
+                                                    </label>
+                                                </div>
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsClaimsForServiceWork == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('ClaimsForServiceWork');">
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Claims_for_Service_Work' | translate }}</span>
+                                                    </label>
+                                                </div>
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsWarrantyPlans == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('WarrantyPlans');">
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Deal_Products' | translate }}</span> <!-- Warranty Plan Sales on Unit Deals Replaced By Kajal 10/14/2016 -->
+                                                    </label>
+                                                </div>
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsFlooringCompany == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('FlooringCompany');" >
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Flooring_Company' | translate }}</span>
+                                                    </label>
+                                                </div>
+                                                <!-- START: Added by Kajal 10/14/2016 -->
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsFinanceCompany == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('FinanceCompany');">
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Finance_Company' | translate }}</span> 
+                                                    </label>
+                                                </div>
+                                                <div class="row" style="margin-left: 0.0%;">
+                                                    <label class="checkbox">
+                                                        <span id="partPurchasesId" class="chk_tick" ng-class="{'chked' : VendorModal.VendorInfo.IsFinancingProducts == true}"
+                                                                        ng-click="VendorModal.SetProductAndServices('FinancingProducts');">
+                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                        </span>
+                                                        <span class="chk_txt" >{{ 'Financing_Products' | translate }}</span> 
+                                                    </label>
+                                                </div>
+                                                <!-- END: Added by Kajal 10/14/2016 -->
+                                            </div>                      
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    
+                                    
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.Website.isPrimary" >
+                                        <div class="lable_fields">
+                                           <p>{{ 'Label_Website' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <input type="url" class="form-control" ng-model="VendorModal.VendorInfo.Website" id="websiteId"
+                                                        placeholder="{{'Label_Website'| translate }}" rel="WebsiteIcon" 
+                                                        ng-attr-tabindex="{{VendorModal.tabIndexValue + 23}}" ng-focus="VendorModal.formFieldJustGotFocus('WebsiteIcon')"/>
+                                           </div>
+                                        </div>
+                                        <div class="controls" id="WebsiteIcon" >
+                                            <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{VendorModal.helpText['Website']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('Website', 'websiteId')"></i>
+                                        </div>
+                                    </div>
+                                        
+                                    <div class="clearfix"></div>
+                                        
+                                        
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.FacebookLink.isPrimary" >
+                                        <div class="lable_fields">
+                                            <p>{{ 'Label_Facebook' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <input type="text" class="form-control"  ng-model="VendorModal.VendorInfo.FacebookLink"
+                                                    ng-blur="VendorModal.getOtherSimilarVendor()"  id="facebookLink"
+                                                    placeholder="{{'Label_Facebook'| translate }}" rel="FacebookIcon" 
+                                                    ng-attr-tabindex="{{VendorModal.tabIndexValue + 24}}" ng-focus="VendorModal.formFieldJustGotFocus('FacebookIcon')"/>
+                                                <a href="" class="bookmarklink">
+                                                    <i class="fa fa-facebook-square" style="color: #45619D;"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="FacebookIcon" >
+                                            <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{VendorModal.helpText['Facebook']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('FacebookLink')"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.TwitterLink.isPrimary">
+                                        <div class="lable_fields">
+                                           <p>{{ 'Label_Twitter' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <input type="text" class="form-control" ng-model="VendorModal.VendorInfo.TwitterLink" ng-focus="VendorModal.formFieldJustGotFocus('TwitterIcon')"
+                                                         ng-blur="VendorModal.getOtherSimilarVendor()"
+                                                         id="twitterLink" placeholder="{{'Label_Twitter'| translate }}" rel="TwitterIcon" 
+                                                         ng-attr-tabindex="{{VendorModal.tabIndexValue + 25}}"/>
+                                                <a href="" class="bookmarklink">
+                                                    <i class="fa fa-twitter-square"  style="color: #52A7E7;"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="TwitterIcon">
+                                            <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{VendorModal.helpText['Twitter']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('TwitterLink')"></i>
+                                        </div>
+                                    </div>  
+                                        
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.LinkedInLink.isPrimary">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Label_LinkedIn' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <input type="text" class="form-control" ng-model="VendorModal.VendorInfo.LinkedInLink"
+                                                    ng-blur="VendorModal.getOtherSimilarVendor()" id="LinkedinLink"
+                                                    placeholder="{{'Label_LinkedIn'| translate }}" rel="LinkedInIcon" ng-focus="VendorModal.formFieldJustGotFocus('LinkedInIcon')"
+                                                    ng-attr-tabindex="{{VendorModal.tabIndexValue + 26}}"/>
+                                                <a href="" class="bookmarklink">
+                                                    <i class="fa fa-linkedin"  style="color: #52A7E7;"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="LinkedInIcon">
+                                            <i class="fa fa-question-circle"  data-toggle="tooltip" title="{{VendorModal.helpText['Linkedin']}}"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('LinkedInLink')"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field"  ng-show="VendorModal.AdditionalFieldsInfo.PartCategory.isPrimary">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Tooltip_Add_Part_Category' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group half">
+                                                <select class="form-control" rel="PartCategory" id="partCategoryDropDown" ng-model="VendorModal.SelectedPartCategory" 
+                                                            ng-options="partCategory as partCategory.CategoryName for partCategory in VendorModal.PartCategory track by partCategory.Id"
+                                                            ng-attr-tabindex="{{VendorModal.tabIndexValue + 27}}" ng-focus="VendorModal.formFieldJustGotFocus('PartCategory')">
+                                                </select>
+                                                <!-- <autocomplete  id="Category" tab-index ="{{VendorModal.tabIndexValue + 27}}"  rel-value="PartCategory" placeholder="Part Category"  
+                                                                type="Category"  titlefield="Name" validationkey="PartCategoryId" 
+                                                                typesearchmodal="VendorModal.PartCategoryStr"/> -->
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="PartCategory">
+                                                <i class="fa fa-question-circle"   data-toggle="tooltip" title="{{VendorModal.helpText['PartCategory']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('PartCategory')"></i>
+                                            </div>
+                                    </div>
+                                    
+                                    <div class="option_field"  ng-show="VendorModal.AdditionalFieldsInfo.MerchandiseCategory.isPrimary">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Merchandise_category' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group half">
+                                                <select class="form-control" rel="MerchandiseCategory" id="merchandiseCategoryDropDown" ng-model="VendorModal.SelectedMerchandiseCategory" 
+                                                            ng-options="merchandiseCategory as merchandiseCategory.CategoryName for merchandiseCategory in VendorModal.PartCategory track by merchandiseCategory.Id"
+                                                            ng-attr-tabindex="{{VendorModal.tabIndexValue + 27}}" ng-focus="VendorModal.formFieldJustGotFocus('MerchandiseCategory')">
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="MerchandiseCategory">
+                                                <i class="fa fa-question-circle"   data-toggle="tooltip" title="{{VendorModal.helpText['MerchandiseCategory']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('MerchandiseCategory')"></i>
+                                            </div>
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field"  ng-show="VendorModal.AdditionalFieldsInfo.PriceMethod.isPrimary">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Price_method' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group half">
+                                                <select class="form-control" rel="PriceMethod" id="priceMethodId" ng-model="VendorModal.SelectedPriceMethod"    
+                                                            ng-options="pricelevel as pricelevel.PriceLevelName for pricelevel in VendorModal.PriceLevel track by pricelevel.Id"
+                                                            ng-attr-tabindex="{{VendorModal.tabIndexValue + 28}}" ng-focus="VendorModal.formFieldJustGotFocus('PriceMethod')">
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="PriceMethod">
+                                                <i class="fa fa-question-circle"   data-toggle="tooltip" title="{{VendorModal.helpText['PriceMethod']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('PriceMethod')"></i>
+                                            </div>
+                                    </div>
+                                    
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    
+                                    <div class="option_field"  ng-show="VendorModal.ShowFieldCondition('PurchaseTaxLevel')">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Purchase_Tax_Level' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group half">
+                                                <select class="form-control" rel="PurchaseTaxLevel" id="purchaseTaxLevel" ng-model="VendorModal.SelectedPurchaseTaxLevel"    
+                                                            ng-options="purchaseTaxLevel as purchaseTaxLevel.SalesTaxName for purchaseTaxLevel in VendorModal.PurchaseTaxLevel track by purchaseTaxLevel.Id"
+                                                            ng-attr-tabindex="{{VendorModal.tabIndexValue + 29}}" ng-focus="VendorModal.formFieldJustGotFocus('PurchaseTaxLevel')">
+                                                </select>
+                                            </div>
+                                            
+                                        </div>
+                                        <div class="controls" id="PurchaseTaxLevel">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['PurchaseTaxLevel']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('PurchaseTaxLevel')"></i>
+                                            </div>
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                  
+                                    <div class="option_field"  ng-show="VendorModal.ShowFieldCondition('SalesPriceLevel')">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Salse_Price_Level' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group half">
+                                                <select class="form-control" rel="SalesPriceLevel" id="salesPriceLevel" ng-model="VendorModal.SelectedSalesPriceLevel"    
+                                                            ng-options="salesPriceLevel as salesPriceLevel.PriceLevelName for salesPriceLevel in VendorModal.SalesPriceLevel track by salesPriceLevel.Id"
+                                                            ng-attr-tabindex="{{VendorModal.tabIndexValue + 31}}" ng-focus="VendorModal.formFieldJustGotFocus('SalesPriceLevel')">
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="SalesPriceLevel">
+                                                <i class="fa fa-question-circle"   data-toggle="tooltip" title="{{VendorModal.helpText['SalesPriceLevel']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('SalesPriceLevel')"></i>
+                                            </div>
+                                    </div> 
+                                    
+                                     <div class="clearfix"></div>
+                                     
+                                     
+                                     <div class="option_field">
+                                        <div class="lable_fields">
+                                            <p class="bp-first-letter-capitalize">{{ 'Account_Type' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group half">
+                                                <select class="form-control" rel="AccountTypeIcon" id="VendorAccountTypeIcon" ng-model="VendorModal.SelectedAccountType"    
+                                                            ng-options="accounttyperec as accounttyperec.AccountType for accounttyperec in VendorModal.AccountTypeList track by accounttyperec.AccountType"
+                                                            ng-change="VendorModal.changeAccountType(VendorModal.SelectedAccountType)"
+                                                            ng-attr-tabindex="{{VendorModal.tabIndexValue + 29}}" >
+                                                </select>
+                                            </div>
+                                            
+                                        </div>
+                                     <!--    <div class="controls" id="AccountTypeIcon">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorModal.helpText['AccountTypeIcon']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('AccountType')"> ng-focus="VendorModal.formFieldJustGotFocus('AccountTypeIcon')"</i>
+                                            </div> -->
+                                    </div>
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    <div class="option_field"  ng-show="VendorModal.AdditionalFieldsInfo.ForeignCurrency.isPrimary">
+                                        <div class="lable_fields">
+                                            <p>{{ 'Foreign_currency' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group half">
+                                                <select class="form-control" rel="ForeignCurrency" id="foreignCurrency" ng-model="VendorModal.SelectedForeignCurrency"   
+                                                            ng-options="pricelevel as pricelevel.PriceLevelName for pricelevel in VendorModal.PriceLevel track by pricelevel.Id"
+                                                            ng-attr-tabindex="{{VendorModal.tabIndexValue + 32}}" ng-focus="VendorModal.formFieldJustGotFocus('ForeignCurrency')">
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="controls" id="ForeignCurrency">
+                                                <i class="fa fa-question-circle"   data-toggle="tooltip" title="{{VendorModal.helpText['ForiegnCurrency']}}"></i>
+                                                <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('ForeignCurrency')"></i>
+                                            </div>
+                                    </div>
+                                    
+                                    
+                                    <div class="clearfix"></div>
+                                    
+                                    
+                                    <div class="option_field" ng-show="VendorModal.AdditionalFieldsInfo.Active.isPrimary && VendorModal.IsEditMode">
+                                        <div class="lable_fields">
+                                            
+                                            <p>{{ 'SalesTaxGrid_Active' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group onehalf"  > 
+                                                <div class="chkbox_custom">
+                                                    <!-- <div class="sprite leftchked vendorActiceInactive" ng-class="{'checked' : VendorModal.VendorInfo.Active}"  id="activeVendor" ng-click="VendorModal.SetVendorActiveStatus(false)" rel="ActiveFlagIcon"> -->
+                                                    <div class="leftchked " ng-class="{'checked' : VendorModal.VendorInfo.Active}"  id="activeVendor" ng-click="VendorModal.SetVendorActiveStatus(false)" rel="ActiveFlagIcon">
+                                                        {{ 'Label_Yes' | translate }}
+                                                    </div>
+                                                    <!-- <div class="sprite rightchked vendorActiceInactive"  ng-class="{'checked' : !VendorModal.VendorInfo.Active}"  id="inactiveVendor" ng-click="VendorModal.SetVendorActiveStatus(true)" rel="ActiveFlagIcon"> -->
+                                                    <div class="rightchked"  ng-class="{'checked' : !VendorModal.VendorInfo.Active}"  id="inactiveVendor" ng-click="VendorModal.SetVendorActiveStatus(true)" rel="ActiveFlagIcon">
+                                                        {{ 'Label_No' | translate }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                         <div class="controls1 controls" id="ActiveFlagIcon">
+                                            <i class="fa fa-question-circle"></i>
+                                            <i class="fa fa-times" ng-click="VendorModal.ClearAndRemoveField('Active')"></i>
+                                         </div> 
+                                     </div>
+                                    </form>
+                                </div>
+                                    
+                                <div class="clearfix"></div>
+                                
+                              <div class="addMoreInfoSection addEditVendor_addMoreInfoSection">
+                                <div class="addEditVendor_PartPricing_Section">
+                                        <div class="partPricingSectionHeader">{{ 'Part_pricing' | translate }}</div>
+                                        
+                                        <div class="actionButton">
+                                            <span>{{ 'Vendor_controls_part_retail_prices' | translate }}</span> 
+                                            <label class="switch ">
+                                                <input ng-model="VendorModal.VendorInfo.IsCalculatePartRetailPrice" type="checkbox"
+                                                ng-change="VendorModal.setDefaultDataForPricingSection()"/>
+                                                <div class="slider round"></div>
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="partPricing_AddtionalFieldsContainer" ng-if="VendorModal.VendorInfo.IsCalculatePartRetailPrice"> 
+                                            <div class="resetPartRetailPriceWarningContainer">
+                                                <div class="bp-warning-template">
+                                                    <span class="bp-warning-icon">
+                                                        <i class="yellow" ng-include="'{!Application_Images}/Icons/warning.svg'"></i>
+                                                    </span>
+                                                    <div class="bp-warning-msg">    
+                                                        <span>{{ 'Warning_this_feature_will_reset_the_retail_price_on_all_parts_from_this_vendor' | translate }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="partPricing_additionalFields">
+                                                
+                                                
+                                                <div class="partRetailPricingCalculationSection">
+                                                    <label>{{ 'Part_retail_prices_are' | translate }}</label>
+                                                    
+                                                    <span class="input-symbol-percent">
+                                                       <numbers-only id-value = "addEditVendor_partRetailPricesId"
+                                                              class-value = "form-control small"
+                                                              max-value = "100"
+                                                              min-value = "0"
+                                                              input-model-value = "VendorModal.VendorInfo.RetailRate" 
+                                                              include-negative = "false"
+                                                              include-zero = "true"
+                                                              precision-length = "1" 
+                                                              tab-index="{{VendorModal.tabIndexValue + 33}}"
+                                                          />      
+                                                    </span>
+                                                    
+                                                    <select ng-model="VendorModal.VendorInfo.Increase_Decrease_Option" 
+                                                        class = "form-control"
+                                                        ng-options="Increase_Decrease_Option as Increase_Decrease_Option.label for Increase_Decrease_Option in VendorModal.Increase_Decrease_Options track by Increase_Decrease_Option.Id" 
+                                                        ng-attr-tabindex="{{VendorModal.tabIndexValue + 34}}" 
+                                                        ng-disabled="VendorModal.VendorInfo.RetailBaseValue_Option.label == 'Item Cost'">
+                                                    </select>
+                                                
+                                                    <label class="Label_ML">{{ 'than' | translate }}</label>
+                                                    
+                                                    <select ng-model="VendorModal.VendorInfo.RetailBaseValue_Option" 
+                                                        class = "form-control"
+                                                        ng-options="RetailBaseValue_Option as RetailBaseValue_Option.label for RetailBaseValue_Option in VendorModal.RetailBaseValue_Options track by RetailBaseValue_Option.Id" 
+                                                        ng-attr-tabindex="{{VendorModal.tabIndexValue + 35}}" ng-change="VendorModal.change_Increase_Decrease_Value();">
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="partRetailPricingResultSection">
+                                                    <label>{{ 'than' | translate }}</label>
+                                                    
+                                                    <select ng-model="VendorModal.VendorInfo.RetailRounding_Option"
+                                                        class = "form-control"
+                                                        ng-options="RetailRounding_Option as RetailRounding_Option.label for RetailRounding_Option in VendorModal.RetailRounding_Options track by RetailRounding_Option.Id" 
+                                                        ng-attr-tabindex="{{VendorModal.tabIndexValue + 36}}">
+                                                    </select> 
+                                                    
+                                                    <label class="Label_ML"><span>{{ 'rounded' | translate }}</span><span ng-if="VendorModal.VendorInfo.RetailRounding_Option.value == true"> {{ 'up_to_the_next' | translate }}</span></label>
+                                                    
+                                                    <numbers-only id-value = "addEditVendor_RetailRoundTo"
+                                                          class-value = "form-control small inputRetailRoundTo"
+                                                          max-value = "99"
+                                                          min-value = "0"
+                                                          input-model-value = "VendorModal.VendorInfo.RetailRoundTo" 
+                                                          include-negative = "false"
+                                                          include-zero = "true"
+                                                          precision-length = "0" 
+                                                          tab-index="{{VendorModal.tabIndexValue + 37}}"
+                                                          ng-if="VendorModal.VendorInfo.RetailRounding_Option.value == true"
+                                                       />
+                                                    
+                                                    <label class="Label_ML" ng-if="VendorModal.VendorInfo.RetailRounding_Option.value == true">{{ 'cents' | translate }}</label>
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="addEditVendor_addmoreinfoBtn">
+                                      <button type="button" class="btn C11 T4 addmoreinfoBtn" id="addmoreinfoBtnId"
+                                             data-toggle="dropdown">{{ 'Label_Add_More_Information' | translate }}</button>
+                                         <ul class="add_info_dropdown dropdown-menu keep_open">
+                                             <div class="right-inner-addon" style="margin: 0 10px;">
+                                                 <i class="glyphicon glyphicon-search"></i> <input
+                                                     class="form-control ng-pristine ng-untouched ng-valid"
+                                                     ng-model="VendorModal.AdditionalFieldsSearch"
+                                                     placeholder="{{'Label_Search'| translate }}" type="search" />
+
+                                             </div> 
+
+                                             <li ng-repeat="(key,value) in FilterAdditionalFields(VendorModal.AdditionalFieldsInfo)"
+                                                 ng-if="VendorModal.ManageAdditionalFields(key);"
+                                                 ng-click="VendorModal.ShowAdditionalField(key)"><a>{{value.label}}</a></li>
+                                         </ul>
+                                     </div>
+                              </div>
+                              
+                              <div class="clearfix"></div>
+                               
+                               <div class="right_heading_container col-lg-12 col-md-12">
+                                        <div class="savecancle_btncntnr">
+                                            <button type="button" id="closemodal"
+                                                class="btn btn-default grayBtn"
+                                                ng-click="VendorModal.closePopup()"
+                                                ng-attr-tabindex="{{VendorModal.tabIndexValue + 204}}">{{ 'Cancel_Label' | translate }}</button>
+                                            <button type="button" class="btn btn-default greenBtn"
+                                                ng-click="VendorModal.SaveVendor()"
+                                                ng-disabled="VendorModal.disableSaveButton"
+                                                ng-attr-tabindex="{{VendorModal.tabIndexValue + 202}}">{{ 'Save_Label' | translate }}</button> <!-- ng-disabled Added by richa 21/01/2017 for disabling button after one click -->
+                                        </div>
+                              </div>
+                        </div>
+                    </div>
+                   
+                    <div class="clearfix"></div>
+                </div>              
+            </div>
+        </div>
+    </div>
+    </div>
+</apex:page>

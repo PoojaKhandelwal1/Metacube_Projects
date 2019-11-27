@@ -1,0 +1,214 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" Controller="PrintCOProfitabilityCtrl">
+    <html lang="en" ng-app="printCOProfitabilityModule">
+        <head>
+            <c:CSSFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <c:JsFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />  
+            <apex:includeScript value="{!JSENCODE(Assests)}/Js/angular-ui-notification.min.js" />
+            <apex:stylesheet value="{!Assests}/css/font-awesome.min.css"/>
+            <apex:stylesheet value="{!Application}/css/BPNewUI.css"/>
+            <apex:stylesheet value="{!Application}/css/PrintCashReconciliation.css"/>
+            <apex:stylesheet value="{!Application}/css/PrintCustomerOrderProfitability.css"/>
+            <script type="text/javascript">
+             	var printCOProfitabilityModule = angular.module('printCOProfitabilityModule', ['ui-notification']);
+            	printCOProfitabilityModule.controller('PrintCOProfitabilityCtrl', function($scope, $window,Notification, printCOProfitabilityService) {
+                $scope.M_printCOP = $scope.M_printCOP || {};
+                $scope.F_printCOP = $scope.F_printCOP || {};
+                
+                $scope.F_printCOP.LoadPrintCOProfitabilityData = function () {
+                    var coId = "{!$CurrentPage.parameters.Id}";
+                    $scope.M_printCOP.isLoading = true;
+                    printCOProfitabilityService.getCOProfitabilityDetails(coId).then(function (coProfitabilityData) {
+                        $scope.M_printCOP.coProfitabilityData = coProfitabilityData;
+                        $scope.M_printCOP.isLoading = false;
+                    }, function (errorSearchResult) {
+                        Notification.error("{!$Label.Generic_Error}");
+                    });
+                }
+             });
+                 
+             printCOProfitabilityModule.service("printCOProfitabilityService", function ($q) {
+                this.getCOProfitabilityDetails = function (coId) {
+                    coId = coId ? encodeString(coId) : null;
+                    var deferred = $q.defer();
+                    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.PrintCOProfitabilityCtrl.getCOProfitability}', coId, function (result, event) {
+                        if (event.type == 'exception') {
+                            deferred.reject(event.message);
+                        } else {
+                            var coProfitabilityData = decodeString(result);
+                            var find = '\''; 
+                            var re = new RegExp(find, 'g');
+                            coProfitabilityData = coProfitabilityData.replace(re, '');
+                            deferred.resolve(JSON.parse(coProfitabilityData));
+                        }
+                    }, {
+                        escape : true
+                    });
+                    return deferred.promise;
+                }                 
+            });
+            </script>
+        </head>
+        
+         <body class="print-body" ng-controller="PrintCOProfitabilityCtrl" ng-init="F_printCOP.LoadPrintCOProfitabilityData()" ng-cloak="ng-cloak">
+        <section class="print-page cta-print hide-on-print body-only">
+			<a href="javascript:window.print()" class="button secondary large green">Print</a>
+		</section>
+		   
+        <section class="print-page" ng-if="M_printCOP.coProfitabilityData">
+            <header class="print-page-header print-page-header-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <td>
+                                <span class="print-date" >{{::M_printCOP.coProfitabilityData.CustomerName}}</span>
+                                <h4 class="print-title">{{::M_printCOP.coProfitabilityData.CustomerOrderName}}</h4>
+                            </td>
+                            <td class="text-right">
+                                <address class="print-address">
+                                    <p class="co-name">
+                                        {{::M_printCOP.coProfitabilityData.CompanyInfo.CompanyName}}
+                                    </p>
+                                    <span class="co-address">
+                                        {{::M_printCOP.coProfitabilityData.CompanyInfo.Address1}} {{::M_printCOP.coProfitabilityData.CompanyInfo.Address2}}<br/>
+                                        {{::M_printCOP.coProfitabilityData.CompanyInfo.City}} &nbsp;&nbsp; {{::M_printCOP.coProfitabilityData.CompanyInfo.State}} &nbsp;&nbsp; {{M_printCOP.coProfitabilityData.CompanyInfo.PostalCode}}
+                                    </span>
+                                </address>
+                            </td>
+                        </tr>
+                    </thead>
+                </table>
+            </header>
+            <hr class ="hr-border-section"/>
+            <main ng-repeat="COProfitabilityRec in M_printCOP.coProfitabilityData.ProfitabilityObj.SectionProfitabilityList">
+            	<div class="heading-section">
+	            	<h4>{{::COProfitabilityRec.Section}}</h4>
+	            </div>
+                <table class="print-cash-table">
+                <col width="28%" />
+	            <col width="18%" />
+	            <col width="18%" />
+	            <col width="18%" />
+	            <col width="18%" />
+                    <thead>
+                        <tr>
+                            <th><strong>Products</strong></th>
+                            <th class="text-right"><strong>Sales</strong></th>
+                            <th class="text-right"><strong>Costs</strong></th>
+                            <th class="text-right" ><strong>Gross profit</strong></th>
+                            <th class="text-right"><strong>Profit %</strong></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="mode-of-payment" ng-repeat="coProductProfitabilityRec in COProfitabilityRec.ProductProfitabilityList">
+                            <td>
+                            	<strong>{{::coProductProfitabilityRec.Product}}</strong>
+                            </td>                
+                            <td class="text-right" ng-class="{'bp-coral-font' : coProductProfitabilityRec.Sale < 0}">
+                            	<span ng-if="coProductProfitabilityRec.Sale < 0">-</span> 
+	                            <span ng-if="coProductProfitabilityRec.Sale < 0"> {{::coProductProfitabilityRec.Sale *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="coProductProfitabilityRec.Sale >= 0"> {{::coProductProfitabilityRec.Sale | currency: "$" : 2}}</span>
+	                        </td>
+                            <td class="text-right" ng-class="{'bp-coral-font' : coProductProfitabilityRec.Cost < 0}">
+                             	<span ng-if="coProductProfitabilityRec.Cost < 0">-</span> 
+	                            <span ng-if="coProductProfitabilityRec.Cost < 0"> {{::coProductProfitabilityRec.Cost *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="coProductProfitabilityRec.Cost >= 0"> {{::coProductProfitabilityRec.Cost | currency: "$" : 2}}</span>
+                            </td>
+                            <td class="text-right" ng-class="{'bp-coral-font' : coProductProfitabilityRec.GrossProfit < 0}">
+                             	<span ng-if="coProductProfitabilityRec.GrossProfit < 0">-</span> 
+	                            <span ng-if="coProductProfitabilityRec.GrossProfit < 0"> {{::coProductProfitabilityRec.GrossProfit *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="coProductProfitabilityRec.GrossProfit >= 0"> {{::coProductProfitabilityRec.GrossProfit | currency: "$" : 2}}</span>
+                            </td>
+                            <td class="text-right" ng-class="{'bp-coral-font' : coProductProfitabilityRec.ProfitPercent < 0}"> 
+                            	<span ng-if="coProductProfitabilityRec.ProfitPercent < 0">-</span> 
+                                <span ng-if="coProductProfitabilityRec.ProfitPercent < 0"> {{::coProductProfitabilityRec.ProfitPercent *-1 | currency: "" : 1}} </span>
+                                <span ng-if="coProductProfitabilityRec.ProfitPercent >= 0"> {{::coProductProfitabilityRec.ProfitPercent | currency: "" : 1}}</span>
+                                <span>%</span>
+                            </td>
+                        </tr>
+                        <tr class="mode-of-payment">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="text-right" ng-class="{'bp-coral-font' : COProfitabilityRec.TotalSales < 0}">
+                            <strong>
+                            	<span ng-if="COProfitabilityRec.TotalSales < 0">-</span> 
+	                            <span ng-if="COProfitabilityRec.TotalSales < 0"> {{::COProfitabilityRec.TotalSales *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="COProfitabilityRec.TotalSales >= 0"> {{::COProfitabilityRec.TotalSales | currency: "$" : 2}}</span>
+                         	</strong>   
+	                        </td>
+                            <td class="text-right" ng-class="{'bp-coral-font' : COProfitabilityRec.TotalCost < 0}">
+                            <strong>
+                             	<span ng-if="COProfitabilityRec.TotalCost < 0">-</span> 
+	                            <span ng-if="COProfitabilityRec.TotalCost < 0"> {{::COProfitabilityRec.TotalCost *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="COProfitabilityRec.TotalCost >= 0"> {{::COProfitabilityRec.TotalCost | currency: "$" : 2}}</span>
+                            </strong>
+                            </td>
+                            <td class="text-right" ng-class="{'bp-coral-font' : COProfitabilityRec.TotalProfit < 0}">
+                            <strong>
+                             	<span ng-if="COProfitabilityRec.TotalProfit < 0">-</span> 
+	                            <span ng-if="COProfitabilityRec.TotalProfit < 0"> {{::COProfitabilityRec.TotalProfit *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="COProfitabilityRec.TotalProfit >= 0"> {{::COProfitabilityRec.TotalProfit | currency: "$" : 2}}</span>
+	                        </strong>
+                            </td>
+                            <td class="text-right" ng-class="{'bp-coral-font' : COProfitabilityRec.TotalProfitPercentage < 0}"> 
+                            <strong>
+                            	<span ng-if="COProfitabilityRec.TotalProfitPercentage < 0">-</span> 
+                                <span ng-if="COProfitabilityRec.TotalProfitPercentage < 0"> {{::COProfitabilityRec.TotalProfitPercentage *-1 | currency: "" : 1}} </span>
+                                <span ng-if="COProfitabilityRec.TotalProfitPercentage >= 0"> {{::COProfitabilityRec.TotalProfitPercentage | currency: "" : 1}}</span>
+                                <span>%</span>
+                            </strong>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </main>
+            <main>
+	            <table class="print-cash-table">
+	            <col width="28%" />
+	            <col width="18%" />
+	            <col width="18%" />
+	            <col width="18%" />
+	            <col width="18%" />
+		           	<tbody class="total-footer">
+			          	<tr>
+				            <td><strong> Customer order total</strong></td>
+			                <td class="text-right" ng-class="{'bp-coral-font' : M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalSales < 0}">
+			                	<strong>
+				                 	<span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalSales < 0">-</span> 
+		                            <span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalSales < 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalSales *-1 | currency: "$" : 2}} </span>
+		                            <span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalSales >= 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalSales | currency: "$" : 2}}</span> 
+			                 	</strong>
+			                 </td>
+				            <td class="text-right" ng-class="{'bp-coral-font' : M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalCost < 0}">
+				            <strong> 
+					            <span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalCost < 0">-</span> 
+	                           	<span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalCost < 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalCost *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalCost >= 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COTotalCost | currency: "$" : 2}}</span> 
+				            </strong>
+				            </td>
+				            <td class="text-right" ng-class="{'bp-coral-font' : M_printCOP.coProfitabilityData.ProfitabilityObj.COGrossProfit < 0}">
+				            <strong> 
+				            	<span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COGrossProfit < 0">-</span> 
+	                           	<span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COGrossProfit < 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COGrossProfit *-1 | currency: "$" : 2}} </span>
+	                            <span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COGrossProfit >= 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COGrossProfit | currency: "$" : 2}}</span> 
+				            </strong>
+				            </td>
+				            <td class="text-right" ng-class="{'bp-coral-font' : M_printCOP.coProfitabilityData.ProfitabilityObj.COProfitPercentage < 0}">
+				            <strong> 
+				            	<span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COProfitPercentage < 0">-</span> 
+                                <span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COProfitPercentage < 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COProfitPercentage *-1 | currency: "" : 1}} </span>
+                                <span ng-if="M_printCOP.coProfitabilityData.ProfitabilityObj.COProfitPercentage >= 0"> {{::M_printCOP.coProfitabilityData.ProfitabilityObj.COProfitPercentage | currency: "" : 1}}</span>
+                                <span>%</span>
+				            </strong>
+				            </td>
+		              	</tr>
+		           </tbody>
+	           </table>
+           </main>
+        </section>
+        	<div class="LoadingDiv" ng-show="M_printCOP.isLoading">
+            <div class="loadingIconContainer">
+                <c:BPLoading />
+            </div>
+        </div>
+        </body>
+    </html>
+</apex:page>

@@ -1,0 +1,918 @@
+<apex:page showHeader="false" renderAs="pdf" sidebar="false" standardstylesheets="false" applyHtmlTag="false" docType="html-5.0" applyBodyTag="false" Controller="PrintCustomerOrderInvoiceCtrl">
+    <body style="font-size: 14px; margin-top:0px;">
+           <apex:outputPanel style="display:block; position:absolute; top: 0px; left:-35%; z-index: 1200;" rendered="{!CustomerOrderInvoiceDetailRecord.OrderStatus == 'Quote'}">
+                    <img style = " margin-top:100px;" src="{!URLFOR($Resource.Application_Images, 'quote_watermark.png')}" width="1100px" height="1100px"/>
+            </apex:outputPanel>
+       
+        <div style="{!if(companyLogoURL != null, 'height:130px', 'height:70px')};width:800px;margin-bottom:30px;">
+            <div style="width:135px;float: left;">
+                <apex:outputPanel rendered="{!companyLogoURL != null}">
+                    <img height="130px;" src="{!(companyLogoURL)}" width="130px;" style=" width: 100%;height: 100%; padding-top: 10px;"/>
+                </apex:outputPanel>
+            </div>
+            <div style="width:390px;float: left; padding-left: 5px;"> 
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;text-transform: capitalize;" value="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.CompanyName}"></apex:outputText> <br/>
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" value="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.Address1} {!CustomerOrderInvoiceDetailRecord.CompanyInfo.Address2}"></apex:outputText><br/>
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" value="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.City}"></apex:outputText>&nbsp;&nbsp; <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" value=" {!CustomerOrderInvoiceDetailRecord.CompanyInfo.State}"></apex:outputText>&nbsp;&nbsp;<apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" value=" {!CustomerOrderInvoiceDetailRecord.CompanyInfo.PostalCode}"></apex:outputText>
+                <br/>
+                <span style="font-size:14px;font-family: Arial Unicode MS,sans-serif;">Phone: </span>
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" value="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.FormattedBusinessPhone}"></apex:outputText><br/>
+                <span style="font-size:14px;font-family: Arial Unicode MS,sans-serif;">Email: </span>
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" value="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.BusinessEmail}"></apex:outputText><br/>
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" rendered="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.TaxId != '' && CustomerOrderInvoiceDetailRecord.CompanyInfo.Country != 'Australia'}">Tax ID: </apex:outputText>
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;" rendered="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.TaxId != '' && CustomerOrderInvoiceDetailRecord.CompanyInfo.Country == 'Australia'}">ABN:</apex:outputText>
+                <apex:outputText style="font-size:14px;font-family: Arial Unicode MS,sans-serif;"  rendered="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.TaxId != '' }"   value="{!CustomerOrderInvoiceDetailRecord.CompanyInfo.TaxId}"></apex:outputText>
+            </div>
+            <div style="width: 220px;{!if(companyLogoURL == null, 'padding-left:120px', 'padding-left:0px')};font-family: Arial Unicode MS,sans-serif;float: left;font-size: 14px;">
+               
+                <span style=" float:right;margin-right:50px;letter-spacing: 30px !important;"> I N V O I C E</span>
+                <apex:outputPanel rendered="{!isDisplayTaxInvoice}">
+                    <span style=" float:right; letter-spacing: 30px !important; padding-right: 3px;">T A X &nbsp;</span>
+                </apex:outputPanel>
+            </div>
+        </div>
+        <div style="width:800px;float:left;clear:both;font-family: Arial Unicode MS,sans-serif;padding-bottom:20px;">
+            <div style="width:500px;float: left;">
+                <div style="width:320px; float:left;">
+                    <div style="width:360px;font-size:14px;font-weight: bold;font-family: Arial Unicode MS,sans-serif;border-bottom:1px solid black;">
+                        <span>SOLD TO</span>
+                    </div>
+                    <apex:outputPanel style="font-size:14px;" rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.COType == 'Customer'}">
+                        <apex:outputPanel layout="none" rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerName != null}" >
+                            <apex:outputText style="float:left; margin-top:10px;font-family: Arial Unicode MS,sans-serif;width:360px;text-transform: capitalize;font-weight: bold; padding: 12px 6px 12px 6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerName}"></apex:outputText><br/>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="none" rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerAddress != null}">
+                            <apex:outputText style="float:left; font-family: Arial Unicode MS,sans-serif;width:360px;padding-left:6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerAddress}"></apex:outputText><br/>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="none" rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerAddress2 != null}">
+                            <apex:outputText style="float:left; font-family: Arial Unicode MS,sans-serif;width:360px;padding-left:6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerAddress2}"></apex:outputText><br/>
+                        </apex:outputPanel>
+                         <apex:outputPanel layout="none" rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerCityProv != null}">
+                            <apex:outputText style="float:left; font-family: Arial Unicode MS,sans-serif;width:360px;padding-left:6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerCityProv} "></apex:outputText>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="none" rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerState != null}">
+                            <apex:outputText style="float:left; font-family: Arial Unicode MS,sans-serif;width:360px;padding-left:6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerState}"></apex:outputText><br/>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="none" rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerPostal != null}">
+                            <apex:outputText style="float:left; font-family: Arial Unicode MS,sans-serif;width:360px;padding-left:6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerPostal}"></apex:outputText>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerPhone != null}" layout="none">
+                            <span style="float:left; font-family: Arial Unicode MS,sans-serif; width: 45px;padding-left:6px;font-weight: bold;">Phone:</span>
+                            <apex:outputText style="float:left; font-family: Arial Unicode MS,sans-serif;width: 250px;padding-left:6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerPhone}"></apex:outputText><br/>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerEmail != null}" layout="none">
+                            <span style="float:left; font-family: Arial Unicode MS,sans-serif; width: 45px;padding-left:6px;font-weight: bold;">Email:</span>
+                            <apex:outputText style="float:left; font-family: Arial Unicode MS,sans-serif;width: 250px;padding-left:6px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CustomerEmail}"></apex:outputText><br/> 
+                       </apex:outputPanel>
+                        </apex:outputPanel>
+                    <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.COType != 'Customer'}">
+                        <apex:outputText style="font-weight: bold;font-family: Arial Unicode MS,sans-serif;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.COType}"></apex:outputText>
+                    </apex:outputPanel>
+                </div>
+            </div>
+            
+            <div style="width:60px;float:left;margin-top: 20px;font-family: Arial Unicode MS,sans-serif;">
+                <apex:outputLabel style="width:120px;margin-top:10px;margin-bottom:10px; float:left;font-size:14px;" value="CO #:" > </apex:outputLabel>
+                <br/>
+                <apex:outputLabel style="width:120px;margin-bottom:10px; float:left;font-size:14px;" value="Invoice #:" rendered="{!isFinalized}" > </apex:outputLabel>
+                <br/>
+                <apex:outputLabel style="width:120px;margin-bottom:10px;float:left;font-size:14px;" value="Date:"></apex:outputLabel>
+                <br/>
+                <apex:outputLabel style="width:120px;margin-bottom:10px;float:left; font-size:14px;" value="Sold By:"></apex:outputLabel>
+            </div>
+            <div style="width:240px;float: left;margin-top: 30px;font-family: Arial Unicode MS,sans-serif;">
+                <apex:outputPanel layout="none">
+                    <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" value="{!CustomerOrderInvoiceDetailRecord.CO_Header_Id}"></apex:outputText><br/>
+                    <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;"  rendered="{! !isFinalized}" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.CurrentDate}"></apex:outputText>
+                    <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;"  rendered="{!isFinalized}" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.InvoiceNumber}"></apex:outputText><br/>
+                    <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;"  rendered="{!isFinalized}" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.InvoiceDate}"></apex:outputText><br/>
+                </apex:outputPanel>
+                <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" value="{!CustomerOrderInvoiceDetailRecord.COInvoice.SoldBy}"></apex:outputText><br/>
+            </div>
+        </div>
+        <div class="serviceParent" style="width:800px; font-family: Arial Unicode MS,sans-serif; float:left;clear:both;"> 
+            <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.COKHList.size > 0}">
+            <div style="width:800px;float:left; font-weight:bold;text-transform: uppercase;border-bottom:1px solid black; background: white;">
+                <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.COKHList[0].COLIList[0].DealId == null}" layout="none">
+                    <span style="font-size:14px;">Merchandise</span>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.COKHList[0].COLIList[0].DealId != null}" layout="none">
+                    <span style="font-size:14px;">Deal Merchandise</span>
+                </apex:outputPanel>
+                <apex:outputText style="float:right;font-size:14px; margin-right:95px;" value="{0, number, currency}" >
+                    <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.MerchandiseTotal}"/>
+                </apex:outputText>
+            </div>
+            <br/>
+            <div  id="Merchandies_Print_Preview_gid_container">
+                <table style="width:800px;font-size:14px;font-family: Arial Unicode MS,sans-serif;">
+                    <thead> 
+                        <tr >
+                            <th>
+                                <div class="P0">
+                                </div> 
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr >
+                            <td>    
+                                <table class="table pull-left" style="font-size:14px;margin-bottom:15px; padding-left:8px;margin-top:10px;font-family: Arial Unicode MS,sans-serif;" id="Merchandies_Print_Preview_ItemGrid"  >
+                                    <col width="80px" /> 
+                                    <col width="300px" />
+                                    <col width="70px" />
+                                    <col width="30px" />
+                                    <col width="100px" />
+                                    <col width="100px" />
+                                    <thead>
+                                        <tr class="tableHeader T3 ">
+                                            <th style= "padding:8px;" >Type</th><!-- Type -->
+                                            <th style= "padding:8px;">Item/Description</th>
+                                            <th style= "padding:8px;text-align: center;">Qty</th>
+                                            <th style= "padding:8px;"></th>
+                                            <th style="text-align:right;padding:8px;" >Price</th>
+                                            <th style="text-align:right;padding: 8px 8px 8px 0px;">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <apex:repeat value="{!CustomerOrderInvoiceDetailRecord.COKHList}" var="COKHItem">
+                                        <tbody>
+                                            <apex:outputPanel rendered="{!COKHItem.Id != null}" layout="none">
+                                                <tr> 
+                                                    <td style= "padding:8px;">Kit</td>
+                                                    <td  style="max-width:300px;padding: 8px;">{!COKHItem.ItemDescription}</td>
+                                                    <td style= "padding: 8px;"></td>
+                                                    <td style= "padding: 8px;"></td>
+                                                    <td style= "padding: 8px;"></td>
+                                                    <td class="T17" style="text-align:right;padding: 8px;">
+                                                        <apex:outputText value="{0, number, currency}" >
+                                                            <apex:param value="{!COKHItem.Price}"/>
+                                                        </apex:outputText>
+                                                    </td>
+                                                </tr>
+                                            </apex:outputPanel>
+                                            <apex:repeat value="{!COKHItem.COLIList}" var="COlitem">
+                                                <tr >
+                                                    <!-- ng-class-even="'C2'" -->                                               
+                                                    <td style="padding: 8px; {!if(COKHItem.Id != null, 'padding-left:16px', '')};">
+                                                        <apex:outputPanel rendered="{!COlitem.IsPart}">Part</apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!COlitem.IsFee}">Fee</apex:outputPanel>
+                                                    </td> 
+                                                    <td  style="padding: 8px; max-width:300px;">{!COlitem.Item}</td>
+                                                    <td style="padding: 8px; text-align: center;">
+                                                        <apex:outputText value="{0, number, ###}">
+                                                            <apex:param value="{!if(COKHItem.Id == null && COlitem.IsPart && !COlitem.NonInventoryPart && COlitem.Qty > 0, COlitem.QtyCommitted, COlitem.Qty)}" />
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td style="padding: 8px;"> @</td>
+                                                    <td style="text-align:right; padding: 8px;">
+                                                        <apex:outputText value="{0, number, currency}" >
+                                                            <apex:param value="{!COlitem.Price}"/>
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                        <apex:outputPanel rendered="{!COKHItem.Id == null}" layout="none">
+                                                            <apex:outputText value="{0, number, currency}" rendered="{!COlitem.SubTotal == null}">
+                                                                <apex:param value="{!if(COKHItem.Id == null && COlitem.IsPart && !COlitem.NonInventoryPart && COlitem.Qty > 0, COlitem.QtyCommitted * COlitem.Price, COlitem.Qty * COlitem.Price)}"/>
+                                                            </apex:outputText>
+                                                            <apex:outputText value="{0, number, currency}" rendered="{!COlitem.SubTotal != null}">
+                                                                <apex:param value="{!if(COKHItem.Id == null && COlitem.IsPart && !COlitem.NonInventoryPart && COlitem.Qty > 0, COlitem.QtyCommitted * COlitem.Price, COlitem.SubTotal)}"/>
+                                                            </apex:outputText>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </apex:repeat>
+                                </table>
+                            </td>
+                            <!-- Merchandise section --> 
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+           <!--  closing outputPanel for unknown open brace -->       
+        </apex:outputPanel>                 
+        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.Services.size > 0}">
+            <apex:repeat value="{!CustomerOrderInvoiceDetailRecord.Services}" var="serviceInfo">
+                <div class=" serviceHeader col-md-12 P0" style="position:static;font-family: Arial Unicode MS,sans-serif;"  id="Service_Print_Preview_gid_container">
+                    <table style="font-size:14px;width: 800px; margin-bottom:15px;font-family: Arial Unicode MS,sans-serif;" class = "service_Job_table_Header">
+                        <thead>
+                            <tr >
+                                <th>
+                                    <div  class="serviceSection" style="width:800px;float:left;margin-left: -2px;font-family: Arial Unicode MS,sans-serif; font-weight:bold;text-transform: uppercase;margin-bottom:10px;border-bottom:1px solid black; background: white;">
+                                        <span style="font-size:14px;float:left;">{!serviceInfo.Name}</span>
+                                        <apex:outputText style="float:right; margin-right:100px;" value="{0, number, currency}" rendered="{!!serviceInfo.isDeductibleInvItem}">
+                                            <apex:param value="{!serviceInfo.Total}"/>
+                                        </apex:outputText>
+                                    </div><br/>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr >
+                                <td style="padding: 8px;">
+                                    <span style="width:100px; float:left;font-weight:bold;padding-left:6px;">Unit: </span><span>{!serviceInfo.Unit}</span>
+                                </td>
+                            </tr>
+                            <tr >
+                                <td style="padding: 8px;">
+                                    <span style="width:100px; font-family: Arial Unicode MS,sans-serif;float:left;font-weight:bold;padding-left:6px;">Concern:</span>
+                                    <span>
+                                        <apex:outputText value="{!serviceInfo.ConcernList[0]}" rendered="{!serviceInfo.ConcernList.size == 1}"></apex:outputText>
+                                        <apex:outputPanel rendered ="{!serviceInfo.ConcernList.size >1}" >
+                                            <ul style="padding-left:80px;margin-top:0px;">
+                                                <apex:repeat value="{!serviceInfo.ConcernList}" var="concern">
+                                                    <li>{!concern}
+                                                    </li>
+                                                </apex:repeat>
+                                            </ul>
+                                        </apex:outputPanel>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr >
+                                <td style="padding: 8px;">
+                                    <span style="width:100px; float:left;font-weight:bold;padding-left:6px;">Cause:</span>
+                                    <span>
+                                        <apex:outputText value="{!serviceInfo.CauseList[0]}" rendered="{!serviceInfo.CauseList.size == 1}"></apex:outputText>
+                                        <apex:outputPanel rendered ="{!serviceInfo.CauseList.size >1}" >
+                                            <ul style="padding-left:80px;margin-top:0px;">
+                                                <apex:repeat value="{!serviceInfo.CauseList}" var="cause">
+                                                    <li>{!cause}
+                                                    </li>
+                                                </apex:repeat>
+                                            </ul>
+                                        </apex:outputPanel>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr >
+                                <td style="padding: 8px;">
+                                    <span style="width:100px; float:left;font-weight:bold;padding-left:6px;">Correction:</span>
+                                    <span>
+                                        <apex:outputText value="{!serviceInfo.CorrectionList[0]}" rendered="{!serviceInfo.CorrectionList.size == 1}"></apex:outputText>
+                                        <apex:outputPanel rendered ="{!serviceInfo.CorrectionList.size >1}" >
+                                            <ul style="padding-left:80px;margin-top:0px;">
+                                                <apex:repeat value="{!serviceInfo.CorrectionList}" var="correction">
+                                                    <li>{!correction}
+                                                    </li>
+                                                </apex:repeat>
+                                            </ul>
+                                        </apex:outputPanel>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;">
+                                    <span style="width:100px; float:left;font-weight:bold;padding-left:6px;">Mileage In:</span>
+                                    <apex:outputText value="{0, number, ###}" rendered="{!serviceInfo.MileageIn != null}">
+                                        <apex:param value="{!serviceInfo.MileageIn}" />
+                                    </apex:outputText>
+                                    <span> km</span>
+                                    <span style="width:100px; margin-left:100px;font-weight:bold;">Mileage Out:</span>
+                                    <apex:outputText value="{0, number, ###}" rendered="{!serviceInfo.MileageOut != null}">
+                                        <apex:param value="{!serviceInfo.MileageOut}" />
+                                    </apex:outputText>
+                                    <span> km</span>
+                                </td>
+                            </tr>
+                            <tr >
+                                <td >
+                                    <table class="table pull-left" style="font-size:14px;padding-left:8px;font-family: Arial Unicode MS,sans-serif;margin-top:10px;" id="Print_Preview_ItemGrid">
+                                        <col width="80px" /> 
+                                        <col width="300px" />
+                                        <col width="70px" />
+                                        <col width="30px" />
+                                        <col width="100px" />
+                                        <col width="100px" />
+                                        <thead>
+                                            <tr class="tableHeader T3 " >
+                                                <th style="padding: 8px;">Type</th>
+                                                <th  style="max-width:300px;padding: 8px;">Item/Description</th>
+                                                <th  style="text-align: center;padding: 8px;">Qty</th>
+                                                <th style="padding: 8px;"></th>
+                                                <th style="text-align:right;padding: 8px;">Price</th>
+                                                <th style="text-align:right;padding: 8px 8px 8px 0px;">Total</th>
+                                            </tr>
+                                        </thead>   
+                                        <apex:repeat value="{!serviceInfo.SOGridItems}" rendered="{!!serviceInfo.isDeductibleInvItem}" var="soGrid">
+                                            <tbody>
+                                                <apex:outputpanel rendered="{!soGrid.SOKH.Id != null}" layout="none">
+                                                    <tr >
+                                                        <td  style="padding: 8px;">Kit</td> 
+                                                        <td class=" T17" style="max-width:300px;padding: 8px;">{!soGrid.SOKH.ItemDescription}</td> 
+                                                        <td style="padding: 8px;"></td>
+                                                        <td style="padding: 8px;"></td> 
+                                                        <td style="padding: 8px;"></td> 
+                                                        <td style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                            <apex:outputText value="{0, number, currency}" >
+                                                                <apex:param value="{!soGrid.SOKH.Price}"/>
+                                                            </apex:outputText>
+                                                        </td> 
+                                                    </tr>
+                                                </apex:outputpanel>
+                                                <apex:repeat value="{!soGrid.SOKH.SOLIList}" var="SoLi">
+                                                    <tr >
+                                                        <td style="padding: 8px;{!if(soGrid.SOKH.Id != null, 'padding-left:16px', '')}">
+                                                            <apex:outputPanel rendered="{!SoLi.IsPart}">Part</apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!SoLi.IsFee}">Fee</apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!SoLi.IsLabour}">Labor</apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!SoLi.IsSublet}">Sublet</apex:outputPanel>
+                                                        </td> 
+                                                        <td style="padding: 8px;max-width:300px;">{!SoLi.ItemDesc}</td> 
+                                                        <td style="padding: 8px;text-align: center;">
+                                                            <apex:outputText value="{0, number, ###}" >
+                                                                <apex:param value="{!SoLi.QtyNeeded}"/>
+                                                            </apex:outputText>
+                                                        </td>
+                                                        <td style="padding: 8px;">@</td> 
+                                                        <td style = "text-align:right; padding: 8px;">
+                                                            <apex:outputText value="{0, number, currency}" >
+                                                                <apex:param value="{!SoLi.KitPrice}"/>
+                                                            </apex:outputText>
+                                                        </td> 
+                                                        <td style="text-align:right;padding:  8px 12px 8px 0px;"> 
+                                                            <apex:outputPanel rendered="{!soGrid.SOKH.Id == null}">
+                                                                <apex:outputText value="{0, number, currency}" >
+                                                                    <apex:param value="{!SoLi.QtyNeeded * SoLi.KitPrice}"/>
+                                                                </apex:outputText>
+                                                            </apex:outputPanel>
+                                                        </td> 
+                                                    </tr>  
+                                                </apex:repeat> 
+                                            </tbody> 
+                                        </apex:repeat>
+                                        
+                                        <apex:outputPanel layout="none" rendered="{!serviceInfo.isDeductibleInvItem}">
+                                            <tbody>
+                                                <apex:outputpanel layout="none"> 
+                                                    <tr>
+                                                        <td  style="padding: 8px;"></td> 
+                                                        <td class=" T17" style="max-width:300px;padding: 8px;">Claim Deductible</td> 
+                                                        <td style="padding: 8px;"></td>
+                                                        <td style="padding: 8px;"></td> 
+                                                        <td style="padding: 8px;"></td> 
+                                                        <td style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                            <apex:outputText value="{0, number, currency}" >
+                                                                <apex:param value="{!serviceInfo.Total}"/>
+                                                            </apex:outputText>
+                                                        </td>
+                                                     </tr>
+                                                </apex:outputpanel>
+                                            </tbody>
+                                        </apex:outputPanel>
+                                         
+                                        <apex:outputPanel layout="none" rendered="{!!serviceInfo.isDeductibleInvItem}">
+                                             <tbody>
+                                                <apex:outputPanel rendered="{!serviceInfo.ShopSupplyTotal > 0}" id="thePanel">
+                                                      <table style="width: 702px;">
+                                                          <tbody>
+                                                              <tr>
+                                                                  <td style="padding: 8px 8px 0px 8px;width: 72px;"></td>
+                                                                  <td style="padding: 8px 8px 0px 8px;width: 292px;">Shop Supplies Detail</td> 
+                                                                  <td style="padding: 8px 8px 0px 8px;text-align: center;width: 40px;">1</td>
+                                                                  <td style="width: 38px;padding: 8px 0px 0px 1px;text-align: center" >@</td> 
+                                                                  <td style="padding: 8px 8px 0px 9px;text-align: right;width: 80px;">
+                                                                      <apex:outputText value="{0, number, currency}" >
+                                                                           <apex:param value="{!serviceInfo.ShopSupplyTotal}"/>
+                                                                      </apex:outputText>
+                                                                  </td> 
+                                                                  <td style="padding-right: 11px;padding: 8px 12px 0px 0px;text-align: right;">
+                                                                      <apex:outputText value="{0, number, currency}" >
+                                                                           <apex:param value="{!serviceInfo.ShopSupplyTotal}"/>
+                                                                      </apex:outputText>
+                                                                  </td> 
+                                                              </tr>
+                                                          </tbody>
+                                                      </table>
+                                                 </apex:outputPanel>
+                                                 <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.IsItemizedByLaborCode && serviceInfo.isShopSupplySetValid}" id="thePanel1">
+                                                      <table>
+
+                                                           <tr>
+                                                          <td style="width: 82px;"></td>
+                                                          <td colspan="5">
+                                                          <ul style="margin-top: 0px;">
+                                                          <apex:repeat value="{!serviceInfo.ShopSupplyDetailSet}" var="supplyValue">
+                                                            <li>{!supplyValue}</li>
+                                                            </apex:repeat>
+                                                          </ul>
+                                                      </td>
+                                                  </tr>
+                                                      </table>
+                                                 </apex:outputPanel>
+                                           </tbody>
+                                         </apex:outputPanel>
+                                            
+                                    </table>
+                                    <apex:outputPanel layout="none" rendered ="{!serviceInfo.Notes.size > 0 }" >
+							                <div  style="float: left !important; width :690px !important;  background: #FFF !important;padding: 8px;page-break-inside: avoid;">
+								                <p style="color: #000 !important;font-weight:600; font-family: Arial Unicode MS,sans-serif;font-size: 14px!important;padding-left: 6px;">
+								                 Notes               
+								                </p>
+								                <apex:repeat value="{!serviceInfo.Notes}" var="notes">
+								                    <p style="color: #000 !important;  margin: 0px; font-family: Arial Unicode MS,sans-serif;font-size: 14px!important;padding-left: 6px;">
+								                     {!notes}                
+								                    </p>
+								                 </apex:repeat>
+	                                    </div>
+									</apex:outputPanel>
+                                </td>
+                            </tr>
+                        </tbody> 
+                    </table>
+                </div>
+            </apex:repeat>
+        </apex:outputpanel>
+        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.DealInfo.UnitList.size > 0}" layout="none">
+            <div class=" col-md-12 P0" style="position:static;font-family: Arial Unicode MS,sans-serif;" id="Service_Print_Preview_gid_container">
+                <table style="font-size:14px;margin-bottom:15px;font-family: Arial Unicode MS,sans-serif;" class = "service_Job_table_Header">
+                    <thead>
+                        <tr >
+                            <th>
+                                <div style="width:800px;float:left;margin-left: -2px; font-weight:bold;text-transform: uppercase;border-bottom:1px solid black;font-size:14px;">
+                                    <span style="font-size:14px;">Deal</span>
+                                    <apex:outputText style="float:right; margin-right:100px;"  value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.DealInfo.DealTotal}"/>
+                                    </apex:outputText>
+                                </div>
+                                <br/>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                      <tr >
+                           <td>
+                              <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.DealInfo.DealFinanceObj.CoBuyerId != null}" layout="none">
+                              <span>Co-buyer: </span>{!CustomerOrderInvoiceDetailRecord.DealInfo.DealFinanceObj.CoBuyerName}
+                              </apex:outputpanel>
+                           </td>
+                        </tr>
+                        <tr >
+                            <td>
+                                <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.DealInfo.UnitList.size > 0}" layout="none">
+                                    <table style="font-size:14px;padding-left:8px; margin-top:10px;" class="table pull-left" id="Print_Preview_ItemGrid">
+                                        <col width="80px" /> 
+                                        <col width="300px" />
+                                        <col width="70px" />
+                                        <col width="30px" />
+                                        <col width="100px" />
+                                        <col width="100px" />
+                                        <thead>
+                                            <tr class="tableHeader T3 ">
+                                               <th style="padding: 8px;">Type</th>
+                                               <th style="max-width:300px;padding: 8px;">Item/Desc</th>
+                                               <th style="text-align:center;padding: 8px;">Qty</th>
+                                               <th style="padding:8px;" ></th>
+                                               <th style="text-align:right;padding: 8px;">Price</th>
+                                               <th style="text-align:right;padding:  8px 8px 8px 0px;">Total</th> 
+                                            </tr>
+                                        </thead>
+                                        <apex:repeat value="{!CustomerOrderInvoiceDetailRecord.DealInfo.UnitList}" var="dealInfo">
+                                            <tbody>
+                                                <tr>
+                                                    <td style="padding: 8px;">Unit</td>
+                                                    <td class="T17" style="max-width:300px;padding: 8px;">{!dealInfo.ItemDesc}</td> 
+                                                    <td class="T17" style="text-align: center;padding: 8px;"></td>
+                                                    <td class="T17"></td>
+                                                    <td class="T17" style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                        <apex:outputText value="{0, number, currency}" >
+                                                            <apex:param value="{!dealInfo.BaseUnitPriceTotal}"/>
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td  style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                        <apex:outputpanel layout="none" rendered="{!AND(dealInfo.FactoryOptionList.size == 0, dealInfo.DealerOptionList.size == 0)}">
+                                                            <apex:outputText value="{0, number, currency}" >
+                                                                <apex:param value="{!dealInfo.DealUnitPriceAndCostTotal}"/> 
+                                                            </apex:outputText>
+                                                        </apex:outputpanel>
+                                                    </td> 
+                                                </tr>
+                                                <apex:variable value="{!0}" var="factoryOptionIndex"/>
+                                                
+                                                <apex:repeat value="{!dealInfo.FactoryOptionList}" var="factoryOptionData">
+                                                    <tr> 
+                                                        <td class="T17" style="padding:8px;"></td>
+                                                        <td class="T17" style="max-width:300px;padding: 8px;">{!factoryOptionData.ItemDescription}</td>
+                                                        <td class="T17" style="padding:8px;"></td>
+                                                        <td class="T17" style="padding:8px;"></td>
+                                                        <td class="T17" style="text-align:right;padding: 8px;">
+                                                            <apex:outputText value="{0, number, currency}" >
+                                                                <apex:param value="{!factoryOptionData.Price}"/>
+                                                            </apex:outputText>
+                                                        </td>
+                                                        <td class="T17" style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                            <apex:outputpanel layout="none" rendered="{!dealInfo.FactoryOptionList.size > 0 && dealInfo.DealerOptionList.size == 0 && 
+                                                                            factoryOptionIndex == dealInfo.FactoryOptionList.size-1}">
+                                                                <apex:outputText value="{0, number, currency}" >
+                                                                    <apex:param value="{!dealInfo.DealUnitPriceAndCostTotal}"/>
+                                                                </apex:outputText>
+                                                            </apex:outputpanel> 
+                                                        </td>
+                                                    </tr>
+                                                    <apex:variable var="factoryOptionIndex" value="{!factoryOptionIndex + 1}"/>
+                                                </apex:repeat>
+                                                
+                                                <apex:variable value="{!0}" var="dealerInstalledOptionIndex"/>
+                                                <apex:repeat value="{!dealInfo.DealerOptionList}" var="dealerInstalledOptionData">
+                                                    <tr >
+                                                        <td class="T17" style="padding:8px;"></td>
+                                                        <td class="T17" style="max-width:300px;padding: 8px;">{!dealerInstalledOptionData.ItemDescription}</td>
+                                                        <td class="T17" style="padding:8px;"></td>
+                                                        <td class="T17" style="padding:8px;"></td>
+                                                        <td class="T17" style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                            <apex:outputText value="{0, number, currency}" >
+                                                                <apex:param value="{!dealerInstalledOptionData.TotalPrice}"/>
+                                                            </apex:outputText>
+                                                        </td> 
+                                                        <td class="T17" style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                            <apex:outputpanel layout="none" rendered="{!dealInfo.DealerOptionList.size > 0
+                                                                        && dealerInstalledOptionIndex == dealInfo.DealerOptionList.size-1}">
+                                                                <apex:outputText value="{0, number, currency}" >
+                                                                    <apex:param value="{!dealInfo.DealUnitPriceAndCostTotal}"/>
+                                                                </apex:outputText>
+                                                            </apex:outputpanel>
+                                                        </td>
+                                                    </tr>
+                                                    <apex:variable value="{!dealerInstalledOptionIndex + 1}" var="dealerInstalledOptionIndex"/>
+                                                </apex:repeat>
+                                                
+                                                <apex:repeat value="{!dealInfo.DealKitHeaderList}" var="optionFeeDataKH">
+                                                    <apex:outputpanel layout="none" rendered="{!optionFeeDataKH.hasChildren}">
+                                                        <tr>
+                                                            <td class="T17" style="padding: 8px;"></td>
+                                                            <td class="T17" style="max-width:300px;padding: 8px;">{!optionFeeDataKH.ItemDescription}</td>
+                                                            <td class="T17" style="padding: 8px;"></td>
+                                                            <td class="T17" style="padding: 8px;"> </td>
+                                                            <td class="T17 text-right " style="padding: 8px;"></td>
+                                                            <td class="T17" style="text-align:right;padding: 8px;">
+                                                                <apex:outputText value="{0, number, currency}" >
+                                                                    <apex:param value="{!optionFeeDataKH.Price}"/>
+                                                                </apex:outputText>
+                                                            </td>
+                                                        </tr>
+                                                    </apex:outputpanel>
+                                                    <apex:repeat value="{!optionFeeDataKH.OptionAndFeeList}" var="optionFeeData">
+                                                        <tr >
+                                                            <td class="T17" style="padding: 8px;"></td>
+                                                            <td class="T17" style="max-width:300px;padding: 8px;">{!optionFeeData.Item}</td>
+                                                            <td class="T17" style="text-align: center;padding: 8px;">
+                                                                <apex:outputText value="{0, number, ###}" >
+                                                                    <apex:param value="{!optionFeeData.Qty}"/>
+                                                                </apex:outputText>
+                                                            </td>
+                                                            <td class="T17" style="padding: 8px;">@</td>
+                                                            <td class="T17" style="text-align:right;padding: 8px;">
+                                                                <apex:outputText value="{0, number, currency}" >
+                                                                    <apex:param value="{!optionFeeData.Price}"/>
+                                                                </apex:outputText>
+                                                            </td>
+                                                            <td class="T17" style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                                <apex:outputpanel layout="none" rendered="{!!optionFeeDataKH.hasChildren}">
+                                                                    <apex:outputText value="{0, number, currency}" >
+                                                                        <apex:param value="{!optionFeeData.Total}"/>
+                                                                    </apex:outputText>
+                                                                </apex:outputpanel>
+                                                            </td>
+                                                        </tr>
+                                                    </apex:repeat>
+                                                </apex:repeat>
+                                                <!-- End: Added by richa 14 april -->
+                                            </tbody>
+                                        </apex:repeat>
+                                        
+                                        <apex:repeat value="{!CustomerOrderInvoiceDetailRecord.DealInfo.TradeInList}" var="dealInfo">
+                                            <tbody>
+                                                <tr >
+                                                    <td class="T17" style="padding: 8px;">Trade</td>
+                                                    <td class="T17" style="max-width:300px;padding: 8px;">{!dealInfo.ItemDesc}</td>
+                                                    <td class="T17" style="padding: 8px;"></td>
+                                                    <td class="T17" style="padding: 8px;"></td>
+                                                    <td class="T17" style="padding: 8px;"></td>
+                                                    <td class="T17" style="text-align:right;padding:  8px 8px 8px 0px;">
+                                                        <apex:outputText value="{0, number, currency}" >
+                                                            <apex:param value="{!dealInfo.AgreedValue}"/>
+                                                        </apex:outputText>
+                                                    </td>
+                                              </tr>
+                                          </tbody>
+                                        </apex:repeat>
+                                    </table>
+                                </apex:outputpanel>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </apex:outputpanel>
+    </div>
+    <div style="font-family: Arial Unicode MS,sans-serif; float:left;clear:both; page-break-inside:avoid;">
+        <div style="width:400px; float:left;">
+            <apex:outputPanel layout="none" rendered="{!CustomerOrderInvoiceDetailRecord.Transactions.size > 0}">
+                <div style="width:350px; font-size:14px;float:left;font-weight:bold;text-transform: uppercase;border-bottom:1px solid black;margin-bottom:10px;">
+                    <span>INVOICE PAYMENTS</span>
+                </div><br/>
+                <div style="float:left;">
+                    <apex:pageblock >
+                        <apex:pageblockTable value="{!CustomerOrderInvoiceDetailRecord.Transactions}" var="item1" style="font-size:14px;width:350px; float:left;">
+                            <apex:column style="width:110px;padding: 8px;" value="{!item1.Method}" 
+                                rendered="{!item1.Method != 'Cash Rounding'}"></apex:column>
+                            <apex:column style="width:120px;padding: 8px;text-align:center;" value="{!item1.TransactionDate}" 
+                                rendered="{!item1.Method != 'Cash Rounding'}"></apex:column>
+                            <apex:column style="width:120px;padding: 8px;text-align:right;" >
+                                <apex:outputText value="{0, number, currency}" rendered="{!item1.Method != 'Cash Rounding'}">
+                                                <apex:param value="{!item1.Amount}"/>
+                                </apex:outputText>
+                            </apex:column>
+                        </apex:pageblockTable>
+                    </apex:pageblock>
+                </div>
+            </apex:outputPanel>
+        </div>
+        <div style="width:300px; float:right;page-break-inside: avoid;">
+            <div style="width:250px; font-size:14px;float:right;font-weight:bold;text-transform: uppercase;border-bottom:1px solid black; margin-bottom:8px;">
+                <span>TOTALS</span>
+            </div><br/>
+            <div style="width:250px; float:right; font-size:14px;">
+                <div class="pull-right" style="float: right !important;margin-left : 22px !important;">
+                    <div class="totalsection " style="float: left !important;margin-right: 10px !important;">
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalUnits != 0}">
+                            <div style="width: 250px !important;">
+                               <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                            Units
+                                        </label> 
+                                <span class="T7  pull-right" style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalUnits}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalTradeIns != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                Trade-Ins
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalTradeIns}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                        
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalLienPayout != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                Lien Payout
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalLienPayout}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                        
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalWarranty != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                     Warranty
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right; width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalWarranty}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                        
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalSublet != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Sublet
+                                </label> 
+                                <span class="T7  pull-right" style=" text-align:right;width:85px;  padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalSublet}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                        
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalOtherProducts != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Other Products
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right; width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalOtherProducts}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                                
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalParts != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Parts
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                          <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalParts}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                                
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalLabour != 0}">
+                            <div style="width: 250px !important;">
+                              <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                   Labor
+                              </label> 
+                              <span class="T7  pull-right" style="text-align:right;width:85px;  padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalLabour}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                                
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalFees != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Fees
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right; width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalFees}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                         <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalShopSupplies != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Shop Supplies
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right; width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalShopSupplies}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                                
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.StampDuty != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                     Stamp Duty
+                                </label> 
+                                <span class="T7  pull-right" style=" text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.StampDuty}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                        
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalDeductible != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Deductible
+                                </label> 
+                                <span class="T7  pull-right" style="text-align:right; width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.TotalDeductible}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                                
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.SubTotal != 0}">
+                            <div style="width: 250px !important;">
+                                <label style="font-weight:bold; width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Sub-Total
+                                </label> 
+                                <span class="T7  pull-right" style=" font-weight:bold;text-align:right;width:85px; padding: 5px 0px 0px 0px !important; float: left;">
+                                    <apex:outputText value="{0, number, currency}" >
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.SubTotal}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+    
+                        <apex:outputpanel rendered="{!!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}">
+                            <apex:repeat value="{!CustomerOrderInvoiceDetailRecord.COInvoice.SalesTaxList}" var="tax"> 
+                                <div style="width: 250px !important;">
+                                    <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                        {!tax.TaxName}
+                                    </label> 
+                                    <span class="T7  pull-right" style="padding: 5px 0px 0px 0px !important;width:85px; text-align:right;float: left;">
+                                        <apex:outputText value="{0, number, currency}" >
+                                            <apex:param value="{!tax.TaxAmount}"/>
+                                        </apex:outputText>
+                                    </span>
+                                </div>
+                            </apex:repeat>
+                        </apex:outputpanel>                     
+                                
+                        <div style="width: 250px !important;">
+                            <label style="font-weight:bold;width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                Total
+                            </label> 
+                            <span class="T7  pull-right" style=" font-weight:bold;text-align:right;width:85px;  padding: 5px 0px 0px 0px !important; float: left;">
+                                <apex:outputText value="{0, number, currency}" rendered="{!!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}">
+                                    <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.Total}"/>
+                                </apex:outputText>
+                                <apex:outputText value="{0, number, currency}" rendered="{!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}">
+                                    <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.SubTotal}"/>
+                                </apex:outputText>
+                            </span>
+                        </div>
+                                
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}">
+                            <apex:repeat value="{!CustomerOrderInvoiceDetailRecord.COInvoice.SalesTaxList}" var="tax"> 
+                                <div style="width: 250px !important;">
+                                    <label style="width: 145px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                        {!tax.TaxName} included
+                                    </label> 
+                                    <span class="T7  " style="padding: 5px 0px 0px 0px !important; width:60px;text-align:right; float: left;">
+                                        <apex:outputText value="{0, number, currency}" >
+                                            <apex:param value="{!tax.TaxAmount}"/>
+                                        </apex:outputText>
+                                    </span>
+                                </div>
+                            </apex:repeat>
+                        </apex:outputpanel> 
+                                
+                        <div style="width: 250px !important;">
+                            <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                Amount Paid
+                            </label> 
+                            <span class="T7" style="padding: 5px 0px 0px 0px !important; width:85px; text-align:right;float: left;">
+                                <apex:outputText value="{0, number, currency}">
+                                    <apex:param value="{!CustomerOrderInvoiceDetailRecord.AmountPaid}"/>
+                                </apex:outputText>
+                            </span>
+                        </div>
+                                
+                        <apex:outputpanel rendered="{!CustomerOrderInvoiceDetailRecord.COInvoice.CheckoutType != 'Deal'}">
+                            <div style="width: 250px !important;">
+                                <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                    Balance Due
+                                </label> 
+                                <span class="T7  pull-right" style="padding: 5px 0px 0px 0px !important;width:85px; text-align:right; float: left;">
+                                    <!-- <apex:outputPanel rendered="{!OR(CustomerOrderInvoiceDetailRecord.COInvoice.CheckoutType != 'Internal' || AND(CustomerOrderInvoiceDetailRecord.COInvoice.CheckoutType == 'Internal', CustomerOrderInvoiceDetailRecord.COInvoice.Status != 'Closed'))}">
+                                        <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}" >
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.SubTotal - CustomerOrderInvoiceDetailRecord.AmountPaid}"/>
+                                            </apex:outputText>
+                                        </apex:outputPanel>
+                                        
+                                        <apex:outputPanel rendered="{!!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}">
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.Total - CustomerOrderInvoiceDetailRecord.AmountPaid}"/>
+                                            </apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <apex:outputText value="{0, number, currency}"  rendered="{!AND(CustomerOrderInvoiceDetailRecord.COInvoice.CheckoutType == 'Internal', CustomerOrderInvoiceDetailRecord.COInvoice.Status == 'Closed')}">
+                                           0
+                                    </apex:outputText> -->
+                                    
+                                    <apex:outputPanel rendered="{!isBindBalanceDue}">
+                                        <apex:outputPanel rendered="{!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}" >
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.SubTotal - CustomerOrderInvoiceDetailRecord.AmountPaid}"/>
+                                            </apex:outputText>
+                                        </apex:outputPanel>
+                                        
+                                        <apex:outputPanel rendered="{!!CustomerOrderInvoiceDetailRecord.IsTaxIncludingPricing}">
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!CustomerOrderInvoiceDetailRecord.COInvoice.Total - CustomerOrderInvoiceDetailRecord.AmountPaid}"/>
+                                            </apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <apex:outputText value="{0, number, currency}" rendered="{!!isBindBalanceDue}">
+                                        <apex:param value="{!CustomerOrderInvoiceDetailRecord.AmountPaid}"/>
+                                    </apex:outputText>
+                                </span>
+                            </div>
+                        </apex:outputpanel>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        
+    <!-- Start: Disclaimers Section --> 
+    <div style="width:690px;margin-top:15px;float:left;clear: both;font-family: Arial Unicode MS,sans-serif; float: left; ">
+        <p style = "width:690px;word-break:break-word;font-size:14px;float:left;white-space: pre-wrap;text-align: left;">{!CustomerOrderInvoiceDetailRecord.CustomerInvoiceWarrantyText}</p>
+        <apex:OutputPanel rendered="{!CustomerOrderInvoiceDetailRecord.IsSignatureLineforCustomerInvoice}" layout="none">
+            <apex:outputText style="float:left; font-size:14px;width: 90px;" value="Signature :"  />
+                <div style="border-bottom: 1px solid black;float:left;width: 300px;padding-top:15px;"></div>
+         </apex:OutputPanel>
+    </div>
+</body>
+</apex:page>

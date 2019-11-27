@@ -1,0 +1,309 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+<apex:stylesheet value="{!Assests}/css/bootstrap4.css"/>
+<div class="fadein viewA" ui-view="AddEditCustomer" autoscroll='false'></div>
+<div class="fadein viewA" ui-view="AddEditTempUnit" autoscroll='false'></div>
+<full-page-modal id-value="full-page-modal-window" class-value="bp-full-page-modal" close-action="F_AddEditApp.closeAction()">
+    <div class="bp-wrapper-container">
+         <div class="container">
+            <div class="add-edit-appointment-container">
+                <div class="row dayTimeselector">
+                    <div class="col-xs-12">
+                        <div id="appointment_schedule_content" class="time-selector" ng-click="F_AddEditApp.openOrCloseDayTimeSelectorView('expandedAppointmentSelector')" 
+                            ng-if="M_AddEditApp.currentDayTimeSelectionView === 'collapsedAppointmentSelector'" ng-class = "{'bp-redborder':M_AddEditApp.isError && !M_AddEditApp.SelectedAppointmentDate && !M_AddEditApp.selectedAppointmentSegment}">
+                            <i class="calendarSvg bp-blue" ng-include="'{!Application_Images}/Icons/calendar-filled.svg'"></i>
+                            <span ng-if="M_AddEditApp.SelectedAppointmentDate" ng-bind-html="M_AddEditApp.SelectedAppointmentDateStr"></span>
+                            <span ng-if="!M_AddEditApp.SelectedAppointmentDate">{{ 'Select_a_time' | translate }}</span>
+                            <i class="bp-blue downArrow svg_width_2px" ng-click="F_AddEditApp.openOrCloseDayTimeSelectorView('expandedAppointmentSelector')" ng-include="'{!Application_Images}/Icons/arrow-down-1.svg'"></i>
+                        </div>                        
+                        <div id="appointment_schedule_grid" class="day-selector-view-container bp-collapse-div-transition" 
+                            ng-class="{'bp-expand-div-transition': M_AddEditApp.currentDayTimeSelectionView === 'expandedAppointmentSelector'}" 
+                            ><!-- ng-if="M_AddEditApp.currentDayTimeSelectionView === 'expandedAppointmentSelector'" -->
+                            <div class="week-selector-container">
+                                <div class="weekSelector">
+                                     <c:WeekSchedulegrid id="AddeditAppoitment"/> 
+                                </div>
+                                
+                                <i class="bp-blue upArrow bp-pointer-cursor svg_width_2px" ng-if="M_AddEditApp.currentDayTimeSelectionView === 'expandedAppointmentSelector'" ng-include="'{!Application_Images}/Icons/arrow-up-1.svg'" 
+                                    ng-click="F_AddEditApp.openOrCloseDayTimeSelectorView('collapsedAppointmentSelector')">
+                                </i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row appointment-title ">
+                     <span class="M0 link-service-job bp-cursor-pointer" ng-click="F_AddEditApp.openLinkServiceJobModalWindow()" ng-if = "!M_AddEditApp.appointmentJSON.SOHeaderId" >
+                      <span class="bp-blue-font bp-blue-hover"><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="bp-blue_NewCO bp-pointer-cursor bp-svg-19"></i>
+                            Link existing Service job</span>
+                   </span>
+                   <a class="M0 show-co-details link-service-job col-xs-12" target="_blank" ui-sref="CustomerOrder_V2({Id:M_AddEditApp.appointmentJSON.COId})" ng-if = "M_AddEditApp.appointmentJSON.SOHeaderId" >
+                      <span>
+                      {{M_AddEditApp.appointmentJSON.CONumber}} - {{M_AddEditApp.appointmentJSON.Title}}</span>
+                   </a>
+               </div>
+                <div class="row appointment-title">
+                    <div class="col-xs-11 col-sm-5">
+                      <input class="bp-border-bottomed-input" ng-focus = "F_AddEditApp.selectInputText('appointmentTitleId')" placeholder="Untitled appoitment" id="appointmentTitleId" ng-model="M_AddEditApp.appointmentJSON.Title" type="text"/>
+                    </div>
+                </div>
+                
+                <div class="customer-and-cou-selector-container">
+                    <div class="row" ng-show="(!M_AddEditApp.customerRec.Id || M_AddEditApp.isChangeCustomer) && (M_AddEditApp.customerCardInfoPayload.headerText != 'UNIT INVENTORY')">
+                        <div class="col-xs-12 col-sm-6 select-customer-section">
+                            <label class="STA-header">{{'Search_for_customer_name' | translate}}</label>
+                            <autocompletev2 id="autocompletev2Id"
+                                template-name="Customer"
+                                section-name="Customer" 
+                                section-id="Customer"
+                                default-value="M_AddEditApp.customerRec.BusinessName"
+                                create-action-available-on-dropdown="true"
+                                 on-blur-input-action="F_AddEditApp.restoreCustomerCard()"
+                                ng-class-name= "{'bp-redborder':M_AddEditApp.isError && !M_AddEditApp.customerRec.Id}"
+                                />
+                        </div>
+                    </div>
+                    
+                    <div class="row row-flex row-flex-wrap flexGrid" ng-show="(M_AddEditApp.customerRec.Id && !M_AddEditApp.isChangeCustomer) || (M_AddEditApp.customerCardInfoPayload.headerText == 'UNIT INVENTORY')">
+                        <div class="col-xs-12 col-sm-6 customerInfoCardWrapper">
+                            <info-card-component id-value="customerInfoCardId" 
+                                header-link-action="F_AddEditApp.moveToViewCustomer(M_AddEditApp.customerRec.Id, true)" 
+                                hyperlink-action="F_AddEditApp.changeCustomer()" 
+                                object-payload="M_AddEditApp.customerCardInfoPayload" >
+                            </info-card-component>
+                        </div>
+                        
+                        <div class="col-xs-12 col-sm-6 select-cou-section" ng-if="!M_AddEditApp.selectedCOUUnitRec.Id || M_AddEditApp.isChangeCOU">
+                            <label class="STA-header">{{'Select_customer_unit' | translate}}</label>
+                            <autocompletev2 id="autocompletev2Id"
+                                template-name="CustomerOwnedUnit"
+                                section-name="CustomerOwnedUnit" 
+                                section-id="CustomerOwnedUnit"
+                                is-non-searchable-dropdown="true"
+                                create-action-available-on-dropdown="true"
+                                 default-value="M_AddEditApp.selectedCOUUnitRec.FormattedName"
+                                list-data="M_AddEditApp.COUList" 
+                                ng-class-name= "{'bp-redborder':M_AddEditApp.isError && !M_AddEditApp.selectedCOUUnitRec.Id}" 
+                                /> 
+                        </div>
+                        
+                        <div class="col-xs-12 col-sm-6 cou-info-card-container" ng-if="M_AddEditApp.selectedCOUUnitRec.Id && !M_AddEditApp.isChangeCOU">
+                            <info-card-component id-value="couInfoCardId" 
+                                header-link-action="F_AddEditApp.moveToViewUnit(M_AddEditApp.selectedCOUUnitRec.Id, true)" 
+                                hyperlink-action="F_AddEditApp.changeUnit()" 
+                                object-payload="M_AddEditApp.COUCardInfoPayload" >
+                            </info-card-component>
+                        </div> 
+                    </div>
+                </div>
+                
+                <div class="concern-job-type-and-estimated-hours-container">
+                    <div class="row">
+                        <div class="col-xs-12 col-sm-6 concernTextBoxWrapper">
+                            <label class="STA-header">{{'Label_Concern' | translate}}</label>
+                           <add-edit-text-tag ng-if="M_AddEditApp.loadAddEditTextTagBlock" non-editable-concern = "nonEditableConcern" object-payload="directivePayload" tag-name="Concern" is-editable="!M_AddEditApp.appointmentJSON.SOHeaderId" update-tag-method="changeCustomer()"
+                                is-new-input-tag-not-available="M_AddEditApp.isNewInputTagNotAvailableForConcern">
+                           </add-edit-text-tag>
+
+                        </div>
+                        
+                        <div class="col-xs-12 col-sm-4 bp-job-section-container">
+                            <div class="row">
+                                <div class="col-xs-7 col-sm-12 select-job-type-section">
+                                    <label class="STA-header">{{'Job_type' | translate}}</label>
+                                    <autocompletev2 id="autocompletev2Id"
+                                        template-name="JobType"
+                                        section-name="JobType" 
+                                        section-id="JobType"
+                                        is-disabled = "M_AddEditApp.appointmentJSON.SOHeaderId || M_AddEditApp.previousStateName === 'CustomerOrder_V2'"
+                                        is-non-searchable-dropdown="true"
+                                        list-data="M_AddEditApp.jobTypeList" 
+                                        default-value="M_AddEditApp.appointmentJSON.selectedJobTypeLabel"/>
+                                </div>
+                                
+                                <div class="col-xs-7 col-sm-12 estimatedHoursContainer">
+                                    <label class="STA-header">{{'Estimated_hours' | translate}}</label>
+                                    <numbers-only id-value = "estimatedHoursInputId"
+                                        class-value = "bp-input-text"
+                                        input-model-value = "M_AddEditApp.appointmentJSON.estimatedHours" 
+                                        include-negative = "false"
+                                        include-zero = "true"
+                                        max-length="2"
+                                        max-value="8.12"
+                                        precision-length = "2"
+                                        force-precision-length = "false"
+                                        ng-class-name= "{'bp-redborder':M_AddEditApp.isError && (!M_AddEditApp.appointmentJSON.estimatedHours || M_AddEditApp.appointmentJSON.estimatedHours > 8)}" 
+                                        blur-value = "F_AddEditApp.setRoundedValueForEstimatedHours(M_AddEditApp.appointmentJSON.estimatedHours)"/>
+                                </div>
+                            </div>
+                        </div>
+                      
+                    </div>
+                </div>
+                
+                
+                
+                <div class="row" ng-if = "M_AddEditApp.appointmentJSON.estimatedHours && M_AddEditApp.SelectedAppointmentDate">
+                    <div class="col-xs-12 assign-technicain-selector">
+                        <div id="assign-technician-content" class="time-selector" 
+                            ng-click="F_AddEditApp.openOrCloseAssignTechniSelectorView('expandedAssignTechnicianSelector')" 
+                            ng-if="M_AddEditApp.currentAssignTechnicianSelectionView === 'collapsedAssignTechnicianSelector'"
+                            ng-class="{'bg-coral-light2' : M_AddEditApp.showSelectTimeError  && M_AddEditApp.assignTechnicianJSON.selectedTechnicianId, 'bp-redborder': M_AddEditApp.showSelectTimeError && M_AddEditApp.assignTechnicianJSON.selectedTechnicianId}" >
+                            <span ng-class="{'bg-coral-light2' : M_AddEditApp.showSelectTimeError && M_AddEditApp.assignTechnicianJSON.selectedTechnicianId }" ng-if = "!M_AddEditApp.assignTechnicianJSON.selectedTechnicianName && !M_AddEditApp.assignTimeJSON.selectedTechnicianTime">{{ 'Assign_technician' | translate }}</span>
+                            <span ng-if = "M_AddEditApp.assignTechnicianJSON.selectedTechnicianName">Technician: {{ M_AddEditApp.assignTechnicianJSON.selectedTechnicianName}}</span>
+                            <span ng-if = "M_AddEditApp.assignTimeJSON.selectedTechnicianTime"> - {{M_AddEditApp.assignTimeJSON.selectedTechnicianTime}}</span>
+                            <i class="bp-blue downArrow svg_width_2px"  ng-include="'{!Application_Images}/Icons/arrow-down-1.svg'"></i>
+                        </div>                        
+                        <div id="assign-technician-grid" ng-show="M_AddEditApp.currentAssignTechnicianSelectionView === 'expandedAssignTechnicianSelector'" class="day-selector-view-container  bp-collapse-div-transition assign-tech-container" ng-class="{'bp-expand-div-transition': M_AddEditApp.currentAssignTechnicianSelectionView === 'expandedAssignTechnicianSelector'}">
+                            <div class="week-selector-container">
+                                <div class="weekSelector">
+                                    <span class="H400 assign-label">{{ 'Assign_technician' | translate }}</span>
+                                     <i class="bp-blue upArrow bp-pointer-cursor svg_width_2px" ng-if="M_AddEditApp.currentAssignTechnicianSelectionView === 'expandedAssignTechnicianSelector'" ng-include="'{!Application_Images}/Icons/arrow-up-1.svg'" 
+                                        ng-click="F_AddEditApp.openOrCloseAssignTechniSelectorView('collapsedAssignTechnicianSelector')">
+                                    </i>
+                                    
+                                    
+                                    <div>
+                                       <div class = "bp-autocomplete-Wrapper autocomplete_v2" id = "assign-tech-id">
+                                            <span class = "bp-autocomplete-image-icon" ng-click = "F_AddEditApp.setFocusOnInput('assign-tech-input')">
+                                                <i ng-include = "'{!Application_Images}/Icons/arrowDown.svg'"  class="bp-blue bp-cursor-pointer svg_width_2px"></i>
+                                             </span>
+                                                                            
+                                            <input type="text" id="assign-tech-input" class = "bp-autocomplete-input  H301 bp-input-text bp-bold-font" placeholder="{{'Please_select_technician' | translate}}" ng-keyup="F_AddEditApp.keyPressNavigationOnDropdownElements($event, 'assigntech-dropdown-div', 'assigntech', M_AddEditApp.technicianList)" 
+                                                ng-model = "M_AddEditApp.assignTechnicianJSON.selectedTechnicianName" ng-focus="F_AddEditApp.scrollTopDtopDown('assigntech-dropdown-div');M_AddEditApp.showAssignTechnicianDropdown = true;" 
+                                                ng-blur="M_AddEditApp.showAssignTechnicianDropdown = false; F_AddEditApp.hideDropdown();" 
+                                                 readonly="readonly"/>
+                                            <div class = "bp-autocomplete-dropdown-wrapper" ng-show="M_AddEditApp.showAssignTechnicianDropdown" id = "assigntech-dropdown-div">
+                                                <ul>
+                                                     <li ng-repeat = "techRec in M_AddEditApp.technicianList" id = "assigntech_{{$index}}" ng-class="{'selected-row': $index == M_AddEditApp.currentDropDownIndex && (techRec.AvailableHoursMorningColor != '#97A0AF' || techRec.AvailableHoursAfternoonColor != '#97A0AF') , 'disable-li' : techRec.AvailableHoursMorningColor == '#97A0AF' && techRec.AvailableHoursAfternoonColor == '#97A0AF'}" ng-mousedown="F_AddEditApp.selectAssignTechnician(techRec,$event)">
+                                                        <div class="form-group-info">
+                                                            <span class="bp-autocomplete-text H301" rel = "assign-tech">{{techRec.Name}}</span>
+                                                        </div>
+                                                        <div class="available-hour-container">
+                                                          <span class="hour-text">Hours available</span>
+                                                          <span class="am-hour" ng-class="{'bp-dark-grey2': techRec.AvailableHoursMorningColor == '#344563', 'bp-main-bg-orange': techRec.AvailableHoursMorningColor == '#ff9920','bp-main-bg-grey2' : techRec.AvailableHoursMorningColor == '#97A0AF' }">AM:{{techRec.AvailableHoursMorning}}</span>
+                                                          <span class="am-hour" ng-class="{'bp-dark-grey2': techRec.AvailableHoursAfternoonColor == '#344563', 'bp-main-bg-orange': techRec.AvailableHoursAfternoonColor == '#ff9920','bp-main-bg-grey2' : techRec.AvailableHoursAfternoonColor == '#97A0AF' }"> PM:{{techRec.AvailableHoursAfternoon}}</span>
+                                                        </div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                </div>
+                                 
+                                 
+                                 <div ng-if = "M_AddEditApp.assignTechnicianJSON.selectedTechnicianName">
+                                 <span class="H400 time-label">{{ 'Choose_a_starting_time' | translate }}</span>
+                                       <div class = "bp-autocomplete-Wrapper autocomplete_v2" id = "time-slot-id">
+                                            <span class = "bp-autocomplete-image-icon" ng-click = "F_AddEditApp.setFocusOnInput('time-slot-input')">
+                                                <i ng-include = "'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue bp-cursor-pointer svg_width_2px"></i>
+                                             </span>
+                                            <input type="text" id="time-slot-input" class = "bp-autocomplete-input H301 bp-input-text bp-bold-font" placeholder="{{'Please_select_time' | translate}}" ng-keyup="F_AddEditApp.keyPressNavigationOnDropdownElements($event, 'time-slot-div', 'timeslot', M_AddEditApp.timeSlotJSON)" 
+                                                ng-model = "M_AddEditApp.assignTimeJSON.selectedTechnicianTime" ng-focus="F_AddEditApp.scrollTopDtopDown('time-slot-div');M_AddEditApp.showAssignTimeDropdown = true" 
+                                                ng-blur="M_AddEditApp.showAssignTimeDropdown = false; F_AddEditApp.hideDropdown();" 
+                                                 readonly="readonly"
+                                                ng-class="{'bp-redborder':M_AddEditApp.isError && M_AddEditApp.assignTechnicianJSON.selectedTechnicianName}"/>
+                                            <div class = "bp-autocomplete-dropdown-wrapper" ng-show="M_AddEditApp.showAssignTimeDropdown" id = "time-slot-div">
+                                                <ul>
+                                                     <li ng-repeat = "timeRec in M_AddEditApp.timeSlotJSON" id = "timeslot_{{$index}}" ng-class="{'selected-row': $index == M_AddEditApp.currentDropDownIndex,'disable-li' : timeRec.availabiltyStatus == 'Not available'}" ng-mousedown="F_AddEditApp.selectAssignTimeSlot(timeRec,$event)">
+                                                        <div class="form-group-info">
+                                                            <span class="bp-autocomplete-text H301">{{timeRec.TimeSlotRec}}</span>
+                                                        </div>
+                                                         <div class="available-hour-container">
+                                                          <span class="hour-text">{{timeRec.availabiltyStatus}}</span>
+                                                        </div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <span ng-if="M_AddEditApp.assignTimeJSON.availabiltyStatus == 'Push'" class="push-notification-error">
+                                            <span class="orange-tool-tip">i</span>
+                                            <sapn class="orange-notification-message">There is a conflicting appointment at this time. That appointment will be pushed to fit this job.</sapn>
+                                        </span>
+                                </div>
+                                   
+                                   
+                                   <button class="bp-btn bp-btn-normal" ng-click="F_AddEditApp.openOrCloseAssignTechniSelectorView('collapsedAssignTechnicianSelector')">{{ 'CONFIRM' | translate }}</button>
+                                    
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+                
+                
+                <button class="primary bp-normal-button" ng-click = "F_AddEditApp.saveAppointment()" ng-if="!M_AddEditApp.isEdit">{{ 'Create_appointment' | translate }}</button>
+               <button class="primary bp-normal-button" ng-click = "F_AddEditApp.saveAppointment()" ng-if="M_AddEditApp.isEdit">{{ 'Save_appointment' | translate }}</button>
+               <div class = "delete-appointment-container">
+                   <span class="icon-container" ng-click="F_AddEditApp.deleteAppointment(M_AddEditApp.appointmentJSON.appointmentId)" data-toggle="tooltip" title="Delete" 
+                        ng-if="M_AddEditApp.appointmentJSON.appointmentId && M_AddEditApp.isEdit && !M_AddEditApp.appointmentJSON.SOHeaderId">
+                        <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="icon_fill_blue bp-pointer-cursor bp-svg-19" ></i>
+                        <span class="H400 bp-blue-font bp-blue-hover bp-cursor-pointer">{{ 'Delete_appointment' | translate }}</span>
+                   </span>
+               </div>  
+            </div>
+        </div> 
+        
+        
+        
+        
+        
+    </div>
+    <div class="LoadingDiv" ng-show="M_AddEditApp.isLoading">
+        <div class="loadingIconContainer">
+            <c:BPLoading />
+        </div>
+    </div>
+</full-page-modal>
+
+<!-- Start: Service Job Assignment modal window -->
+    <div id="LinkServiceJobModal" class="modal fade modal-container upload-form-modal-window" role="dialog">
+            <div class="modal-dialog">
+                <!-- Modal content-->
+                <div class="modal-content col-xs-12 P0">
+                    <div class="modal-body">
+                       <header>
+                           <label class="line-height-xlarge H600 M0">Link an existing service job</label>
+                       </header>
+                       <section class="section-container">
+                           
+                           <div class="col-xs-6 P0"> 
+                              <label class="H300">{{'Filter_by_job_type' | translate}}</label>
+                              <autocompletev2 id="autocompletev2Id"
+                                  template-name="JobType"
+                                  section-name="JobType" 
+                                  section-id="LinkedSOJobType"
+                                  is-non-searchable-dropdown="true"
+                                  list-data="M_AddEditApp.jobTypeListForLinkSOModal"
+                                  default-value="M_AddEditApp.appointmentJSON.selectLinkedSOJobTypeLabel"/>
+                          </div>
+                           
+                           <div class="col-xs-12 P0">
+                           <label class="H300">Find an existing service job  </label>
+                               <div class = "bp-autocomplete-Wrapper autocomplete_v2">
+<!--                                     <span class = "bp-autocomplete-image-icon">
+                                        <i ng-include = "'{!Application_Images}/Icons/search.svg'" class="bp-blue bp-cursor-pointer svg_width_2px"></i>
+                                    </span>
+ -->                                        <autocompletev2 id="autocompletev2Id"
+                                            template-name="Entity"
+                                            section-name="Linked Service Job" 
+                                            section-id="LinkedServiceJob"
+                                            linked-so-job-type-id="{{M_AddEditApp.appointmentJSON.selectLinkedSOJobTypeId}}"
+                                            default-value="M_AddEditApp.appointmentJSON.selectedSODescription"
+                                            set-dir-refresh-fn-for-param-change="F_AddEditApp.setDirRefreshFnForParamChange(theDirFn)"/>
+                                </div>
+                           </div>
+                           <div class="button-container col-xs-12 P0">
+                                <button class="link-subtle H300" ng-click="F_AddEditApp.hideLinkedServiceJobModal()">Cancel</button>
+                               <button class="medium secondary" ng-click="F_AddEditApp.linkServiceJobToAppointmentRec(M_AddEditApp.appointmentJSON.selectedLinkedSORecord)">Link</button>
+                                
+                           </div>
+                       </section>
+                   </div>
+               </div>
+           </div>
+    </div>
+    <!-- End: Service Job Assignment modal window -->
+    
+</apex:page>

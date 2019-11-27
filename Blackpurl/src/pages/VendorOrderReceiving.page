@@ -1,0 +1,2036 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"  controller="GlobalController">
+        <!-- <apex:stylesheet value="{!Application}/css/VendorOrderReceiving.css"/>
+         <apex:stylesheet value="{!Application}/css/global.css"/> -->
+        <c:VendorInfo />
+        <c:COPopup />
+        <c:PartPopUpOnVendorOrder />
+         <div id="VRLoadingIconContainerId" class="VRLoadingIconContainer pageloadDiv">
+            <!--<div class="loadingIcon">
+                <c:BlackpurlLoadingIcon /> 
+            </div>-->
+        </div>  
+        <div>
+            <route-loading-indicator></route-loading-indicator>
+            <div ng-cloak="ng-cloak"> <!-- ng-if="!isRouteLoading"  -->
+            <!-- START: Page Content -->
+            <div class="content">
+
+                <!-- START: Side panel start -->
+                <div class="col-lg-2 col-md-2 sidePanel">
+                    <div class="clearfix"></div>
+                    <div class="orderNumber row">
+                        <span>{{ 'Label_Order' | translate }} #: 
+                            <span>{{VORModel.VOR_Header.VORName}}</span>
+                        </span>
+                    </div>
+                    <div class="sidepaneluserinfo row" style="padding-bottom: 5px;">
+                        <!-- <div class="userimg">
+                            <div style="float: left; background-color: #373c40; border-radius: 5px; padding: 1px; margin-right: 5px;">
+                                <img src="{!Application_Images}/star.png" style="height: 35px; width: 35px; padding: 5px;" />
+                            </div>
+                        </div> -->
+                        <div class="userNameblock"> <!-- style="margin-top: 0px;" -->
+                            <p> 
+                                <a ng-mouseover="VORModel.showVendorInfoOverlay($event, VORModel.VOR_Header.VendorId);" 
+                                    ng-mouseleave="VORModel.hideVendorInfoOverlay();" id="CO_workflow_sidepanel_cust_name_link">
+                                    {{VORModel.VOR_Header.VendorName}}</a>
+                            </p>
+                            <span class="userStatus" style="margin: 0px;">{{VORModel.VOR_Header.Status}}</span>
+                        </div>
+                    </div>
+                    <!-- <div class="clearfix"></div>
+                    <div class="row statusRow"></div> -->
+                    <div class="clearfix"></div>
+                    <!-- <div class="row ownerInfo">
+                        <img src="{!Application_Images}/profile_default.jpg" style="height: 30px; width: 30px" />
+                        <span class="Name">{!$User.FirstName}
+                                {!$User.LastName}
+                        </span>
+                    </div> -->
+
+                    <!-- start: leftPanelLinks  -->
+                    <div class="leftPanelLinks" style="height: 375px">
+                        <a class="row T10 mainSectionLink"
+                            ng-class="{'active' : VORModel.activeSidepanelink =='#InfoSection'}"
+                            href="#VOR_Info_Block"
+                            ng-click="VORModel.sidepanelLink($event, 'Info')">
+                            <span class="alphabetLetter">{{VORModel.LeftSideHeadingLables.Info}}</span>{{ 'Page_Section_Info' | translate }}
+                        </a> 
+                        <a class="row T10 subSectionLink" href="#VOR_Info_Block"
+                            ng-click="VORModel.sidepanelLink($event, 'Info')">
+                            <span class="alphabetLetter"></span>{{ 'Label_General' | translate }}
+                        </a> 
+                        <a class="row T10 subSectionLink"
+                            href="#VOR_Vendor_Order_Receiving_Block"
+                            ng-click="VORModel.sidepanelLink($event, 'Info')"
+                            ng-show="VORModel.vendorOrdersList.length != 0 && VORModel.VOR_Header.VendorName != null && VORModel.vendorOrdersList.length != 0 && VORModel.VOR_Header.Status != 'Stocked' && VORModel.VOR_Header.Status != 'Invoiced'">
+                            <span class="alphabetLetter"></span>{{ 'Vendor_Receiving_For_Vendor_Order' | translate }}
+                        </a>
+                        <a class="row T10 mainSectionLink" 
+                            ng-if="VORModel.VOR_Header.VendorName != null && (VORModel.VORLineItemGroupList.length != 0 ||  VORModel.outstandingVOGList.length != 0)"
+                            ng-class="{'active' : VORModel.activeSidepanelink =='#ReceivedSection'}"
+                            href="#VOR_Vendor_Received_Block"
+                            ng-click="VORModel.sidepanelLink($event, 'Received')">
+                            <span class="alphabetLetter">{{VORModel.LeftSideHeadingLables.Received}}</span>{{ 'Label_Received' | translate }}
+                        </a>
+                        <a class="row T10 subSectionLink" href="#VOR_Items_Block"
+                            ng-if="VORModel.VOR_Header.VendorName != null && VORModel.VORLineItemGroupList.length != 0"
+                            ng-click="VORModel.sidepanelLink($event, 'Received')">
+                            <span class="alphabetLetter"></span>{{ 'Items' | translate }}
+                        </a> 
+                        <a class="row T10 subSectionLink " style="margin-left: 18px"
+                            href="#VOR_Outstanding_Items_Block"
+                            ng-click="VORModel.sidepanelLink($event, 'Received')"
+                            ng-show="VORModel.VOR_Header.VendorId != null && VORModel.totalOutstandingItems != 0 && VORModel.VOR_Header.Status == 'In Progress' 
+                               && VORModel.VOR_Header.VendorName != null
+                               && VORModel.outstandingVOGList.length != 0">
+                            {{ 'Outstanding_items' | translate }} <!-- for {{VORModel.SelectedVendorOrdersList[0]}} --> 
+                        </a>
+                        <a class="row T10 mainSectionLink"
+                            ng-class="{'active' : VORModel.activeSidepanelink =='#FinalizeSection'}"
+                            href="#VOR_Finalize_Block"
+                            ng-click="VORModel.sidepanelLink($event, 'Finalize')"
+                            ng-show="VORModel.VOR_Header.VendorId != null &&  VORModel.VOR_Header.Status == 'In Progress'
+                                   && VORModel.VOR_Header.VendorName != null">
+                                   <!-- && (VORModel.VOR_Header.Status != 'Stocked' && VORModel.VOR_Header.PackagingSlipNumber != undefined && VORModel.VOR_Header.PackagingSlipNumber != '' && VORModel.VOR_Header.PackagingSlipNumber != null) Commented by richa -->
+                            <span class="alphabetLetter">{{VORModel.LeftSideHeadingLables.Finalize}}</span>{{ 'Finalize' | translate }}
+                        </a>
+                        <a class="row T10 mainSectionLink"
+                            ng-class="{'active' : VORModel.activeSidepanelink =='#InvoiceHistorySection'}"
+                            href="#VOR_Vendor_Invoicing_Block"
+                            ng-click="VORModel.sidepanelLink($event, 'InvoiceHistory')"
+                            ng-show="VORModel.VOR_Header.VendorId != null && (VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced') 
+                                  && VORModel.VOR_Header.VendorName != null
+                                  && VORModel.VIHistoryList.length != 0">
+                            <span class="alphabetLetter">{{VORModel.LeftSideHeadingLables.Invoice_History}}</span>{{ 'Label_Invoice_History' | translate }}
+                        </a>
+                    </div>
+                    <!-- end: leftPanelLinks  -->
+                    
+                    <!-- start: sideBarTotals  -->
+                    <div class="sideBarTotals">
+                        <div class="mainSectionLink totalDue C1">
+                            <a class="T2">{{ 'Label_Received' | translate }}:</a>
+                            <a class="T2 text-right"> {{VORModel.GroupTotalCost | currency}}</a>
+                        </div>
+                    </div>
+                    <!-- end: sideBarTotals  -->
+                </div>
+                <!-- END: Left Side Bar -->
+
+                <!-- START: Center Panel -->
+                <div class="col-lg-10 col-md-10 mainSection"> <!-- Scroll Issue: style="margin-top: 98px;": Removed By Pooja-->
+                    <div class=" sectionHeader row fixedRow">
+                    
+                        <!-- Start: fixed header Info Section -->
+                        <div class="col-lg-6 col-md-6"
+                            ng-show="VORModel.activeSidepanelink =='#InfoSection'">
+                            <div class="fixedHeaderText">
+                                <span class="headerlabel">
+                                    <i class="fa fa-angle-right" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                        style="width: 10px; padding: 0 3px;"
+                                        ng-show="!VORModel.displaySections.Info"
+                                        ng-Click="VORModel.showSections('Info')"> 
+                                    </i> 
+                                    <i class="fa fa-angle-down" style="width: 10px;" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                        ng-show="VORModel.displaySections.Info"
+                                        ng-Click="VORModel.showSections('Info')">
+                                    </i>
+                                    <span class="divider">|</span>
+                                    <span class="headdingFirstText">{{ 'A' | translate }}</span>
+                                    <span class="T2">{{ 'Page_Section_Info' | translate }}</span>
+                                </span>
+                                <!-- <span class="ActionIcons pull-left ">
+                                    <div class="dropdown selectDropdown checkboxDropdown">
+                                        <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">
+                                            {{ 'Label_Actions' | translate }} <span class="caret"></span>
+                                        </button>
+                                    </div>
+                                </span> -->
+                                <span class="ActionIcons pull-left"
+                                    ng-show="VORModel.showDeleteReceivingLink()">
+                                    <div class="dropdown selectDropdown checkboxDropdown">
+                                        <button class="btn dropdown-toggle" type="button" data-toggle="dropdown" ng-disabled = "!GroupOnlyPermissions['Vendor receiving']['create/modify']">{{ 'Label_Actions' | translate }}
+                                            <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a ng-click="VORModel.vendorRecievingDelete()">{{ 'Delete_receiving' | translate }}</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </span> 
+                            </div>
+                        </div>
+                        <!-- End: fixed header Info Section -->
+                        
+                        <!-- Start: condition when VendorName null -->
+                        <div ng-if="VORModel.VOR_Header.VendorName != null">
+                        
+                            <!-- Start: fixed header Received Section-->
+                            <div class="col-lg-4 col-md-4"
+                                ng-show="VORModel.activeSidepanelink =='#ReceivedSection' && (VORModel.VORLineItemGroupList.length != 0 ||  VORModel.outstandingVOGList.length != 0)">
+                                <div class="fixedHeaderText">
+                                    <span class="headerlabel"> 
+                                        <i class="fa fa-angle-right"
+                                        ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}" style="width: 10px; padding: 0 3px;"
+                                            ng-show="!VORModel.displaySections.Received"
+                                            ng-Click="VORModel.showSections('Received')"> 
+                                        </i> 
+                                        <i class="fa fa-angle-down" style="width: 10px;" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                            ng-show="VORModel.displaySections.Received"
+                                            ng-Click="VORModel.showSections('Received')"> 
+                                        </i> 
+                                        <span class="divider">|</span> 
+                                        <span class="headdingFirstText">{{VORModel.LeftSideHeadingLables.Received}}</span>
+                                        
+                                        <span class="T2">{{ 'Label_Received' | translate }}</span>
+                                    </span>
+                                    <span class="ActionIcons pull-left"
+                                        > 
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <button class="btn dropdown-toggle" type="button" ng-disabled = "VORModel.VORLineItemGroupList.length == 0" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                                <span class="caret"></span>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a data-target="#PrintBarCodeLabel" data-toggle="modal" ng-click = "VORModel.getLabelPrintingData(VORModel.VOR_Header.VORId)">{{ 'Print_barcode_labels' | translate }}</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                </span>
+                                    <!-- <span class="ActionIcons pull-left "> -->
+                                        <!-- <div class="dropdown selectDropdown checkboxDropdown"> -->
+                                            <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">
+                                                {{ 'Label_Actions' | translate }} <span class="caret"></span>
+                                            </button> -->
+                                        <!-- </div> -->
+                                    <!-- </span> -->
+                                    <!-- Start: Added by richa 07/02/2017 -->
+                                    <span class="ActionIcons service_order_print_icon pull-left " 
+                                     ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                    ng-if="VORModel.VORLineItemGroupList.length != 0"><!-- Ticket#1830: ng-if="VORModel.VORLineItemGroupList.length != 0":]
+                                                                                                                                                    Added By Pooja 11 Apr. 2017 -->
+                                        <i class="fa fa-print"
+                                            ng-click="VORModel.PrintVendorReceiving()">
+                                        </i>
+                                    </span>
+                                    <!-- End: Added by richa 07/02/2017 -->
+                                    <!-- START: added by kajal 30th march 2017 #1760 -->
+                                    <span class="ActionIcons pull-left" ng-if="VORModel.outstandingVOGList.length > 0">
+                                        <div class="VR_OrderSection">
+                                            <button class="btn btn-default addSelectedBtnDisabled text-uppercase" 
+                                                ng-click="VORModel.disableAddSelectedButton = true; VORModel.addSelectedItemsFromOutstandingToItemSection()"
+                                                ng-class="{'addSelectedBtnActive' : VORModel.enableSelectedBtnInReceivedSection()}"
+                                                ng-disabled="(VORModel.disableAddSelectedButton || !VORModel.enableSelectedBtnInReceivedSection())">Add Selected
+                                            </button>
+                                        </div>
+                                    </span>
+                                    <!-- END: added by kajal 30th march 2017 #1760 -->
+                                    <span class="T3  pull-right total" style="color: #337ab7">
+                                        {{ 'Currency_Symbol' | translate }}{{VORModel.GroupTotalCost| number:2}}
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- End: fixed header Received Section-->
+                            
+                            <!-- Start: fixed header Finalize Section-->
+                            <div class="col-lg-4 col-md-4" ng-show="VORModel.activeSidepanelink =='#FinalizeSection'"><!-- && (VORModel.VOR_Header.Status != 'Stocked' && VORModel.VOR_Header.PackagingSlipNumber != undefined && VORModel.VOR_Header.PackagingSlipNumber != '' && VORModel.VOR_Header.PackagingSlipNumber != null) commented by richa -->
+                                <div class="fixedHeaderText">
+                                    <span class="headerlabel"> 
+                                        <i class="fa fa-angle-right" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}" style="width: 10px; padding: 0 3px;"
+                                            ng-show="!VORModel.displaySections.Finalize"
+                                            ng-Click="VORModel.showSections('Finalize')"> 
+                                        </i>
+                                        <i class="fa fa-angle-down" style="width: 10px;" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                            ng-show="VORModel.displaySections.Finalize"
+                                            ng-Click="VORModel.showSections('Finalize')">
+                                        </i>
+                                        <span class="divider">|</span>
+                                        <span class="headdingFirstText">{{VORModel.LeftSideHeadingLables.Finalize}}</span>
+                                        <span class="T2">{{ 'Finalize' | translate }}</span>
+                                    </span>
+                                    <span class="ActionIcons pull-left ">
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">
+                                                {{ 'Label_Actions' | translate }} <span class="caret"></span>
+                                            </button> -->
+                                        </div>
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- End: fixed header Finalize Section-->
+                            
+                            <!-- Start: fixed header Invoice History Section-->
+                            <div class="col-lg-4 col-md-4"
+                                ng-show="VORModel.activeSidepanelink =='#InvoiceHistorySection' && VORModel.VIHistoryList.length != 0">
+                                <div class="fixedHeaderText">
+                                    <span class="headerlabel">
+                                        <i class="fa fa-angle-right" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}" style="width: 10px; padding: 0 3px;"
+                                            ng-show="!VORModel.displaySections.InvoiceHistory"
+                                            ng-Click="VORModel.showSections('InvoiceHistory')">
+                                        </i>
+                                        <i class="fa fa-angle-down" style="width: 10px;" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                            ng-show="VORModel.displaySections.InvoiceHistory"
+                                            ng-Click="VORModel.showSections('InvoiceHistory')">
+                                        </i>
+                                        <span class="divider">|</span> 
+                                        <span class="headdingFirstText">{{VORModel.LeftSideHeadingLables.Invoice_History}}</span>
+                                        <span class="T2">{{ 'Label_Invoice_History' | translate }}</span>
+                                    </span>
+                                    <span class="ActionIcons pull-left ">
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">
+                                                {{ 'Label_Actions' | translate }} <span class="caret"></span>
+                                            </button> -->
+                                        </div>
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- End: fixed header Invoice History Section-->
+                            
+                        </div>
+                        <!-- End: condition when VendorName null -->
+                        
+                        <!-- Start: fixed header Content -->
+                        <div class="col-lg-6 col-md-6 fixedContent">
+                            <i class="fa fa-refresh fa-2x fa-fw pull-left"
+                                ng-class="{'fa-spin' : VORModel.isrefresh}"
+                                ng-click="VORModel.loadVendorRefresh();"> <!-- pull-left Added by richa #143 03/10/2016 -->
+                            </i>
+                            <!-- <div class="fa-icons pull-right">
+                                <i class="fa fa-floppy-o"></i>
+                                <a aria-expanded="false" class="dropdown-toggle" data-toggle="dropdown" role="button">
+                                    <i class="fa fa-cog"></i>
+                                </a>
+                                <ul id="VOR_fixed-seacrh-row_sub-search_icons-div_link_dropdown"
+                                    class="link_dropdown dropdown-menu" role="menu">
+                                    <li>
+                                        <a ng-click="VORModel.confirmDelete()">{{ 'Vendor_Receiving_Delete_Vendor_Receiving' | translate }}</a>
+                                    </li>
+                                </ul>
+                            </div> --> <!-- Commented by richa -->
+                            <div class="col-lg-10 col-md-9 searchToAdd pull-left"> <!-- pull-left Added by richa, searchToAddMR Removed by richa #143 03/10/2016 -->
+                                <div class="input-group" ng-class="{'activeSearchDiv' : VORModel.searchDivActive}">
+                                    <div class="input-group-btn">
+                                        <button type="button" class="btn C5 LabelBtn">
+                                            <span class="T5" style="color: #939CA9;">{{ 'Label_To' | translate }}:</span>
+                                            <span style="color: #FFFFFF;">{{VORModel.selectedItem}}</span>
+                                        </button>
+                                        <button type="button" class="btn C5 dropdown-toggle caretBtn"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <span class="caret"></span> <span class="sr-only">{{ 'Label_Toggle_Dropdown' | translate }}</span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-click="VORModel.UpdateSelectedSection($event,$index)">
+                                                <a href="#VOR_Info_Block"
+                                                    ng-click="VORModel.dropDownItem($event, 'Info')">{{ 'Page_Section_Info' | translate }}
+                                                </a> 
+                                                <a
+                                                    ng-if="VORModel.VOR_Header.VendorName != null && (VORModel.VORLineItemGroupList.length != 0 ||  VORModel.outstandingVOGList.length != 0)"
+                                                    href="#VOR_Vendor_Received_Block"
+                                                    ng-click="VORModel.dropDownItem($event, 'Received')">{{ 'Label_Received' | translate }}
+                                                </a>
+                                                <a href="#VOR_Finalize_Block"
+                                                    ng-click="VORModel.dropDownItem($event, 'Finalize')"
+                                                    ng-if="VORModel.VOR_Header.VendorId != null && VORModel.VOR_Header.Status == 'In Progress'
+                                                           && VORModel.VOR_Header.VendorName != null">{{ 'Finalize' | translate }}
+                                                    <!-- && (VORModel.VOR_Header.Status != 'Stocked' && VORModel.VOR_Header.PackagingSlipNumber != undefined && VORModel.VOR_Header.PackagingSlipNumber != '' && VORModel.VOR_Header.PackagingSlipNumber != null) Commented by richa -->
+                                                </a>
+                                                <a href="#VOR_Vendor_Invoicing_Block"
+                                                    ng-click="VORModel.dropDownItem($event, 'InvoiceHistory')"
+                                                    ng-if="VORModel.VOR_Header.VendorId != null && (VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced') 
+                                                       && VORModel.VOR_Header.VendorName != null 
+                                                       && VORModel.VIHistoryList.length != 0">{{ 'Label_Invoice_History' | translate }}
+                                                </a>
+                                            </li>
+                                            <!-- Ticket #1890 - Nidhi 
+                                            <li role="separator" class="divider"></li>
+                                            <li><a >ADVANCED SEARCH</a></li> -->
+                                        </ul>
+                                    </div>
+                                    <!-- /btn-group -->
+        
+                                    <div
+                                        class="inner-addon right-addon neVendorOrderAutocomplete-container" ng-class="{'disabledSearchToAddElement' : VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced' }">
+                                        <i class="fa fa-search fa-flip-horizontal"></i>
+                                        <c:AutoSuggestVendorOrder />
+                                        <!-- <input class="header-search form-control"  placeholder="search to Add Related" type="text" /> -->
+                                    </div>
+                                </div>
+                                <!-- /input-group -->
+                            </div>
+        
+        
+                        </div>
+                        <!-- End: fixed header Content -->
+            </div>
+
+            <!-- Start: contentWrapper -->
+            <div class="contentWrapper">
+                <!-- Start: Info section -->
+                <div id="VOR_Info_Block" ng-show="VORModel.displaySections.Info">
+                    <!-- START: General Section -->
+                    <div class="main_section row VOR_Info_Block main_section_margin_top">
+                        <div class="row rowGeneral">
+                            <div class="content ">
+                                <div class="col-lg-12 col-md-12 Pl24 MB48"
+                                    id="VOR_General_Block">
+                                    <p class="actionRow T2">
+                                        <span class="sectionText">{{ 'Label_General' | translate }} </span>
+                                        <!-- style="color: #00AEEF" -->
+                                        <!-- commented by pooja -->
+                                        <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> --> 
+                                        <span class="ActionIcons"> <i class="fa fa-question-circle"
+                                            data-toggle="tooltip" title="General Info"></i>
+                                        </span>
+                                    </p>
+                                    <!-- START: Vendor selection section -->
+                                    <div class="col-lg-7 col-md-7 Plr12">
+                                        <p class="T3 MB24 F12 FC2">{{ 'Vendor_Object_Display_Label' | translate }}</p>
+                                        <!-- style="margin-left: 35px;" -->
+                                        <div class="col-md-6 Plr0 ">
+                                            <div class="col-lg-4 col-md-5 Plr0 MB12  ">
+                                                <img class="Profile_pic"
+                                                    src="{!Application_Images}/profile_default.jpg" />
+                                                <!-- style="height:100px;width:95px" -->
+                                                <!-- <div class="sprite profile_defaultLarge pull-left"></div> -->
+                                            </div>
+
+                                            <div class="col-lg-8 col-md-7 Plr12 MB12 ">
+                                                <!--  style="margin-left: -27px;margin-bottom: 20px;" -->
+                                                <div ng-if="VORModel.VOR_Header.VendorName == null">
+                                                    <span class="T1_SubHeading"> <a 
+                                                        ng-click="VORModel.RelatedList_addAction($event, 'Vendor')"
+                                                        id="CO_workflow_sidepanel_add_cust_link">{{ 'Add_vendor' | translate }}</a>
+                                                    </span>
+                                                </div>
+                                                <div ng-if="VORModel.VOR_Header.VendorName!= null">
+                                                    <!-- style="margin-left: 10px;" -->
+                                                    <p class="T1 ">
+                                                        <a ng-mouseover="VORModel.showVendorInfoOverlay($event, VORModel.VOR_Header.VendorId);" 
+                                                            ng-mouseleave="VORModel.hideVendorInfoOverlay();" id="CO_workflow_sidepanel_cust_name_link">
+                                                            {{VORModel.VOR_Header.VendorName}}</a>
+                                                    </p>
+                                                </div>
+
+                                                <!-- <div class="Plr12_Plr0_MB12_imgDiv">
+                                                    <img src="{!Application_Images}/star.png"
+                                                        class="Plr12_Plr0_MB12_imgDiv_img" />
+                                                </div> -->
+                                                <!--  <div style="margin-left: 11px;float:left;background-color: #373c40;border-radius: 5px;padding: 1px;margin-right: 5px;">
+                                                <img src="{!Application_Images}/star.png" style="height:35px; width:35px; padding: 5px;"/>
+                                            </div> -->
+                                                <!-- <p class="T7 T7_vendor">{{ 'Label_Gamification' | translate }}</p> -->
+                                                <!-- <p class="T7" style="margin-left: 24px;padding-top:10px;padding-left:24px;"> Gamification</p>  -->
+                                            </div>
+                                            
+                                            <div class="col-md-12 Plr0 MB24 ">
+                                                <div class="generalInfoData">
+                                                    <label class="T3">{{ 'Label_Status' | translate }}</label>
+                                                </div>
+                                                <div class="mycustvalue viStatus">
+                                                    <span class="FC10 T3"><!--  style="color: green" -->
+                                                        {{VORModel.VOR_Header.Status}}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 Plr0 Mrg20">
+                                                <div class="generalInfoData">
+                                                    <label class="T7 required_field">{{ 'Label_Packing_Slip' | translate }}</label>
+                                                </div>
+                                                <div class="mycustvalue"
+                                                    id="VOR_info_form-label_PACKING_SLIP_selection">
+                                                    <input type="text" class="form-control"
+                                                        id="packingSlipNumber"
+                                                        placeholder="{!$ObjectType.Vendor_Receiving_Header__c.fields.Packing_Slip_Number__c.label}"
+                                                        maxlength="255"
+                                                        ng-model="VORModel.VOR_Header.PackagingSlipNumber"
+                                                        rel="PackingSlipNumberId"
+                                                        ng-class="{'redborder' : VORModel.VendorOrderReceivingFormValidationModal['PackagingSlipNumber']['isError'] == true}"
+                                                        data-toggle="tooltip"
+                                                        title="{{VORModel.VOR_Header['PackagingSlipNumber']['ErrorMessage']}}"
+														ng-disabled="VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced'|| VORModel.VOR_Header.VendorName == null || !GroupOnlyPermissions['Vendor receiving']['create/modify']"
+                                                        ng-change="VORModel.isCommitActionAvailable = false"
+														ng-blur="VORModel.updatePackagingSlipNumber()"
+                                                        ng-enter="VORModel.doBlur(event)" /> <!-- Ticket#1891: ng-enter="VORModel.doBlur(event)": Added By Pooja 14 Apr. 2017 -->
+                                                                                                        <!-- Ticket#1910: ng-blur="VORModel.updateVORHeaderDetails()" -> ng-blur="VORModel.updatePackagingSlipNumber()": 
+                                                                                                         Changed By Pooja 14 Apr. 2017 -->
+                                                </div>
+                                            </div>
+                                            <!-- Start: Commented by richa -->
+                                            <!-- <div class="col-md-12 Plr0 Mrg20">
+                                                <div class="generalInfoData"
+                                                    id="VOR_info_form-label_RECEIVING_FROM_INVOICE">
+                                                    <label class="T7">Receiving From Invoice?</label>
+                                                </div>
+                                                <div class="mycustvalue" 
+                                                ng-class="{'disabledCheckboxReceivingFromInvoice' : VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced' || VORModel.VOR_Header.VendorName == null }"
+                                                    id="VOR_info_form-label_PACKING_SLIP_selection">
+                                                    <div class="form-group small">
+                                                        <label class="checkbox"> <span
+                                                            style="margin-left: 1px;" class="chk_tick"
+                                                            ng-attr-tabindex="100"
+                                                            ng-class="{'chked' : VORModel.VOR_Header.IsReceivingFromInvoice == true}"
+                                                            ng-click="VORModel.onClickReceivingFromInvoice($event);">
+                                                                <i class="fa fa-check-square chksqure"></i>
+                                                        </span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div> -->
+                                            <!-- End: Commented by richa -->
+                                            
+                                            <!-- Start: Commented by richa -->
+                                            <!-- <div class="col-md-12 Plr0 Mrg20"
+                                                id="VOR_info_form-label_RECEIVING_FROM_INVOICE_selection">
+                                                <div class="generalInfoData">
+                                                    <label class="T7 required_field">{{ 'Label_Total' | translate }}</label>
+                                                </div>
+                                                <div class="mycustvalue"
+                                                    id="VOR_info_form-label_PACKING_SLIP_selection" 
+                                                    ng-class="{'disabledInputFieldReceivingFromInvoiceTotal' : VORModel.VOR_Header.IsReceivingFromInvoice || VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced' || VORModel.VOR_Header.VendorName == null}">
+                                                    <input id="receivingFromInvoiceTotal" type="text"
+                                                        rel="SLIP" class="form-control"
+                                                        ng-attr-tabindex="{{tabIndex}}"
+                                                        ng-disabled="VORModel.VOR_Header.IsReceivingFromInvoice && VORModel.VOR_Header.Status == 'Stocked'"
+                                                        placeholder="Total"
+                                                        ng-model="VORModel.VOR_Header.ReceivingFromInvoiceTotal"
+                                                        ng-blur="VORModel.updateVORHeaderDetails()"
+                                                        maxlength="255"
+                                                        ng-class="{redborder : VORModel.VendorOrderReceivingFormValidationModal[ReceivingFromInvoiceTotal][isError] == true}"
+                                                        data-toggle="tooltip"
+                                                        title="{{VORModel.VendorOrderReceivingFormValidationModal[ReceivingFromInvoiceTotal][ErrorMessage]}}"
+                                                        ng-keydown = "VORModel.numberOnlyValue($event)" /> 
+                                                         -->
+                                                         <!-- End: Commented by richa -->
+                                                        
+                                                        <!-- <price-only-input id-value="receivingFromInvoiceTotal" 
+                                                        rel="SLIP" rel-value="SLIP" class-value="form-control" precision-length="2" packaged="true" 
+                                                        input-model = "VORModel"
+                                                        place-holder-value = "0"
+                                                        maxlength="16"
+                                                        input-value="VORModel.VOR_Header.ReceivingFromInvoiceTotal"
+                                                        ng-attr-tabindex="{{tabIndex}}"
+                                                        ng-disabled="VORModel.VOR_Header.IsReceivingFromInvoice && VORModel.VOR_Header.Status == 'Stocked'" 
+                                                        ng-blur="VORModel.updateVORHeaderDetails()" 
+                                                        ng-class="{redborder : VORModel.VendorOrderReceivingFormValidationModal[ReceivingFromInvoiceTotal][isError] == true}"
+                                                        data-toggle="tooltip"
+                                                        validation-modal = ""
+                                                        validation-modal-key = ""
+                                                        title="{{VORModel.VendorOrderReceivingFormValidationModal[ReceivingFromInvoiceTotal][ErrorMessage]}}" /> -->
+                                                        
+                                                        <!-- <number-only-input input-value="VORModel.VOR_Header.ReceivingFromInvoiceTotal" 
+                                                            ng-disabled="VORModel.VOR_Header.IsReceivingFromInvoice && VORModel.VOR_Header.Status == 'Stocked'"
+                                                            tab-index="{{tabIndex}}"
+                                                            disable-attr = "VORModel.VOR_Header.IsReceivingFromInvoice && VORModel.VOR_Header.Status == 'Stocked'"
+                                                            ng-keydown="VORModel.updateVORHeaderDetails()"/> -->
+                                                        
+                                                        <!-- ng-disabled="VORModel.VOR_Header.IsReceivingFromInvoice && VORModel.VOR_Header.Status != 'Stocked'" -->
+                                                
+                                                <!-- Start: Commented by richa -->
+                                                <!-- </div>
+                                            </div> -->
+                                            <!-- End: Commented by richa -->
+                                        </div>
+                                    </div>
+                                    <!-- End: Vendor selection section -->
+                                    <!-- START: Owner selection section -->
+                                    <div class="col-lg-5 col-md-5 Plr12">
+                                        <!-- <div class="col-md-6 Plr0 MB24">
+                                            <p class="T3 MB24 F12">{{ 'Label_Owner' | translate }}</p>
+                                            <div class="col-md-4 Plr0 MB12  ">
+                                                <img
+                                                    src="{!Application_Images}/profile_default.jpg"
+                                                    class="Profile_pic Profile_pic_owner" />
+                                                style="height: 80px; width: 100%;"
+                                            </div>
+                                            <div class="col-md-8 Plr12 MB12 ">
+                                                <p class="T1 Lh25 F16">{!$User.FirstName}
+                                                    {!$User.LastName}</p>
+                                                <div class="Plr12_MB24_MB12_imgDiv">
+                                                    style="float: left; background-color: #373c40; border-radius: 5px;"
+                                                    <img src="{!Application_Images}/star.png"
+                                                        class="Plr12_MB24_MB12_imgDiv_img" />
+                                                    style="height: 25px; width: 25px; padding: 5px;" 
+                                                </div>
+                                                <p class="T7 T7_owner">
+                                                    style="margin-left: 30px; padding-top: 3px;"
+                                                    {{ 'Label_Gamification' | translate }}
+                                                </p>
+                                            </div>
+                                        </div> -->
+                                        <!-- <div class="col-md-12 MB24 Plr0 ">
+                                            <span class="T3 col-md-2 Plr0">{{ 'Label_Status' | translate }}</span> <label
+                                                class="FC10 T3 invoiceStatus">
+                                                 style="color: green"
+                                                {{VORModel.VOR_Header.Status}}
+                                            </label>
+                                        </div> -->
+                                    </div>
+                                    <!-- End: Owner selection section -->
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12 col-md-12 T3 addnewItem "
+                                id="CO_notanyitemadded"
+                                ng-if="VORModel.VOR_Header.VendorName == null">
+                                <a id="CO_notanyitemadded"
+                                    ng-click="VORModel.RelatedList_addAction($event, 'Vendor')">
+                                    {{ 'Add_new_vendor' | translate }}.<!--  You haven't added anything yet! Add something. -->
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END: General Section -->
+
+
+
+                    <!-- START: RECEIVING FOR VENDOR ORDER SECTION -->
+                    <div class="main_section_COU row Info_section_part_container"
+                        ng-show="VORModel.VOR_Header.VendorId != null && VORModel.vendorOrdersList.length != 0 && VORModel.VOR_Header.Status != 'Stocked' && VORModel.VOR_Header.Status != 'Invoiced'">
+                        <!-- <div id="VOR_Vendor_Order_Receiving_Block" ng-show="VORModel.VOR_Header.VendorId != null"
+                    class="Receiving_For_Vendor_Container"> -->
+                        <!-- <div class="main_section_COU row"> -->
+                        <div class="main_section_COU_Header row"
+                            id="VOR_Vendor_Order_Receiving_Block">
+                            <span class="actionRow T2">
+                                <!-- <p class="actionRow T2"> --> <span class="sectionText">{{ 'Vendor_Receiving_For_Vendor_Order' | translate }}</span> <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                <span
+                                class="dropdown selectDropdown checkboxDropdown actionText" >
+                                    <!-- <button class="btn dropdown-toggle" type="button"
+                                        style="padding: 0; background-color: #F6F7F9; color: #939CA9; font-weight: 800;"
+                                        data-toggle="dropdown"> -->
+                                        <span data-toggle="dropdown" class="AddAllItemDropdown">{{ 'Label_Actions' | translate }}</span>
+                                        <!-- <span class="caret"></span>  --><!-- </button> -->
+                                    
+                                    <ul class="dropdown-menu" id="VOR_header_dropdown_ul">
+                                        <li><a id="VOR_header_dropdown_profile"
+                                            ng-click="VORModel.onClickSelectAllVO($event)">{{ 'Label_Add_All_Item' | translate }}</a></li>
+                                    </ul>
+                            </span> <span class="ActionIcons"> <i
+                                    class="fa fa-question-circle" data-toggle="tooltip"
+                                    title="Receiving For Vendor Order"></i>
+                            </span>
+                            </span>
+                            <!-- </p> -->
+                        </div>
+                        <div
+                            class="gid_container T6 VOR_Vendor_Received_Block_grid_container_Empty_Div1_class"
+                            id="VOR_Vendor_Received_Block_grid_container_Empty_Div"
+                            ng-show="VORModel.vendorOrdersList.length == 0">
+                            {{ 'Label_No_Records_Found' | translate }}</div>
+
+
+                        <!-- <div class="gid_container T6"
+                        id="VOR_Vendor_Received_Block_grid_container_Empty_Div"
+                        ng-if="VORModel.vendorOrdersList.length == 0">No records
+                        found</div> -->
+                        <div class="gid_container_Customer"
+                            id="VI_Receivings_block_grid_container"
+                            ng-if="VORModel.vendorOrdersList.length != 0">
+                            <!-- <div ng-if="VORModel.vendorOrdersList.length != 0"> -->
+                            <!-- <div class="gid_container_Customer"> -->
+                            <table class="table" id="ReceivingForVendorOrders_Grid">
+                                <col width="1%" />
+                                <col width="4%" />
+                                <col width="4%" />
+                                <col width="20%" />
+                                <col width="16%" />
+                                <col width="18%" />
+                                <col width="18%" />
+                                <col width="18%" />
+                                <col width="1%" />
+
+
+                                <thead>
+                                    <tr class="tableHeader T3 C2">
+                                        <th></th>
+                                        <th></th>
+										<th>
+											<div class= "small" >
+                                               <label class="checkbox" style="padding-bottom: 1px;">
+                                                    <span class="chk_tick" ng-class="{'PartialCheck':VORModel.getAllVOSelectStatus() == 'partialSelected' ,
+                                                                                       'chked':VORModel.getAllVOSelectStatus() == 'allSelected',
+                                                                                       'permissionDisabledChk': !GroupOnlyPermissions['Vendor receiving']['create/modify']}"
+                                                    style="margin-top: -11px; position: absolute;"
+                                                    ng-click="VORModel.selectDeselectAllVO($event);">
+                                                           <i class="fa fa-check-square chksqure"></i>
+                                                      </span>
+                                               </label>
+                                           </div>
+										</th>
+                                        <th class="th_cursor_style text-uppercase"
+                                            ng-click="VORModel.ReceivingForVO_PageSortControlsAction();">
+                                            <i class="fa fa-sort-asc"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'" />
+                                            <i class="fa fa-sort-desc"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'" />
+                                            <i class="fa fa-sort"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == ''" />
+                                            {{ 'Label_Order' | translate }}
+                                        </th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Qty_Unreceived' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Received' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Order_Type' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Expected_Date' | translate }}</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+
+                                <!-- <tr class="tableHeader T3 C2">
+                                        <th></th>
+                                        <th>
+                                            <div class="form-group small">
+                                                <span class="chk_tick"
+                                                    ng-class="{'chked' : VORModel.isAllVOSelected == true, 'disabled_chk_tick' : VORModel.isAllVOSelected == null}"
+                                                    ng-click="VORModel.onClickSelectAllVO($event);" style="margin-top: 0px;"> <i
+                                                    class="fa fa-check-square chksqure"></i>
+                                                </span>
+                                            </div>
+                                        </th>
+                                        <th style="cursor: pointer;"
+                                            ng-click="VORModel.ReceivingForVO_PageSortControlsAction();">
+                                            <i class="fa fa-sort-asc"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'" />
+                                            <i class="fa fa-sort-desc"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'" />
+                                            <i class="fa fa-sort"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == ''" />
+                                            ORDER #
+                                        </th>
+
+                                        <th class="text-center">QTY UNRECEIVED</th>
+                                        <th class="text-center">RECEIVED</th>
+                                        <th class="text-center">ORDER TYPE</th>
+                                        <th class="text-center">EXPECTED DATE</th>
+                                    </tr> -->
+                                <tbody ng-repeat="vendorOrder in VORModel.vendorOrdersList">
+                                    <!--  START: Vendor Orders list -->
+                                    <tr class="clickable_row" id="rowGroup{{$index}}"
+                                        ng-class="{'disabledCheckOut' : VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced' || (vendorOrder.InProgressVRId != null && vendorOrder.InProgressVRId != VORModel.VOR_Header.VORId) || !GroupOnlyPermissions['Vendor receiving']['create/modify'] }"
+                                        rel="VOR_Vendor_Received_row{{$index}}_edit"
+                                        ng-click="VORModel.editVendorOrderReceivedItem($event, $index)"
+                                        ng-blur="VORModel.editVendorOrderReceivedItem($event, $index)"
+                                        ng-class-even="'C2'">
+                                        <td style="background: #fff"></td>
+                                        <td></td>
+                                        <td
+                                            id="VOR_Vendor_Received_block_grid_container_tbody_tr_td_1_{{$index}}"
+                                            class="vor_exapnded_tr"><label class="checkbox"
+                                            style="padding-top: 15px; padding-bottom: 10px;"> <span
+                                                class="chk_tick"
+                                                ng-class="{'chked' : (vendorOrder.InProgressVRId == VORModel.VOR_Header.VORId  && (VORModel.VOR_Header.Status != 'Stocked' || VORModel.VOR_Header.Status != 'Invoiced') ) ||  (VORModel.isAllVOSelected  && vendorOrder.InProgressVRId == VORModel.VOR_Header.VORId  && (VORModel.VOR_Header.Status != 'Stocked' || VORModel.VOR_Header.Status != 'Invoiced' )), 'disabled_chk_tick' : (vendorOrder.InProgressVRId != null || vendorOrder.InProgressVRId != VORModel.VOR_Header.VORId && VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced' || VORModel.isAllVOSelected == null) && !VORModel.isAllVOSelected
+                                                        , 'permissionDisabledChk': !GroupOnlyPermissions['Vendor receiving']['create/modify'] }"
+                                                ng-click="VORModel.onClickSelectVO($event, $index, vendorOrder.Id);"
+                                                style="margin-top: -15px; height: 30px; width: 30px;">
+                                                    <i class="fa fa-check-square chksqure"></i>
+                                            </span>
+                                        </label></td>
+                                        <td
+                                            id="VOR_Vendor_Received_block_grid_container_tbody_tr_td_2_{{$index}}"
+                                            class="T7">
+                                            <div>{{vendorOrder.VOName}}</div>
+                                            <div
+                                                ng-if="vendorOrder.InProgressVRId != null && vendorOrder.InProgressVRId != VORModel.VOR_Header.VORId"
+                                                style="color: red">{{ 'Receiving_in_progress' | translate }}
+                                                {{vendorOrder.InProgressVR}}</div>
+ 
+                                        </td>
+                                        <td
+                                            id="VOR_Vendor_Received_block_grid_container_tbody_tr_td_3_{{$index}}"
+                                            class="T7 text-center">{{vendorOrder.QtyUnreceived}}</td>
+                                        <td
+                                            id="VOR_Vendor_Received_block_grid_container_tbody_tr_td_4_{{$index}}"
+                                            class="T7 text-center">{{vendorOrder.PercentRecieved | number : 2}}%
+                                        </td>
+                                        <td
+                                            id="VOR_Vendor_Received_block_grid_container_tbody_tr_td_5_{{$index}}"
+                                            class="T7 text-center">{{vendorOrder.OrderType.Name}}</td>
+                                        <td
+                                            id="VOR_Vendor_Received_block_grid_container_tbody_tr_td_6_{{$index}}"
+                                            class="T7 text-center">{{vendorOrder.ExpectedDate}}</td>
+                                        <td style="background: #fff"></td>
+                                    </tr>
+                                    <!--   END: Vendor Orders list-->
+                                    <!--  START: Edit row action -->
+                                    <tr ng-show="VORModel.vendorOrderItems_editRow[$index].isEdit"
+                                        class="edit_panel sample-show-hide T7"
+                                        id="vo_record_row{{$index}}_edit">
+                                        <td style="background: #fff"></td>
+                                        <td style="background: #fff"></td>
+                                        <td style="background: #fff"></td>
+                                        <td colspan="5" class="edit-service-item div-padding"
+                                            id="VOR_Vendor_Received_block_grid_container_tbody_expandtr_td_1_{{$index}}"
+                                            style="padding-right: 0;">
+                                            <div id="vo_tbody_expandtr_edit_box_{{$index}}"
+                                                class="edit_box serviceitemedit col-md-12">
+                                                <div class="its-heading"
+                                                    id="VOR_Vendor_Received_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                    <i class="fa fa-angle-down"></i> <span>{{ 'Label_Actions' | translate }} (1 {{ 'Label_Action_Available' | translate }})</span><!-- by kajal 21st APRIL, 2017 -->
+                                                </div>
+                                                <div
+                                                    id="vo_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}"
+                                                    class="edit-body">
+                                                    <form style="margin-left: -1%;">
+                                                        <div class="radio"
+                                                            id="vo_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+                                                            <label>
+                                                                <p
+                                                                    ng-click="VORModel.vendorOrderItems_editRow[$index].radioValue = (!VORModel.vendorOrderItems_editRow[$index].radioValue)"
+                                                                    class="chk_tick edit-service-chek"
+                                                                    ng-class="{'chked' : VORModel.vendorOrderItems_editRow[$index].radioValue == 1 }"
+                                                                    style="margin-left: 2px;">
+                                                                    <i class="fa fa-check-square chksqure"></i>
+                                                                </p> <span> {{ 'Vendor_Receiving_Receive_All' | translate }} </span>
+                                                            </label>
+                                                        </div>
+                                                        <a 
+                                                            id="vo_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn"
+                                                            class="btn btn-default" role="button"
+                                                            ng-click="VORModel.vendorOrderItems_GoAction($index, null)">{{ 'Label_Apply' | translate }}</a>
+
+                                                        <!-- <a 
+                                                                id="vo_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn"
+                                                                class="btn btn-default editform_btn" role="button"
+                                                                ng-click="VORModel.vendorOrderItems_GoAction($index, null)" style="margin-left: 2px;">{{ 'Label_Apply' | translate }}</a> -->
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style="background: #fff"></td>
+                                    </tr>
+                                    <!-- END: Edit row action -->
+
+                                    <!--  START: Vendor Order Groups list on edit of Vendor Order -->
+                                    <tr ng-show="VORModel.vendorOrderItems_editRow[$index].isEdit">
+                                        <td style="background: #fff"></td>
+                                        <td style="background: #fff"></td>
+                                        <td style="background: #fff"></td>
+                                        <td colspan="5" class="group_exapnded_tr div-padding"
+                                            style="padding-left: 0px; padding-right: 0;">
+                                            <!-- padding-right:20px; -->
+                                            <div ng-repeat="voGroupItem in vendorOrder.VOLIGroups"
+                                                class="volineItem_row_clickable"
+                                                ng-click="VORModel.editvoGroupItem($event, $parent.$index, $index)">
+                                                <div class="row_line_item_div">
+                                                    <div class="firstchild"
+                                                        style="margin-left: 0.5%; margin-right: 0; width: 21.5%;">
+                                                        <!-- style="margin-left: 2%;margin-right: 1%;width: 23%;" -->
+                                                        {{voGroupItem.ItemDesc}}
+                                                        <div
+                                                            ng-if="voGroupItem.UnitType !='NULL' && voGroupItem.UnitType !==null"
+                                                            style="color: red">{{voGroupItem.OrderType}}</div>
+                                                    </div>
+                                                    <div class="secondchild"
+                                                        style="margin-left: 0; width: 18%; text-align: center;">
+                                                        <!--  style="margin-left: -4px; width: 18%;" -->
+                                                        <span>{{voGroupItem.UnreceivedQty}}</span>
+                                                    </div>
+                                                    <div class="thirdchild"
+                                                        style="margin-left: 0; width: 20%; text-align: center;">
+                                                        <!-- style="margin-left: 86px" -->
+                                                        <span>{{voGroupItem.PercentRecieved | number : 2}}%</span>
+                                                    </div>
+                                                    <div class="otherchild" style="width: 20%; margin-left: 0;">&nbsp;</div>
+                                                    <!--  style="width: 20%; -->
+                                                    <div class="lastchild "
+                                                        style="margin-left: 0; text-align: center; width: 19.5%;">
+                                                        <!-- style="margin-left: 15.5px;" -->
+                                                        {{voGroupItem.ExpectedDate}}
+                                                    </div>
+                                                </div>
+                                                <div class="edit_panel sample-show-hide T7"
+                                                    ng-show="VORModel.vendorOrderItems_editRow[$parent.$index].voliGroups_editRow[$index].isEdit">
+                                                    <div id="voglineitem_tbody_expandtr_edit_box_{{$index}}"
+                                                        class="edit_box serviceitemedit col-md-11"
+                                                        style="margin-left: 6%; height: 110px;">
+                                                        <div class="its-heading1"
+                                                            id="voglineitem_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                            <i class="fa fa-angle-down"></i> <span>{{ 'Label_Actions' | translate }} (1 {{ 'Label_Action_Available' | translate }})</span><!-- by kajal 21st APRIL, 2017 -->
+                                                        </div>
+                                                        <div
+                                                            id="voglineitem_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}} "
+                                                            class="edit-body1">
+                                                            <form>
+                                                                <div class="radio"
+                                                                    id="voglineitem_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+                                                                    <label style="padding-left: 1%;">
+                                                                        <p
+                                                                            ng-click="VORModel.vendorOrderItems_editRow[$parent.$index].voliGroups_editRow[$index].radioValue = (!VORModel.vendorOrderItems_editRow[$parent.$index].voliGroups_editRow[$index].radioValue)"
+                                                                            class="chk_tick edit-service-chek"
+                                                                            ng-class="{'chked' : VORModel.vendorOrderItems_editRow[$parent.$index].voliGroups_editRow[$index].radioValue == 1 }"
+                                                                            style="margin-left: 4px;">
+                                                                            <i class="fa fa-check-square chksqure"></i>
+                                                                        </p> <span class="T7"> {{ 'Vendor_Receiving_Receive_Item' | translate }} </span>
+                                                                    </label>
+                                                                </div>
+                                                            </form>
+                                                            <a 
+                                                                id="voglineitem_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn"
+                                                                class="btn btn-default" role="button"
+                                                                ng-click="VORModel.vendorOrderItems_GoAction($index, $parent.$index)"
+                                                                style="margin-left: 15px; margin-top: 0px">{{ 'Label_Apply' | translate }}</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style="background: #fff"></td>
+                                    </tr>
+                                    <!--  END: Vendor Order Groups list on edit of Vendor Order -->
+                                </tbody>
+                            </table>
+                            <!-- </div> -->
+                        </div>
+                        <!-- Pagination container -->
+                        <div class="pagination_container"
+                            id="Receiving_For_Vendor_Orders_Pagination"
+                            ng-if="VORModel.totalVendorOrders != undefined">
+                            <list-pagination
+                                id-value="Receiving_For_Vendor_Orders_Pagination_"
+                                total-records-length="VORModel.totalVendorOrders"
+                                page-size="VORModel.vendorOrdersPageSortAttrsJSON.PageSize"
+                                current-page="VORModel.vendorOrdersPageSortAttrsJSON.CurrentPage"
+                                changes-count="VORModel.vendorOrdersPageSortAttrsJSON.ChangesCount"
+                                pagination-control-method="VORModel.ReceivingForVO_paginationControlsAction" />
+                        </div>
+
+
+
+                        <!-- </div> -->
+
+                    </div>
+                    <!-- End: RECEIVING FOR VENDOR ORDER SECTION -->
+                </div>
+                <!-- End: Info section -->
+
+
+
+
+
+
+
+
+                <!-- start Add new vendor  -->
+                 <div ng-if="VORModel.VOR_Header.VendorName != null">
+                <div class="sectionHeader row" style="margin-top: 48px;" ng-show="(VORModel.VORLineItemGroupList.length != 0 ||  VORModel.outstandingVOGList.length != 0)"> <!-- Scroll Issue: style="margin-top: 48px": Added By Pooja  -->
+                    <div class="col-lg-4 col-lg-5 PL14">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel"> <i class="fa fa-angle-right"
+                                ng-show="!VORModel.displaySections.Received" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                ng-Click="VORModel.showSections('Received')"> </i> <i ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                class="fa fa-angle-down" style="width: 10px;"
+                                ng-show="VORModel.displaySections.Received"
+                                ng-Click="VORModel.showSections('Received')"> </i> <span
+                                class="divider">|</span> <span class="headdingFirstText">{{VORModel.LeftSideHeadingLables.Received}}</span>
+                                <span class="T2">{{ 'Label_Received' | translate }}</span>
+                            </span>
+                            <span class="ActionIcons pull-left"
+                                        > 
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <button class="btn dropdown-toggle" ng-disabled = "VORModel.VORLineItemGroupList.length == 0" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                                <span class="caret"></span>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a data-target="#PrintBarCodeLabel" data-toggle="modal" ng-click = "VORModel.getLabelPrintingData(VORModel.VOR_Header.VORId)">{{ 'Print_barcode_labels' | translate }}</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                </span>
+                            <!-- Start: Added by richa 07/02/2017 -->
+                            <span class="ActionIcons service_order_print_icon pull-left " ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}" ng-if="VORModel.VORLineItemGroupList.length != 0"><!-- Ticket#1830: ng-if="VORModel.VORLineItemGroupList.length != 0":]
+                                                                                                                                                    Added By Pooja 11 Apr. 2017 -->
+                                <i class="fa fa-print"
+                                    ng-click="VORModel.PrintVendorReceiving()">
+                                </i>
+                            </span>
+                            <!-- START: added by kajal 30th march 2017 #1760 -->
+                            <span class="ActionIcons pull-left" ng-if="VORModel.outstandingVOGList.length > 0">
+                                <div class="VR_OrderSection">
+                                    <button class="btn btn-default addSelectedBtnDisabled text-uppercase" 
+                                        ng-click="VORModel.disableAddSelectedButton = true; VORModel.addSelectedItemsFromOutstandingToItemSection()"
+                                        ng-class="{'addSelectedBtnActive' : VORModel.enableSelectedBtnInReceivedSection()}"
+                                        ng-disabled="(VORModel.disableAddSelectedButton || !VORModel.enableSelectedBtnInReceivedSection())">{{ 'Add_selected' | translate }}
+                                    </button>
+                                </div>
+                            </span>
+                            <!-- END: added by kajal 30th march 2017 #1760 -->
+                            <!-- End: Added by richa 07/02/2017 -->
+                            <!-- <span class="ActionIcons pull-right">
+                        <i class="fa fa-th"></i>
+                        <i class="fa fa-question-circle"></i>
+                        </span> -->
+                            <span class="ActionIcons pull-left ">
+                                <div class="dropdown selectDropdown checkboxDropdown"
+                                    ng-class="{'disabledRemoveAllItemsActionBtn' :VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced'}">
+                                    <!-- <button class="btn dropdown-toggle" type="button"
+                                        data-toggle="dropdown">
+                                        {{ 'Label_Actions' | translate }} <span class="caret"></span>
+                                    </button> -->
+                                    <!-- <ul class="dropdown-menu">
+                                        <li>
+                                             ng-show="VORModel.vendorOrderLineItemGroupList.length > 0"
+                                            <a ng-click="VORModel.removeAllReceived()">{{ 'Label_Remove_All_Item' | translate }}</a>
+                                        </li>
+                                        <li><a
+                                        ng-if="VORModel.VOR_Header.VendorId != null && VORModel.totalOutstandingItems != 0 && VORModel.VOR_Header.Status == 'In Progress'"
+                                        ng-click="VORModel.addAllOutstanding()">Add All Item</a></li>
+                                    </ul> -->
+                                </div>
+                            </span> <span class="T3  pull-right total" style="color: #337ab7">
+                                <!-- <a> --> {{VORModel.GroupTotalCost| currency}} <!-- </a> -->
+                            </span>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div id="VOR_Vendor_Received_Block"
+                    ng-show="VORModel.displaySections.Received && (VORModel.VORLineItemGroupList.length != 0 ||  VORModel.outstandingVOGList.length != 0)"
+                    class="gid_container_Customer Received_section_part_container">
+                    <div id="VOR_Items_Block" class="main_section_COU row" ng-show="VORModel.VORLineItemGroupList.length != 0">
+                        <div class="main_section_COU_Header row">
+                            <p class="actionRow T2">
+                                <span class="sectionText">{{ 'Items' | translate }} <i
+                                    ng-if="(VORModel.VendorOrderHeader.Status == 'Open' || VORModel.VendorOrderHeader.Status == 'Locked') && (VORModel.VendorOrderHeader.VendorId != null && VORModel.VendorOrderHeader.VendorId != '')"
+                                    class="fa fa-plus cou_plus_icon "
+                                    id="Order_Block_heading_panel_left_sub_h1_text_plus_icon"
+                                    ng-click="VORModel.RelatedList_addAction($event, 'Vendor')"><!-- ng-click="VORModel.RelatedList_addAction($event, 'Merchandise')" -->
+                                </i>
+                                </span> 
+                                <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span>  -->
+                                <span class="ActionIcons"> <i class="fa fa-question-circle"
+                                    data-toggle="tooltip" title="Received"></i>
+                                </span>
+                            </p>
+                        </div>
+
+
+                        <div class="gid_container T6"
+                            id="VO_Order_block_grid_container_Empty_Div"
+                            ng-if="VORModel.vendorOrderLineItemGroupList == 0"
+                            style="margin-left: 44px;">
+                            {{ 'Label_No_Records_Found' | translate }}</div>
+
+
+
+                        <div id="1" ng-if="VORModel.vendorOrderLineItemGroupList != 0">
+                            <div class="gid_container_Customer"
+                                id="VO_Order_block_grid_container">
+                                <table class="table" id="VendorOrderItem_Grid">
+                                    <col width="1%" />
+                                    <col width="4%" />
+                                    <col width="29%" />
+                                    <col width="10%" />
+                                    <col width="11%" />
+                                    <col width="10%" />
+                                    <col width="13%" />
+                                    <col width="10%" />
+                                    <col width="11%" />
+                                    <col width="1%" />
+                                    <tr class="tableHeader T3 C2">
+                                        <th></th>
+                                        <th></th>
+                                        <th style="cursor: pointer;" class="text-uppercase"
+                                            ng-click="VORModel.GroupItems_PageSortControlsAction();">
+                                            <i class="fa fa-sort-asc"
+                                            ng-show="VORModel.groupItemsVOGPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'" />
+                                            <i class="fa fa-sort-desc"
+                                            ng-show="VORModel.groupItemsVOGPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'" />
+                                            <i class="fa fa-sort"
+                                            ng-show="VORModel.groupItemsVOGPageSortAttrsJSON.Sorting[0].SortDirection == ''" />
+                                            {{ 'Part_Object_Item_Description' | translate }}
+                                        </th>
+
+                                        <th class="text-center text-uppercase">{{ 'Label_Needed_For' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Needed_By' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Order' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Received' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Cost' | translate }}</th>
+                                        <th class="text-center text-uppercase">{{ 'Label_Total' | translate }}</th>
+                                        <th></th>
+                                    </tr>
+                                    <tbody
+                                        ng-repeat="vorLineItemGroup in  VORModel.VORLineItemGroupList">
+                                        <tr class="clickable_row" id="rowGroupIineItem{{$index}}"
+                                            ng-class-even="'C2'" rel="vogroup_item_row{{$index}}_edit"
+                                            ng-click="VORModel.editGroupItem($event, $index)"
+                                            ng-blur="VORModel.editGroupItem($event, $index)"
+                                            ng-class="{'disabledEditableRow' : VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced' || !GroupOnlyPermissions['Vendor receiving']['create/modify'] }">
+                                            <td class="td_background_style"></td>
+                                            <td
+                                                id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}"
+                                                class="group_exapnded_tr"
+                                                style="padding-top: 10px; padding-bottom: 10px;">
+                                                <img ng-if="vorLineItemGroup.PartId" style="height: 26px; width: 26px;" src="{!Application_Images}/sparkplug.png" />
+                                                <i ng-include="'{!Application_Images}/Icons/sublet.svg'" ng-if="vorLineItemGroup.SubletId"
+                                                                class="grey bp-pointer-cursor pull-left itemSvg"></i>
+                                            </td>
+
+                                            <td
+                                                id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}">
+                                                <div>
+                                                    <a ng-mouseover="VORModel.openpartpopup($event, $index);"
+                                                        ng-mouseleave="VORModel.hidePartPopUp();"> {{ 
+                                                        vorLineItemGroup.ItemDesc}} </a>
+                                                </div>
+                                                <div
+                                                    ng-if="vorLineItemGroup.UnitType  !='NULL' && vorLineItemGroup.UnitType  !=null"
+                                                    style="color: red">{{ vorLineItemGroup.OrderType }}</div>
+
+                                            </td>    
+
+                                            <td class="text-center"
+                                                id="VO_Group_block_grid_container_tbody_tr_td_4_{{$index}}"> 
+
+
+                                                <div  class="colorBlack"> <!-- Ticket#2281: class="colorBlack": Added By Pooja 29 Jun 2017 -->
+                                                    <!-- Start: Ticket#2281: Commented and Added by Pooja 27 Jun 2017 -->
+                                                    <!-- <a
+                                                        ng-mouseover="VORModel.showCOPopUp($event, vorLineItemGroup.VendorOrderLineItemList.CoHeaderId);"
+                                                        ng-mouseleave="VORModel.hideCOPopUp();">
+                                                        {{vorLineItemGroup.NeededFor}} </a> -->
+                                                        
+                                                        {{vorLineItemGroup.NeededFor}}
+                                                    <!-- End: Ticket#2281: Commented and Added by Pooja 27 Jun 2017 -->
+                                                </div>
+                                                <div>
+                                                    <span ng-if="vorLineItemGroup.IsExcess" style="Color: red">
+                                                        <!-- Start: Ticket#2281: Commented and Added by Pooja 27 Jun 2017 -->
+                                                        <!-- <a
+                                                        ng-mouseover="VORModel.showNeededForPopUp($event, vorLineItemGroup.Id);"
+                                                        ng-mouseleave="VORModel.hideNeededForPopUp();"
+                                                        style="color: red"> With Excess </a> -->
+                                                        
+                                                        {{ 'With_excess' | translate }}
+                                                        <!-- End: Ticket#2281: Commented and Added by Pooja 27 Jun 2017 -->
+                                                    </span>
+                                                </div>
+
+                                            </td>
+                                            <td class="text-center"
+                                                id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}">
+                                                {{ vorLineItemGroup.NeededBy == null ? ' '
+                                                :vorLineItemGroup.NeededBy }}</td>
+                                            <td class="text-center"
+                                                id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}">
+                                                {{ vorLineItemGroup.OrderValue }} {{
+                                                vorLineItemGroup.UnitType == null ||
+                                                vorLineItemGroup.UnitType == "NULL" ? " " :" " +
+                                                vorLineItemGroup.UnitType }}</td>
+                                            <td class="text-center"
+                                                id="VO_Group_block_grid_container_tbody_tr_td_3_{{$index}}">
+                                                <div style="width: 100%">
+                                                    <div
+                                                        ng-if="VORModel.groupItems_editRow[$index].isEdit==false">
+                                                        {{ vorLineItemGroup.ReceivedQty }} {{
+                                                        vorLineItemGroup.UnitType == null ||
+                                                        vorLineItemGroup.UnitType == "NULL" ? " " :" " +
+                                                        vorLineItemGroup.UnitType }}</div>
+                                                    <div
+                                                        ng-if="VORModel.groupItems_editRow[$index].isEdit==true && VORModel.VOR_Header.Status == 'In Progress'"
+                                                        ng-keydown="VORModel.editRowTabOutRecieved($event,$index)">
+                                                        <number-only-input-vr
+                                                            id-val="received_qty_Edit_{{$index}}" input-value="vorLineItemGroup.ReceivedQty"  precision-length = "0" ng-keydown = "VORModel.preventDecimal($event)" />
+                                                    </div>
+                                                    <div
+                                                        ng-if="VORModel.groupItems_editRow[$index].isEdit==true && VORModel.VOR_Header.Status != 'In Progress'">
+                                                        {{ vorLineItemGroup.ReceivedQty }} {{
+                                                        vorLineItemGroup.UnitType == null ||
+                                                        vorLineItemGroup.UnitType == "NULL" ? " " :" " +
+                                                        vorLineItemGroup.UnitType }}</div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center"
+                                                id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}">
+
+                                                <div
+                                                    ng-if="VORModel.groupItems_editRow[$index].isEdit==false">
+                                                    {{ vorLineItemGroup.Cost | currency }}</div>
+                                                <div
+                                                    ng-if="VORModel.groupItems_editRow[$index].isEdit==true && VORModel.VOR_Header.Status == 'In Progress'"
+                                                    ng-keydown="VORModel.editRowTabOutLast($event,$index)">
+                                                    <number-only-input-vr input-value="vorLineItemGroup.Cost" />
+                                                </div>
+                                                <div
+                                                    ng-if="VORModel.groupItems_editRow[$index].isEdit==true && VORModel.VOR_Header.Status != 'In Progress'">
+                                                    {{ vorLineItemGroup.Cost | currency }}</div>
+                                            </td>
+                                            <td class="text-center"
+                                                id="VO_Group_block_grid_container_tbody_tr_td_8_{{$index}}">
+                                                {{ vorLineItemGroup.Total | currency }}</td>
+                                            <td class="td_background_style"></td>
+                                        </tr>
+                                        <tr
+                                            ng-show="VORModel.groupItems_editRow[$index].isEdit && vorLineItemGroup.OtherVOHeaderNameList.length != 0">
+                                            <td class="td_background_style"></td>
+                                            <td class="td_background_style"></td>
+                                            <td colspan="7" class="group_exapnded_tr" style="padding: 0;">
+                                                <div class="show_Availableline">
+                                                    {{ 'This_part_is_included_these_unselected_items' | translate }}: <span
+                                                        ng-repeat="OtherVendorOrder in  vorLineItemGroup.OtherVOHeaderNameList">
+                                                        {{OtherVendorOrder}}</span>
+                                                </div>
+                                            </td>
+                                            <td class="td_background_style"></td>
+                                        </tr>
+                                        <tr
+                                            ng-show="VORModel.groupItems_editRow[$index].isEdit && VORModel.VOR_Header.Status == 'In Progress'"
+                                            class="edit_panel sample-show-hide T7"
+                                            id="vogroup_item_row{{$index}}_edit">
+                                            <td style="backgroung-color: #fff"></td>
+                                            <td style="background: #fff"></td>
+                                            <td colspan="7" class="edit-service-item div-padding"
+                                                id="CO_Merchandise_block_grid_container_tbody_expandtr_td_1_{{$index}}"
+                                                style="padding: 0;">
+                                                <div id="vogroup_tbody_expandtr_edit_box_{{$index}}"
+                                                    class="edit_box serviceitemedit col-md-12 ">
+                                                    <div class="its-heading"
+                                                        id="CO_Merchandise_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                        <!-- <img src="{!URLFOR($Resource.icon_images, 'images/edit_icon.png" styleClass="img_action"/>
+                                                                         -->
+                                                        <i class="fa fa-angle-down"></i> <span>{{ 'Label_Actions' | translate }} (1 {{ 'Label_Action_Available' | translate }})</span><!-- by kajal 21st APRIL, 2017 -->
+                                                    </div>
+                                                    <div
+                                                        id=" vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}} "
+                                                        class="edit-body">
+                                                        <form>
+                                                            <div class="radio"
+                                                                id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_2">
+                                                                <label>
+
+                                                                    <p
+                                                                        ng-click="VORModel.groupItems_editRow[$index].radioValue = (!VORModel.groupItems_editRow[$index].radioValue)"
+                                                                        class="chk_tick edit-service-chek"
+                                                                        ng-class="{'chked' : VORModel.groupItems_editRow[$index].radioValue == 1 }">
+                                                                        <i class="fa fa-check-square chksqure"></i>
+                                                                    </p> <span> {{ 'Vendor_Receiving_Remove_From_Receiving' | translate }} </span>
+                                                                </label>
+                                                            </div>
+                                                            <!-- Action button -->
+                                                            <a 
+                                                                id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn"
+                                                                class="btn btn-default" role="button"
+                                                                ng-click="VORModel.groupItemsGoAction($index)">{{ 'Label_Apply' | translate }}</a>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style="backgroung-color: #fff"></td>
+                                        </tr>
+                                        <tr ng-show="VORModel.groupItems_editRow[$index].isEdit">
+                                            <td style="backgroung-color: #fff"></td>
+                                            <td style="backgroung-color: #fff"></td>
+                                            <td colspan="7" class="group_exapnded_tr" style="padding: 0;">
+                                                <div
+                                                    ng-repeat="vorLineItems in vorLineItemGroup.VendorOrderLineItemList "
+                                                    class="volineItem_row_clickable"
+                                                    ng-click="VORModel.editVolItem($event, $index, $parent.$index)">
+                                                    <div class=" volineItem_row_item ">
+                                                        <div class="firstchild" style="margin-left: 0.5%; width: 30%;" ng-if = "vorLineItems.CoHeaderId != null && vorLineItems.CoHeaderId != ''">
+                                                            <!-- style="margin-left: 1.5%;" -->
+                                                            {{vorLineItems.Customer}}
+                                                        </div>
+                                                        <div class="firstchild" style="margin-left: 0.5%; width: 30%;" ng-if = "(vorLineItems.CoHeaderId == null || vorLineItems.CoHeaderId == '')">
+                                                            <!-- style="margin-left: 1.5%;" -->
+                                                            <span ng-if = "(!vorLineItems.IsReceivingStockExcess)">{{ 'Label_Location' | translate }}:{{vorLineItems.Location}}</span>
+                                                        </div>
+                                                        <div class="secondchild" style="margin-left: 0; width: 10.8%;">
+                                                            <!-- style="margin-left: 2.0%;" -->
+                                                            <div ng-if="vorLineItems.IsExcess == true">
+                                                                {{ 'Label_Stock' | translate }} <span Style="Color: red"> {{ 'Label_Excess' | translate }}</span>
+                                                            </div>
+                                                            <div ng-if="vorLineItems.IsExcess == false && vorLineItems.CoHeaderId"> <!-- Ticket#2281: 
+                                                                                                                                                    ng-if=  && vorLineItems.CoHeaderId:
+                                                                                                                                                    Added By Pooja 19 Jun 2017 -->
+                                                                <a  ng-mouseover="VORModel.showCOPopUp($event, vorLineItems.CoHeaderId);"
+                                                                    ng-mouseleave="VORModel.hideCOPopUp();"
+                                                                    style="margin-right: 0px;">
+                                                                    {{vorLineItems.NeededFor}} </a>
+                                                            </div>
+                                                            
+                                                            <!-- Start: Ticket#2281: Added By Pooja 19 Jun 2017 -->
+                                                            <div ng-if="vorLineItems.IsExcess == false && !vorLineItems.CoHeaderId">
+                                                                    {{vorLineItems.NeededFor}}
+                                                            </div>
+                                                            <!-- End: Ticket#2281: Added By Pooja 19 Jun 2017 --> 
+                                                            
+                                                        </div>
+                                                        <div class="thirdchild_secondry"
+                                                            style="margin-left: 0; width: 11.6%; text-align: center;">
+                                                            <!-- style="margin-left: 40px;" -->
+                                                            {{vorLineItems.NeededBy}}
+                                                        </div>
+                                                        <div class="otherchild"
+                                                            style="margin-left: 0; margin-right: 0; width: 10.7%; text-align: center;">
+                                                            <!-- style="margin-left: 40px;" -->
+                                                            {{vorLineItems.Need}}
+                                                        </div>
+                                                        <div class="otherchild"
+                                                            ng-if="VORModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit==false"
+                                                            style="margin-left: 0; width: 13.9%; text-align: center;"><!--ng-if="VORModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit==false"  -->
+                                                            {{ vorLineItems.ReceivedQty }}</div>
+                                                        
+                                                        <div class="otherchild"
+                                                            ng-if="VORModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit && 
+                                                                                    VORModel.VOR_Header.Status == 'In Progress'" 
+                                                            ng-keydown="VORModel.editRowTabOutChild($event, $parent.$parent.$index ,$index)"
+                                                            style="margin-left: 0; width: 13.9%; text-align: center;">
+                                                            <number-only-input-vr input-value="vorLineItems.ReceivedQty" /><!--ng-if="VORModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit && 
+                                                                                    VORModel.VOR_Header.Status == 'In Progress'"  -->
+                                                        </div>
+                                                        
+                                                        <div class="otherchild"
+                                                            ng-if="VORModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit &&
+                                                                                     VORModel.VOR_Header.Status != 'In Progress'" 
+                                                            style="margin-left: 0; width: 13.9%; text-align: center;">
+                                                            <!-- ng-if="VORModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit &&
+                                                                                     VORModel.VOR_Header.Status != 'In Progress'" -->
+                                                            {{ vorLineItems.ReceivedQty }}
+                                                        </div>
+                                                        <div class="otherchild" >
+                                                            <!-- style="margin-left: 1.5%;" -->
+                                                            {{vorLineItems.VendorOrderHeaderName}}
+                                                        </div>
+                                                        <!-- style="margin-left:-5%" -->
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style="backgroung-color: #fff"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+
+                            <!-- Pagination container -->
+                            <div class="pagination_container"
+                                id="Vendor_Order_Items_Pagination"
+                                ng-if="VORModel.totalGroupItems != undefined">
+
+                                <!--                        ng-show="VORModel.totalGroupItems > VORModel.groupItemsVOGPageSortAttrsJSON.PageSize" > -->
+                                <list-pagination id-value="Vendor_Order_Items_Pagination_"
+                                    total-records-length="VORModel.totalGroupItems"
+                                    page-size="VORModel.groupItemsVOGPageSortAttrsJSON.PageSize"
+                                    current-page="VORModel.groupItemsVOGPageSortAttrsJSON.CurrentPage"
+                                    changes-count="VORModel.groupItemsVOGPageSortAttrsJSON.ChangesCount"
+                                    pagination-control-method="VORModel.GroupItems_paginationControlsAction" />
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+                    <!--  outstanding item block -->
+
+                    <div id="VOR_Outstanding_Items_Block"
+                        ng-show="VORModel.VOR_Header.VendorId != null && VORModel.totalOutstandingItems != 0 && VORModel.VOR_Header.Status == 'In Progress' && VORModel.outstandingVOGList.length != 0">
+                        <div class="main_section_COU row">
+                            <div class="main_section_COU_Header row"
+                                style="margin-bottom: 20px;">
+                                <p class="actionRow T2">
+                                    <span class="sectionText"
+                                        ng-if="VORModel.SelectedVendorOrdersList.length == 1">
+                                        {{ 'Vendor_Receiving_Outstanding_Items_for' | translate }} {{VORModel.SelectedVendorOrdersList[0]}}
+                                    </span> <span class="sectionText"
+                                        ng-if="VORModel.SelectedVendorOrdersList.length > 1">
+                                        {{ 'Vendor_Receiving_Outstanding_Items_for' | translate }} <span
+                                        ng-repeat="selectedVO in VORModel.SelectedVendorOrdersList">
+                                            &nbsp;{{selectedVO}}<span ng-if="$index != (VORModel.SelectedVendorOrdersList.length-1)">,</span> </span>
+                                    </span> 
+                                    <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                    <!-- <span class="dropdown selectDropdown checkboxDropdown"  >
+                                    <button class="btn dropdown-toggle actionBtn" type="button"
+                                        data-toggle="dropdown" >{{ 'Label_Actions' | translate }} 
+                                    </button>
+                                    <ul class="dropdown-menu" id="VOR_header_dropdown_ul" style="margin-left: 8%;margin-top: 0px;">
+                                        <li><a id="VOR_header_dropdown_profile"
+                                            ng-click="VORModel.addAllOutstanding()" >Add All Item</a>
+                                        </li>
+                                    </ul>       
+                                </span>  -->
+                                    <span class="ActionIcons"> <i
+                                        class="fa fa-question-circle" data-toggle="tooltip"
+                                        title="Outstanding Items For VO"></i>
+                                    </span>
+                                </p>
+                            </div>
+
+                            <!-- START: Grid -->
+                            <div id="1">
+                                <div class="gid_container_Customer">
+                                    <table class="table" id="OutstandingGroups_Grid">
+                                        <col width="1%" />
+                                        <col width="4%" />
+                                        <col width="22%" />
+                                        <col width="22%" />
+                                        <col width="18%" />
+                                        <col width="16%" />
+                                        <col width="16%" />
+                                        <col width="1%" />
+
+                                        <tr class="tableHeader T3 C2">
+                                            <th></th>
+                                            <th>
+                                                <!-- START: Added by kajal 30th march 2017 #1760 -->
+                                                <div class="small">
+                                                    <label class="checkbox">
+                                                         <span class="chk_tick"  
+                                                         style="margin-top: -11px; position: absolute;"
+                                                         ng-class="{'PartialCheck':VORModel.OutstandingItemSelectedStatus == 1 ,'chked':VORModel.OutstandingItemSelectedStatus == 2,
+                                                          'permissionDisabledChk': !GroupOnlyPermissions['Vendor receiving']['create/modify']}"
+                                                         ng-click="VORModel.selectDeselectAllForOutstandingItems();"><!-- ng-class="VORModel.getSelectAllStatusForOutstandingItems()" 4th april, 2017 -->
+                                                                <i class="fa fa-check-square chksqure"></i>
+                                                           </span>
+                                                    </label>
+                                                </div>
+                                                <!-- END: Added by kajal 30th march 2017 #1760 -->
+                                            </th>
+                                            <th style="cursor: pointer;"
+                                                ng-click="VORModel.OutstandingItems_PageSortControlsAction();">
+                                                <i class="fa fa-sort-asc"
+                                                ng-show="VORModel.outstandingVOGPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'" />
+                                                <i class="fa fa-sort-desc"
+                                                ng-show="VORModel.outstandingVOGPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'" />
+                                                <i class="fa fa-sort"
+                                                ng-show="VORModel.outstandingVOGPageSortAttrsJSON.Sorting[0].SortDirection == ''" />
+                                                {{ 'Part_Object_Item_Description' | translate }}
+                                            </th>
+                                            <th class="text-center">{{ 'Label_Needed_For' | translate }}</th>
+                                            <th class="text-center">{{ 'Label_Needed_By' | translate }}</th>
+                                            <th class="text-center">{{ 'Label_Ordered' | translate }}</th>
+                                            <th class="text-center">{{ 'Label_Order' | translate }}</th>
+                                            <th></th>
+                                        </tr>
+                                        <tbody ng-repeat="outstandingGroup in VORModel.outstandingVOGList track by $index" 
+                                        ng-init="AOHeaderIndex = $index"><!-- ng-init and track by Added by kajal 30th march 2017 #1760 -->
+                                            <!-- START: Vendor Orders list -->
+                                            <tr class="clickable_row" id="rowGroup{{$index}}"
+                                                rel="VOR_Outstanding_row{{$index}}_edit"
+                                                ng-blur="VORModel.editOutstandingItem($event, $index)"
+                                                ng-class="{'disabledEditableRow' : VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced'|| !GroupOnlyPermissions['Vendor receiving']['create/modify'] }"
+                                                ng-class-even="'C2'"
+                                                ng-click="VORModel.editOutstandingItem($event, $index)"><!-- removed by kajal 30th march 2017 #1760 --><!-- 5th april, 2017 -->
+                                                <td
+                                                    id="VOR_Outstanding_block_grid_container_tbody_tr_td_1_{{$index}}"
+                                                    class="vor_exapnded_tr td_background_style"></td>
+                                                <td>
+                                                    <!-- START: Edited by kajal 30th march 2017 #1760 -->
+                                                    <div class=" small" >
+                                                        <label class="checkbox checkboxGridLineItem">
+                                                            <span class="chk_tick"  ng-class="{'chked' : VORModel.outstandingItems_editRow[AOHeaderIndex].isSelected,
+                                                            'permissionDisabledChk': !GroupOnlyPermissions['Vendor receiving']['create/modify']}" 
+                                                                style="margin-top: -12px; position: absolute;" 
+                                                                ng-click="VORModel.addRemoveSelectedOutstandingVRli(AOHeaderIndex)">
+                                                                <i class="fa fa-check-square chksqure" ></i>
+                                                            </span><!-- 5th april, 2017 -->
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <!-- <td style="padding-top: 10px; padding-bottom: 10px;"><img
+                                                    style="height: 26px; width: 26px;"
+                                                    src="{!Application_Images}/sparkplug.png" /></td> -->
+                                                <!-- END: Edited by kajal 30th march 2017 #1760 -->
+                                                <td
+                                                    id="VOR_Outstanding_block_grid_container_tbody_tr_td_2_{{$index}}"
+                                                    class="T7">
+                                                    <div>{{outstandingGroup.ItemDesc}}</div>
+                                                    <div
+                                                        ng-if="outstandingGroup.InProgressVRId != null && outstandingGroup.InProgressVRId != VORModel.VOR_Header.VORId"
+                                                        style="color: red">Receiving in progress
+                                                        {{outstandingGroup.InProgressVR}}</div>
+                                                </td>
+                                                <td id="VOR_Outstanding_block_grid_container_tbody_tr_td_3_{{$index}}"
+                                                    class="T7 text-center">
+                                                        <div>{{outstandingGroup.NeededFor}}</div>
+                                                        <div>
+                                                            <span ng-if="outstandingGroup.IsExcess" style="Color:red">
+                                                            <!-- <a ng-mouseover="VendorOrderModel.showNeededForPopUp($event, voGroupItem.Id, VendorOrderModel.voHeaderId);" ng-mouseleave="VendorOrderModel.hideNeededForPopUp();" style="color:red"> --> 
+                                                                {{ 'Label_With' | translate }} {{ 'Label_Excess' | translate }}
+                                                            <!-- </a> -->
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                <td
+                                                    id="VOR_Outstanding_block_grid_container_tbody_tr_td_4_{{$index}}"
+                                                    class="T7 text-center">{{outstandingGroup.NeededBy}}</td>
+                                                <td
+                                                    id="VOR_Outstanding_block_grid_container_tbody_tr_td_5_{{$index}}"
+                                                    class="T7 text-center">
+                                                    {{outstandingGroup.OrderValue}}</td>
+                                                <td
+                                                    id="VOR_Outstanding_block_grid_container_tbody_tr_td_6_{{$index}}"
+                                                    class="T7 text-center">
+                                                    {{outstandingGroup.VOHeaderName}}</td>
+                                                <td class="td_background_style"></td>
+                                            </tr>
+                                            <!-- END: Vendor Orders list -->
+
+                                            <!-- START: Edit row action -->
+                                            <!-- START:Commented by kajal 30th march 2017 #1760 -->
+                                            <!-- <tr
+                                                ng-show="VORModel.outstandingItems_editRow[$index].isEdit"
+                                                class="edit_panel sample-show-hide T7"
+                                                id="vo_record_row{{$index}}_edit">
+                                                <td style="backgroung-color: #fff"></td>
+                                                <td style="background: #fff"></td>
+                                                <td class="edit-service-item div-padding" colspan="5"
+                                                    id="VOR_Outstanding_block_grid_container_tbody_expandtr_td_1_{{$index}}">
+                                                    <div id="vo_tbody_expandtr_edit_box_{{$index}}"
+                                                        class="edit_box serviceitemedit col-md-12">
+                                                        <div class="its-heading"
+                                                            id="VOR_Outstanding_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                            <i class="fa fa-angle-down"></i> 
+                                                            <span>{{ 'Label_Actions' | translate }}</span>
+                                                        </div>
+                                                        <div
+                                                            id="vo_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}} "
+                                                            class="edit-body">
+                                                            <form>
+                                                                <div class="radio"
+                                                                    id="vo_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+                                                                    <label>
+                                                                        <p
+                                                                            ng-click="VORModel.outstandingItems_editRow[$index].radioValue = (!VORModel.outstandingItems_editRow[$index].radioValue)"
+                                                                            class="chk_tick edit-service-chek"
+                                                                            ng-class="{'chked' : VORModel.outstandingItems_editRow[$index].radioValue == 1 }">
+                                                                            <i class="fa fa-check-square chksqure"></i>
+                                                                        </p> <span> 
+                                                                            {{ 'Vendor_Receiving_Receive_Item' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <a 
+                                                                    id="vo_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn"
+                                                                    class="btn btn-default" role="button"
+                                                                    ng-click="VORModel.outstandingItems_GoAction($index, null)">{{ 'Label_Apply' | translate }}</a>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="td_background_style"></td>
+                                            </tr> -->
+                                            <!-- END: Commented by kajal 30th march 2017 #1760 -->
+                                            <!-- END: Edit row action -->
+
+                                            <!-- START: Vendor Order Groups list on edit of Vendor Order -->
+                                            <!-- START:Commented by kajal 30th march 2017 #1760 -->
+                                            <tr
+                                                ng-show="VORModel.outstandingItems_editRow[$index].isEdit">
+                                                <td style="backgroung-color: #fff"></td>
+                                                <td style="background: #fff"></td>
+                                                <td colspan="5" class="group_exapnded_tr"
+                                                    style="padding-left: 0;">
+                                                    <div class="volineItem_row_clickable ng-scope"
+                                                        ng-repeat="outstandingGroupItem in outstandingGroup.VendorOrderLineItemList ">
+                                                        <div class="row_line_item_div">
+                                                            <div class="Outstandingfirstchild"
+                                                                style="margin-left: 0.5%; width: 23%;">
+                                                                <div ng-if="!outstandingGroupItem.IsRequiredForCustomer && !outstandingGroupItem.IsService">{{ 'Label_Location' | translate }}:{{outstandingGroupItem.Location}}</div>
+                                                                <div ng-if="outstandingGroupItem.IsRequiredForCustomer || outstandingGroupItem.IsService">{{outstandingGroupItem.Customer}}</div>
+                                                                <div
+                                                                    ng-if="vorLineItemGroup.UnitType  !='NULL' && vorLineItemGroup.UnitType  !=null"
+                                                                    style="color: red">{{ vorLineItemGroup.OrderType
+                                                                    }}</div>
+                                                            </div>
+                                                            
+                                                            <div ng-if="outstandingGroupItem.IsExcess == true" class="Outstandingsecondchild"
+                                                                style="margin-left: 0; width: 21.7%; text-align: center;">
+                                                                {{ 'Label_Stock' | translate }} <div Style="Color: red"> {{ 'Label_Excess' | translate }}</div>
+                                                            </div>
+                                                            <div ng-if="outstandingGroupItem.IsExcess == false" class="Outstandingsecondchild"
+                                                                style="margin-left: 0; width: 21.7%; text-align: center;">
+                                                                <span>{{outstandingGroupItem.NeededFor}}</span>
+                                                            </div>
+                                                            
+                                                            <div class="Outstandingthirdchild"
+                                                                style="margin-left: 0; width: 22%; text-align: center;">
+                                                                <span>{{outstandingGroupItem.NeededBy}}</span>
+                                                            </div>
+                                                            <div class="Outstandingfourchild"
+                                                                style="margin-left: 0; width: 15%; text-align: center;">
+                                                                {{outstandingGroupItem.Need}}</div>
+                                                            <div class="Outstandinglastchild "
+                                                                style="margin-left: 0; width: 17.8%; text-align: center;">
+                                                                {{outstandingGroupItem.VendorOrderHeaderName}}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="td_background_style"></td>
+                                            </tr>
+                                            <!-- END: Commented by kajal 30th march 2017 #1760 -->
+                                            <!-- END: Vendor Order Groups list on edit of Vendor Order -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Pagination container -->
+                                <div class="row pagination_container"
+                                    id="Receiving_For_Outstanding_Items_Pagination"
+                                    ng-if="VORModel.totalOutstandingItems != undefined"
+                                    style="margin-left: 10px; margin-right: 0;">
+                                    <list-pagination
+                                        id-value="Receiving_For_Outstanding_Items_Pagination_"
+                                        total-records-length="VORModel.totalOutstandingItems"
+                                        page-size="VORModel.outstandingVOGPageSortAttrsJSON.PageSize"
+                                        current-page="VORModel.outstandingVOGPageSortAttrsJSON.CurrentPage"
+                                        changes-count="VORModel.outstandingVOGPageSortAttrsJSON.ChangesCount"
+                                        pagination-control-method="VORModel.OutstandingItems_paginationControlsAction" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Start: section header Finalize -->
+                <div class="sectionHeader row"
+                    ng-show="VORModel.VOR_Header.VendorId != null && VORModel.VOR_Header.Status == 'In Progress'">
+                    <!-- && (VORModel.VOR_Header.Status != 'Stocked' && VORModel.VOR_Header.PackagingSlipNumber != undefined && VORModel.VOR_Header.PackagingSlipNumber != '' && VORModel.VOR_Header.PackagingSlipNumber != null) Commented by richa -->
+                    <div class="col-lg-4 col-lg-5 PL14">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel"
+                            > <i class="fa fa-angle-right" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                ng-show="!VORModel.displaySections.Finalize"
+                                ng-Click="VORModel.showSections('Finalize')"> </i>
+                            <!-- style="width: 10px; padding: 0 3px;" --> <i
+                                class="fa fa-angle-down" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                ng-show="VORModel.displaySections.Finalize"
+                                ng-Click="VORModel.showSections('Finalize')"> </i>
+                            <!-- style="width: 10px;" --> <span class="divider">|</span> <span
+                                class="headdingFirstText">{{VORModel.LeftSideHeadingLables.Finalize}}</span>
+                                <span class="T2">{{ 'Finalize' | translate }}</span>
+
+                            </span>
+                            <!-- <span class="ActionIcons pull-right">
+                        <i class="fa fa-th"></i>
+                        <i class="fa fa-question-circle"></i>
+                        </span>  -->
+                            <span class="ActionIcons pull-left ">
+                                <div class="dropdown selectDropdown checkboxDropdown">
+                                    <!-- <button class="btn dropdown-toggle" type="button"
+                                        data-toggle="dropdown">
+                                        {{ 'Label_Actions' | translate }} <span class="caret"></span>
+                                    </button> -->
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <!-- End: section header Finalize -->
+
+                <!-- Start:  Finalize section -->
+                <div id="VOR_Finalize_Block"
+                    ng-show="VORModel.VOR_Header.VendorId != null && VORModel.VOR_Header.Status == 'In Progress'"><!--   &&  VORModel.VORLineItemGroupList.length != 0 Commented by richa  --> 
+                    <!-- && (VORModel.VOR_Header.Status != 'Stocked' && VORModel.VOR_Header.PackagingSlipNumber != undefined && VORModel.VOR_Header.PackagingSlipNumber != '' && VORModel.VOR_Header.PackagingSlipNumber != null) Commented by richa -->
+                    <div class="main_section_COU row"
+                        ng-show="VORModel.displaySections.Finalize">
+                        <div class="main_section_COU_Header row">
+                            <p class="actionRow T2">
+                                <span class="sectionText">{{ 'Finalize' | translate }}</span>
+                            </p>
+                        </div>
+                        <div class="gid_container_Customer">
+                            <div id="VO_Order_block_grid_container"
+                                class="col-lg-3 col-md-3 col-lg-offset-9 col-md-offset-9">
+                                <button class="btn C11 T4 addmoreinfoBtn"
+                                    ng-class="{'active_btn' : VORModel.VOR_Header.Status != 'Stocked' && !VORModel.disableCommitReceivingBtn}"
+
+
+
+                                    ng-disabled='(VORModel.VOR_Header.Status == "Stocked" || VORModel.VOR_Header.PackagingSlipNumber == undefined || VORModel.VOR_Header.PackagingSlipNumber == "" 
+                                                || VORModel.VOR_Header.PackagingSlipNumber == null || VORModel.VORLineItemGroupList.length == 0 || 
+                                                VORModel.disableCommitReceivingBtn || !GroupOnlyPermissions["Vendor receiving"]["create/modify"]
+												|| !VORModel.isCommitActionAvailable)'
+                                    ng-click="VORModel.finalizeOrder($event)"
+                                    style="margin: auto; width: 80%;"><!-- || VORModel.VORLineItemGroupList.length == 0 Added by richa -->
+                                                                        <!-- ng-class -> &&!VORModel.disableCommitReceivingBtn & ng-disabled -> ||VORModel.disableCommitReceivingBtn: Added by pooja 21 Jan. 2017 -->
+                                    {{ 'Commit_receiving' | translate }} <i class="fa fa-angle-right"></i>
+                                </button>
+                            <p class = "packageslipNoRequired T7" ng-if = "VORModel.VOR_Header.PackagingSlipNumber == undefined || VORModel.VOR_Header.PackagingSlipNumber == '' ">Packing Slip# missing</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End:  Finalize section -->
+
+                <!-- Start: section header Invoice history -->
+                <div class="sectionHeader row"
+                    ng-show="VORModel.VOR_Header.VendorId != null && (VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced') && VORModel.VIHistoryList.length != 0">
+                    <div class="col-lg-4 col-lg-5 PL14">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel"> <i class="fa fa-angle-right" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                ng-show="!VORModel.displaySections.InvoiceHistory"
+                                ng-Click="VORModel.showSections('InvoiceHistory')"> <!-- style="width: 10px; padding: 0 3px;" --></i>
+                                <i class="fa fa-angle-down" ng-class="{'defaultCursor' : !GroupOnlyPermissions['Vendor receiving']['view']}"
+                                ng-show="VORModel.displaySections.InvoiceHistory"
+                                ng-Click="VORModel.showSections('InvoiceHistory')">
+                                    <!-- style="width: 10px;" -->
+                            </i> <span class="divider">|</span> <span class="headdingFirstText">{{VORModel.LeftSideHeadingLables.Invoice_History}}</span>
+                                <span class="T2">{{ 'Label_Invoice_History' | translate }}</span>
+
+
+                            </span>
+                            <!-- <span class="ActionIcons pull-right">
+                        <i class="fa fa-th"></i>
+                        <i class="fa fa-question-circle"></i>
+                        </span>  -->
+                            <span class="ActionIcons pull-left ">
+                                <div class="dropdown selectDropdown checkboxDropdown"
+                                    ng-hide="VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced'">
+                                    <button class="btn dropdown-toggle" type="button" 
+                                        data-toggle="dropdown">
+                                        {{ 'Label_Actions' | translate }} <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu" id="VOR_header_dropdown_ul">
+                                        <li><a id="VOR_header_dropdown_profile"
+                                            ng-click="VORModel.removeAllReceived()">{{ 'Label_Remove_All_Item' | translate }}</a></li>
+                                    </ul>
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <!-- End: section header Invoice history -->
+
+                <!-- Start: Invoice history section -->
+                <div id="VOR_Vendor_Invoicing_Block"
+                    ng-show="VORModel.VOR_Header.VendorId != null && (VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced') && VORModel.VIHistoryList.length != 0">
+                    <div class="main_section_COU row"
+                        ng-show="VORModel.displaySections.InvoiceHistory">
+                        <div class="main_section_COU_Header row">
+                            <p class="actionRow T2">
+                                <span class="sectionText">{{ 'Items' | translate }} <i
+                                    class="fa fa-plus cou_plus_icon"
+                                    ng-click="VORModel.RelatedList_addAction($event, 'Vendor')"
+                                    id="Order_Block_heading_panel_left_sub_h1_text_plus_icon"></i>
+                                </span> 
+                                <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span>  -->
+                                <span class="ActionIcons"> <i class="fa fa-question-circle"
+                                    data-toggle="tooltip" title="Invoice history "></i>
+                                </span>
+                            </p>
+                        </div>
+
+                        <div class="gid_container_Customer">
+                            <table class="table" id="ReceivingForVendorOrders_Grid">
+                                <col width="1%" />
+                                <col width="2%" />
+                                <col width="5%" />
+                                <col width="20%" />
+                                <col width="20%" />
+                                <col width="2%" />
+                                <col width="13%" />
+                                <col width="15%" />
+                                <col width="11%" />
+                                <col width="10%" />
+                                <col width="1%" />
+
+
+                                <!--    <col width="5%" />
+                            <col width="23%" />
+                            <col width="15%" />
+                            <col width="15%" />
+                            <col width="15%" />
+                            <col width="12%" />
+                            <col width="15%" /> -->
+
+                                <thead>
+                                    <tr class="tableHeader T3 C2">
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th class="th_cursor_style"
+                                            ng-click="VORModel.ReceivingForVO_PageSortControlsAction();">
+                                            <i class="fa fa-sort-asc"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'" />
+                                            <i class="fa fa-sort-desc"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'" />
+                                            <i class="fa fa-sort"
+                                            ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == ''" />
+                                            {{ 'Invoice_Object_Display_Label' | translate }}
+                                        </th>
+                                        <th class="text-center">{{ 'Invoice_Page_Invoice_Date' | translate }}</th>
+                                        <th></th>
+                                        <th>{{ 'Label_Invoiced_By' | translate }}</th>
+                                        <th class="text-center">{{ 'Line_items' | translate }}</th>
+                                        <th class="text-center">{{ 'Total_Cost' | translate }}</th>
+                                        <th>{{ 'Label_Status' | translate }}</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+
+
+                                <!-- <tr class="tableHeader T3 C2">
+
+                                <th style="cursor: pointer;"
+                                    ng-click="VORModel.ReceivingForVO_PageSortControlsAction();">
+                                    <i class="fa fa-sort-asc"
+                                    ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'" />
+                                    <i class="fa fa-sort-desc"
+                                    ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'" />
+                                    <i class="fa fa-sort"
+                                    ng-show="VORModel.vendorOrdersPageSortAttrsJSON.Sorting[0].SortDirection == ''" />
+
+                                </th>
+                                <th class="text-center">INVOICE #</th>
+                                <th class="text-center">INVOICE DATE</th>
+                                <th class="text-center">INVOICED BY</th>
+                                <th class="text-center">LINE ITEM</th>
+                                <th class="text-center">TOTAL COST</th>
+                                <th class="text-center">STATUS</th>
+                            </tr>
+ -->
+                                <tbody ng-repeat="VIHistory in VORModel.VIHistoryList">
+                                    <tr class="T7" id="rowGroup{{$index}}"
+                                        rel="VOR_Outstanding_row{{$index}}_edit"
+                                        ng-class-even="'C2'">
+                                        <!-- ng-click="VORModel.editOutstandingItem($event, $index)"
+                                        ng-blur="VORModel.editOutstandingItem($event, $index)"
+                                        ng-class="{'disabledEditableRow' : VORModel.VOR_Header.Status == 'Stocked' || VORModel.VOR_Header.Status == 'Invoiced' }" -->
+                                        <td style="background: #fff"></td>
+                                        <td class="HG50"></td>
+                                        <td
+                                            id="VOR_Group_block_grid_container_tbody_tr_td_1_{{$index}}"
+                                            class="VO_Group_block_grid_container_tbody_tr_td_1_index_class"
+                                            style="padding-top: 12px; padding-bottom: 12px;">
+                                            <img src="{!Application_Images}/sparkplug.png" />
+                                            <!-- <div class="sprite sparkplug_inGrids pull-left handCursor"></div> -->
+                                        </td>
+                                        <td><a ui-sref="VendorOrderInvoicing({Id: VIHistory['VIHeaderId']})">{{VIHistory.InvoiceNumber}}</a></td>
+                                        <td class="text-center">{{VIHistory.InvoiceDate}}</td>
+                                        <td></td>
+                                        <td>{{VIHistory.InvoicedByName}}</td>
+                                        <td class="text-center">{{VIHistory.TotalLineItems}}</td>
+                                        <td class="text-center">{{VIHistory.TotalCost | currency}}</td>
+                                        <td>{{VIHistory.Status}}</td>
+                                        <td style="background: #fff"></td>
+                                    </tr>
+                                </tbody>
+
+                                <!-- <tbody ng-repeat="VIHistory in VORModel.VIHistoryList">
+                                <tr class="clickable_row" id="rowGroup{{$index}}"
+                                    rel="VOR_Outstanding_row{{$index}}_edit"
+                                    ng-click="VORModel.editOutstandingItem($event, $index)"
+                                    ng-blur="VORModel.editOutstandingItem($event, $index)"
+                                    ng-class-even="'C2'">
+                                    <td
+                                        id="VOR_Outstanding_block_grid_container_tbody_tr_td_1_{{$index}}"
+                                        class="vor_exapnded_tr"></td>
+                                    <td class="text-center"
+                                        id="VOR_Outstanding_block_grid_container_tbody_tr_td_2_{{$index}}">
+                                        <div>{{VIHistory.InvoiceNumber}}</div>
+
+                                    </td>
+                                    <td class="text-center"
+                                        id="VOR_Outstanding_block_grid_container_tbody_tr_td_3_{{$index}}">
+                                        {{VIHistory.InvoiceDate}}</td>
+                                    <td class="text-center"
+                                        id="VOR_Outstanding_block_grid_container_tbody_tr_td_4_{{$index}}">
+                                        {{VIHistory.InvoicedByName}}</td>
+                                    <td class="text-center"
+                                        id="VOR_Outstanding_block_grid_container_tbody_tr_td_5_{{$index}}">
+                                        {{VIHistory.TotalLineItems}}</td>
+                                    <td class="text-center"
+                                        id="VOR_Outstanding_block_grid_container_tbody_tr_td_6_{{$index}}">
+                                        ${{VIHistory.TotalCost}}</td>
+                                    <td class="text-center"
+                                        id="VOR_Outstanding_block_grid_container_tbody_tr_td_6_{{$index}}">
+                                        {{VIHistory.Status}}</td>
+                                </tr>
+                            </tbody> -->
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <!-- end Add new vendor  -->
+                <!-- End: Invoice history section -->
+
+
+                <div style="height: 520px; background: #E6EBEC; margin: 0 -15px;" />
+
+
+
+
+
+                <!-- <div style="height: 200px" id="dummydivfinalise"></div> -->
+            </div>
+            <!-- End: contentWrapper -->
+        </div>          
+    </div>
+
+
+    <!-- END: Center Panel -->
+ 	<div class="LoadingDiv" ng-show="VORModel.isLoading">
+        <div class="loadingIconContainer">
+            <c:BPLoading />
+        </div>
+    </div>
+
+    <!-- START: Page Content -->
+
+    <!-- START: Vendor Order selection confirmation block -->
+    <div class="ConfirmBox-overlayNew" id="VODeselectConfirmBox">
+        <div>
+            <div class="modal-content" style="top: 200px;left: 450px;width: 400px;position: fixed;">
+                <div class="modal-header">
+                    <button type="button" class="close" aria-label="Close"
+                        ng-click="VORModel.VODeselectConfirmBox_Response(false)">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">{{ 'Vendor_Receiving_Confirmation_Deselection' | translate }}</h4>
+                </div>
+                <div class="modal-body">
+                    <p>{{ 'Continuing_will_remove_all_selected_items_from_receiving_for_vendor_order' | translate }}.</p>
+                    <p>{{ 'Process_is_not_reversible' | translate }}.</p>
+                    <br /> {{ 'Are_you_sure_you_want_to_continue' | translate }}?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary"
+                        ng-click="VORModel.VODeselectConfirmBox_Response(true)">{{ 'Label_Yes' | translate }}</button>
+                    <button type="button" class="btn btn-default"
+                        ng-click="VORModel.VODeselectConfirmBox_Response(false)">{{ 'Label_No' | translate }}</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- END: Vendor Order selection confirmation block -->
+
+    <!-- START: Vendor Order Stock excess confirmation   block -->
+    <div class="ConfirmBox-overlayNew" id="StockexcessConfirmBox">
+        <div>
+            <div class="modal-content" style="top: 200px;left: 450px;width: 400px;position: fixed;">
+                <div class="modal-header">
+                    <button type="button" class="close" aria-label="Close"
+                        ng-click="VORModel.StockexcessConfirmBox_Response(false)">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">{{ 'Vendor_Receiving_Confirmation_Stock_Excess' | translate }}</h4>
+                </div>
+                <div class="modal-body">
+                     <p>{{ 'Part_is_not_listed_as_having_been_ordered_from_this_vendor' | translate }}. </p>
+                       <p>{{ 'Continuing_will_receive_this_part_without_using_a_vendor_order' | translate }}</p>
+                       <br /> {{ 'Are_you_sure_you_want_to_continue' | translate }}?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary"
+                        ng-click="VORModel.StockexcessConfirmBox_Response(true)">{{ 'Label_Yes' | translate }}</button>
+                    <button type="button" class="btn btn-default"
+                        ng-click="VORModel.StockexcessConfirmBox_Response(false)">{{ 'Label_No' | translate }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+    
+    
+        <div class="modal fade  PrintBarCodeLabel bp-model-dialog" id="PrintBarCodeLabel" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div >
+                    <button type="button" class="close CreatePartLabelCloseIcon" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">
+                            <i class="white_FFF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                        </span>
+                    </button>
+                </div>       
+                <div class="modal-body">
+                    <div class="userGroupInfoArea">
+                    <h2 class="heading">{{ 'Print_barcode_labels' | translate }}</h2>
+                            <!-- <div class="printBarCodeLabelTabelWrapper">
+                                <table class="printBarCodeLabelTabel">
+                                <col width="2%"  />
+                                            <col width="38%"  />
+                                               <col width="25%"  />
+                                               <col width="25%"  />
+                                               <col width="8%"  />
+                                                <col width="2%"  />
+                                         <thead>
+                                            <tr>    
+                                            <th></th>
+                                               <th>PRODUCT DESCRIPTION</th>
+                                               <th class = "text-center"># STOCK LABELS</th>
+                                               <th class = "text-center">CUSTOMER LABELS</th>
+                                               <th></th>
+                                               <th></th>
+                                            </tr>
+                                         </thead>
+                                <tbody>
+                                <tr ng-repeat = "partData in VORModel.PrintBarCodeLabel">
+                                    <td></td>
+                                   <td class = "border_bottom">{{partData.ProductDesc}}</td>
+                                    <td class = "text-center border_bottom"><input type = "text" ng-model = "partData.NoOfStockLabels"></input></td>
+                                     <td class = "text-center border_bottom">{{partData.NoOfCustomerLabels}}</td>
+                                      <td class = "border_bottom">
+                                      <span class="chk_tick" id="isInstall" ng-class="{'chked': partData.IsSelected }" 
+                                                     ng-click = "VORModel.checkLabelPrint($index)"  
+                                                                  >
+                                                               <i class="fa fa-check-square chksqure"></i>
+                                                               </span>
+                                      </td>
+                                      <td></td>
+                                </tr>
+                         </tbody>
+                      </table>
+                            </div> -->
+                            
+                            
+                            
+                            <div class="row M0 printBarCodeLabelTabelWrapper">
+                            <table class="table feeGrid">
+                              <thead>
+                                <tr>
+                                
+                                  <th class="tableHeadText firstChild">{{ 'Product_description' | translate }}</th>
+                                  <th class="tableHeadText text-center secondChild"># {{ 'Stock_labels' | translate }}</th>
+                                  <th class="tableHeadText text-center thirdChild"># {{ 'Customer_labels' | translate }}</th>  
+                                  <th class="tableHeadText forthChild"></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr ng-repeat="partData in VORModel.PrintBarCodeLabel" ng-class = "{'disabledEditableRow' : !partData.IsSelected}">
+                                  <td class = "codeText firstChild">{{partData.ProductDesc}}</td>
+                                    <td class = "text-center nrmlText secondChild ">
+                                                        <price-only-input id-value = "NoOfStockLabels"
+                                                                        precision-length = "0" 
+                                                                         max-length = "6"
+                                                                        input-value = "partData.NoOfStockLabels" 
+                                                                        disabled-value = "!partData.IsSelected"
+                                                                        blur-function = "VORModel.calculateNoOfLabel($index)"
+                                                                        />
+                                        
+                                        
+                                        </td>
+                                     <td class = "text-center nrmlText thirdChild ">{{partData.NoOfCustomerLabels}}</td>
+                                      <td class = "nrmlText forthChild">
+                                      <span class="chk_tick" id="isInstall" ng-class="{'chked': partData.IsSelected }" 
+                                                     ng-click = "VORModel.checkLabelPrint($index)"    
+                                                                  >
+                                                               <i class="green_00A3DB doneIcon svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/check-1.svg'"></i>
+                                                               </span>
+                                      </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            
+                                <div class="text-center formBtn">
+                                    <button class="bp-btn bp-btn-normal createButton"
+                                        ng-click = "VORModel.PrintBarCode()" 
+                                        ng-disabled ="VORModel.noOfLabelPrint == 0" 
+                                        >
+                                        {{ 'Print_Label' | translate }} <span ng-if = "VORModel.noOfLabelPrint != 0">{{VORModel.noOfLabelPrint}}</span> {{ 'Labels' | translate }}  
+                                    </button>   
+                                </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</apex:page>

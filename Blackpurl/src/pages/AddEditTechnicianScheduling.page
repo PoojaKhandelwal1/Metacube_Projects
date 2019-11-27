@@ -1,0 +1,156 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+    <div class="modal fade-scale   CreateGroupModal print-modal-popup bp-tech-scheduling-popup" ng-class="{'unit-Popup': M_AddEditUnit.UnitType == 'COU'}" id="techSchedulingPopup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                        <button type="button" class="close bp-close-but CreateGroupModalCloseIcon" ng-click = "F_AddEditTechSchedule.hideAddEditCustomerModal()" >
+                            <span aria-hidden="true">
+                                <i class="white_FFF svg_width closeiconWidth" ng-click="F_AddEditUnit.hideAddEditUnitOrderModal()" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                            </span>
+                        </button>
+                </div>  
+                <div class="modal-body">
+                     <div class = "bp-modal-body-wrapper">
+                            <h1 class = "bp-modal-body-text">{{M_AddEditTechSchedule.TechnicianDetailObject.Name}}</h1>
+                            <div class = "bp-modal-body-content">
+                                <div class = "bp-modal-content-text">
+                                    <label class = "bp-first-letter-capitalize">{{ 'Role' | translate }}</label>
+                                    <div>
+                                        <input type="text" maxlength="40" ng-model = "M_AddEditTechSchedule.TechnicianDetailObject.Role" class = "bp-input-text"/>
+                                    </div>
+                                </div>
+                                
+                                <div class = "bp-modal-content-text" >
+                                
+                                
+                                    <label class = "bp-first-letter-capitalize">{{ 'Working_days' | translate }} </label>
+                                    <div class = "searchInputArea" ng-class = "{'showingOverlay' : M_AddEditTechSchedule.showWorkingDayList }">
+                                        <input type="text" id = "multiSelectDropDownId" class = "bp-input-text" ng-focus = "F_AddEditTechSchedule.displayWorkingDayList()" ng-model="M_AddEditTechSchedule.selectedDay" readonly="readonly"/>
+                                         <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow bp-pointer-cursor " ng-click = "F_AddEditTechSchedule.setFocusOnInput('multiSelectDropDownId')"></i>
+                                          <div class="searchResultOverlay bp-multiselect-Wrapper" id="appointmentScheduleDropDown" ng-show = "M_AddEditTechSchedule.showWorkingDayList" >
+                                             <ul>
+                                                <li  ng-repeat ="dayInstance in M_AddEditTechSchedule.weekDays" ng-class="{'bp-no-cursor': ($index==0 && M_AddEditTechSchedule.weekDays[0].isSelected)   || F_AddEditTechSchedule.isOnlySelectedCheckbox($index)}">
+                                                    <input class="dummy-checkbox-input" type="checkbox" ng-change="F_AddEditTechSchedule.updateWorkingDayString($index)" id="checkbox-{{$index}}" ng-model="dayInstance.isSelected"/>
+                                                    <label class="label-as-checkbox" for="checkbox-{{$index}}"></label>
+                                                    <label for="checkbox-{{$index}}" class="checkbox-label">{{dayInstance.day}}</label>
+                                                </li>
+                                             </ul> 
+                                          </div>
+                                    </div>
+                                </div>
+                                <div class = "bp-modal-contet-grid">
+                                    <label class = "bp-first-letter-capitalize">{{ 'Leave and Exceptions' | translate }}</label>  
+                                        <div class = "bp-modal-grid-wrapper">
+                                            <ul class = "grid-header">
+                                                <li>{{ 'Label_Type' | translate}}</li>
+                                                <li>{{ 'Label_From' | translate}}</li>
+                                                <li>{{ 'Label_To' | translate}}</li>
+                                                <li></li>
+                                            </ul>
+                                            <div>
+                                            <ul class = "bp-modal-grid-bg  bp-new-row PT8 " ng-repeat = "logRec in M_AddEditTechSchedule.LeaveDetailJSON" ng-if = "M_AddEditTechSchedule.LeaveDetailJSON.length > 0">
+                                               <li class = "bold bp-set-text-ellipses pull-left">{{logRec.Type}}</li>
+                                                <li>{{logRec.FromDate}} - {{logRec.FromTime}}</li>
+                                                <li>{{logRec.ToDate}} - {{logRec.ToTime}}</li>
+                                                <li class = 'delete-Icon'><i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" ng-click = "F_AddEditTechSchedule.deleteLeave(logRec.Id)" class="gray_DDDDDD bp-pointer-cursor pull-left"
+                                                            data-target="#PayrollDeleteConfiramtionPopup" data-toggle="modal"></i></li>
+                                            </ul>
+                                            </div>
+                                            <ul class = "bp-modal-grid-bg bp-ContentCenter" ng-if = "M_AddEditTechSchedule.LeaveDetailJSON.length == 0">
+                                                <li><label class = "bp-first-letter-capitalize">{{ 'No_recorded_leave' | translate }}</label></li>
+                                            </ul>
+                                            <div class = "bp-new-row-wrapper" ng-if = "M_AddEditTechSchedule.showCreateLogRow">
+                                            <ul class = "bp-modal-grid-bg  bp-new-row PT8">
+                                                <li><input type = "text" ng-model = "M_AddEditTechSchedule.createNewLevaeRec.Type" class = "bp-input-text"/></li>
+                                                <li>
+                                                <div class="datePickerWrappercontainer">
+                                                <input type="text"  id="fromDate_Id" style="background: #FFF;position: initial;" ui-date="M_AddEditTechSchedule.FromDateOptions" 
+                                              ui-date-format="{{M_AddEditTechSchedule.dateFormat}}" ng-model = "M_AddEditTechSchedule.createNewLevaeRec.fromDate"
+                                              class="bp-input-text  datePickerColor datepicker jobclockingcalenderDateTextBox" ng-change = "F_AddEditTechSchedule.setToDateFormate()"
+                                               placeholder="{{ 'Label_From' | translate }}" readonly="readonly"/> 
+                                              <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon bp-blue" ng-click = "F_AddEditTechSchedule.showDatePicker($event,'fromDate_Id')"
+                                                 id="fromDate_Id" >
+                                              </i>
+                                                </div>
+                                                </li>
+                                                <li>
+                                                <div class="datePickerWrappercontainer">
+                                                     <input type="text"  id="toDate_Id" style="background: #FFF;position: initial;" ui-date="M_AddEditTechSchedule.ToDateOptions" 
+                                              ui-date-format="{{M_AddEditTechSchedule.dateFormat}}" ng-model = "M_AddEditTechSchedule.createNewLevaeRec.toDate"
+                                              class="bp-input-text  datePickerColor datepicker jobclockingcalenderDateTextBox"
+                                               placeholder="{{ 'Label_To' | translate }}" readonly="readonly" 
+                                              /> 
+                                              <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon bp-blue" ng-click = "F_AddEditTechSchedule.showDatePicker($event,'toDate_Id')"
+                                                 id="fromDate_Id" >
+                                              </i>
+                                              </div>
+                                                </li>
+                                                <li></li>
+                                                </ul>
+                                                <ul class = "bp-modal-grid-bg bp-new-row PT8 PB8">
+                                                <li></li>
+                                                <li>
+                                                <input type = "text" class = "bp-input-text text-uppercase" ng-focus = "F_AddEditTechSchedule.showTimeList('from')"
+                                                ng-keydown="F_AddEditTechSchedule.hideTimeList($event)"
+                                                 ng-blur="F_AddEditTechSchedule.validateFieldWithKey('FromTime')"
+                                                  ng-keyup="F_AddEditTechSchedule.keyBoardavigation($event, M_AddEditTechSchedule.TimeSlot, 'fromTime')"
+                                                id = "fromTime" ng-model = "M_AddEditTechSchedule.createNewLevaeRec.FromTime"/>
+                                                 <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue timedownArrow bp-pointer-cursor" ng-click = "F_AddEditTechSchedule.setFocusOnInput('fromTime')"></i>
+                                                <ul class = "timeSloatDropdown" ng-show="M_AddEditTechSchedule.isFromTimeDropdownVisible"
+                                                    id="fromTimeDropDown">
+                                                      <li ng-repeat = " timeSlotRec in M_AddEditTechSchedule.TimeSlot track by $index"  ng-click = "F_AddEditTechSchedule.validateTime(timeSlotRec,'FromTime')" 
+                                                        ng-class="{'selected-row': $index == M_AddEditTechSchedule.fromTimeCurrentIndex}"
+                                                        id="fromTime{{$index}}">
+                                                         {{timeSlotRec}}
+                                                      </li>
+                                                    </ul>
+                                                
+                                                </li>
+                                                <li><input type = "text" class = "bp-input-text text-uppercase" ng-model = "M_AddEditTechSchedule.createNewLevaeRec.ToTime"
+                                                ng-focus = "F_AddEditTechSchedule.showTimeList('to')"
+                                                ng-blur="F_AddEditTechSchedule.validateFieldWithKey('ToTime')"
+                                                id = "toTime" ng-keydown="F_AddEditTechSchedule.hideTimeList($event)"
+                                                ng-keyup="F_AddEditTechSchedule.keyBoardavigation($event, M_AddEditTechSchedule.TimeSlot, 'toTime')"
+                                                />
+                                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue timedownArrow bp-pointer-cursor" ng-click = "F_AddEditTechSchedule.setFocusOnInput('toTime')"></i>
+                                                     <ul class = "timeSloatDropdown" ng-show="M_AddEditTechSchedule.isToTimeDropdownVisible"
+                                                    id="toTimeDropDown">
+                                                      <li ng-repeat = " timeSlotRec in M_AddEditTechSchedule.TimeSlot track by $index"  ng-click = "F_AddEditTechSchedule.validateTime(timeSlotRec,'ToTime')" 
+                                                        ng-class="{'selected-row': $index == M_AddEditTechSchedule.toTimeCurrentIndex}"
+                                                        id="toTime{{$index}}">
+                                                         {{timeSlotRec}}
+                                                      </li>
+                                                    </ul>
+                                                </li>
+                                                <li><button class = "bp-btn bp-btn-normal" ng-disabled = "!M_AddEditTechSchedule.createNewLevaeRec.ToTime ||!M_AddEditTechSchedule.createNewLevaeRec.FromTime || 
+                                                                                                !M_AddEditTechSchedule.createNewLevaeRec.toDate || !M_AddEditTechSchedule.createNewLevaeRec.fromDate || !M_AddEditTechSchedule.createNewLevaeRec.Type" ng-click = "F_AddEditTechSchedule.saveLeaveDetail()">Add</button></li>
+                                                
+                                            </ul>
+                                            </div>
+                                            <ul class = "bp-grid-light-blue H50">
+                                                <li class = "bp-pointer-cursor" ng-click = "F_AddEditTechSchedule.createLevaeRec()">
+                                                <a><i ng-include="'{!Application_Images}/Icons/add-circle.svg'" class="blue_008DC1 bp-pointer-cursor"></i> <label class = "bp-first-letter-capitalize">Log Leave</label></a>
+                                               </li>
+                                             </ul>
+                                        </div>
+                                 </div>
+                            </div>
+                     </div>
+                    <footer>
+                        <button class = "bp-transparent-btn" ng-click = "F_AddEditTechSchedule.hideAddEditCustomerModal()">Cancel</button>
+                        <button class = "bp-primary-btn" ng-disabled = "!M_AddEditTechSchedule.TechnicianDetailObject.Role" ng-click = "F_AddEditTechSchedule.saveTechnicianDetail()"> Save</button>
+                        
+                     </footer>
+                     <div class="dummy-backdrop" ng-if = "M_AddEditTechSchedule.showWorkingDayList" ng-click="M_AddEditTechSchedule.showWorkingDayList = false"></div>
+                </div>
+            </div>
+        </div>
+    <!-- END: Technician Scheduling Modal window -->
+    <div class="LoadingDiv" ng-show="M_AddEditUnit.isLoading">
+        <div class="loadingIconContainer">
+            <c:BPLoading />
+        </div>
+    </div>
+</div>
+
+</apex:page>

@@ -1,0 +1,573 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" Controller="ServiceWorkSheetCtrl">
+    <html ng-app="serviceWorksheetModule" >
+        <head>
+            <c:CSSFiles Application="{!JSENCODE(Application)}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <apex:includeScript value="{!JSENCODE(Assests)}/Js/Jquery.min.js" /> 
+            <apex:includeScript value="{!JSENCODE(Assests)}/Js/angular.min.js" />   
+            <apex:includeScript value="{!JSENCODE(Application)}/Js/Other/util.js" />
+            <script src="{!JSENCODE(Assests)}/Js/signature_pad_1.5.3.js"></script>
+            <apex:includeScript value="{!JSENCODE(Application)}/Js/Directive/Signature.js" />
+            <apex:stylesheet value="{!JSENCODE(Application)}/css/PrintPreviewStyle.css"/>
+            <apex:stylesheet value="{!JSENCODE(Application)}/css/Printcss.css"/>
+            <apex:stylesheet value="{!JSENCODE(Application)}/css/ServiceWorkSheet.css"/>
+            
+            <script>
+                var serviceWorksheetModule = angular.module('serviceWorksheetModule', [
+                  'signature',
+                ]);
+                serviceWorksheetModule.filter('tel', function () {
+                   return function (tel) {
+                       return formatTel(tel);
+                   };
+                });
+                
+                
+                serviceWorksheetModule.factory('serviceWorksheetService', function ($q) {
+                    return {
+                        getServiceWorksheetData : function (CoHeaderId) {
+                            CoHeaderId = encodeString(CoHeaderId);
+                            var deferred = $q.defer();
+                            // make AJAX request to the remote service
+                            Visualforce.remoting.Manager.invokeAction( '{!$RemoteAction.ServiceWorkSheetCtrl.getServiceWorkSheetData}' ,CoHeaderId, 
+                            function (result, event) {
+                                if (event.type == 'exception') {
+                                    deferred.reject(event.message);
+                                } else {
+                                    var responseData = decodeString(result);
+                                    var find = '\'';
+                                    var re = new RegExp(find, 'g');
+                                    responseData = responseData.replace(re, '');
+                                    if(responseData != ''){
+                                        deferred.resolve(JSON.parse(responseData));
+                                    } else {
+                                        deferred.resolve(responseData);
+                                    }
+                                }
+                            }, {
+                                escape : true
+                            });
+                            return deferred.promise;
+                        },
+                        saveCustomerApproval : function(customerApprovalObj,soHeaderIds) {
+                            return RemoteActionService($q, '{!$RemoteAction.ServiceWorkSheetCtrl.saveCustomerApproval}', customerApprovalObj,soHeaderIds);
+                        },
+                        getCustomerApprovalRec : function(customerApprovalId) {
+                            return RemoteActionService($q, '{!$RemoteAction.ServiceWorkSheetCtrl.getCustomerApprovalRec}', customerApprovalId);
+                        }
+                        
+                    }
+                });
+        
+        
+                
+                serviceWorksheetModule.controller('ServiceWorksheetController', function (serviceWorksheetService, $scope, $timeout, $window, $document) {
+                    $scope.serviceWorksheetModal = {};
+                    $scope.serviceWorksheetModal.isDataLoaded = false;
+                    $scope.serviceWorksheetModal.customerApprovalType = ['Print' , 'Sign'];
+                    $scope.serviceWorksheetModal.showApprovalTypeDropdown = false;
+                    $scope.serviceWorksheetModal.selectedApprovaltype = '';
+                    $scope.serviceWorksheetModal.soHeaderIds = '';
+                    $scope.serviceWorksheetModal.isAppliedForApproval = false;
+                    $scope.serviceWorksheetModal.isArrowIconClicked = false;
+                    $scope.boundingBox = {
+                        width: 700,
+                        height: 300
+                    };
+                    $scope.serviceWorksheetModal.LoadServiceWorksheetData = function()  {
+                        $scope.serviceWorksheetModal.CoHeaderId = "{!JSENCODE(URLENCODE($CurrentPage.parameters.id))}";
+                        $scope.serviceWorksheetModal.isFinalized = "{!JSENCODE(URLENCODE($CurrentPage.parameters.isForCustomerApproval))}";
+                        $scope.serviceWorksheetModal.customerApprovalId = "{!JSENCODE(URLENCODE($CurrentPage.parameters.customerApprovalId))}";
+                        
+                        var CoHeaderId = $scope.serviceWorksheetModal.CoHeaderId;
+                        var responseData = {};
+                        if($scope.serviceWorksheetModal.customerApprovalId) {
+                        
+                        serviceWorksheetService.getCustomerApprovalRec($scope.serviceWorksheetModal.customerApprovalId)
+                                .then(function (successfulServiceWorksheetData) {
+                                console.log('It is called');
+                                    $scope.serviceWorksheetModal.customerApprovalObj = successfulServiceWorksheetData;
+                                    $scope.serviceWorksheetModal.serviceWorksheetData = JSON.parse(successfulServiceWorksheetData.ApprovalDetailJson);
+                                    $scope.serviceWorksheetModal.selectedApprovaltype = successfulServiceWorksheetData.ApprovalType;
+                                    $scope.serviceWorksheetModal.isDataLoaded = true;
+                                    console.log($scope.serviceWorksheetModal.customerApprovalObj);
+                                    setTimeout(function(){
+                                        animateToCustomerApprovalSection();
+                                    },200);
+                                },
+                                function (errorSearchResult) {
+                                    responseData = errorSearchResult;
+                                });
+                        } else {
+                            serviceWorksheetService.getServiceWorksheetData(CoHeaderId)
+                                .then(function (successfulServiceWorksheetData) {
+                                    responseData = successfulServiceWorksheetData;
+                                    $scope.serviceWorksheetModal.processResults(responseData);
+                                    $scope.serviceWorksheetModal.selectedApprovaltype = 'Verbal';
+                                    getSoHeaderIds(responseData);
+                                    $scope.serviceWorksheetModal.isDataLoaded = true;
+                                    if($scope.serviceWorksheetModal.isFinalized) {
+                                        setTimeout(function(){
+                                            animateToCustomerApprovalSection();
+                                        },200);
+                                    }
+                                },
+                                function (errorSearchResult) {
+                                    responseData = errorSearchResult;
+                                });
+                        }
+                         
+                    }
+                    $scope.disableSaveBtn = function(signatureValue) {
+                        if(signatureValue && (signatureValue.isEmpty || !signatureValue.dataUrl)) {
+                            return true;
+                        }
+                    }
+                    function animateToCustomerApprovalSection() {
+                        $("html, body").delay(1000).animate({scrollTop: $('.customer-approval-block').offset().top }, 1000);
+                    }
+                    function getSoHeaderIds(result) {
+                        for(var i=0; i < result.UnitList.length ; i++) {
+                            for(var j=0 ; j < result.UnitList[i].SOHeaderList.length ; j++) {
+                                $scope.serviceWorksheetModal.soHeaderIds += result.UnitList[i].SOHeaderList[j].Id +  ','; 
+                            }
+                        }
+                        $scope.serviceWorksheetModal.soHeaderIds = ($scope.serviceWorksheetModal.soHeaderIds).slice(0, -1);
+                        console.log($scope.serviceWorksheetModal.soHeaderIds);
+                    }
+                    $scope.serviceWorksheetModal.printview = function() {
+                        $timeout($window.print, 0);
+                    }
+                    angular.element(document).on("click", function(e) {
+                        if(e.target.id  !== 'customerApprovalType' &&  e.target.id  !== 'customerApprovalDownArrow' && e.target.id  !== 'customerApprovalTypeInput'
+                                && !angular.element(e.target).closest('i#customerApprovalDownArrow').length) {
+                                $scope.serviceWorksheetModal.showApprovalTypeDropdown = false;
+                        }
+                    });
+                    
+                    $scope.serviceWorksheetModal.processResults = function(responseData){
+                        $scope.serviceWorksheetModal.serviceWorksheetData = responseData;
+                        console.log($scope.serviceWorksheetModal.serviceWorksheetData);
+                    }   
+                    $scope.serviceWorksheetModal.selectApprovalType = function(indexVal,approvalType) {
+                        $scope.serviceWorksheetModal.customerApprovalType = ['Verbal' , 'Print' , 'Sign'];
+                        var index = $scope.serviceWorksheetModal.customerApprovalType.indexOf(approvalType);
+                        $scope.serviceWorksheetModal.selectedApprovaltype = $scope.serviceWorksheetModal.customerApprovalType[index];
+                        if (index > -1) {
+                          $scope.serviceWorksheetModal.customerApprovalType.splice(index, 1);
+                        }
+                    }
+                    $scope.serviceWorksheetModal.saveCustomerApproval = function(approvalType,signatureImage) {
+                        if(approvalType=== 'Verbal') {
+                            var customerApprovalObj = {
+                            "ApprovalType" : $scope.serviceWorksheetModal.selectedApprovaltype,
+                            "ApprovalDetailJson" : JSON.stringify($scope.serviceWorksheetModal.serviceWorksheetData)
+                            }
+                        
+                        }else if(approvalType=== 'Print') {
+                            $scope.serviceWorksheetModal.isFinalized = false;
+                            $scope.serviceWorksheetModal.printview();
+                            var customerApprovalObj = {
+                            "ApprovalType" : $scope.serviceWorksheetModal.selectedApprovaltype,
+                            "ApprovalDetailJson" : JSON.stringify($scope.serviceWorksheetModal.serviceWorksheetData)
+                            }
+                        }else if(approvalType=== 'Sign' ) {
+                            var customerApprovalObj = {
+                            "ApprovalType" : $scope.serviceWorksheetModal.selectedApprovaltype,
+                            "ApprovalDetailJson" : JSON.stringify($scope.serviceWorksheetModal.serviceWorksheetData),
+                            "signatureBlobValue" : signatureImage.dataUrl
+                            }
+                        }   
+                        serviceWorksheetService.saveCustomerApproval(angular.toJson(customerApprovalObj), $scope.serviceWorksheetModal.soHeaderIds).then(function(result){
+                            console.log('Approval granted');
+                            localStorage.setItem("approval", "Approved");
+                            setTimeout(function() {
+                                window.close();
+                            },200);
+                        });                     
+                        
+                    }   
+                });
+            </script>
+        </head>
+        
+        <body ng-controller="ServiceWorksheetController" ng-init="serviceWorksheetModal.LoadServiceWorksheetData()" >
+            <div class="watermark" ng-if="serviceWorksheetModal.serviceWorksheetData.COHeaderInfo.Status == 'Quote'">
+                <img src="{!URLFOR($Resource.Application_Images, 'quote_watermark.png')}" width="1100px" height="1100px"/>
+            </div>
+            <div class="content">
+                <div class="PrintSection mainSection ServiceWorksheetSection">
+                    <div id="PrintPreview" class ="printpreview">
+                        <div class="main_section row">
+                            <div class="row rowGeneral">
+                                <div class="content PrintSection ServiceWorksheetPreview" ng-if="serviceWorksheetModal.isDataLoaded">
+                                    <!-- Start: Service Worksheet Header Section --> 
+                                    <div class="WorksheetHeaderSection">
+                                    	<div class="col-md-12 MB20" ng-if="serviceWorksheetModal.customerApprovalId">
+											<button class="btn C11 T4 addmoreinfoBtn active_btn pull-right MR0" ng-click="serviceWorksheetModal.printview()">Print</button>
+										</div>
+                                        <!-- Start: Store Info Block --> 
+                                        <div class="StoreInfoBlock" >
+                                            <h1 class="text-capitalize storeName">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.CompanyName}}</h1><!-- Joe's Harley Shop -->
+                                            <div class="storeAddress pull-left">
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.Address1}}</p><!-- 1212 Black Creek Drive West -->
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.Address2}}</p>
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.City}}<span ng-if="serviceWorksheetModal.serviceWorksheetData.StoreInfo.City && serviceWorksheetModal.serviceWorksheetData.StoreInfo.State">, </span>{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.State}}</p><!-- Toronto, Ontario -->
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.PostalCode}} {{serviceWorksheetModal.serviceWorksheetData.StoreInfo.Country}}</p><!-- J4I 19Q CANADA -->
+                                                <p class="AddressLine1">{!$Label.Label_Store}#:      {!$Label.Label_Web}: </p><!-- Store#: 6022 Web: joesharleyshoptoronto.com -->
+                                            </div>
+                                        </div>
+                                        <!-- End: Store Info Block --> 
+                                        
+                                        <!-- Start: Service Worksheet Number Section -->
+                                        <div class="DocumentTitleAndCONumber pull-right">
+                                            <div class="DocumentTitle">{!$Label.Label_Service_Worksheet}</div>
+                                            <p class="CoNumber">{{serviceWorksheetModal.serviceWorksheetData.COHeaderInfo.Name}}</p><!-- CO-123456 -->
+                                        </div>
+                                        <!-- End: Service Worksheet Number Section -->
+                                    </div>
+                                    <!-- End: Service Worksheet Header Section -->  
+                                    
+                                    <!-- Start: Unit List Section -->  
+                                    <div ng-repeat="unit  in  serviceWorksheetModal.serviceWorksheetData.UnitList">
+                                        <!-- Start: Customer And Unit Info Section --> 
+                                        <div class="col-md-12 col-xs-12 CustomerAndUnitInfo page_break">
+                                        
+                                            <!-- Start: Customer Info Section --> 
+                                            <div class="customerinfoBlock" ng-if="unit.CustomerInfo.CustomerName != null && unit.CustomerInfo.CustomerName != '' && unit.CustomerInfo.CustomerName != undefined">
+                                                <div class="CustomerInformationHeader">{!$Label.Label_Customer}</div>
+                                                <h1 class="text-capitalize customerName">{{unit.CustomerInfo.CustomerName}}</h1><!-- Jim Smith -->
+                                                <div class="CustomerAddress pull-left">
+                                                    <p class="AddressLine">{{unit.CustomerInfo.BillingStreet1}}</p><!-- Unit #405 -->
+                                                    <p class="AddressLine">{{unit.CustomerInfo.BillingStreet2}}</p><!-- 7821 Rexdale Boulevard -->
+                                                    <p class="AddressLine">{{unit.CustomerInfo.BillingCity}}<span ng-if="unit.CustomerInfo.BillingCity && unit.CustomerInfo.BillingState">, </span>{{unit.CustomerInfo.BillingState}}</p><!-- Toronto, Ontario -->
+                                                    <p class="AddressLine">{{unit.CustomerInfo.BillingPostalCode}}  {{unit.CustomerInfo.BillingCountry}}</p><!-- J3I 19S -->
+                                                    <p class="AddressLine1"><label>{!$Label.Label_Phone}: </label>  {{unit.CustomerInfo.Phone | tel}}</p>
+                                                                                                                        <!-- | tel: Added by pooja 4 Feb. 2017 -->
+
+
+                                                    <p><label class="labelEmail">{!$Label.Label_Email}: </label>  {{unit.CustomerInfo.Email}}</p><!-- Jim_Smith1976@gmail.com -->
+                                                </div>
+                                            </div>
+                                            <!-- End: Customer Info Section -->
+                                            
+                                            <!-- Start: Unit Info Section -->  
+                                            <div class="col-md-5 UnitInfoBlock pull-right">
+                                                <div class="UnitInformationHeader">{!$Label.Label_Unit_Information}</div>
+                                                <div class="UnitDetail pull-left">
+                                                    <p class="text-capitalize unitNumber" ng-if="unit.UnitInfo.VINNumber">{{unit.UnitInfo.VINNumber}}</p><!-- 5J6RE4H75BL1048998 -->
+                                                    <p class="text-capitalize unitNumber" ng-if="!unit.UnitInfo.VINNumber">VIN unknown</p>
+                                                    <p>
+                                                    <span class="year MB0">{{unit.UnitInfo.Year}}
+                                                         <span ng-if = "unit.UnitInfo.Year && unit.UnitInfo.MakeName">,</span>
+                                                    </span><!-- 1978 -->
+                                                    <span class="make MB0">{{unit.UnitInfo.MakeName}}
+                                                    <span ng-if = "(unit.UnitInfo.Year || unit.UnitInfo.MakeName ) && unit.UnitInfo.ModelName">,</span>
+                                                    </span><!-- Harley Davidson -->
+                                                    <span class="model MB0">{{unit.UnitInfo.ModelName}}
+                                                    <span ng-if = "(unit.UnitInfo.Year || unit.UnitInfo.MakeName || unit.UnitInfo.ModelName) && unit.UnitInfo.SubModelName">,</span>
+                                                    </span><!-- Sportster -->
+                                                    <span class="model MB0">
+                                                    <span>{{unit.UnitInfo.SubModelName}}</span>
+                                                    <span ng-if = "(unit.UnitInfo.Year || unit.UnitInfo.MakeName || unit.UnitInfo.ModelName || unit.UnitInfo.SubModelName) && unit.UnitInfo.Colour">,</span>
+                                                    </span><!-- Super Low -->
+                                                     <span class="model MB0">
+                                                        <span>{{unit.UnitInfo.Colour}}</span>
+                                                    </span>
+                                                    </p>
+                                                    <p class="model" ng-if="unit.UnitInfo.Rego">
+                                                      <span>Plate/Reg#:</span>
+                                                          <span>{{unit.UnitInfo.Rego}}</span>
+                                                      </p>
+                                                    <p class="sub_model MB0" ng-if="unit.SOHeaderList[0].MileageIn">
+                                                    <span>Mileage in:</span>
+                                                    {{unit.SOHeaderList[0].MileageIn}}</p>
+                                                     <p class="sub_model" ng-if="unit.SOHeaderList[0].MileageOut">
+                                                    <span>Mileage out:</span>
+                                                    {{unit.SOHeaderList[0].MileageOut}}</p>
+                                                </div>
+                                            </div>
+                                            <!-- End: Unit Info Section -->
+                                        </div>
+                                        <!-- End: Customer And Unit Info Section -->
+                                        
+                                        <!-- Start: SoHeader List Section --> 
+                                        <div class="col-md-12 col-xs-12 SoHeaderList page_break" ng-repeat="SoHeader in unit.SOHeaderList">
+                                            <div class="col-md-12 col-xs-12 SoHeaderName backgrountTransparent page_break">
+                                                {{SoHeader.SoHeaderName}}
+                                                <span class="pull-right SoHeaderTotal">{{SoHeader.Total | currency}}</span>
+                                            </div>       
+                                            <div class="SOHeaderInfoBlock">
+                                                <div class="col-md-12 SOHeaderInfoBlockW P0 FL"  ng-if = "SoHeader.ConcernList.length != 0">
+                                                    <label class ="pull-left SOHeaderInfoBlockLabel">{!$Label.Label_Concern}:  </label>
+                                                    <div class = "pull-left SOHeaderInfoBlockContent">
+                                                        <!-- <p ng-repeat="concern in SoHeader.ConcernList" class = "pull-left">{{concern}} </p> -->
+                                                        <p ng-if="SoHeader.ConcernList.length == 1" class ="pull-left">{{SoHeader.ConcernList[0]}} </p>
+                                                        <ul ng-if="SoHeader.ConcernList.length > 1"><li ng-repeat="concern in SoHeader.ConcernList">{{concern}}</li></ul>
+                                                    </div>
+                                                </div><!-- Things are broken -->
+                                               <div class="col-md-12 SOHeaderInfoBlockW P0 FL"  ng-if = "SoHeader.CauseList.length != 0">
+                                                   <label  class ="pull-left SOHeaderInfoBlockLabel">{!$Label.Label_Cause}:  </label>
+                                                    <div class = "pull-left SOHeaderInfoBlockContent">
+                                                        <!-- <p  ng-repeat = "cause in SoHeader.CauseList" class = "pull-left">{{cause}} </p> -->
+                                                        <p ng-if="SoHeader.CauseList.length == 1" class ="pull-left">{{SoHeader.CauseList[0]}} </p>
+                                                        <ul ng-if="SoHeader.CauseList.length > 1"><li ng-repeat = "cause in SoHeader.CauseList">{{cause}}</li></ul>
+                                                    </div>
+                                               </div>
+                                                            <!-- Things are broken -->
+                                               <div class="col-md-12 SOHeaderInfoBlockW P0 FL"  ng-if = "SoHeader.CorrectionList.length != 0">
+                                                    <label  class ="pull-left SOHeaderInfoBlockLabel">{!$Label.Label_Correction}:  </label>
+                                                    <div class = "pull-left SOHeaderInfoBlockContent">
+                                                        <!-- <p ng-repeat="correction in SoHeader.CorrectionList" class = "pull-left">{{correction}} </p> -->
+                                                        <p ng-if="SoHeader.CorrectionList.length == 1" class ="pull-left">{{SoHeader.CorrectionList[0]}} </p>
+                                                        <ul ng-if="SoHeader.CorrectionList.length > 1"><li ng-repeat="correction in SoHeader.CorrectionList">{{correction}}</li></ul>
+                                                    </div>
+                                               </div><!-- Things are broken -->
+                                                <!-- <p><label style="min-width: 86.23px" ng-repeat="cause in SoHeader.CauseList">Cause: </label>  {{cause}}</p> --><!-- The customer broke them -->
+                                                <!-- <p><label ng-repeat="correction in SoHeader.CorrectionList">Correction: </label>  {{correction}}</p> --><!-- We fixed the things -->
+                                            </div>
+                                            <!-- Start: SoHeader Line Items grid  --> 
+                                             <div class="gid_container_SoLineItems">
+                                                <table class="table pull-left page_break" id="Print_Preview_SoLineItemsGrid"  ng-if="SoHeader.SOGridItems && SoHeader.SOGridItems.length != 0"> <!-- SoHeader.SOLIList && SoHeader.SOLIList.length != 0 -->
+                                                    <col width="15%" />
+                                                    <col width="35%" />
+                                                    <col width="5%" />
+                                                    <col width="13%" />
+                                                    <col width="13%" />
+                                                    <col width="13%" />
+                                                    <col width="5%" />
+                                                    <col width="1%" />
+                                                    
+                                                    <thead style="background: none !important;">
+                                                        <tr class="tableHeader" style="background: none !important;">
+                                                            <th style="background: none !important;">{!$Label.Label_Type}</th>
+                                                            <th style="background: none !important;">Item/Description</th>
+                                                            <th style="background: none !important;"></th>
+                                                            <th style="background: none !important;">{!$Label.Label_Need}</th>
+                                                            <th style="background: none !important;">{!$Label.Label_Status}</th>
+                                                            <th style="background: none !important;">{!$Label.Label_Price}</th>
+                                                            <th style="background: none !important;">{!$Label.Label_Total}</th>
+                                                            <th style="background: none !important;"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    
+                                                    <tbody class="" ng-repeat="soGrid in SoHeader.SOGridItems" style="background: none !important;"> <!-- SoLi in SoHeader.SOLIList -->
+                                                        <tr style="background: none !important;" ng-show="soGrid.SOKH.Id != null">
+                                                            <td style="background: none !important;">Kit</td> 
+                                                            <td style="background: none !important;">{{soGrid.SOKH.ItemDescription}}</td> 
+                                                            <td style="background: none !important;"></td>
+                                                            <td style="background: none !important;"></td> 
+                                                            <td  style="background: none !important;"></td> 
+                                                            <td style="background: none !important;"></td> 
+                                                            <td style="background: none !important;">{{soGrid.SOKH.FixedPrice | currency}}</td> 
+                                                            <td style="background: none !important;"></td>    
+                                                        </tr>
+                                                        <tr ng-repeat="SoLi in soGrid.SOKH.SOLIList" style="background: none !important;" ng-if="!SoLi.IsHidden">
+                                                            <td style="background: none !important;" ng-if = "SoLi.IsPart" 
+                                                            ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                                Part
+                                                            </td> 
+                                                            <td style="background: none !important;" ng-if = "SoLi.IsFee" 
+                                                            ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                                Fee 
+                                                            </td>
+                                                            <td style="background: none !important;" ng-if = "SoLi.IsLabour" 
+                                                            ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                                Labor
+                                                            </td>
+                                                            <td style="background: none !important;" ng-if = "SoLi.IsSublet" 
+                                                            ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                                Sublet
+                                                            </td>
+                                                            <td style="background: none !important;">{{SoLi.ItemDesc}}</td> 
+                                                            <td style="background: none !important;"></td>
+                                                            <td style="background: none !important;">{{SoLi.QtyNeeded}}</td>
+                                                            <td style="background: none !important;" ng-if = "(SoLi.IsPart && !SoLi.IsNonInventoryPart)">{{SoLi.Status}}</td>  
+                                                            <td style="background: none !important;" ng-if = "SoLi.IsPart && SoLi.IsNonInventoryPart">In Stock</td>
+                                                            <!-- START: edited by kajal 6th june 2017 #2222 -->
+                                                            <!-- <td ng-if = "SoLi.IsFee || SoLi.IsLabour">Ready</td>  -->
+                                                            <td style="background: none !important;" ng-if = "SoLi.IsFee || SoLi.IsLabour || SoLi.IsSublet">{{(SoHeader.SoHeaderInvoiceStatus == 'Invoiced') ? 'Invoiced' : 'Ready'}}</td>  
+                                                            <!-- END: edited by kajal 6th june 2017 #2222 -->
+                                                            <td style="background: none !important;">{{SoLi.KitPrice | currency}}</td> 
+                                                            <td style="background: none !important;" ng-show="soGrid.SOKH.Id == null">
+                                                                <span>{{(SoLi.QtyNeeded * SoLi.KitPrice) | currency}}</span>
+                                                            </td>
+                                                            <td style="background: none !important;"></td>
+                                                        </tr>
+                                                        <!-- <tr>
+                                                            <td>{{SoLi.Type}}</td> 
+                                                            <td>{{SoLi.ItemDesc}}</td> 
+                                                            <td></td>
+                                                            <td>{{SoLi.Need}}</td> 
+
+
+                                                            <td ng-if= "(SoLi.Type == 'Part' && !SoLi.IsNonInventoryPart) || SoLi.Type != 'Part'">{{SoLi.Status}}</td> 
+                                                            <td ng-if= "SoLi.Type == 'Part' && SoLi.IsNonInventoryPart">In Stock</td> 
+                                                            <td>{{SoLi.Price | currency}}</td> 
+                                                            <td>{{SoLi.Total | currency}}</td> 
+                                                            <td></td>   
+                                                        </tr> -->
+                                                    </tbody>
+                                                    
+                                                    <tbody ng-if="SoHeader.ShopSupplyTotal > 0">
+                                                        <tr>
+                                                            <td ></td>
+                                                            <td >Shop Supplies <span ng-if="serviceWorksheetModal.serviceWorksheetData.IsItemizedByLaborCode">Detail</span></td> 
+                                                            <td > </td>
+                                                            <td >1</td>
+                                                            <td > </td>
+                                                            <td>{{SoHeader.ShopSupplyTotal | currency}}</td> 
+                                                            <td style="text-align: right !important;">
+                                                                <span>{{SoHeader.ShopSupplyTotal | currency}}</span>
+                                                            </td>
+                                                            <td > </td>
+                                                        </tr>
+                                                        <tr class="shopSuppliesDetailList" ng-if="SoHeader.ShopSupplyDetailSet.length > 0">
+                                                            <td></td>
+                                                            <td colspan="5">
+                                                                <ul class="ListTypeHypen">
+                                                                  <li ng-repeat="supplyValue in SoHeader.ShopSupplyDetailSet">{{supplyValue}}</li>
+                                                                </ul>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <!-- Start: SoHeader Notes Block  -->
+                                                <div class="col-md-12 col-xs-12 SoHeaderNotesSection page_break" style="background: none !important;"
+                                                    ng-if="!serviceWorksheetModal.serviceWorksheetData.IsPrintPreview">
+                                                    <div class="col-md-12 col-xs-12 NotesHeader" style="background: none !important;">Notes</div>
+                                                    <div class="col-md-12 col-xs-12 NotesContent" style="background: none !important;" ng-repeat="ManualNote in SoHeader.ManualNotes track by $index">{{ManualNote}}</div>
+                                                    <div class="col-md-12 col-xs-12 NotesContent NotesContent_H_BB" style="background: none !important;"></div>
+                                                    <div class="col-md-12 col-xs-12 NotesContent NotesContent_H_BB" style="background: none !important;"></div>
+                                                    <div class="col-md-12 col-xs-12 NotesContent NotesContent_H_BB" style="background: none !important;"></div>
+                                                    <div class="col-md-12 col-xs-12 NotesContent NotesContent_H_BB" style="background: none !important;"></div>
+                                                </div>
+                                                <!-- End: SoHeader Notes Block  -->
+                                             </div>
+                                             <!-- End: SoHeader Line Items grid  -->
+                                        </div>
+                                        <!-- End: SoHeader List Section -->
+                                    </div>
+                                    <!-- End: Unit List Section --> 
+                                    
+                                    <!-- Start: Totals Section -->
+                                    <div class="col-md-12 col-xs-12 TotalsSection page_break"
+                                        ng-if="serviceWorksheetModal.serviceWorksheetData.IsPrintPreview"> 
+                                        <div class="col-md-5 TotalsBlock pull-right">
+                                                    <div class="TotalsHeader backgrountTransparent">TOTALS</div>
+                                                    <div class="TotalsContent">
+                                                        <div  ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalPart != 0">
+                                                            <p class="pull-left MB0">Parts</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalPart | currency}}</p></div>
+                                                        <div  ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalLabor != 0">
+                                                            <p class="pull-left MB0">Labor</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalLabor | currency}}</p>
+                                                        </div>
+                                                        <div  ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalSublet != 0">
+                                                            <p class="pull-left MB0">Sublet</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalSublet | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalFee != 0">
+                                                            <p class="pull-left MB0">Fees</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalFee | currency}}</p>
+                                                        </div>                                                  
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalShopSupplies != 0">
+                                                            <p class="pull-left MB0">Shop Supplies</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalShopSupplies | currency}}</p>
+                                                        </div>                                              
+                                                    </div>
+                                                    <div class="TotalsContent TotalsContent1">
+                                                        <div class="FWB">
+                                                            <p class="pull-left MB0">Sub-Total</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.SubTotal | currency}}</p></div>
+                                                        <div ng-if="!serviceWorksheetModal.serviceWorksheetData.IsTaxIncludePricing"
+                                                            ng-repeat="tax in serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.SalesTaxList">
+                                                            <p class="pull-left MB0">{{tax.TaxName}}</p>
+                                                            <p class="pull-right MB0">{{tax.TaxAmount | currency}}</p>
+                                                        </div>
+                                                        <div class="FWB">
+                                                            <p class="pull-left MB0">Total</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.Total | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.IsTaxIncludePricing"
+                                                            ng-repeat="tax in serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.SalesTaxList">
+                                                            <p class="pull-left MB0">{{tax.TaxName}} included</p>
+                                                            <p class="pull-right MB0">{{tax.TaxAmount | currency}}</p>
+                                                        </div>
+                                                    </div>
+                                       </div>
+                                   </div>
+                                    <!-- End: Totals Section --> 
+                                    <!-- Start: Disclaimers Section --> 
+                                    <div class="disclaimersSection">
+                                        <p class="MB0 WarrantyText">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.ServiceJobWarrantyText}}</p>
+                                        <div ng-show="serviceWorksheetModal.serviceWorksheetData.StoreInfo.IsSignatureLineforServiceJob" class="WarrantySignatureText">
+                                            <div class="pull-left"><p>Signature :&nbsp;&nbsp; </p></div>
+                                            <div class="WarrantySignature"></div>
+                                        </div>
+                                    </div>
+                                    <!-- End: Disclaimers Section -->
+                                            
+                                    <div class="col-lg-3 col-md-3 col-lg-offset-9 col-md-offset-9 serviceWorksheetPrintBTn" ng-if="!serviceWorksheetModal.isFinalized || serviceWorksheetModal.customerApprovalId">
+                                        <button ng-click="serviceWorksheetModal.printview()" class="btn C11 T4 addmoreinfoBtn active_btn pull-right MT25 MR0">Print</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+            </div>
+            <div class = "customer-approval-block" ng-if="serviceWorksheetModal.isFinalized && serviceWorksheetModal.isDataLoaded">
+                <div class = "customer-aproval-section" ng-class="{'mobileView' : serviceWorksheetModal.mobileView}">
+                    <h3 class = " customer-approval-section-heading"> Customer approval</h3>
+                    <div class = "customer-approval-type" ng-if = "!serviceWorksheetModal.customerApprovalId">
+                        <div class="customer-approval-type-heading">Select method of approval</div>
+                        <div class = "customer-approval-type-dropdown">
+                            <div class="bp-cell  searchInputArea selectableDropdown" id="customerApprovalType" ng-class="{'showingOverlay' : serviceWorksheetModal.showApprovalTypeDropdown}"
+                                ng-click="serviceWorksheetModal.showApprovalTypeDropdown = !serviceWorksheetModal.showApprovalTypeDropdown"
+                                >
+                                <input id="customerApprovalTypeInput" type="text" class="searchInput" placeholder="Please select"
+                                    name="customerApproval"
+                                    ng-model="serviceWorksheetModal.selectedApprovaltype" readonly="readonly" />
+                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" id="customerApprovalDownArrow" class="bp-blue downArrow bp-cursor-pointer"></i>
+                                <div class="searchResultOverlay" id="autocompleteScrollDiv">
+                                    <ul>
+                                        <li ng-repeat="approvalType in serviceWorksheetModal.customerApprovalType track by $index"
+                                            ng-mousedown="serviceWorksheetModal.selectApprovalType($index,approvalType)" >
+                                            <div class="fullName">{{approvalType}}</div>
+                                        </li> 
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class = "customer-approval-save-btn-wrapper" ng-if="serviceWorksheetModal.selectedApprovaltype != 'Print' && serviceWorksheetModal.selectedApprovaltype != 'Sign' ">
+                            <div ng-class = "{'bp-disabled' : serviceWorksheetModal.isAppliedForApproval} "   class = "bp-btn bp-btn-normal bp-cursor-pointer customer-approval-save-btn" ng-click="serviceWorksheetModal.isAppliedForApproval = true ; serviceWorksheetModal.saveCustomerApproval('Verbal')">Save</div>
+                        </div> 
+                        <div class = "customer-approval-save-btn-wrapper " ng-if="serviceWorksheetModal.selectedApprovaltype === 'Print' ">
+                            <div ng-class = "{'bp-disabled' : serviceWorksheetModal.isAppliedForApproval} "   class = "bp-btn bp-btn-normal bp-cursor-pointer customer-approval-save-btn print-save-btn" ng-click="serviceWorksheetModal.isAppliedForApproval = true ; serviceWorksheetModal.saveCustomerApproval('Print')">Print &amp; Save</div>
+                        </div>
+                        <div class = "customer-approval-save-btn-wrapper customer-approval-sign-wrapper" ng-show="serviceWorksheetModal.selectedApprovaltype === 'Sign' "  ng-style="{'max-width': boundingBox.width + 'px', 'max-height': boundingBox.height + 'px'}">
+                            <span class="placeholder" ng-if = "disableSaveBtn(signature=accept())">Please sign here</span>
+                            <signature-pad accept="accept" clear="clear" height="268" width="657" dataurl="dataurl"></signature-pad>
+                            <div class = "clear-btn bp-cursor-pointer" ng-click="clear()">Clear</div>
+                            <div ng-class = "{'bp-disabled' : serviceWorksheetModal.isAppliedForApproval || disableSaveBtn(signature=accept()) }"  class = "bp-btn bp-btn-normal customer-approval-save-btn sign-save-btn bp-cursor-pointer" ng-click="serviceWorksheetModal.isAppliedForApproval = true ;signature = accept() ;    serviceWorksheetModal.saveCustomerApproval('Sign',signature)">Save</div>
+                        </div>
+                    </div>
+                    <div  ng-if = "serviceWorksheetModal.customerApprovalId" class= "approved-section">
+                        <div class="customer-approval-type-heading">Method of approval</div>
+                        <div class="customer-approval-type-dropdown">
+                            <div class="bp-cell  searchInputArea selectableDropdown">
+                            <input ng-disabled = "true" type="text" id="customerApprovalType" class="searchInput" name="customerApproval"
+                                            ng-model="serviceWorksheetModal.selectedApprovaltype" readonly="readonly" />
+                            </div>
+                        </div>
+                        <div class="customer-sign" ng-if = "serviceWorksheetModal.selectedApprovaltype == 'Sign' ">
+                                <img ng-disabled = "true"  class="primary-image" src="{{serviceWorksheetModal.customerApprovalObj.signatureBlobValue}}" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

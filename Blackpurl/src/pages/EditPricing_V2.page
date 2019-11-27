@@ -1,0 +1,238 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+  <!--  <apex:stylesheet value="{!Application}/css/EditPricing_V2.css"/> -->
+	<div class="modal fade-scale CreateGroupModal bp-model-dialog editPricingDetailsModal" id="editPricingDetails" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+       <div class="modal-dialog" role="document">
+          	<div class="modal-content">
+           		<div class="modal-header">
+	                <button type="button" class="close bp-close-but CreateGroupModalCloseIcon" ng-click="F_EditPrice.hideEditPricingModal()" aria-label="Close" >
+	                    <span aria-hidden="true">
+	                    <i class="white_FFF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+	                    </span>
+	                </button>
+                </div>
+              <div class = "modal-body P0">
+              <!-- editpricemodal -->
+              <div class="editPricingDetailsContent userGroupInfoArea">
+                    <h2 class="heading text-center">{{ 'Edit_Unit_Pricing' | translate }}</h2>
+                    <form class="row M0">
+                    	
+                        <div class="form-group" ng-show="F_EditPrice.isCurrentLocaleAustralia()">
+                            <label class="edit-price-form-group-label">{{ 'Enforce_rideaway_pricing' | translate }}</label>
+                           <div class="toggler-with-input">
+	                           <div class="row" ng-class = "{'padding-bottom-52': !(M_EditPrice.UnitPriceData.IsRideawayPricingEnabled) }">
+	                                <div class="col-xs-4 col-sm-3 bottom-padded-toggler"> 
+	                                    <span class="bp-switchLabel">{{ 'Label_No' | translate }}</span>
+	                                    <label class="bp-switch">
+	                                    	<input type="checkbox" ng-model="M_EditPrice.UnitPriceData.IsRideawayPricingEnabled" ng-change="F_EditPrice.toggleRideawayPriceItem()"/>
+	                                    	<div class="bp-slider round"></div>
+	                                    </label>
+	                                     <span class="bp-switchLabel">{{ 'Label_Yes' | translate }}</span>
+	                                </div>          
+	                            </div>
+	                            <div class="row" ng-show="M_EditPrice.UnitPriceData.IsRideawayPricingEnabled">
+	                               	<div class="col-sm-6 input-box-edit-price">
+	                               	   <span class="dollar">$</span>
+	                                    <numbers-only 
+	                                     id-value="InputForRideawayPrice"
+		                                 class-value="bp-input-text"
+		                                 precision-length="2"
+		                                 input-model-value="M_EditPrice.UnitPriceData.TotalEnforceRideawayPrice"
+		                                 input-keyup-value="F_EditPrice.enableSaveAction($event,'RideawayPrice')"
+		                                 force-precision-length="true"
+		                                 blur-value="F_EditPrice.restoreOriginalValueOnBlur($event,'RideawayPrice')"
+		                                 disabled-value="!GroupOnlyPermissions['Override price'].enabled"
+		                                 />
+	                             	</div>
+	                             	<div class="col-sm-6 input-box-edit-price">  
+	                                    <button class="bp-btn bp-btn-normal edit-price-save-btn bp-font-12" id="SaveBtnRideawayPrice" ng-show="M_EditPrice.shownSaveButton == 'RideawayPrice'"
+	                                    	ng-mousedown="F_EditPrice.updateRideawayPricing()"
+	                                    	ng-keydown="F_EditPrice.actionOnSaveButton($event,'RideawayPrice')"
+	                                    	ng-blur="F_EditPrice.restoreOriginalValueOnBlur($event,'RideawayPrice')">{{ 'Save_Label' | translate }}</button>
+	                             	</div>  
+	                            </div> 
+	                            <p ng-if="M_EditPrice.UnitPriceData.TotalPartAndLabor && M_EditPrice.UnitPriceData.IsRideawayPricingEnabled" class="bp-font-14 bp-grey-font PT3" translate="Value_of_parts_and_labor_included" translate-values="{{ { Value_Of_Part_Labour : (M_EditPrice.UnitPriceData.TotalPartAndLabor| currency ) } }}"></p>
+                            </div>  
+                        </div>
+                        
+                        <div class="form-group" ng-if="M_EditPrice.isRefreshLinkAvailable">
+                        	<label class="edit-price-form-group-label pull-left bp-red-font">{{'Unit_contains_option_not_listed' | translate}} - &nbsp;</label>
+                        	<a class="edit-price-refresh-link edit-price-form-group-label bp-blue-font bp-blue-hover bp-font-14" ng-click="F_EditPrice.refreshDealUnitPriceCost()">{{'Refresh_options' | translate}}</a>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="edit-price-form-group-label">{{ 'Base_unit_price' | translate }}</label>
+                            <div class="row base-unit-input-box">
+                                <div class="col-sm-6 input-box-edit-price" ng-show="!M_EditPrice.UnitPriceData.IsRideawayPricingEnabled || !F_EditPrice.isCurrentLocaleAustralia()">  
+                                   <span class="dollar">$</span>
+                                   <numbers-only
+                                     id-value="InputForBasePrice"
+                                     class-value="bp-input-text"
+                                     precision-length="2"
+                                     input-model-value="M_EditPrice.UnitPriceData.TotalBasePrice"
+                                     input-keyup-value="F_EditPrice.enableSaveAction($event,'BasePrice')"
+                                     force-precision-length="true"
+                                     blur-value = "F_EditPrice.restoreOriginalValueOnBlur($event,'BasePrice')"
+                                     disabled-value="!GroupOnlyPermissions['Override price'].enabled"
+                                     />
+                                </div>
+                                <div class="col-sm-6" ng-show="M_EditPrice.UnitPriceData.IsRideawayPricingEnabled && F_EditPrice.isCurrentLocaleAustralia()">  
+                                   <label class="base-unit-label">{{M_EditPrice.UnitPriceData.TotalBasePrice | currency}}</label>
+                                </div>
+                                
+                                <div class="col-sm-6 input-box-edit-price">  
+                                    <button class="bp-btn bp-btn-normal edit-price-save-btn bp-font-12" id="SaveBtnBasePrice" ng-show="M_EditPrice.shownSaveButton == 'BasePrice' && F_EditPrice.isCurrentLocaleAustralia()" 
+                                    	ng-mousedown="F_EditPrice.saveAction();"
+                                    	ng-keydown="F_EditPrice.actionOnSaveButton($event,'BasePrice')"
+                                    	ng-blur="F_EditPrice.restoreOriginalValueOnBlur($event,'BasePrice')">{{ 'Save_Label' | translate }}</button>
+                                </div>        
+                            </div>      
+                        </div>  
+                        <div class="form-group" ng-show="M_EditPrice.UnitPriceData.FactoryOptionList.length > 0">
+                            <label class="edit-price-form-group-label">{{ 'Factory_options' | translate }}</label>
+                            <div class="table-responsive">
+                            	
+                                <table class="table-in-modal factory-options-table">
+                                 <col width="66%"  />
+                                 <col width="18%"  />
+                                 <col width="16%"  />
+                                    <thead>
+                                        <tr>
+                                            <th class="long-text-ellipses">{{ 'Item_description' | translate }}</th>
+                                            <th class="text-center">{{ 'Label_Price' | translate }}</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr ng-repeat="factoryOptionItem in M_EditPrice.UnitPriceData.FactoryOptionList" ng-init="factoryOptionIndex = $index">
+                                            <td class="long-text-ellipses">{{factoryOptionItem.ItemDescription}}</td>
+                                            <td class="text-center ptb0 currency-input">
+	                                             <span class="dollar bp-font-weight-400">$</span>
+                                             <numbers-only
+                                             id-value="InputForFactoryOption{{factoryOptionIndex}}"  
+		                                     class-value="bp-input-text"
+		                                     precision-length="2"
+		                                     force-precision-length="true"
+		                                     input-keyup-value="F_EditPrice.enableSaveAction($event,'FactoryOption',factoryOptionIndex)"
+		                                     input-model-value="factoryOptionItem.Price"
+		                                     blur-value="F_EditPrice.restoreOriginalValueOnBlur($event,'FactoryOption',factoryOptionIndex)"
+		                                     disabled-value="!GroupOnlyPermissions['Override price'].enabled"
+		                                     />
+                                            </td>
+                                            <td>
+                                            	<button class="bp-btn bp-btn-normal edit-price-save-btn-table bp-font-12" id="SaveBtnFactoryOption{{factoryOptionIndex}}"
+                                            		ng-show="factoryOptionItem.Price_Old != factoryOptionItem.Price && F_EditPrice.isCurrentLocaleAustralia()"
+                                            		ng-mousedown="F_EditPrice.saveAction()"
+                                            		ng-keydown="F_EditPrice.actionOnSaveButton($event,'FactoryOption',factoryOptionIndex)"
+                                            		ng-blur="F_EditPrice.restoreOriginalValueOnBlur($event,'FactoryOption',factoryOptionIndex)">{{ 'Save_Label' | translate }}</button>
+		                                    </td>
+                                        </tr>                              
+                                    </tbody>                            
+                                </table>
+                            </div>      
+                        </div>              
+                        <div class="form-group" ng-show="M_EditPrice.UnitPriceData.DealerInstalledOptionList.length > 0">
+                            <label class="edit-price-form-group-label">{{ 'Dealer_installed_options' | translate }}</label>
+                            <div class="table-responsive">
+                                <table class="table-in-modal dealer-installed-table">
+                                <col width="30%"  />
+                                <col width="18%"  />
+                                <col width="18%"  />
+                                <col width="18%"  />
+                                <col width="16%"  />
+                                    <thead>
+                                        <tr>
+                                            <th class="long-text-ellipses">{{ 'Item_description' | translate }}</th>
+                                            <th class="text-center">{{ 'Label_Quantity' | translate }}</th>                                    
+                                            <th class="text-center">{{ 'Label_Price' | translate }}</th>                                          
+                                            <th class="text-center">{{ 'Label_Total' | translate }}</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr ng-repeat="dealerOptionItem in M_EditPrice.UnitPriceData.DealerInstalledOptionList" ng-init="dealerOptionItemIndex = $index">
+                                            <td class="long-text-ellipses">{{dealerOptionItem.ItemDescription}}</td>
+                                            <td class=" text-center ptb0">
+                                            <numbers-only 
+		                                     class-value="bp-input-text"
+		                                     precision-length="0"
+		                                     input-model-value="dealerOptionItem.Qty"
+		                                     disabled-value="true"
+		                                     />
+		                                     </td>
+                                            <td class=" text-center ptb0 currency-input">
+	                                            <span class="dollar bp-font-weight-400">$</span>
+                                            <numbers-only
+                                             id-value="InputForDealerInstalled{{dealerOptionItemIndex}}"
+		                                     class-value="bp-input-text"
+		                                     precision-length="2"
+		                                     force-precision-length="true"
+		                                     input-model-value="dealerOptionItem.Price"
+		                                     input-keyup-value="F_EditPrice.enableSaveAction($event,'DealerInstalled',dealerOptionItemIndex)"
+		                                     blur-value="F_EditPrice.restoreOriginalValueOnBlur($event,'DealerInstalled',dealerOptionItemIndex)"
+		                                     disabled-value="!GroupOnlyPermissions['Override price'].enabled"
+		                                     />
+		                                     </td>
+                                            <td class=" text-center ptb0 currency-input">
+	                                            <span class="dollar bp-font-weight-400">$</span>
+                                            <numbers-only 
+		                                     class-value="bp-input-text"
+		                                     precision-length="2"
+		                                     input-model-value="dealerOptionItem.TotalPrice"
+		                                     disabled-value="true"
+		                                     />
+		                                     </td>
+		                                    <td>
+                                            	<button class="bp-btn bp-btn-normal edit-price-save-btn-table bp-font-12"  id="SaveBtnDealerInstalled{{dealerOptionItemIndex}}"
+                                            		ng-show="dealerOptionItem.Price_Old != dealerOptionItem.Price && F_EditPrice.isCurrentLocaleAustralia()" 
+                                            		ng-mousedown="F_EditPrice.saveAction()"
+                                            		ng-keydown="F_EditPrice.actionOnSaveButton($event,'DealerInstalled',dealerOptionItemIndex)"
+                                            		ng-blur="F_EditPrice.restoreOriginalValueOnBlur($event,'DealerInstalled',dealerOptionItemIndex)">{{ 'Save_Label' | translate }}</button>
+		                                    </td>
+                                        </tr>
+                                    </tbody>                            
+                                </table>
+                            </div>      
+                        </div>      
+                        <div class="form-group" ng-show="F_EditPrice.isCurrentLocaleAustralia()">
+                            <label class="edit-price-form-group-label">{{ 'Stamp_duty' | translate }}</label>
+                            <div class="row">                   
+                                <div class="col-sm-6 input-box-edit-price" ng-hide="M_EditPrice.UnitPriceData.IsRideawayPricingEnabled && F_EditPrice.isCurrentLocaleAustralia()">  
+                                    <span class="dollar">$</span>
+                                    <numbers-only 
+                                    id-value="InputForStampDuty"
+		                            class-value="bp-input-text"
+		                            precision-length="2"
+		                            force-precision-length="true"
+		                            input-model-value="M_EditPrice.UnitPriceData.TotalStampDuty"
+		                            input-keyup-value="F_EditPrice.enableSaveAction($event,'StampDuty')"
+		                            blur-value = "F_EditPrice.restoreOriginalValueOnBlur($event,'StampDuty')"
+		                            disabled-value="!GroupOnlyPermissions['Override price'].enabled"
+		                            />
+                                </div>
+                                <div class="col-sm-6" ng-show="M_EditPrice.UnitPriceData.IsRideawayPricingEnabled && F_EditPrice.isCurrentLocaleAustralia()">  
+                                    <label class="base-unit-label">{{M_EditPrice.UnitPriceData.TotalStampDuty | currency}}</label>
+                                </div>
+                                <div class="col-sm-6 input-box-edit-price">  
+                                    <button class="bp-btn bp-btn-normal edit-price-save-btn bp-font-12" id="SaveBtnStampDuty" 
+                                    	ng-show="M_EditPrice.shownSaveButton == 'StampDuty'" 
+                                    	ng-mousedown="F_EditPrice.updateStampDutyTotal()" 
+                                    	ng-keydown="F_EditPrice.actionOnSaveButton($event,'StampDuty')"
+                                    	ng-blur="F_EditPrice.restoreOriginalValueOnBlur($event,'StampDuty')">{{ 'Save_Label' | translate }}</button>
+                                </div>
+                            </div>      
+                        </div>
+                        <div class="form-group pull-right button-div-top-margined" >
+                           <button class="bp-btn bp-btn-normal bp-btn-medium" ng-show="!F_EditPrice.isCurrentLocaleAustralia()"
+                               	ng-keydown="$event.keyCode == 9 && F_EditPrice.tabActionFromLastInput($event)"
+                           		ng-click="F_EditPrice.saveAction()">{{ 'Save_Label' | translate }}</button>             
+                       		<button class="bp-btn bp-btn-normal bp-btn-medium" ng-show="F_EditPrice.isCurrentLocaleAustralia()"
+                       			ng-keydown="$event.keyCode == 9 && F_EditPrice.tabActionFromLastInput($event)"
+                                ng-click="F_EditPrice.hideEditPricingModal()">{{ 'Done_Label' | translate }}</button>
+                        </div>                     
+                    </form>
+                </div>
+               </div>
+            </div>
+        </div>
+    </div>
+</apex:page>

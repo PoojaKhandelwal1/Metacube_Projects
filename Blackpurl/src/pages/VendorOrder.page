@@ -1,0 +1,1942 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0" controller="GlobalController">
+    <apex:stylesheet value="{!Application}/css/VendorOrder.css"/> 
+    <div class="fadein viewA" ui-view="CustomerMessaging" autoscroll='false'></div>
+    <div class="fadein viewA" ui-view="AddAttachment" autoscroll='false'></div>
+    <c:VendorOrderPopUp />
+    <c:VenderOrderLineItemPartDetail /> 
+    <c:COPopup />
+    <c:PartPopUpOnVendorOrder />
+    <c:VendorInfo />
+    <div>
+        <route-loading-indicator></route-loading-indicator>
+        <div ng-if="VendorOrderModel.PartLocator.showDialog">
+          <part-locator modal-css="VendorOrderModel.PartLocator.modalCss" hide-close-icon="VendorOrderModel.PartLocator.hideCloseIcon" show-dialog="VendorOrderModel.PartLocator.showDialog"
+            heading-text="VendorOrderModel.PartLocator.headingText" 
+            part-description="VendorOrderModel.PartLocator.partDescription"
+        	  availabilty-text="VendorOrderModel.PartLocator.availabiltyText" 
+            availabilty-number="VendorOrderModel.PartLocator.availabiltyNumber" phone-number="VendorOrderModel.PartLocator.phoneNumber"
+            near-dealer-list = "VendorOrderModel.PartLocator.nearDealerList"
+            all-dealer-list = "VendorOrderModel.PartLocator.allDealerList">
+          </part-locator>
+     </div>
+        <div ng-cloak="ng-cloak">  <!-- ng-if="!isRouteLoading" -->
+        <!-- content start here -->
+       <div class="content">
+          <!-- Side panel start --> 
+         <div class="col-lg-2 col-md-2 sidePanel ">
+            
+            <div class="clearfix"></div>
+            <div class="orderNumber row">
+                <span class="text-uppercase">{{ 'Label_Order' | translate }} #:  
+                    <span>{{VendorOrderModel.VendorOrderHeader.VOName}}</span>
+                </span>
+            </div>
+            <div class="sidepaneluserinfo row">
+                <!-- <div class="userimg">
+                      <div style="float:left;background-color: #373c40; border-radius: 5px; padding: 1px; margin-right: 5px;">
+                           <img  src="{!Application_Images}/star.png" style="height:35px; width:35px; padding: 5px;"/>
+                      </div>
+                </div> -->
+                <div class="userNameblock" style="margin-left: 4px;">
+                     <p ng-if="VendorOrderModel.VendorOrderHeader.VendorName == null && VendorOrderModel.VendorOrderHeader.VendorName.length == 0"> <!-- class="T3" -->
+                          {{ 'Label_No' | translate }} {{ 'Vendor_Object_Display_Label' | translate }} &nbsp;<span class="T1_SubHeading"  >
+                            <a ng-click="VendorOrderModel.RelatedList_addAction($event, 'Vendor')" id="Vo_workflow_sidepanel_add_vendor_link">{{ 'Label_Add' | translate }} {{ 'Label_One' | translate }}!</a>
+                        </span>
+                     </p>
+                     <p ng-if="VendorOrderModel.VendorOrderHeader.VendorName != null && VendorOrderModel.VendorOrderHeader.VendorName.length != 0"> <!-- class="T3" -->
+                        
+                         <!-- <span class="vendorName">  {{VendorOrderModel.VendorOrderHeader.VendorName}} </span> -->
+                         <span class="vendorName">  
+                            <a ng-mouseover="VendorOrderModel.showVendorInfoOverlay($event, VendorOrderModel.VendorOrderHeader.VendorId);" 
+                                      id="CO_workflow_sidepanel_cust_name_link" ng-mouseleave="VendorOrderModel.hideVendorInfoOverlay();">
+                                        {{VendorOrderModel.VendorOrderHeader.VendorName}} 
+                            </a>
+                         </span>
+                     </p>
+                     <span class="vendorAccountNumber T7 ng-binding" ng-if="VendorOrderModel.VendorOrderHeader.VendorAccountNumber!=null">{{VendorOrderModel.VendorOrderHeader.VendorAccountNumber}}</span> <!-- class="T21" -->
+                    <!--  <span class="orderType T3 ng-binding">{{VendorOrderModel.VendorOrderHeader.OrderType.Name}}</span> --> <!-- class="T11" -->
+                 </div>
+            </div>
+            <div class="clearfix"></div>
+            <div class="row statusRow" ng-if="VendorOrderModel.VendorOrderHeader.OrderType.Name!=null && VendorOrderModel.VendorOrderHeader.OrderType.Name!=''">    
+                <span class="userType T3">{{ 'Order' | translate }} {{ 'Label_Type' | translate }}</span>
+                <span class="divider"> | </span>
+                <span class="orderType">{{VendorOrderModel.VendorOrderHeader.OrderType.Name}}</span>
+            </div>  
+            <!-- <div class="clearfix"></div> -->
+            <div class="row statusRow" ng-if="VendorOrderModel.VendorOrderHeader.Status != null && VendorOrderModel.VendorOrderHeader.Status != ''">    
+                <span class="userType T3">{{ 'Label_Status' | translate }}</span>
+                <span class="divider"> | </span>
+                <span class="userStatus" 
+                    ng-class="{'FCRed' : VendorOrderModel.VendorOrderHeader.Status == 'Cancelled'}">
+                    {{VendorOrderModel.VendorOrderHeader.Status}}
+                </span>
+                
+                <!-- <button type="button" ng-if="VendorOrderModel.isPermittedToEditVOHeader" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Open'" 
+                class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button1" ng-click="VendorOrderModel.updateVOHederOrderStatus('Locked')">{{ 'Label_Lock' | translate }}</button>
+                                                                
+                <button type="button" ng-if="VendorOrderModel.isPermittedToEditVOHeader" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Locked'"
+                class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button2" ng-click="VendorOrderModel.updateVOHederOrderStatus('Open')">{{ 'Label_Open' | translate }}</button> -->
+                
+                <button type="button" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Open' && VendorOrderModel.isPermittedToEditVOHeader" 
+                class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button1" ng-click="VendorOrderModel.updateVOHederOrderStatus('Locked')">{{ 'Label_Lock' | translate }}</button>
+                                                                
+                <button type="button" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Locked' && VendorOrderModel.isPermittedToEditVOHeader"
+                class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button2" ng-click="VendorOrderModel.updateVOHederOrderStatus('Open')">{{ 'Label_Open' | translate }}</button>
+            </div>
+            
+            <div class="clearfix"></div>
+                    
+            
+            <!-- <div class="row ownerInfo">
+                <img src="profile_default.jpg" style="height:30px; width:30px"/>
+                <span class="Name">{!$User.FirstName} {!$User.LastName}</span>      
+            </div> -->
+             
+            <div class="leftPanelLinks">
+                <a class="row T10 mainSectionLink" ng-class="{'active' : VendorOrderModel.activeSidepanelink =='#InfoSection'}" href="#InfoSection"
+                    ng-click="VendorOrderModel.sidepanelLink($event, 'Info')"><span class="alphabetLetter">{{VendorOrderModel.LeftSideHeadingLables.Info}}</span>{{ 'Page_Section_Info' | translate }}</a> 
+                <!-- For : You haven't added anything yet! -->
+                <div ng-if="VendorOrderModel.VendorOrderHeader.VendorId!=null && VendorOrderModel.VendorOrderHeader.VendorId != ''">
+                <!-- For : You haven't added anything yet! -->    
+                <a class="row T10 mainSectionLink" ng-class="{'active' : VendorOrderModel.activeSidepanelink =='#OrderSection'}" href="#OrderSection"
+                    ng-click="VendorOrderModel.sidepanelLink($event, 'Order')"><span class="alphabetLetter">{{VendorOrderModel.LeftSideHeadingLables.Order}}</span>{{ 'Order' | translate }}</a> 
+                
+                <a class="row T10 subSectionLink" href="#Order_Items" ng-click="VendorOrderModel.sidepanelLink($event, 'Order')"> <span
+                    class="alphabetLetter"></span>{{ 'Items' | translate }} </a> 
+                
+                <a class="row T10 subSectionLink" href="#Order_RequiredForCustomer" ng-click="VendorOrderModel.sidepanelLink($event, 'Order')"
+                ng-show="(VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked') && VendorOrderModel.TotalRequiredForCustomers != 0"> 
+                <span class="alphabetLetter"></span>{{ 'Required_For_Customer' | translate }} </a> 
+                                    
+                <a class="row T10 subSectionLink" href="#Order_RequiredForStock" ng-clicknot="VendorOrderModel.sidepanelLink($event, 'Order')" 
+                ng-show="(VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked') && VendorOrderModel.TotalRequiredForStocks != 0"> 
+                <span class="alphabetLetter"></span>{{ 'Required_For_Stock' | translate }} </a>
+                
+                <a class="row T10 mainSectionLink" ng-class="{'active' : VendorOrderModel.activeSidepanelink =='#StockExcessSection'}" href="#StockExcessSection"
+                    ng-click="VendorOrderModel.sidepanelLink($event, 'StockExcess')" ng-show="VendorOrderModel.StockExcessList != undefined && VendorOrderModel.StockExcessList.length != 0">
+                    <span class="alphabetLetter">{{VendorOrderModel.LeftSideHeadingLables.Stock_Excess}}</span>{{ 'Stock_Excess' | translate }}</a> 
+                
+                <a class="row T10 mainSectionLink" ng-class="{'active' : VendorOrderModel.activeSidepanelink =='#ReceivingHistorySection'}" href="#ReceivingHistorySection"
+                   ng-show="VendorOrderModel.VRHistoryList != undefined && VendorOrderModel.VRHistoryList.length != 0" ng-click="VendorOrderModel.sidepanelLink($event, 'ReceivingHistory')"><span class="alphabetLetter">{{VendorOrderModel.LeftSideHeadingLables.Receiving_History}}</span>{{ 'Receiving_History' | translate }}</a>
+                                
+                <a class="row T10 mainSectionLink" ng-class="{'active' : VendorOrderModel.activeSidepanelink =='#FinalizeSection'}" href="#FinalizeSection"
+                   ng-show="VendorOrderModel.EnableFinaliseOrder()" ng-click="VendorOrderModel.sidepanelLink($event, 'Finalize')"><span class="alphabetLetter">{{VendorOrderModel.LeftSideHeadingLables.Finalize}}</span>{{ 'Finalize' | translate }}</a>
+                <!-- For : You haven't added anything yet! -->
+                </div>
+                <!-- For : You haven't added anything yet! -->
+            </div>
+             <!-- Section Totals -->
+            <div class="sideBarTotals">
+                        <div class="C1 orderleftPanelLinks">
+                            <div class="ordertotal">
+                            <a class= "T10 subSectionLink ">{{ 'Order' | translate }} {{ 'Label_Total' | translate }}</a>
+                            <a class= "T10 subSectionLink text-right">{{VendorOrderModel.GroupTotalCost | currency}}</a>
+                            </div>
+                            
+                            <div class="ordertotal">
+                            <a class= "T10 subSectionLink ">{{ 'Label_Received' | translate }}</a>
+                            <a class= "T10 subSectionLink text-right">{{VendorOrderModel.TotalReceivedCost | currency}}</a>
+                            </div>
+                        
+                        </div>
+                        <div class="mainSectionLink totalDue C1">
+                            <a class="T2">{{ 'Label_Unreceived' | translate }}:</a>
+                            <a class="T2 text-right">{{VendorOrderModel.TotalUnreceivedCost | currency}}</a>
+                        </div>
+                    </div>
+
+        </div>
+   
+               <!-- End Left Side Bar --> 
+                <!-- Start Center Panel -->
+                
+                <div class="col-lg-10 col-md-10 mainSection">
+            
+                
+            <div class=" sectionHeader row fixedRow" >
+                <div class="col-lg-6 col-md-6" ng-show="VendorOrderModel.activeSidepanelink =='#InfoSection'">
+                    <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!VendorOrderModel.displaySections.Info"
+                            ng-class="{'defaultCursor': !GroupOnlyPermissions['Vendor order']['view']}"
+                            ng-Click="VendorOrderModel.showSection('Info')"> <!-- VendorOrderModel.displaySections.Info = true -->
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="VendorOrderModel.displaySections.Info"
+                            ng-Click="VendorOrderModel.showSection('Info')"> <!-- VendorOrderModel.displaySections.Info = false -->
+                        </i> 
+                        <span class="divider">|</span>
+                        <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Info}} {{ 'Page_Section_Info' | translate }}</span>
+                        </span>
+                        <!-- <span class="ActionIcons pull-left ">
+                               <div class="dropdown selectDropdown checkboxDropdown">
+                                  <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                  <span class="caret"></span></button>
+                            </div>
+                        </span>  -->
+                        
+                        <span class="ActionIcons pull-left"
+                            ng-show="VendorOrderModel.showDeleteOrderLink()"> 
+                            <div class="dropdown selectDropdown checkboxDropdown">
+                                <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                    <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a ng-click="VendorOrderModel.deleteVendorOrder()">{{ 'Delete_order' | translate }}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </span> 
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6" ng-show="VendorOrderModel.activeSidepanelink =='#OrderSection'">
+                    <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!VendorOrderModel.displaySections.Order"
+                            ng-class="{'defaultCursor': !GroupOnlyPermissions['Vendor order']['view']}"
+                            ng-Click="VendorOrderModel.showSection('Order')"> <!-- VendorOrderModel.displaySections.Order = true -->
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="VendorOrderModel.displaySections.Order"
+                            ng-Click="VendorOrderModel.showSection('Order')"> <!-- VendorOrderModel.displaySections.Order = false -->
+                        </i> 
+                        <span class="divider">|</span>
+                        <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Order}} {{ 'Order' | translate }}</span>
+                        </span>
+                          <span class="ActionIcons pull-left ">
+                               <div class="dropdown selectDropdown checkboxDropdown">
+                                  <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                  <span class="caret"></span></button> -->
+                            </div>
+                        </span>
+                        <span class="ActionIcons service_order_print_icon pull-left " ng-class = "{'bp-no-cursor':VendorOrderModel.vendorOrderLineItemGroupList.length == 0}" >
+                            <i class="print-icon-fill" ng-class = "{'blue_00A3DB':VendorOrderModel.vendorOrderLineItemGroupList.length != 0 && VendorOrderModel.vendorOrderLineItemGroupList.length !=undefined
+                                                     ,'light-grey' : VendorOrderModel.vendorOrderLineItemGroupList.length == 0}" ng-include="'{!Application_Images}/Icons/print.svg'" 
+                                    ng-click="VendorOrderModel.PrintServiceWorkSheet()" data-toggle="tooltip" title="Print">
+                                </i>
+                        </span>
+                         <span class="ActionIcons service_order_print_icon pull-left " ng-class = "{'bp-no-cursor':VendorOrderModel.vendorOrderLineItemGroupList.length == 0}">
+                            <i class="email-icon-fill" ng-class = "{'blue_00A3DB':VendorOrderModel.vendorOrderLineItemGroupList.length != 0 && VendorOrderModel.vendorOrderLineItemGroupList.length !=undefined
+                                                     ,'light-grey' : VendorOrderModel.vendorOrderLineItemGroupList.length == 0}" ng-click="VendorOrderModel.openMailPopup()" ng-include="'{!Application_Images}/Icons/email.svg'"  
+                                data-toggle="tooltip" title="Email">
+                            </i>
+                        </span>
+                        <span class="ActionIcons service_order_print_icon pull-left " ng-class = "{'bp-no-cursor':VendorOrderModel.vendorOrderLineItemGroupList.length == 0}">
+                            <i ng-class = "{'blue_00A3DB':VendorOrderModel.vendorOrderLineItemGroupList.length != 0 && VendorOrderModel.vendorOrderLineItemGroupList.length !=undefined
+                                                     ,'light-grey' : VendorOrderModel.vendorOrderLineItemGroupList.length == 0}" ng-click="VendorOrderModel.openConfirmationDialog('VendorExport')" ng-include="'{!Application_Images}/Icons/export.svg'"   
+                                data-toggle="tooltip" title="Export">
+                            </i>
+                        </span>
+                        <span class="ActionIcons pull-left" ng-if="VendorOrderModel.isAddSelectedVisible()">
+                            <div class="VO_OrderSection">
+                                <button class="btn btn-default addSelectedBtnDisabled text-uppercase" 
+                                    ng-click="VendorOrderModel.disableAddSelectedButton = true; VendorOrderModel.addSelectedItemsFromReqForSectionToOrderSection()"
+                                    ng-class="{'addSelectedBtnActive' : VendorOrderModel.enableSelectedBtnInOrderSection()}"
+                                    ng-disabled="(VendorOrderModel.disableAddSelectedButton || !VendorOrderModel.enableSelectedBtnInOrderSection()) ||
+                                                    !GroupOnlyPermissions['Vendor order']['create/modify']">{{ 'Add_selected' | translate }}
+                                </button>
+                            </div>
+                        </span>
+                        <!-- END: added by kajal 30th march 2017 #1760 -->
+                        <span class="T3 pull-right total">
+                                      <!-- <a id="vendor_order_total">
+                                        {{VendorOrderModel.GroupTotalCost | currency}}
+                                      </a> -->
+                                      <p id="vendor_order_total">
+                                        {{VendorOrderModel.GroupTotalCost | currency}}
+                                      </p>
+                                    </span> 
+                    </div>
+                </div>
+                <!-- ng-show="VendorOrderModel.StockExcessList != undefined && VendorOrderModel.StockExcessList.length != 0" -->
+                <div ng-show="VendorOrderModel.StockExcessList != undefined && VendorOrderModel.StockExcessList.length != 0"> 
+                    <div class="col-lg-6 col-md-6" ng-show="VendorOrderModel.activeSidepanelink =='#StockExcessSection'"> 
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!VendorOrderModel.displaySections.StockExcess"
+                                ng-class="{'defaultCursor': !GroupOnlyPermissions['Vendor order']['view']}"
+                                ng-Click="VendorOrderModel.showSection('StockExcess')"> <!-- VendorOrderModel.displaySections.StockExcess = true -->
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="VendorOrderModel.displaySections.StockExcess"
+                                ng-Click="VendorOrderModel.showSection('StockExcess')"> <!-- VendorOrderModel.displaySections.StockExcess = false -->
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Stock_Excess}} {{ 'Stock_Excess' | translate }}</span>
+                            </span>
+                              <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button> -->
+                                </div>
+                            </span> 
+                        </div>
+                    </div> 
+                </div> 
+                <div ng-show="VendorOrderModel.VRHistoryList != undefined && VendorOrderModel.VRHistoryList.length != 0">
+                    <div class="col-lg-6 col-md-6" ng-show="VendorOrderModel.activeSidepanelink =='#ReceivingHistorySection'">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!VendorOrderModel.displaySections.ReceivingHistory"
+                                ng-class="{'defaultCursor': !GroupOnlyPermissions['Vendor order']['view']}"
+                                ng-Click="VendorOrderModel.showSection('ReceivingHistory')"> <!-- VendorOrderModel.displaySections.ReceivingHistory = true -->
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="VendorOrderModel.displaySections.ReceivingHistory"
+                                ng-Click="VendorOrderModel.showSection('ReceivingHistory')"> <!-- VendorOrderModel.displaySections.ReceivingHistory = false -->
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Receiving_History}} {{ 'Receiving_History' | translate }}</span>
+                            </span>
+                            <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button> -->
+                                </div>
+                            </span> 
+                        </div>
+                    </div>
+                </div>
+                <div ng-show="VendorOrderModel.EnableFinaliseOrder()">
+                    <div class="col-lg-6 col-md-6" ng-show="VendorOrderModel.activeSidepanelink =='#FinalizeSection'">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!VendorOrderModel.displaySections.Finalize"
+                                ng-class="{'defaultCursor': !GroupOnlyPermissions['Vendor order']['view']}"
+                                ng-Click="VendorOrderModel.showSection('Finalize')"> <!-- VendorOrderModel.displaySections.Finalize = true -->
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="VendorOrderModel.displaySections.Finalize"
+                                ng-Click="VendorOrderModel.showSection('Finalize')"> <!-- VendorOrderModel.displaySections.Finalize = false -->
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Finalize}} {{ 'Finalize' | translate }}</span>
+                            </span>
+                            <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button> -->
+                                </div>
+                            </span> 
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6 fixedContent">
+                    <div class="fa-icons">
+                        <i class="fa fa-refresh fa-2x fa-fw" ng-class="{'fa-spin' : VendorOrderModel.isrefresh}"
+                                  ng-click="VendorOrderModel.refreshVendorOrder();">
+                        </i>
+                    </div>
+                    <!-- <button class="flatBtn" ng-click="VendorOrderModel.editPart()" type="button">EDIT</button> -->
+                    <!-- <div class="fa-icons pull-right">
+                        <i class="fa fa-floppy-o"></i>
+                        <i class="fa fa-cog"></i>
+                    </div>  --> <!-- Commented by richa -->       
+                    
+                  <div class="col-lg-7 col-md-6 searchToAdd  pull-right searchBox">
+                        <!-- <div class="input-group" ng-class="{'activeSearchDiv' : VendorOrderModel.searchDivActive}" ng-mouseup="VendorOrderModel.select()" ng-focus="VendorOrderModel.resetHideResults()" ng-blur="VendorOrderModel.hideResults()">
+                         -->         
+                                <div class="input-group" ng-class="{'activeSearchDiv' : VendorOrderModel.searchDivActive}">
+                                  
+                                    <div class="input-group-btn">
+                                        <button type="button" class="btn C5 LabelBtn">
+                                        <span class="T5 text-uppercase" style="color: #939CA9;">{{ 'Label_To' | translate }}:</span>
+                                        <span style="color: #FFFFFF;">{{VendorOrderModel.selectedItem}}</span>
+                                        </button>
+                                        <button type="button" class="btn C5 dropdown-toggle caretBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span class="caret"></span>
+                                        <span class="sr-only">{{ 'Label_Toggle_Dropdown' | translate }}</span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                        <li><a href="#InfoSection" ng-click="VendorOrderModel.dropDownItem($event, 'Info')">{{ 'Page_Section_Info' | translate }}</a></li>
+                                        <!-- For : You haven't added anything yet! -->
+                                        <li><a href="#OrderSection" ng-click="VendorOrderModel.dropDownItem($event, 'Order')">{{ 'Order' | translate }}</a></li>
+                                        <li ng-show="VendorOrderModel.StockExcessList != undefined && VendorOrderModel.StockExcessList.length != 0 && VendorOrderModel.VendorOrderHeader.VendorId!=null && VendorOrderModel.VendorOrderHeader.VendorId != ''"><a href="#StockExcessSection" ng-click="VendorOrderModel.dropDownItem($event, 'StockExcess')">{{ 'Stock_Excess' | translate }}</a></li>
+                                        <li ng-show="VendorOrderModel.VRHistoryList != undefined && VendorOrderModel.VRHistoryList.length != 0"><a href="#ReceivingHistorySection" ng-click="VendorOrderModel.dropDownItem($event, 'ReceivingHistory')">{{ 'Receiving_History' | translate }}</a></li>
+                                        <li ng-show="VendorOrderModel.EnableFinaliseOrder()"><a href="#FinalizeSection" ng-click="VendorOrderModel.dropDownItem($event, 'Finalize')">{{ 'Finalize' | translate }}</a></li>
+                                        <!-- For : You haven't added anything yet! -->
+                                        <!-- Ticket #1888 -->
+                                        <!-- <li role="separator" class="divider"></li>
+                                        <li class="text-uppercase"><a >{{ 'Label_Advanced' | translate }} {{ 'Label_Search' | translate }}</a></li> -->
+                                           
+                                        </ul>
+                                    </div>
+                                    <!-- /btn-group -->
+                                    
+                                    <div class="inner-addon right-addon neVendorOrderAutocomplete-container" ng-class="{'disabledSearchToAddElement' : (VendorOrderModel.VendorOrderHeader.Status != 'Open' && VendorOrderModel.VendorOrderHeader.Status != 'Locked' && VendorOrderModel.VendorOrderHeader.Status != null && VendorOrderModel.VendorOrderHeader.Status != '') || !GroupOnlyPermissions['Vendor order']['create/modify']}">
+                                        <i class="fa fa-search fa-flip-horizontal"></i>
+                                     <c:SearchToAddHtml />
+                                        <!-- <input class="header-search form-control"  placeholder="search to Add Related" type="text" /> -->
+                                    </div>
+                                    
+                                    <!-- <div class="inner-addon right-addon" ng-show="CustomerOrderModel.isSearchToAddVisible()">
+                                        <i class="fa fa-search fa-flip-horizontal"></i>
+                                      <angucomplete id="CO_SearchToAdd" placeholder="Search To add" pause="200"  
+                                       selectedobject="CustomerOrderModel"   searchfields="Name" titlefield="Name" descriptionField="Info" 
+                                        otherdesc="Description" minlength="2" inputclass="form-control form-control-small" matchclass="highlight" />
+                                        <input class="header-search form-control"  placeholder="search to Add Related" type="text" />
+                                    </div> -->
+                                </div>
+                                <!-- /input-group -->
+                            </div>
+                          
+              </div>
+            </div>
+                
+                <!-- ******************************************************* start of info section ******************************************************* -->
+            
+                <div id="InfoSection" >
+                    <div class="main_section row main_section_margin_top" ng-show="VendorOrderModel.displaySections.Info">
+                        <div id="Info_General">
+                            <div class="row rowGeneral" >
+                                <div class="col-lg-12 col-md-12 Pl24">    <!--  MB48 -->
+                                   <div class="col-lg-7 col-md-7 Plr12">
+                                      <p class="T3 MB24 F12 FC2">{{ 'Vendor_Object_Display_Label' | translate }}</p>
+                                      <div class="col-md-6 Plr0">
+                                         <div class="col-lg-4 col-md-5 Plr0 MB12  ">
+                                            <img class="Profile_pic" src="{!Application_Images}/profile_default.jpg" style="height:100px;width:100%"/>
+                                            <!-- <div class="sprite profile_defaultLarge pull-left"></div> -->
+                                         </div>
+                                         <div class="col-lg-8 col-md-7 Plr12 MB12 ">
+                                             <div ng-if="VendorOrderModel.VendorOrderHeader.VendorName==null" >
+                                                <span class="T1_SubHeading"  >
+                                                    <a ng-click="VendorOrderModel.RelatedList_addAction($event, 'Vendor')" id="CO_workflow_sidepanel_add_cust_link">{{ 'Label_Add' | translate }} {{ 'Vendor_Object_Display_Label' | translate }}</a>
+                                                </span> 
+                                             </div> 
+                                             <div  ng-if="VendorOrderModel.VendorOrderHeader.VendorName!=null">
+                                                <p class="T1 vendorType" > 
+                                                    <a ng-mouseover="VendorOrderModel.showVendorInfoOverlay($event, VendorOrderModel.VendorOrderHeader.VendorId);" 
+                                                             ng-mouseleave="VendorOrderModel.hideVendorInfoOverlay();" id="CO_workflow_sidepanel_cust_name_link">
+                                                                {{VendorOrderModel.VendorOrderHeader.VendorName}} 
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <!-- <div style="float:left;background-color: #373c40; border-radius: 5px; padding: 1px; margin-right: 5px;">
+                                               <img src="{!Application_Images}/star.png" style="height:35px; width:35px; padding: 5px;"/>
+                                            </div>
+                                            <p class="T7" style="margin-left:20px;padding-top:10px ;padding-left:24px"> {{ 'Label_Gamification' | translate }}</p> -->
+                                         </div>
+                                        
+                                        <!-- <div class="col-lg-4 col-md-5 Plr12 MB24"  style="clear:both;">
+                                            <i class="fa fa-motorcycle FC7"></i>
+                                            <i class="fa fa-motorcycle FC7"></i>
+                                            <i class="fa fa-wrench FC7"></i>
+                                         </div> -->
+                                        <!-- <div class="col-lg-8 col-md-7 Plr0 MB24 " ng-if="VendorOrderModel.VendorOrderHeader.VendorName !=null" >
+                                            <span class="T7 F9">Last Visited 04/06/2015</span>
+                                         </div> -->
+                                         
+                                         <div class="col-md-12 Plr12 Mrg20 " style="Padding:0px" ng-repeat="cust in  VendorOrderModel.CustomerInfoDetails" ng-if="VendorOrderModel.Customer.Name !=null">
+                                            <div style="float:left;width:30%">
+                                            <label class="ng-binding T7">{{cust.label}}</label></div>
+                                            <div class="mycustvalue"  style="float:left;width:70%" >
+                                            <span class="ng-binding  T3 PL20" style="width: 100%; word-wrap: break-word; word-break:break-word;" >{{cust.value}}</span>
+                                            </div>
+                                         </div>
+                                         
+                                         
+                                         
+                                      </div>
+                                      
+                                      <div class="col-md-10 Plr0  MB24 order-type-container" ng-if="VendorOrderModel.VendorOrderHeader.OrderType.Name!=null && VendorOrderModel.VendorOrderHeader.OrderType.Name!=''">   <!-- MB6  -->
+                                         <span class="T3 col-md-3 Plr0">{{ 'Label_Order_Type' | translate }}
+                                            </span>
+                                            <div class="form-label " ng-if="VendorOrderModel.OrderTypes.length != 1"
+                                            id="customer-order-info_STATUS_form-label">
+                                            <select class="form-control"
+                                                ng-if="VendorOrderModel.isPermittedToEditVOHeader"
+                                                ng-model="VendorOrderModel.VendorOrderHeader.OrderType.Id"
+                                                ng-click="$event.stopPropagation();"
+                                                ng-change="VendorOrderModel.updateVOHederOrderStatus()"
+                                                ng-options="orderType.Id as orderType.Name for orderType in VendorOrderModel.OrderTypes"
+                                                ng-disabled="(VendorOrderModel.VendorOrderHeader.Status!='Locked' && VendorOrderModel.VendorOrderHeader.Status!='Open') "
+                                                style="width: 38%"><!-- Ticket#23: ng-disabled="VendorOrderModel.VendorOrderHeader.Status!='Locked' && VendorOrderModel.VendorOrderHeader.Status!='Open'": additional condition added by pooja 08-09-2016 -->
+                                            </select> <span id="customer-order-info_OrderType"
+                                                ng-if="!VendorOrderModel.isPermittedToEditVOHeader">{{VendorOrderModel.VendorOrderHeader.OrderType.Name}}</span>
+                                        </div>
+                                        <div ng-if="VendorOrderModel.OrderTypes.length == 1" style="margin-top: 7px;">{{VendorOrderModel.VendorOrderHeader.OrderType.Name}}</div>
+                                      </div>
+                                      
+                                      <div class="col-md-12 MB24 Plr0 status-container" ng-if="VendorOrderModel.VendorOrderHeader.Status!=null && VendorOrderModel.VendorOrderHeader.Status!=''">
+                                         <span class="T3 col-md-2 Plr0">{{ 'Label_Status' | translate }}</span>
+                                         <label class="FC10 T3"
+                                            ng-class="{'FCRed' : VendorOrderModel.VendorOrderHeader.Status == 'Cancelled', 'FCGreen' : VendorOrderModel.VendorOrderHeader.Status != 'Cancelled'}">
+                                            {{VendorOrderModel.VendorOrderHeader.Status}}
+                                         </label>
+                                          <button type="button" ng-if="VendorOrderModel.isPermittedToEditVOHeader" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Open'" 
+                                                           class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button1" ng-click="VendorOrderModel.updateVOHederOrderStatus('Locked')">{{ 'Label_Lock' | translate }}</button>
+                                                           
+                                                   <button type="button" ng-if="VendorOrderModel.isPermittedToEditVOHeader" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Locked'"
+                                                           class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button2" ng-click="VendorOrderModel.updateVOHederOrderStatus('Open')">{{ 'Label_Open' | translate }}</button>
+                                      </div>
+                                      
+                                      <!-- <div class="col-md-10 Plr0 MB6 date-type-container">
+                                         <span class="T3 col-md-3 Plr0">{{ 'Label_Dates' | translate }}</span>
+                                         <div class="form-label " id="VO_workflow_sidepanel_info_div3_link1">
+                                            <span class="T7 Plr0"><a id="VO_workflow_sidepanel_info_div3_link1">Fullfil - 3 Days</a></span>
+                                         </div>
+                                      </div>
+                                      <div class="col-md-10 Plr0 MB6 date-type-container">
+                                         <span class="T3 col-md-3 Plr0">&nbsp;</span>
+                                         <div class="form-label " id="VO_workflow_sidepanel_info_div3_link1">
+                                            <span class="T7 Plr0"><a id="VO_workflow_sidepanel_info_div3_link1">Fullfil - 3 Days</a></span>
+                                         </div>
+                                      </div> -->
+                                      <div class="col-md-12  Plr0 dates-container">
+                                             <span class="T3 col-md-12 Plr0 MB12" ng-if="">{{ 'Label_Dates' | translate }}</span>
+                                             <div class="col-md-12 Plr0 MB6"  ng-if = "VendorOrderModel.VendorOrderHeader.OrderedDate != '' && VendorOrderModel.VendorOrderHeader.OrderedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Ordered' | translate }} {{ 'Label_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.OrderedDate}}</span>
+                                             </div>
+                                             <div class="col-md-12 Plr0 MB6" ng-if = "VendorOrderModel.VendorOrderHeader.ExpectedDate != '' && VendorOrderModel.VendorOrderHeader.ExpectedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Expected_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.ExpectedDate}}</span>
+                                             </div>
+                                             <div class="col-md-12 Plr0 MB6" ng-if = "VendorOrderModel.VendorOrderHeader.ReceivedDate != '' && VendorOrderModel.VendorOrderHeader.ReceivedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Receiving' | translate }} {{ 'Label_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.ReceivedDate}}</span>
+                                             </div>
+                                             <div class="col-md-12 Plr0 MB6" ng-if = "VendorOrderModel.VendorOrderHeader.CreatedDate != '' && VendorOrderModel.VendorOrderHeader.CreatedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Created' | translate }} {{ 'Label_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.CreatedDate}}</span>
+                                             </div>                                         
+                                          </div>
+                                       
+                                   </div>
+                                   <div class="col-lg-5 col-md-5 Plr12">
+                                      <!-- <div class="col-md-6 Plr0 MB24">
+                                         <p class="T3 MB24 F12"> {{ 'Label_Owner}</p>
+                                         <div class="col-md-4 Plr0 MB12  ">
+                                            
+                                             <img src="{!Application_Images}/profile_default.jpg" class="Profile_pic"  style="height:80px;width:100%"/>
+                                         </div>
+                                         <div class="col-md-8 Plr12 MB12 ">
+                                            <p class="T1 Lh25 F16" style="margin-bottom:1px;"> {{VendorOrderModel.VendorOrderHeader.OwnerName}}</p>
+                                            <div style="float:left;background-color: #373c40; border-radius: 5px; padding: 1px; margin-right: 5px;">
+                                               <img  src="{!Application_Images}/star.png" style="height:25px; width:25px; padding: 5px;"/>
+                                            </div>
+                                            <p class="T7" style="padding-top:10px ;padding-left:24px"> {{ 'Label_Gamification' | translate }}</p>
+                                         </div>
+                                      </div> -->
+                                          <!-- <div class="col-md-12 MB24 Plr0 status-container" ng-if="VendorOrderModel.VendorOrderHeader.Status!=null && VendorOrderModel.VendorOrderHeader.Status!=''">
+                                             <span class="T3 col-md-2 Plr0">{{ 'Label_Status' | translate }}</span>
+                                             <label class="FC10 T3" style="color:green">{{VendorOrderModel.VendorOrderHeader.Status}}</label>
+                                              <button type="button" ng-if="VendorOrderModel.isPermittedToEditVOHeader" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Open'" 
+                                                            class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button1" ng-click="VendorOrderModel.updateVOHederOrderStatus('Locked')">{{ 'Label_Lock' | translate }}</button>
+                                                            
+                                                    <button type="button" ng-if="VendorOrderModel.isPermittedToEditVOHeader" ng-show="VendorOrderModel.VendorOrderHeader.Status == 'Locked'"
+                                                            class="Servicegray T10" id="VO_workflow_sidepanel_info_div1_button2" ng-click="VendorOrderModel.updateVOHederOrderStatus('Open')">{{ 'Label_Open' | translate }}</button>
+                                          </div> -->
+                                          <!-- <div class="col-md-12  Plr0 dates-container">
+                                             <span class="T3 col-md-12 Plr0 MB12">{{ 'Label_Dates' | translate }}</span>
+                                             <div class="col-md-12 Plr0 MB6"  ng-if = "VendorOrderModel.VendorOrderHeader.OrderedDate != '' && VendorOrderModel.VendorOrderHeader.OrderedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Ordered' | translate }} {{ 'Label_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.OrderedDate}}</span>
+                                             </div>
+                                             <div class="col-md-12 Plr0 MB6" ng-if = "VendorOrderModel.VendorOrderHeader.ExpectedDate != '' && VendorOrderModel.VendorOrderHeader.ExpectedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Expected_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.ExpectedDate}}</span>
+                                             </div>
+                                             <div class="col-md-12 Plr0 MB6" ng-if = "VendorOrderModel.VendorOrderHeader.ReceivedDate != '' && VendorOrderModel.VendorOrderHeader.ReceivedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Receiving' | translate }} {{ 'Label_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.ReceivedDate}}</span>
+                                             </div>
+                                             <div class="col-md-12 Plr0 MB6" ng-if = "VendorOrderModel.VendorOrderHeader.CreatedDate != '' && VendorOrderModel.VendorOrderHeader.CreatedDate != null">
+                                                <label class="col-md-4 T7 Plr0">{{ 'Label_Created' | translate }} {{ 'Label_Date' | translate }}:</label>
+                                                <span class="col-md-7 T7 Plr0">{{VendorOrderModel.VendorOrderHeader.CreatedDate}}</span>
+                                             </div>                                         
+                                          </div> -->
+                                        </div>
+                                </div>
+                                
+                                    <!-- <div class="col-lg-12 col-md-12 T3 addnewItem " id="CO_notanyitemadded" 
+                                        ng-if="VendorOrderModel.MerchandiseItems.length == 0 && VendorOrderModel.SOHeaderList == 0"> -->
+                                 <div class="col-lg-12 col-md-12 T3 addnewItem " id="CO_notanyitemadded" 
+                                        ng-if="VendorOrderModel.VendorOrderHeader.VendorId==null || VendorOrderModel.VendorOrderHeader.VendorId == ''"><!-- VendorOrderModel.VendorOrderHeader.VendorName -->
+                                      <a id="CO_notanyitemadded" ng-click="VendorOrderModel.RelatedList_addAction($event, 'Vendor')">
+                                         {{ 'Label_Add' | translate }} {{ 'New_Label' | translate }} {{ 'Vendor_Object_Display_Label' | translate }}.<!--  You haven't added anything yet! Add something. -->
+                                      </a>
+                                 </div>
+                                
+                                
+                               
+                                
+                                </div>
+                        </div>
+                    </div>
+                    <div id="Info_Notes" class="Info_Notes" ng-if="VendorOrderModel.VendorOrderHeader.VendorId">
+                        <p class="actionRow T2">
+                            <span class="sectionText">{{ 'Label_Notes' | translate }}</span>
+                            <!-- <span class="actionText"> {{ 'Label_Actions' | translate }}</span> -->
+                            <span class="ActionIcons">
+                                <i class="fa fa-question-circle" data-toggle="tooltip" title="Notes about the order"></i><!--  title="{{ViewPart.helpText['General']}}" -->
+                            </span> 
+                        </p>
+                        <div class="row rowNotes">
+                            <div class="col-md-12 subsectionGeneral">
+                                <textarea type="text" id="unitNotes" class="notesEdit col-md-12 P0" rows="4"
+                                placeholder="Notes about the order" ng-blur="VendorOrderModel.updateVONotes()" 
+                                ng-model="VendorOrderModel.VendorOrderHeader.Notes" ng-focus="VendorOrderModel.selectalltext()" ng-disabled="(VendorOrderModel.VendorOrderHeader.Status!='Locked' && VendorOrderModel.VendorOrderHeader.Status!='Open')"></textarea>
+                                <!-- ng-show="SOHeader.SOHeaderInfo.isSONameEdit" -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- For : You haven't added anything yet! -->
+                <div ng-if="VendorOrderModel.VendorOrderHeader.VendorId!=null && VendorOrderModel.VendorOrderHeader.VendorId != ''">
+                <!-- For : You haven't added anything yet! -->
+                <!-- ******************************************************* end of info section ******************************************************* -->
+                <!-- ******************************************************* header for order section ******************************************************* -->
+                <div class="sectionHeader row" style="margin-top: 48px;">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                                <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                    ng-show="!VendorOrderModel.displaySections.Order"
+                                    ng-class="{'defaultCursor': !GroupOnlyPermissions['Vendor order']['view']}"
+                                    ng-Click="VendorOrderModel.showSection('Order')"> <!-- VendorOrderModel.displaySections.Order = true -->
+                                </i> 
+                                <i class="fa fa-angle-down" style="width:10px;"
+                                    ng-show="VendorOrderModel.displaySections.Order"
+                                    ng-Click="VendorOrderModel.showSection('Order')"> <!-- VendorOrderModel.displaySections.Order = false -->
+                                </i> 
+                                <span class="divider">|</span>
+                                <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Order}} {{ 'Order' | translate }}</span>
+                            </span>
+                            <span class="ActionIcons pull-left ">
+                                <div class="dropdown selectDropdown checkboxDropdown">
+                                    <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                    <span class="caret"></span></button> -->
+                                    <!-- <ul class="dropdown-menu" ng-if = "CustomerOrderModel.isDeleteServiceOrder($index)">
+                                                <li><a  ng-click="CustomerOrderModel.deleteSoHeaderInfo(CustomerOrderModel.SOHeaderList[$index].SOHeaderInfo.Id)">Remove Item</a></li>
+                                            </ul> -->
+                                </div>
+                            </span>
+                            <span class="ActionIcons service_order_print_icon pull-left  " ng-class = "{'bp-no-cursor':VendorOrderModel.vendorOrderLineItemGroupList.length == 0}">
+                                <i class="print-icon-fill" ng-class = "{'blue_00A3DB':VendorOrderModel.vendorOrderLineItemGroupList.length != 0 && VendorOrderModel.vendorOrderLineItemGroupList.length !=undefined
+                                                     ,'light-grey' : VendorOrderModel.vendorOrderLineItemGroupList.length == 0}" ng-include="'{!Application_Images}/Icons/print.svg'"  
+                                    ng-click="VendorOrderModel.PrintServiceWorkSheet()" data-toggle="tooltip" title="Print">
+                                </i>
+                            </span>
+                            <span class="ActionIcons service_order_print_icon pull-left " ng-class = "{'bp-no-cursor':VendorOrderModel.vendorOrderLineItemGroupList.length == 0}">
+                                <i class="email-icon-fill" ng-class = "{'blue_00A3DB':VendorOrderModel.vendorOrderLineItemGroupList.length != 0 && VendorOrderModel.vendorOrderLineItemGroupList.length !=undefined
+                                                     ,'light-grey' : VendorOrderModel.vendorOrderLineItemGroupList.length == 0}"  ng-click="VendorOrderModel.openMailPopup()" ng-include="'{!Application_Images}/Icons/email.svg'"   
+                                    data-toggle="tooltip" title="Email">
+                                </i>
+                            </span>
+                            <span class="ActionIcons service_order_print_icon pull-left " ng-class = "{'bp-no-cursor':VendorOrderModel.vendorOrderLineItemGroupList.length == 0}">
+                                <i ng-class = "{'blue_00A3DB':VendorOrderModel.vendorOrderLineItemGroupList.length != 0 && VendorOrderModel.vendorOrderLineItemGroupList.length !=undefined
+                                                     ,'light-grey' : VendorOrderModel.vendorOrderLineItemGroupList.length == 0}" ng-click="VendorOrderModel.openConfirmationDialog('VendorExport')" ng-include="'{!Application_Images}/Icons/export.svg'" 
+                                    data-toggle="tooltip" title="Export">
+                                </i>
+                            </span>
+                            <span class="ActionIcons pull-left" ng-if="VendorOrderModel.isAddSelectedVisible()">
+                                <div class="VO_OrderSection">
+                                    <button class="btn btn-default addSelectedBtnDisabled text-uppercase" 
+                                        ng-click="VendorOrderModel.disableAddSelectedButton = true; VendorOrderModel.addSelectedItemsFromReqForSectionToOrderSection()"
+                                        ng-class="{'addSelectedBtnActive' : VendorOrderModel.enableSelectedBtnInOrderSection()}"
+                                        ng-disabled="(VendorOrderModel.disableAddSelectedButton || !VendorOrderModel.enableSelectedBtnInOrderSection())">{{ 'Add_selected' | translate }}
+                                    </button>
+                                </div>
+                            </span>
+                            <!-- END: added by kajal 30th march 2017 #1760 -->
+                            <!-- <span class="ActionIcons pull-left" ng-if="SOHeader.SOHeaderInfo.TransactionType == 'Third-Party'">
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">Claim
+                                            <span class="caret"></span></button>
+                                            <ul class="dropdown-menu">
+                                                <li ng-repeat="claimStatus in SOHeader.SOHeaderInfo.AvailableClaimStatusList"
+                                                    ng-click="CustomerOrderModel.changeClaimStatus(claimStatus, $parent.$index)"><a>{{claimStatus.AvailableStatus}}</a></li>
+                                                <li ng-show="SOHeader.SOHeaderInfo.AvailableClaimStatusList.length == 0"><a>No Action Available</a></li>
+                                            </ul>
+                                        </div>
+                                    </span>  -->
+                             <span class="T3 pull-right total">
+                                      <!-- <a id="vendor_order_total">
+                                        {{VendorOrderModel.GroupTotalCost | currency}}
+                                      </a> -->
+                                      <p id="vendor_order_total">
+                                        {{VendorOrderModel.GroupTotalCost | currency}}
+                                      </p>
+                                    </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ******************************************************* header for order section ******************************************************* -->
+                
+                <!-- ******************************************************* body for order section ******************************************************* -->
+                <div id="OrderSection" >
+                    <div ng-show="VendorOrderModel.displaySections.Order">
+                    
+                        <!-- START: ITEMS section -->
+                        <div class="main_section_COU row" id="Order_Items">
+                            <div class="main_section_COU_Header row actionRowForOrder" >
+                                <div class="actionRow new-add-item-container" > <!-- <p> -->
+                                    
+                                    <span class="sectionText T2">{{ 'Items' | translate }}
+                                        <span class="svg-icon-item-container" ng-if="(VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked') && 
+                                                                                    (VendorOrderModel.VendorOrderHeader.VendorId != null && VendorOrderModel.VendorOrderHeader.VendorId != '') &&
+                                                                                    GroupOnlyPermissions['Vendor order']['create/modify']"
+                                                        ng-click="VendorOrderModel.RelatedList_addAction($event, 'Merchandise')">
+                                            <span class="svg-icon-item"><i class="white" ng-include="'{!Application_Images}/Icons/add-circle.svg'"></i></span>
+                                           <span class="bp-blue-font item-text bp-pointer-cursor">Add items </span>
+                                         </span>
+                                    </span>
+                                   <droplet class ="part-smart-droplet" ng-model="FileUpload.interface"> 
+                                       <div class="browse_but"> 
+                                           <droplet-upload-single ng-model="FileUpload.interface" ng-click="VendorOrderModel.setPartSmartFileReadData()"> 
+                                           </droplet-upload-single> 
+                                           <span class="sectionText T2 bp-pointer-cursor svg-icon-item-container" ng-click="VendorOrderModel.setPartSmartFileReadData()" ng-if="VendorOrderModel.IsARIPartSmartEnabled && ((VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked') && 
+                                            (VendorOrderModel.VendorOrderHeader.VendorId != null && VendorOrderModel.VendorOrderHeader.VendorId != '') &&
+                                            GroupOnlyPermissions['Vendor order']['create/modify'])">
+                                          <span class="svg-icon-add-part">
+                                            <i class="icon_fill_blue bp-svg-15" ng-include="'{!Application_Images}/Icons/part-smart.svg'" ng-click="VendorOrderModel.setPartSmartFileReadData()"></i>
+                                          </span>
+                                            <a class="bp-blue-font item-text" ng-click="VendorOrderModel.setPartSmartFileReadData()">
+                                           {{ 'Add_items_with_PartSmart' | translate }}
+                                            </a> 
+                                            </span>
+                                      </div> 
+                                   </droplet>
+                                </div>
+                            </div>
+                           <div ng-show="VendorOrderModel.vendorOrderLineItemGroupList.length != 0 && VendorOrderModel.vendorOrderLineItemGroupList.length !=undefined " > 
+                            <!-- <div> -->
+                                 <div class="gid_container_Customer" id="VO_Order_block_grid_container">
+                              
+                                <table class="table" id="VendorOrderItem_Grid">
+                                                   
+                                                    <col width="2%"/>
+                                                    <col width="4%"/>
+                                                    <col width="22%"/>
+                                                    <col width="12%"/>
+                                                    <col width="12%"/>
+                                                    <col width="10%"/>
+                                                    <col width="10%"/>
+                                                    <col width="10%"/>
+                                                    <col width="10%"/>
+                                                    <col width="7%"/>
+                                                    <col width="1%"/>
+                                                    <tr  class="tableHeader T3 C2">
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th style="cursor: pointer;" ng-click="VendorOrderModel.itemsPageSortControlsAction();">
+                                                            <i class="fa fa-sort-asc" ng-show="VendorOrderModel.itemsPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'"/>
+                                                            <i class="fa fa-sort-desc" ng-show="VendorOrderModel.itemsPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'"/>
+                                                            <i class="fa fa-sort" ng-show="VendorOrderModel.itemsPageSortAttrsJSON.Sorting[0].SortDirection == ''"/>
+                                                            {{ 'Part_Object_Item_Description' | translate }}
+                                                        </th>
+                                                        <th class="text-center ">{{ 'Label_Need' | translate }}</th>
+                                                        <th>{{ 'Label_Needed_For' | translate }}</th>
+                                                        <th class="text-center ">{{ 'Label_Needed_By' | translate }}</th>
+                                                        <th class="text-center ">{{ 'Label_Order' | translate }}</th>
+                                                        <th class="text-center ">{{ 'Label_Cost' | translate }}</th>
+                                                        <th class="text-center ">{{ 'Label_Total' | translate }}</th>
+                                                        <th class="text-center" ng-if="VendorOrderModel.VendorOrderHeader.Status != 'Open' && VendorOrderModel.VendorOrderHeader.Status != 'Locked'">STATUS</th>
+                                                        <th class="text-center "> </th>
+                                                    </tr>
+                                                    <tbody ng-repeat="voGroupItem in VendorOrderModel.vendorOrderLineItemGroupList " ng-init="VOGroupIndex = $index"><!-- track by $index" ng-init="AOHeaderIndex = $index" > -->
+                                                        <tr class="clickable_row" id="rowGroup{{$index}}" rel="vogroup_item_row{{$index}}_edit"  
+                                                            ng-click="VendorOrderModel.editGroupItem($event, $index); VendorOrderModel.editGroupItemForCancel($event, $index);"
+                                                            ng-blur = "VendorOrderModel.editGroupItem($event, $index); VendorOrderModel.editGroupItemForCancel($event, $index);" ng-class-even="'C2'">
+                                                            <!-- <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" class="group_exapnded_tr">
+                                                                <i class="fa fa-wrench"></i>
+                                                            </td > -->
+                                                            <td style="background:#fff"></td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" >
+                                                                <a class="edite_btn" rel="row1_edit">
+                                                                    <!-- <i class="fa fa-list  Plr5 FC7 F18 first_icon"></i> -->
+                                                                    <img class="first_img" ng-if="voGroupItem.PartId" src="{!Application_Images}/sparkplug.png" />
+                                                                    <i ng-include="'{!Application_Images}/Icons/sublet.svg'" ng-if="voGroupItem.SubletId"
+                                                                    class="grey bp-pointer-cursor pull-left itemSvg first_img"></i>
+                                                                    <!-- <img class="first_img" ng-if="voGroupItem.SubletId" src="{!Application_Images}/Icons/sublet.svg" /> -->
+                                                                    <!-- <div class="sprite sparkplug_inGrids pull-left handCursor"></div> -->
+                                                                </a>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}" class="T7 ">
+                                                                 <div>
+                                                                    
+                                                                    <a ng-mouseover="VendorOrderModel.openpartpopup($event, voGroupItem.PartId);" ng-mouseleave="VendorOrderModel.hidePartPopUp();"> 
+                                                                        {{ voGroupItem.ItemDesc }}
+                                                                    </a>
+                                                                 </div>
+                                                                 <div ng-if="voGroupItem.UnitType !=null" style="color:red">{{ voGroupItem.OrderType }}</div>
+                                                                
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_3_{{$index}}" class="T7 text-center" 
+                                                                        ng-if="!VendorOrderModel.isEditModeForVOLIGroupItems($index)">
+                                                                {{voGroupItem.Need}} 
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_3_{{$index}}" ng-if="VendorOrderModel.isEditModeForVOLIGroupItems($index)">
+                                                                <number-only-input-vo input-value="voGroupItem.Need" id-val="VO_Group_block_grid_container_expend_tbody_tr_td_3_{{$index}}"
+                                                                            ng-keydown="VendorOrderModel.editRowTabOutForVOG($event, $index ,0)" />                                                           
+                                                            </td>
+                                                            
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7 ">
+                                                                
+                                                                <div>{{voGroupItem.NeededFor}}</div>
+                                                                <div><span ng-if="voGroupItem.IsExcess" style="Color:red">
+                                                                    <a ng-mouseover="VendorOrderModel.showNeededForPopUp($event, voGroupItem.Id, VendorOrderModel.voHeaderId);" ng-mouseleave="VendorOrderModel.hideNeededForPopUp();" style="color:red"> 
+                                                                        {{ 'Label_With' | translate }} {{ 'Label_Excess' | translate }}
+                                                                    </a>
+                                                                </span>
+                                                                </div>
+                                                                
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}" class="T7 text-center">
+                                                                {{ voGroupItem.NeededBy  ==  null ? ' ' :voGroupItem.NeededBy }}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}" class="T7 text-center">
+                                                                {{ voGroupItem.OrderValue }} {{ voGroupItem.UnitType == null || voGroupItem.UnitType == "NULL" ?  " " :" " + voGroupItem.UnitType }}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" class="T7 text-center ">
+                                                                {{ voGroupItem.Cost  | currency}}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_8_{{$index}}" class="T7 text-center ">
+                                                                {{ voGroupItem.Total  | currency}}
+                                                            </td>
+                                                            <td class="T7 text-center" id="VO_Group_block_grid_container_tbody_tr_td_9_{{$index}}" ng-if="VendorOrderModel.VendorOrderHeader.Status != 'Open' && VendorOrderModel.VendorOrderHeader.Status != 'Locked'">
+                                                                {{ voGroupItem.Status }}
+                                                            </td>
+                                                        </tr>
+                                                        
+                                                        <!-- new -->
+                                                        <tr ng-show="VendorOrderModel.groupItems_editRow[$index].showActionBlock || VendorOrderModel.groupItems_editRow[$index].isEdit">
+                                                <td style="background:#fff"></td>
+                                                <td style="background:#fff" ng-class="{'BL': voGroupItem.hasChildren}"></td>
+                                                <!-- <td style="background:#fff"></td> -->
+                                                            
+                                                            
+                                                            <td class="available_td" colspan="{{VendorOrderModel.VendorOrderHeader.Status != 'Open' && VendorOrderModel.VendorOrderHeader.Status != 'Locked' ? 8 : 7}}"
+                                                                ng-if="VendorOrderModel.VendorOrderHeader.Status != 'On Order' && VendorOrderModel.VendorOrderHeader.Status != 'Received' && VendorOrderModel.VendorOrderHeader.Status != 'Partially Received'"> <!-- ng-if Added by richa #2357 -->
+                                                            <!-- <td class="available_td" colspan="8"> -->
+                                                        <div class="show_Availableline text-uppercase" ng-if="voGroupItem.AvailablePart != 0">  
+                                                              {{ 'Label_Available' | translate }} {{ 'Label_Inventory' | translate }}: {{voGroupItem.AvailablePart}} 
+                                                        </div>
+                                                        <div class="show_Availableline bgRed text-uppercase" ng-if="voGroupItem.AvailablePart == 0">  
+                                                              {{ 'Label_Available' | translate }} {{ 'Label_Inventory' | translate }}: {{voGroupItem.AvailablePart}} - {{ 'Part_Object_Status_OutofStock' | translate }}
+                                                        </div>
+                                                 </td> 
+                                                 <td style="background:#fff"></td>
+                                            </tr> 
+                                            <tr class="brp-container" ng-show="(VendorOrderModel.groupItems_editRow[$index].showActionBlock || VendorOrderModel.groupItems_editRow[$index].isEdit) && voGroupItem.IsBRPPart">
+                                              <td style="background:#fff"></td>
+                                              <td style="background:#fff" ng-class="{'BL': voGroupItem.hasChildren}"></td>
+                                              <td>
+                                              	<button class="bp-btn bp-btn-normal bp-btn-xs" ng-click="VendorOrderModel.openPartLocatorWindow(voGroupItem)">{{ 'BRP_Availability' | translate }}</button>
+                                              </td> 
+                                            </tr> 
+                                            <!-- action editable Row -->
+                                            <tr ng-show="VendorOrderModel.groupItems_editRow[$index].showActionBlock && VendorOrderModel.VendorOrderHeader.Status == 'Open'" class="edit_panel sample-show-hide T7" id="vogroup_item_row{{$index}}_edit">
+                                                    <td style="background-color:#fff"></td>
+                                                    <!-- <td ng-class="{'BL': reqByStock.hasChildren}" style="background:#fff"></td> -->
+                                                    <td style="background:#fff"></td>
+                                                    <td colspan="7" class="edit-service-item" id="CO_Merchandise_block_grid_container_tbody_expandtr_td_1_{{$index}}" >
+                                                    <div id="vogroup_tbody_expandtr_edit_box_{{$index}}" class="edit_box serviceitemedit col-md-12 ">
+                                                        <div class="its-heading" id="CO_Merchandise_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                            <!-- <img src="{!Application_Images}/edit_icon.png" class="img_action"/> -->
+                                                            <i class="fa fa-angle-down"></i>
+                                                            <span>{{ 'Label_Actions' | translate }} ({{voGroupItem.SubletId ? 1 : 2}} {{ 'Label_Available' | translate }})</span>
+                                                        </div>
+                                                        <div id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}" class="edit-body">
+                                                            <form class="ng-pristine ng-valid">
+                                                                <!-- Remove link as action -->
+                                                                <div class="radio" id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1" ng-if="!voGroupItem.SubletId" >
+                                                                    <label ng-click="VendorOrderModel.groupItems_editRow[$index].radioValue = 1"><!-- AOHeaderIndex -->
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.groupItems_editRow[$index].radioValue == 1 }" ><!-- AOHeaderIndex -->
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Add_All_Required_For_This_Item' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <div class="radio" id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_2">
+                                                                    <label ng-click="VendorOrderModel.groupItems_editRow[$index].radioValue = 2"><!-- AOHeaderIndex -->
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.groupItems_editRow[$index].radioValue == 2 }" ><!-- AOHeaderIndex -->
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Remove_From_Order' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <!-- Action button (Go) -->
+                                                                <a id="vogroup_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn" 
+                                                                    class="btn btn-default editform_btn" role="button"
+                                                                    ng-click="VendorOrderModel.groupItemsGoAction($index)">{{ 'Label_Apply' | translate }}</a>                                
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style="background:#fff"></td>
+                                            </tr>
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            <!-- Richa -->
+                                            <!-- action editable Row -->
+                                            <tr class="edit_panel sample-show-hide T7" id="vogroup_item_row{{$index}}_edit"
+                                                ng-show="VendorOrderModel.groupItemsForCancel_editRow[$index].isEdit && VendorOrderModel.vendorOrderLineItemGroupList[$index].Status != 'Cancelled' && 
+                                                        VendorOrderModel.vendorOrderLineItemGroupList[$index].Status != 'Stocked' && !VendorOrderModel.vendorOrderLineItemGroupList[$index].SubletId &&
+                                                        (VendorOrderModel.VendorOrderHeader.Status == 'On Order' || VendorOrderModel.VendorOrderHeader.Status == 'Partially Received')" >
+                                                    <td style="background-color:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                    <td colspan="7" class="edit-service-item" id="VO_items_block_grid_container_tbody_expandtr_td_1_{{$index}}" >
+                                                    <div id="vogroup_cancel_tbody_expandtr_edit_box_{{$index}}" class="edit_box serviceitemedit col-md-12 ">
+                                                        <div class="its-heading" id="VO_itemse_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                            <i class="fa fa-angle-down"></i>
+                                                            <span>{{ 'Label_Actions' | translate }} (1 {{ 'Label_Available' | translate }})</span>
+                                                        </div>
+                                                        <div id="vogroup_cancel_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}" class="edit-body">
+                                                            <form class="ng-pristine ng-valid">
+                                                                <!-- Remove link as action -->
+                                                                <div class="radio" id="vogroup_cancel_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+                                                                    <label ng-click="VendorOrderModel.selectCheckbox($index);">
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.groupItemsForCancel_editRow[$index].radioValue == 1 }" ><!-- AOHeaderIndex -->
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Cancel_order_of_this_item' | translate }} 
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <!-- Action button (Go) -->
+                                                                <a id="vogroup_cancel_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn" 
+                                                                    class="btn btn-default editform_btn" role="button" ng-disabled="VendorOrderModel.groupItemsForCancel_editRow[$index].radioValue != 1"
+                                                                    ng-click="VendorOrderModel.groupItemsGoActionCancel($index)">{{ 'Label_Apply' | translate }}</a>                                
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style="background:#fff"></td>
+                                            </tr>
+                                            
+                                            
+                                                        <!-- new -->
+                                                        
+                                                        <tr  class="Editable_row" ng-show="VendorOrderModel.groupItems_editRow[$index].isEdit">
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td colspan="7" class="group_exapnded_tr subEdit">
+                                                                <div ng-repeat="voLineItems in voGroupItem.VendorOrderLineItemList " class="volineItem_row_clickable"
+                                                                     ng-click="VendorOrderModel.editvoLineItem($event,$parent.$index,$index)">  <!-- class="volineItem_row_clickable" -->
+                                                                    <div class=" volineItem_row_item ">
+                                                                        <div class="firstchild " ng-if="voLineItems.IsExcess == false && (voLineItems.IsRequiredForCustomer || voLineItems.IsService)" >{{voLineItems.Customer}} </div>
+                                                                        <div class="firstchild " ng-if="voLineItems.IsExcess == true || (!voLineItems.IsRequiredForCustomer && !voLineItems.IsService)"  >{{ 'Label_Location' | translate }}:{{voLineItems.Location}}</div>
+                                                                       
+                                                                        <div class="secondchild" ng-show="!VendorOrderModel.isEditModeForVOLIGroupLineItems($parent.$index, $index)"> 
+                                                                             <p> {{voLineItems.Need}} </p>
+                                                                        </div> 
+                                                                        
+                                                                        <div class="secondchild" ng-keydown="VendorOrderModel.editRowTabOut($event, $parent.$index ,$index)" 
+                                                                            ng-show="VendorOrderModel.isEditModeForVOLIGroupLineItems($parent.$index, $index);"> 
+                                                                                <number-only-input-vo input-value="voLineItems.Need" id-val="Location_{{VOGroupIndex}}_{{$index}}"
+                                                                                ng-keydown="VendorOrderModel.solieditRowBlur($event, $index, $parent.$index)" />
+                                                                        </div> 
+                                                                       <!-- 
+                                                                       Nidhi -10/02/2017
+                                                                       <div class="secondchild" ng-show="(VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit==false)
+                                                                                            ||(VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit && voLineItems.IsRequiredForCustomer == true) 
+                                                                                            || (VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit && voLineItems.IsExcess == true)" >
+                                                                             <span >
+                                                                                   {{voLineItems.Need}}
+                                                                             </span>
+                                                                        </div> 
+                                                                         <div class="secondchild" ng-if="(VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit && 
+                                                                                    VendorOrderModel.VendorOrderHeader.Status == 'Open' &&  VendorOrderModel.VendorOrderHeader.Status != 'Locked' )"  >
+                                                                             <span >
+                                                                                            
+                                                                                   {{voLineItems.Need}}
+                                                                             </span>
+                                                                        </div>-->
+                                                                       <div class="thirdchild"  ng-if="voLineItems.IsRequiredForCustomer ==  true || voLineItems.IsService ==true">
+                                                                            <a ng-mouseover="VendorOrderModel.showCOPopUp($event, voLineItems.CoHeaderId);" ng-mouseleave="VendorOrderModel.hideCOPopUp();">
+                                                                                {{voLineItems.NeededFor ==null ? ' ' : voLineItems.NeededFor }} 
+                                                                            </a>
+                                                                        </div>
+                                                                        <div class="thirdchild"  ng-if="voLineItems.IsExcess == true"> Stock <div style="Color:red">{{ 'Label_Excess' | translate }}</div> </div>                                                                        
+                                                                       <div class="thirdchild"  ng-if="voLineItems.IsExcess == false &&  
+                                                                          voLineItems.IsRequiredForCustomer == false && voLineItems.IsService ==false"> {{ 'Label_Stock' | translate }} </div>
+                                                                        <div class="otherchild">&nbsp;</div>
+                                                                        <div class="otherchild">  </div>
+                                                                        <div class="otherchild">  </div>
+                                                                        <div class="lastchild " ng-if="VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked'"> </div>
+                                                                        <div class="lastchild " ng-class="{'FCRed' : voLineItems.Status == 'Cancelled'}" ng-if="VendorOrderModel.VendorOrderHeader.Status != 'Open' && VendorOrderModel.VendorOrderHeader.Status != 'Locked'"> {{voLineItems.Status }}</div>
+                                                                    </div>
+                                                                   
+                                                                <!-- new -->
+                                                                        <div ng-show="VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].isEdit && voLineItems.IsExcess == false && VendorOrderModel.VendorOrderHeader.Status == 'Open' && !voLineItems.SubletId" class="edit_panel sample-show-hide T7" id="vogroup_item_row{{$index}}_edit">
+                                                    <!-- <div class="col-lg-1 col-md-1" style="background-color:#fff"></div>
+                                                    <div class="col-lg-1 col-md-1" style="background:#fff"></div> -->
+                                                    <div  class="col-lg-12 col-md-12 edit-service-item" id="volineitem_block_grid_container_tbody_expandtr_td_1_{{$index}}" >
+                                                    <div id="volineitem_tbody_expandtr_edit_box_{{$index}}" class="edit_box serviceitemedit col-md-12 ">
+                                                        <div class="its-heading" id="volineitem_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                            <i class="fa fa-angle-down"></i>
+                                                            <span>{{ 'Label_Actions' | translate }} (2 {{ 'Label_Available' | translate }})</span>
+                                                        </div>
+                                                        <div id="volineitem_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}" class="edit-body">
+                                                            <form class="ng-pristine ng-valid">
+                                                                <!-- Remove link as action -->
+                                                                <div class="radio" id="volineitem_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+                                                                    <label ng-click="VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].radioValue = 1">
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].radioValue == 1 }" >
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Add_All_Required_For_This_Item' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <div class="radio" id="volineitem_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_2">
+                                                                    <label ng-click="VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].radioValue = 2">
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.groupItems_editRow[$parent.$index].voLineItems_editRow[$index].radioValue == 2 }" >
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Remove_From_Order' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <!-- Action button (Go) -->
+                                                                <a id="volineitem_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn" 
+                                                                    class="btn btn-default editform_btn" role="button"
+                                                                    ng-click="VendorOrderModel.groupItemsGoAction($index, $parent.$index)">{{ 'Label_Apply' | translate }}</a>                                
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                                                <!-- new -->
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                </div>
+                                <div class="row pagination_container" id="Vendor_Order_Items_Pagination" ng-if="VendorOrderModel.TotalLineItemGroups != undefined" >
+                                <list-pagination id-value = "Vendor_Order_Items_Pagination_" 
+                                                 total-records-length = "VendorOrderModel.TotalLineItemGroups"
+                                                 page-size = "VendorOrderModel.itemsPageSortAttrsJSON.PageSize"
+                                                 current-page = "VendorOrderModel.itemsPageSortAttrsJSON.CurrentPage"
+                                                 changes-count = "VendorOrderModel.itemsPageSortAttrsJSON.ChangesCount"
+                                                 pagination-control-method = "VendorOrderModel.Items_paginationControlsAction" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- END: ITEMS section -->
+                        
+                        <!-- START: REQUIRED FOR CUSTOMER section -->
+                        <div class="main_section_COU row" id="Order_RequiredForCustomer" ng-if="(VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked') && VendorOrderModel.TotalRequiredForCustomers != 0">
+                            
+                                
+                                    
+                                    <!-- <div class="right_sub pull-right" id="Merchandise_block_heading_panel_right_sub">
+    
+                                            <div class="dropdown custom-cog-dropdown">
+                                                <button
+                                                    class="btn btn-default dropdown-toggle custom-cog-button"
+                                                    style="margin-right: 7px;" type="button" id="menu1"
+                                                    data-toggle="dropdown">
+                                                    <i class="fa   fa-cog Orange Customtool"
+                                                        data-toggle=""> </i>
+                                                </button>
+                                                <ul class="dropdown-menu custom-cog-dropdown-menu"
+                                                    role="menu" aria-labelledby="menu1">
+                                                    <li role="presentation"><a role="menuitem itemtab"
+                                                        tabindex="-1"
+                                                        ng-click="VendorOrderModel.groupAllVOLineItemByRequiredType(true)">Add
+                                                            All Items</a></li>
+    
+                                                </ul>
+                                            </div>
+    
+                                            <i class="fa fa-question-circle question_mark Orange Customtool custom-question"></i>
+                                    </div> -->
+                                
+                            
+                            <div class="main_section_COU_Header row actionRowForOrder" >
+                                <div class="actionRow" > <!-- <p> -->
+                                    
+                                    <span class="sectionText T2">{{ 'Required_For_Customer' | translate }}
+                                    </span>
+                                    
+                                    <span class="ActionIcons" >
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <!-- <button class="btn dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">{{ 'Label_Actions' | translate }}
+                                            <span class="caret"></span></button> -->
+                                            <!-- <span class="actionText T2 dropdown-toggle" data-toggle="dropdown" aria-expanded="false">{{ 'Label_Actions' | translate }}
+                                            </span>
+                                            <ul class="dropdown-menu" ng-if = "">
+                                                <li>
+                                                    <a ng-click="VendorOrderModel.groupAllVOLineItemByRequiredType(true)">{{ 'Label_Add_All_Item' | translate }}</a>
+                                                </li>
+                                            </ul> -->
+                                        </div>
+                                    </span>
+                                    
+                                    <span class="ActionIcons">
+                                        <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorOrderModel.helpText['RequiredForCustomer']}}" ></i>
+                                    </span> 
+                                </div><!-- </p> -->
+                            </div>
+                            <div class="gid_container T6" id="VO_Order_block_grid_container_Empty_Div" 
+                                    ng-show="VendorOrderModel.vendorOrderLineItemReqByCustomerList.length == 0" style="padding-left: 44px;">
+                                    {{ 'Label_No_Records_Found' | translate }}
+                             </div>
+                            <div ng-show="VendorOrderModel.vendorOrderLineItemReqByCustomerList.length != 0"> 
+                            <!-- <div> -->
+                             <div class="gid_container_Customer" id="VO_Order_block_grid_container" >
+                                            <table class="table" id="VendorOrderItem_Grid">
+                                            
+                                                    <col width="2%"/>
+                                                    <col width="4%"/>
+                                                    <col width="22%"/>
+                                                    <col width="13%"/>
+                                                    <col width="13%"/>
+                                                    <col width="12%"/>
+                                                    <col width="10%"/>
+                                                    <col width="12%"/>
+                                                    <col width="12%"/>
+                                                    <col width="1%"/>
+                                            <tr  class="tableHeader T3 C2">
+                                                        <th></th>
+                                                        <th>
+                                                            <div class= "small" >
+                                                                <label class="checkbox">
+                                                                     <span class="chk_tick" ng-class="{'PartialCheck':VendorOrderModel.RequiredForCustomerItemSelectedStatus == 1 ,
+                                                                                                        'chked':VendorOrderModel.RequiredForCustomerItemSelectedStatus == 2,
+                                                                                                        'permissionDisabledChk': !GroupOnlyPermissions['Vendor order']['create/modify']}"
+                                                                     style="margin-top: -11px; position: absolute;"
+                                                                     ng-click="VendorOrderModel.selectDeselectAllForReqForCustomers();"><!--  style and ng-click Edited by kajal 30th march 2017 #1760 -->
+                                                                     <!-- ng-class="VendorOrderModel.getSelectAllStatusForReqForCustomers()" 4th april 2017 -->
+                                                                            <i class="fa fa-check-square chksqure"></i>
+                                                                       </span>
+                                                                </label>
+                                                            </div>
+                                                        </th>
+                                                        <th style="cursor: pointer;" ng-click="VendorOrderModel.customersPageSortControlsAction();">
+                                                            <i class="fa fa-sort-asc" ng-show="VendorOrderModel.customersPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'"/>
+                                                            <i class="fa fa-sort-desc" ng-show="VendorOrderModel.customersPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'"/>
+                                                            <i class="fa fa-sort" ng-show="VendorOrderModel.customersPageSortAttrsJSON.Sorting[0].SortDirection == ''"/>
+                                                            {{ 'Part_Object_Item_Description' | translate }}
+                                                        </th>
+                                                        <th>{{ 'Label_Needed_For' | translate }}</th>
+                                                    <th>{{ 'Customer_Object_Display_Label' | translate }}</th>
+                                                    <th class=" text-center">{{ 'Label_Needed_By' | translate }}</th>
+                                                    <th class=" text-center">{{ 'Label_Need' | translate }}</th>
+                                                    <th class=" text-center">{{ 'Label_Cost' | translate }}</th>
+                                                    <th class=" text-center">{{ 'Label_Total' | translate }}</th>
+                                                    <th></th>
+                                                    </tr>
+                                            <tbody  ng-repeat="reqByCustomer in VendorOrderModel.vendorOrderLineItemReqByCustomerList track by $index" ng-init="AOHeaderIndex = $index" >
+                                                        <tr class="clickable_row" id="rowGroup{{$index}}" rel="vogroup_item_row{{$index}}_edit"
+                                                            ng-blur = "VendorOrderModel.editRequiredForCustomerItem($event, $index)" 
+                                                            ng-class-even="'C2'">
+                                                            <!-- <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" class="group_exapnded_tr">
+                                                                <i class="fa fa-wrench"></i>
+                                                            </td > -->
+                                                            <td style="background:#fff"></td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" >
+                                                                  <div class=" small" >
+                                                                    <label class="checkbox checkboxGridLineItem">
+                                                                        <span class="chk_tick"  ng-class="{'chked' : VendorOrderModel.requiredForCustomerItems_editRow[AOHeaderIndex].isEdit,
+                                                                                                            'permissionDisabledChk': !GroupOnlyPermissions['Vendor order']['create/modify']}" 
+                                                                            style="margin-top: -12px; position: absolute;" ng-click="VendorOrderModel.addRemoveSelectedRequiredForCustomerVoli(AOHeaderIndex)"><!--  style Edited by kajal 30th march 2017 #1760 -->
+                                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                                        </span>
+                                                                    </label>
+                                                                </div>
+                                                            </td>
+                                                            <td class="T7 " id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}" >
+                                                                 <div>
+                                                                    <a ng-mouseover="VendorOrderModel.openpartpopup($event, reqByCustomer.PartId);" ng-mouseleave="VendorOrderModel.hidePartPopUp();"> 
+                                                                        {{ reqByCustomer.Item }}
+                                                                    </a>
+                                                                 </div>
+                                                            </td>
+                                                            <td class="T7 " id="VO_Group_block_grid_container_tbody_tr_td_3_{{$index}}" >
+                                                                <div>
+                                                                   <a ng-mouseover="VendorOrderModel.showCOPopUp($event, reqByCustomer.CoHeaderId);" ng-mouseleave="VendorOrderModel.hideCOPopUp();">
+                                                                        {{ reqByCustomer.NeededFor }}
+                                                                    </a>
+                                                                 </div> 
+                                                            </td>
+                                                            <td class="T7 " id="VO_Group_block_grid_container_tbody_tr_td_4_{{$index}}">
+                                                            {{reqByCustomer.Customer }}</td>
+                                                            <td class="T7 text-center " id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}" >
+                                                                {{ reqByCustomer.NeededBy == null ? ' '
+                                                            :reqByCustomer.NeededBy }}
+                                                            </td>
+                                                            <td class="T7 text-center " id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}" >
+                                                                {{ reqByCustomer.Need }}
+                                                            </td>
+                                                            <td class="T7 text-center " id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" >
+                                                                {{ reqByCustomer.Cost  | currency}}
+                                                            </td>
+                                                            <td class="T7 text-center" id="VO_Group_block_grid_container_tbody_tr_td_8_{{$index}}" >
+                                                                {{ reqByCustomer.Total  | currency}}
+                                                            </td>
+                                                            <td style="background:#fff"></td>
+                                                        </tr>
+                                                      
+                                                        <!-- ************** new : available inventory block **********************8-->
+                                                       <!--  <tr ng-show="VendorOrderModel.requiredForCustomerItems_editRow[$index].isEdit">
+                                                <td style="background:#fff"></td>
+                                                <td style="background:#fff" ng-class="{'BL': reqByCustomer.hasChildren}"></td>
+                                                
+                                                <td class="available_td" colspan="7">   
+                                                        <div class="show_Availableline" ng-if="reqByCustomer.QtyAvailable != 0">  
+                                                              AVAILABLE INVENTORY: {{reqByCustomer.QtyAvailable}} 
+                                                        </div>
+                                                        <div class="show_Availableline bgRed" ng-if="reqByCustomer.QtyAvailable == 0">  
+                                                              AVAILABLE INVENTORY: {{reqByCustomer.QtyAvailable}} - OUT OF STOCK
+                                                        </div>
+                                                 </td> 
+                                                 <td style="background:#fff"></td>
+                                            </tr>  -->
+                                            <!-- action editable Row -->
+                                            <!-- Commented By Subhrant 30/03/17  -->
+                                            <!--   <tr ng-show="VendorOrderModel.requiredForCustomerItems_editRow[$index].isEdit" class="edit_panel sample-show-hide T7" id="rel_ReqFor_Customer_row{{$index}}_edit">
+                                                    <td style="background-color:#fff"></td>
+                                                    <td ng-class="{'BL': reqByStock.hasChildren}" style="background:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                    <td colspan="7" class="edit-service-item" id="VP_ReqFor_Customer_block_grid_container_tbody_expandtr_td_1_{{$index}}" >
+                                                    <div id="VP_ReqFor_Customer_block_grid_container_tbody_expandtr_edit_box_{{$index}}" class="edit_box serviceitemedit col-md-12 ">
+                                                        <div class="its-heading" id="VP_ReqFor_Customer_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                            <img src="{!Application_Images}/images/edit_icon.png" class="img_action"/>
+                                                            <i class="fa fa-angle-down"></i>
+                                                            <span>{{ 'Label_Actions' | translate }} (2 {{ 'Label_Available' | translate }})</span>
+                                                        </div>
+                                                        <div id="VP_ReqFor_Customer_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}" class="edit-body">
+                                                            <form class="ng-pristine ng-valid">
+                                                                Remove link as action
+                                                                <div class="radio" id="VP_ReqFor_Customer_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+                                                                    <label ng-click="VendorOrderModel.requiredForCustomerItems_editRow[AOHeaderIndex].radioValue = 1">
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.requiredForCustomerItems_editRow[AOHeaderIndex].radioValue == 1 }" >
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Add_All_Required_For_This_Item' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <div class="radio" id="VP_ReqFor_Customer_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_2">
+                                                                    <label ng-click="VendorOrderModel.requiredForCustomerItems_editRow[AOHeaderIndex].radioValue = 2">
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.requiredForCustomerItems_editRow[AOHeaderIndex].radioValue == 2 }" >
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Add_This_Item_Only' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                Action button (Go)
+                                                                <a id="VP_ReqFor_Customer_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn" 
+                                                                    class="btn btn-default editform_btn" role="button"
+                                                                    ng-click="VendorOrderModel.requiredForCustomerItemsGoAction($index)">{{ 'Label_Apply' | translate }}</a>                                
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style="background:#fff"></td>
+                                            </tr> -->
+                                            
+                                            <!-- ************** new : add inventory block ***********************-->
+                                                        </tbody>
+                                        </table>
+                                        </div>
+                                    <!-- Pagination container -->
+                                        <div class="pagination_container" id="Vendor_Order_Items_Pagination" ng-if="VendorOrderModel.TotalRequiredForCustomers != undefined" >
+                    <!--                        ng-show="VendorOrderModel.TotalRequiredForStocks > VendorOrderModel.stocksPageSortAttrsJSON.PageSize" > -->
+                                            <list-pagination id-value="Vendor_Order_Items_Pagination_"
+                                            total-records-length="VendorOrderModel.TotalRequiredForCustomers"
+                                            page-size="VendorOrderModel.customersPageSortAttrsJSON.PageSize"
+                                            current-page="VendorOrderModel.customersPageSortAttrsJSON.CurrentPage"
+                                            changes-count="VendorOrderModel.customersPageSortAttrsJSON.ChangesCount"
+                                            pagination-control-method="VendorOrderModel.RequiredByCustomer_paginationControlsAction" />
+                                        </div>
+                            </div>
+                        </div>
+                        <!-- END: REQUIRED FOR CUSTOMER section -->
+                        
+                        <!-- START: REQUIRED FOR STOCK section -->
+                        <div class="main_section_COU row" id="Order_RequiredForStock" ng-if="(VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked') && VendorOrderModel.TotalRequiredForStocks != 0">
+                            
+                            <div class="main_section_COU_Header row actionRowForOrder" >
+                                <div class="actionRow " > <!-- <p> -->
+                                    
+                                    <span class="sectionText T2">{{ 'Required_For_Stock' | translate }}
+                                    </span>
+                                    
+                                    <span class="ActionIcons" >
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <!-- <button class="btn dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">{{ 'Label_Actions' | translate }}
+                                            <span class="caret"></span></button> -->
+                                            <!-- <span class="actionText T2 dropdown-toggle" data-toggle="dropdown" aria-expanded="false">{{ 'Label_Actions' | translate }}
+                                            </span>
+                                            <ul class="dropdown-menu" ng-if = "">
+                                                <li>
+                                                    <a ng-click="VendorOrderModel.groupAllVOLineItemByRequiredType(false)">{{ 'Label_Add_All_Item' | translate }}</a>
+                                                </li>
+                                            </ul> -->
+                                        </div>
+                                    </span>
+                                    
+                                    <span class="ActionIcons">
+                                        <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorOrderModel.helpText['RequiredForStock']}}" ></i>
+                                    </span> 
+                                </div><!-- </p> -->
+                            </div>
+                            <div class="gid_container T6" id="VO_Order_block_grid_container_Empty_Div" 
+                                    ng-show="VendorOrderModel.vendorOrderLineItemReqByStockList.length == 0" style="padding-left: 44px;">
+                                    {{ 'Label_No_Records_Found' | translate }}
+                                </div>
+                            <div ng-show="VendorOrderModel.vendorOrderLineItemReqByStockList.length != 0">
+                            <!-- <div> -->
+                                <div class="gid_container_Customer" id="VO_Order_block_grid_container">
+                                            <table class="table" id="VendorOrderItem_Grid">
+                                            
+                                            
+                                                    <col width="2%"/>
+                                                    <col width="4%"/>
+                                                    <col width="22%"/>
+                                                    <col width="13%"/>
+                                                    <col width="13%"/>
+                                                    <col width="12%"/>
+                                                    <col width="10%"/>
+                                                    <col width="12%"/>
+                                                    <col width="12%"/>
+                                                    <col width="1%"/>
+                                            <tr  class="tableHeader T3 C2">
+                                                        <th></th>
+                                                        <th>
+                                                            <!-- START: added by kajal 30th march 2017 #1760 -->
+                                                            <div class= "small" >
+                                                                <label class="checkbox">
+                                                                     <span class="chk_tick" ng-class="{'PartialCheck':VendorOrderModel.RequiredForStockItemSelectedStatus == 1 ,
+                                                                                                        'chked':VendorOrderModel.RequiredForStockItemSelectedStatus == 2,
+                                                                                                        'permissionDisabledChk': !GroupOnlyPermissions['Vendor order']['create/modify'] }"
+                                                                     style="margin-top: -11px; position: absolute;"
+                                                                     ng-click="VendorOrderModel.selectDeselectAllForReqForStock()"><!--  style and ng-click Edited by kajal 30th march 2017 #1760 -->
+                                                                     <!-- ng-class="VendorOrderModel.getSelectAllStatusForReqForStock()"  4th april 2017 -->
+                                                                            <i class="fa fa-check-square chksqure"></i>
+                                                                       </span>
+                                                                </label>
+                                                            </div>
+                                                            <!-- END: added by kajal 30th march 2017 #1760 -->
+                                                        </th>
+                                                        <th style="cursor: pointer;" ng-click="VendorOrderModel.stocksPageSortControlsAction();">
+                                                            <i class="fa fa-sort-asc" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'"/>
+                                                            <i class="fa fa-sort-desc" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'"/>
+                                                            <i class="fa fa-sort" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == ''"/>
+                                                            {{ 'Part_Object_Item_Description' | translate }}
+                                                        </th>
+                                                        <th>{{ 'Label_Location' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Available' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Part_Object_Quantity_Incoming' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Need' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Cost' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Total' | translate }}</th>
+                                                        <th></th>
+                                                    </tr>
+                                            <tbody ng-repeat="reqByStock in VendorOrderModel.vendorOrderLineItemReqByStockList track by $index" ng-init="AOHeaderIndex = $index" >
+                                                        <tr class="clickable_row" id="rowGroup{{$index}}" rel="vogroup_item_row{{$index}}_edit"  
+                                                            ng-blur = "VendorOrderModel.editRequiredForStockItem($event, $index)" 
+                                                            ng-class-even="'C2'"><!-- ng-click="VendorOrderModel.editRequiredForStockItem($event, $index)"  commented by kajal 30th march 2017 #1760-->
+                                                            <td style="background:#fff"></td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" >
+                                                                <!-- <a class="edite_btn" rel="row1_edit">
+                                                                    <img class="first_img" src="{!Application_Images}/sparkplug.png"  />
+                                                                </a> -->
+                                                                <!-- START: added by kajal 30th march 2017 #1760 -->
+                                                                <div class=" small" >
+                                                                    <label class="checkbox checkboxGridLineItem">
+                                                                        <span class="chk_tick"  ng-class="{'chked' : VendorOrderModel.requiredForStockItems_editRow[AOHeaderIndex].isEdit,
+                                                                                                            'permissionDisabledChk': !GroupOnlyPermissions['Vendor order']['create/modify']}" 
+                                                                            style="margin-top: -12px; position: absolute;" ng-click="VendorOrderModel.addRemoveSelectedRequiredForStockVoli(AOHeaderIndex)"><!--  style Edited by kajal 30th march 2017 #1760 -->
+                                                                            <i class="fa fa-check-square chksqure" ></i>
+                                                                        </span>
+                                                                    </label>
+                                                                </div>
+                                                                <!-- END: added by kajal 30th march 2017 #1760 -->
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}" class="T7 ">
+                                                                 <div>
+                                                                    <a ng-mouseover="VendorOrderModel.openpartpopup($event,reqByStock.PartId);" ng-mouseleave="VendorOrderModel.hidePartPopUp();"> 
+                                                                    {{ reqByStock.Item }} 
+                                                                </a>
+                                                                 </div>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_3_{{$index}}" class="T7 ">
+                                                                {{ reqByStock.Location }}
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7 text-center">
+                                                            {{reqByStock.QtyAvailable }}</td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}" class="T7 text-center ">
+                                                                {{ reqByStock.Incoming }}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}" class="T7 text-center ">
+                                                               <div><a ng-mouseover="VendorOrderModel.showPopUpVendorOrderPartDetails($event, reqByStock.Id);" ng-mouseleave="VendorOrderModel.hidePopUpVendorOrderPartDetails()" >
+                                                                    {{ reqByStock.Need }}
+                                                                </a></div>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" class="T7 text-center ">
+                                                                {{ reqByStock.Cost | currency}}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_8_{{$index}}" class="T7 text-center ">
+                                                                {{ reqByStock.Total  | currency}}
+                                                            </td>
+                                                            <td style="background:#fff"></td>
+                                                        </tr>
+                                                       
+                                                         <!-- ************** new : available inventory block **********************8--><!-- START: Commented by kajal 30th march 2017 #1760 -->
+                                                        <!-- <tr ng-show="VendorOrderModel.requiredForStockItems_editRow[$index].isEdit">
+                                                <td style="background:#fff"></td>
+                                                <td style="background:#fff" ng-class="{'BL': reqByStock.hasChildren}"></td>
+                                                
+                                                <td class="available_td" colspan="7">    
+                                                        <div class="show_Availableline" ng-if="reqByStock.QtyAvailable != 0">  
+                                                              AVAILABLE INVENTORY: {{reqByStock.QtyAvailable}} 
+                                                        </div>
+                                                        <div class="show_Availableline bgRed" ng-if="reqByStock.QtyAvailable == 0">  
+                                                              AVAILABLE INVENTORY: {{reqByStock.QtyAvailable}} - OUT OF STOCK
+                                                        </div>
+                                                 </td> 
+                                                 <td style="background:#fff"></td>
+                                            </tr>  -->
+                                            <!-- action editable Row -->
+                                            <!-- <tr ng-show="VendorOrderModel.requiredForStockItems_editRow[$index].isEdit" class="edit_panel sample-show-hide T7" id="rel_ReqFor_Stock_row{{$index}}_edit">
+                                                    <td style="background-color:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                    <td colspan="7" class="edit-service-item" id="VP_ReqFor_Stock_block_grid_container_tbody_expandtr_td_1_{{$index}}" >
+                                                    <div id="VP_ReqFor_Stock_block_grid_container_tbody_expandtr_edit_box_{{$index}}" class="edit_box serviceitemedit col-md-12 ">
+                                                        <div class="its-heading" id="VP_ReqFor_Stock_block_grid_container_tbody_expandtr_edit_box_its-heading_{{$index}}">
+                                                            <img src="{!Application_Images}/edit_icon.png" class="img_action"/>
+                                                            <i class="fa fa-angle-down"></i>
+                                                            <span>{{ 'Label_Actions' | translate }} (2 {{ 'Label_Available' | translate }})</span>
+                                                        </div>
+                                                        <div id="VP_ReqFor_Stock_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}" class="edit-body">
+                                                            <form class="ng-pristine ng-valid">
+                                                                <div class="radio" id="VP_ReqFor_Stock_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_1">
+                                                                    <label ng-click="VendorOrderModel.requiredForStockItems_editRow[AOHeaderIndex].radioValue = 1">
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.requiredForStockItems_editRow[AOHeaderIndex].radioValue == 1 }" >
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Add_All_Required_For_This_Item' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <div class="radio" id="VP_ReqFor_Stock_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_radio_2">
+                                                                    <label ng-click="VendorOrderModel.requiredForStockItems_editRow[AOHeaderIndex].radioValue = 2">
+                                                                        <p class="chk_tick edit-service-chek"
+                                                                          ng-class="{'chked' : VendorOrderModel.requiredForStockItems_editRow[AOHeaderIndex].radioValue == 2 }" >
+                                                                            <i class="fa fa-check-square chksqure"></i>
+
+                                                                        </p>
+                                                                    <span>
+                                                                        {{ 'Label_Add_This_Item_Only' | translate }}
+                                                                    </span>
+                                                                    </label>
+                                                                </div>
+                                                                <a id="VP_ReqFor_Stock_block_grid_container_tbody_expandtr_edit_box_its-heading_edit-body_{{$index}}_go_btn" 
+                                                                    class="btn btn-default editform_btn" role="button"
+                                                                    ng-click="VendorOrderModel.requiredForStockItemsGoAction($index)">{{ 'Label_Apply' | translate }}</a>                                
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style="background:#fff"></td>
+                                            </tr>
+                                             --> <!-- END: Commented by kajal 30th march 2017 #1760 -->
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            <!-- ************** new : add inventory block ***********************-->
+                                                         </tbody>
+                                        </table>
+                                        </div>
+                                    <!-- Pagination container -->
+                                <div class="pagination_container" id="Vendor_Order_Items_Pagination" ng-if="VendorOrderModel.TotalRequiredForStocks != undefined" >
+                    <!--                        ng-show="VendorOrderModel.TotalRequiredForStocks > VendorOrderModel.stocksPageSortAttrsJSON.PageSize" > -->
+                                            <list-pagination id-value = "Vendor_Order_Items_Pagination_" 
+                                                             total-records-length = "VendorOrderModel.TotalRequiredForStocks"
+                                                             page-size = "VendorOrderModel.stocksPageSortAttrsJSON.PageSize"
+                                                             current-page = "VendorOrderModel.stocksPageSortAttrsJSON.CurrentPage"
+                                                             changes-count = "VendorOrderModel.stocksPageSortAttrsJSON.ChangesCount"
+                                                             pagination-control-method = "VendorOrderModel.RequiredByStock_paginationControlsAction" />
+                                        </div>
+                            </div>
+                        </div>
+                        
+                        <!-- END: REQUIRED FOR STOCK section -->
+                    </div>
+                    </div>
+                
+                <!-- ******************************************************* body for order section ******************************************************* -->
+                
+                <!-- ******************************************************* header for stock Excess section ******************************************************* -->
+                <div class="sectionHeader row" id="Stock_Excess_Block" ng-show="VendorOrderModel.StockExcessList != undefined && VendorOrderModel.StockExcessList.length != 0">             
+                <!-- <div class="sectionHeader row"> -->
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!VendorOrderModel.displaySections.StockExcess"
+                            ng-Click="VendorOrderModel.showSection('StockExcess')"> <!-- VendorOrderModel.displaySections.StockExcess = true -->
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="VendorOrderModel.displaySections.StockExcess"
+                            ng-Click="VendorOrderModel.showSection('StockExcess')"> <!-- VendorOrderModel.displaySections.StockExcess = false -->
+                        </i> 
+                        <span class="divider">|</span>
+                        <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Stock_Excess}} {{ 'Stock_Excess' | translate }}</span>
+                        </span>
+                          <span class="ActionIcons pull-left ">
+                               <div class="dropdown selectDropdown checkboxDropdown">
+                                  <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                  <span class="caret"></span></button> -->
+                            </div>
+                        </span> 
+                    </div>
+                
+                    </div>
+                </div>
+                
+                <!-- ******************************************************* header for stock Excess section ******************************************************* -->
+                
+                <!-- ******************************************************* body for stock Excess section ******************************************************* -->
+                <div id="StockExcessSection">
+                    <div ng-show="VendorOrderModel.displaySections.StockExcess && VendorOrderModel.StockExcessList != undefined && VendorOrderModel.StockExcessList.length != 0">
+                        <!-- START: STOCK EXCESS section -->
+                        <div class="main_section_COU row" id="StockExcess_General" >
+                            <div class="main_section_COU_Header row" ng-if="(VendorOrderModel.VendorOrderHeader.Status == 'Open' || VendorOrderModel.VendorOrderHeader.Status == 'Locked') && VendorOrderModel.TotalRequiredForStocks != 0">
+                                <p class="actionRow T2">
+                                    <span class="sectionText">{{ 'Stock_Excess' | translate }}</span>
+                                    <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                    <!-- ********* -->
+                                    <!-- <div class="dropdown custom-cog-dropdown">
+                                                         <button class="btn btn-default dropdown-toggle custom-cog-button" style="margin-right: 7px;" type="button" id="menu1" data-toggle="dropdown">
+                                                            <i class="fa   fa-cog Orange Customtool"  data-toggle=""> </i></button>
+                                                            <ul class="dropdown-menu custom-cog-dropdown-menu" role="menu" aria-labelledby="menu1">
+                                                              <li role="presentation"><a role="menuitem itemtab" tabindex="-1" ng-click="VendorOrderModel.groupAllVOLineItemByRequiredType(false)">Add All Items</a></li>
+                                                             
+                                                            </ul>
+                                                      </div> -->
+                                                    
+                                    <!-- ********* -->
+                                    <span class="ActionIcons">
+                                    <!-- <i class="fa fa-th"></i> -->
+                                    <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorOrderModel.helpText['StockExcess']}}"></i> 
+                                    </span> 
+                                </p>
+                             </div>
+                             <div class="gid_container T6" id="VO_Order_block_grid_container_Empty_Div" 
+                                    ng-show="VendorOrderModel.StockExcessList == undefined || VendorOrderModel.StockExcessList.length == 0" style="padding-left: 44px;">
+                                    {{ 'Label_No_Records_Found' | translate }}
+                                </div>
+                            <div ng-show="VendorOrderModel.StockExcessList != undefined && VendorOrderModel.StockExcessList.length != 0"> 
+                                  <div class="gid_container_Customer" id="VO_Order_block_grid_container">
+                                    <table class="table" id="VendorOrderItem_Grid">
+                                            
+                                            
+                                            <col width="2%"/>
+                                                    <col width="4%"/>
+                                                    <col width="22%"/>
+                                                    <col width="11%"/>
+                                                    <col width="11%"/>
+                                                    <col width="11%"/>
+                                                    <col width="11%"/>
+                                                    <col width="11%"/>
+                                                    <col width="17%"/>
+                                                    <col width="1%"/>
+                                            
+                                            <tr  class="tableHeader T3 C2">
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th style="cursor: pointer;" ng-click="VendorOrderModel.stocksPageSortControlsAction();">
+                                                            <i class="fa fa-sort-asc" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'"/>
+                                                            <i class="fa fa-sort-desc" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'"/>
+                                                            <i class="fa fa-sort" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == ''"/>
+                                                            {{ 'Part_Object_Item_Description' | translate }}
+                                                        </th>
+                                                        <th class=" text-center">{{ 'Label_Need' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Pkg_Qty' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Order_Lots' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Excess' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Label_Cost' | translate }}</th>
+                                                        <th class=" text-center">{{ 'Stock_Excess' | translate }} {{ 'Label_Total' | translate }}</th>
+                                                        <th></th>
+                                                    </tr>
+                                            <tbody ng-repeat="stockExcess in VendorOrderModel.StockExcessList" >
+                                                        <tr class="clickable_row" id="rowGroup{{$index}}" rel="vogroup_item_row{{$index}}_edit" ng-class-even="'C2'">
+                                                            <!-- <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" class="group_exapnded_tr">
+                                                                <i class="fa fa-wrench"></i>
+                                                            </td > -->
+                                                            <td style="background:#fff"></td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" >
+                                                                <a class="edite_btn" rel="row1_edit">
+                                                                    <!-- <i class="fa fa-list  Plr5 FC7 F18 first_icon"></i> --> 
+                                                                    <img class="first_img" src="{!Application_Images}/sparkplug.png"/>
+                                                                    <!-- <div class="sprite sparkplug_inGrids pull-left handCursor"></div> -->
+                                                                </a>
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}" class="T7 ">
+                                                                 <div>
+                                                                    <!-- <a ng-mouseover="VendorOrderModel.showPartPopUp($event, stockExcess.PartId);" ng-mouseleave="VendorOrderModel.hidePartPopUp();"> 
+                                                                        {{ stockExcess.ItemDesc }} 
+                                                                    </a> -->
+                                                                    <a ng-mouseover="VendorOrderModel.openpartpopup($event, stockExcess.PartId);" ng-mouseleave="VendorOrderModel.hidePartPopUp();"> 
+                                                                        {{ stockExcess.ItemDesc }} 
+                                                                    </a>
+                                                                 </div>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_3_{{$index}}" class="T7 text-center">
+                                                                {{ stockExcess.Need }}
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7  text-center">
+                                                             {{stockExcess.PackageQty }}</td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}" class="T7  text-center">
+                                                                 {{ stockExcess.OrderLot }}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}" class="T7  text-center">
+                                                               <div><a ng-mouseover="VendorOrderModel.showNeededForPopUp($event, stockExcess.VOLIGroupId, VendorOrderModel.voHeaderId);" ng-mouseleave="VendorOrderModel.hideNeededForPopUp();">
+                                                                        {{ stockExcess.ExcessQty }}
+                                                                    </a></div>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" class="T7  text-center">
+                                                                {{ stockExcess.Cost | currency}}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_8_{{$index}}" class="T7  text-center">
+                                                                {{ stockExcess.Total | currency}}
+                                                            </td>
+                                                            <td style="background:#fff"></td>
+                                                        </tr>
+                                                        </tbody>
+                                        </table>
+                                  </div>
+                                   <!-- Pagination container -->
+                               <!--  <div class="pagination_container" id="Vendor_Order_Items_Pagination" ng-if="VendorOrderModel.TotalRequiredForStocks != undefined" >
+                   
+                                            <list-pagination id-value = "Vendor_Order_Items_Pagination_" 
+                                                             total-records-length = "VendorOrderModel.TotalRequiredForStocks"
+                                                             page-size = "VendorOrderModel.stocksPageSortAttrsJSON.PageSize"
+                                                             current-page = "VendorOrderModel.stocksPageSortAttrsJSON.CurrentPage"
+                                                             changes-count = "VendorOrderModel.stocksPageSortAttrsJSON.ChangesCount"
+                                                             pagination-control-method = "VendorOrderModel.RequiredByStock_paginationControlsAction" />
+                                        </div>
+                        -->
+                             </div>
+                        </div>
+                        <!-- END: STOCK EXCESS section -->
+                    </div>
+                </div>
+              
+                <!-- ******************************************************* body for stock Excess section ******************************************************* -->
+                
+                <!-- ******************************************************* header for Receiving history section ******************************************************* -->
+                <div class="sectionHeader row" ng-show="VendorOrderModel.VRHistoryList != undefined && VendorOrderModel.VRHistoryList.length != 0">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!VendorOrderModel.displaySections.ReceivingHistory"
+                            ng-Click="VendorOrderModel.showSection('ReceivingHistory')"> <!-- VendorOrderModel.displaySections.ReceivingHistory = true -->
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="VendorOrderModel.displaySections.ReceivingHistory"
+                            ng-Click="VendorOrderModel.showSection('ReceivingHistory')"> <!-- VendorOrderModel.displaySections.ReceivingHistory = false -->
+                        </i> 
+                        <span class="divider">|</span>
+                        <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Receiving_History}} {{ 'Receiving_History' | translate }}</span>
+                        </span>
+                        <span class="ActionIcons pull-left ">
+                            <div class="dropdown selectDropdown checkboxDropdown">
+                                  <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                  <span class="caret"></span></button> -->
+                                  <!-- <ul class="dropdown-menu custom-cog-dropdown-menu"
+                                      role="menu" aria-labelledby="menu1">
+                                      <li role="presentation">
+                                        <a role="menuitem itemtab"
+                                           tabindex="-1"
+                                           ng-click="VendorOrderModel.groupAllVOLineItemByRequiredType(true)">
+                                           Add All Items
+                                        </a>
+                                      </li>
+        
+                                  </ul> -->
+                            </div>
+                            
+                        </span> 
+                    </div>
+                
+                    </div>
+                </div>
+                <!-- ******************************************************* header for Receiving history section ******************************************************* -->
+                
+                <!-- ******************************************************* body for Receiving history section ******************************************************* -->
+                <div id="ReceivingHistorySection" class="ReceivingHistory_Container" ng-show="VendorOrderModel.VRHistoryList != undefined && VendorOrderModel.VRHistoryList.length != 0">
+                    <div ng-show="VendorOrderModel.displaySections.ReceivingHistory">
+                    
+                        <!-- START: RECEIVING HISTORY section -->
+                        <div class="main_section_COU row" id="ReceivingHistory_General">
+                            <div class="main_section_COU_Header actionRowForOrder row" >
+                                <!--  <p class="actionRow T2"> -->
+                                <div class="actionRow " > 
+                                <span class="sectionText">{{ 'Items' | translate }}
+                                    <!-- <i class="fa fa-plus cou_plus_icon  ng-scope" id="Order_Block_heading_panel_left_sub_h1_text_plus_icon" ng-click="VendorOrderModel.RelatedList_addAction($event, 'Merchandise')" ></i> -->
+                                </span>
+                                <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                <span class="ActionIcons" >
+                                        <div class="dropdown selectDropdown checkboxDropdown">
+                                            <!-- <button class="btn dropdown-toggle" data-toggle="dropdown" type="button" aria-expanded="false">{{ 'Label_Actions' | translate }}
+                                            <span class="caret"></span></button> -->
+                                            <!-- <span class="actionText T2 dropdown-toggle" data-toggle="dropdown" aria-expanded="false">{{ 'Label_Actions' | translate }}
+                                            </span>
+                                            <ul class="dropdown-menu"> ng-if = "VendorOrderModel.isDeleteServiceOrder($index)"
+                                                <li>
+                                                    <a ng-click="VendorOrderModel.groupAllVOLineItemByRequiredType(true)">
+                                                        {{ 'Label_Add_All_Item' | translate }}
+                                                    </a>
+                                                </li>
+                                            </ul> -->
+                                        </div>
+                                    </span>
+                                <span class="ActionIcons">
+                                <!-- <i class="fa fa-th"></i> -->
+                                <i class="fa fa-question-circle" data-toggle="tooltip" title="Items"></i>  <!--  title="{{VendorOrderModel.helpText['Items']}}" -->
+                                </span> 
+                                <!-- <div class="dropdown custom-cog-dropdown">
+                                                     <button class="btn btn-default dropdown-toggle custom-cog-button" style="margin-right: 7px;" type="button" id="menu1" data-toggle="dropdown">
+                                                        <i class="fa   fa-cog Orange Customtool"  data-toggle=""> </i></button>
+                                                        <ul class="dropdown-menu custom-cog-dropdown-menu" role="menu" aria-labelledby="menu1">
+                                                          <li role="presentation"><a role="menuitem itemtab" tabindex="-1" ng-click="VendorOrderModel.groupAllVOLineItemByRequiredType(false)">Add All Items</a></li>
+                                                         
+                                                        </ul>
+                                                  </div> -->
+                                                 
+                            <!-- </p> -->
+                            </div>
+                            
+                            </div>
+                            <div class="gid_container T6" id="VO_Order_block_grid_container_Empty_Div" 
+                                    ng-show="VendorOrderModel.VRHistoryList == undefined || VendorOrderModel.VRHistoryList.length == 0" style="padding-left: 44px;">
+                                    {{ 'Label_No_Records_Found' | translate }}
+                                </div>
+                            <div ng-show="VendorOrderModel.VRHistoryList != undefined && VendorOrderModel.VRHistoryList.length != 0"> 
+                                <div class="gid_container_Customer" id="VO_Order_block_grid_container">
+                                            <table class="table" id="VendorOrderItem_Grid">
+                                           
+                                            <col width="2%"  />
+                                            <col width="4%"  />
+                                                    <col width="22%" />
+                                                    <col width="15%"  />
+                                                    <col width="15%" />
+                                                    <col width="14%" />
+                                                    <col width="14%"  />
+                                                    <col width="13%" />
+                                                    <col width="1%"  />
+                                            <tr  class="tableHeader T3 C2">
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th style="cursor: pointer;" ng-click="VendorOrderModel.stocksPageSortControlsAction();">
+                                                            <i class="fa fa-sort-asc" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == 'ASC'"/>
+                                                            <i class="fa fa-sort-desc" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == 'DESC'"/>
+                                                            <i class="fa fa-sort" ng-show="VendorOrderModel.stocksPageSortAttrsJSON.Sorting[0].SortDirection == ''"/>
+                                                            {{ 'Label_Packaging_Slip' | translate }}
+                                                        </th>
+                                                        <th> {{ 'Label_Received' | translate }}</th>
+                                                        <th class=" text-center"> {{ 'Label_Line' | translate }} {{ 'Items' | translate }}</th>
+                                                        <th class=" text-center"> {{ 'Label_Total' | translate }} {{ 'Label_Cost' | translate }}</th>
+                                                        <th>{{ 'Label_Received' | translate }} {{ 'Label_By' | translate }}</th>
+                                                        <th>{{ 'Label_Status' | translate }}</th>
+                                                        <th></th>
+                                                    </tr>
+                                            <tbody ng-repeat="VRHistory in VendorOrderModel.VRHistoryList" >
+                                                        <tr class="clickable_row" id="rowGroup{{$index}}" rel="vogroup_item_row{{$index}}_edit" ng-class-even="'C2'">
+                                                            <!-- <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" class="group_exapnded_tr">
+                                                                <i class="fa fa-wrench"></i>
+                                                            </td > -->
+                                                            <td style="background:#fff"></td> 
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_1_{{$index}}" >
+                                                                <a class="edite_btn" rel="row1_edit">
+                                                                    <i class="fa fa-list  Plr5 FC7 F18 first_icon"></i> 
+                                                                </a>
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_2_{{$index}}" class="T7 ">
+                                                                <a ui-sref="VendorOrderReceiving({Id: VRHistory['VRHeaderId']})">
+                                                                {{VRHistory.PackingSlipNumber}}</a>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_3_{{$index}}" class="T7 ">
+                                                                {{VRHistory.ReceivedDate}}
+                                                            </td>
+                                                            <td id="VO_Group_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7 text-center ">
+                                                             {{VRHistory.TotalLineItems}}</td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_5_{{$index}}" class="T7 text-center">
+                                                                {{VRHistory.TotalCost | currency}}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_6_{{$index}}" class="T7 ">
+                                                               {{VRHistory.ReceivedByName}}
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" class="T7" ng-if="VRHistory.VIHeaderId != null && VRHistory.VIHeaderId != ''">
+                                                                <a ui-sref="VendorOrderInvoicing({Id: VRHistory['VIHeaderId']})">
+                                                                {{VRHistory.Status}}</a>
+                                                            </td>
+                                                            <td  id="VO_Group_block_grid_container_tbody_tr_td_7_{{$index}}" class="T7" ng-if="(VRHistory.VIHeaderId == null) || (VRHistory.VIHeaderId == '')">
+                                                                {{VRHistory.Status}}
+                                                            </td>
+                                                            <td style="background:#fff"></td>
+                                                        </tr>
+                                                         </tbody>
+                                        </table>
+                                        </div>
+                                          <!-- Pagination container -->
+                             <!--    <div class="pagination_container" id="Vendor_Order_Items_Pagination" ng-if="VendorOrderModel.TotalRequiredForStocks != undefined" >
+                 
+                                            <list-pagination id-value = "Vendor_Order_Items_Pagination_" 
+                                                             total-records-length = "VendorOrderModel.TotalRequiredForStocks"
+                                                             page-size = "VendorOrderModel.stocksPageSortAttrsJSON.PageSize"
+                                                             current-page = "VendorOrderModel.stocksPageSortAttrsJSON.CurrentPage"
+                                                             changes-count = "VendorOrderModel.stocksPageSortAttrsJSON.ChangesCount"
+                                                             pagination-control-method = "VendorOrderModel.RequiredByStock_paginationControlsAction" />
+                                        </div>
+                        -->
+                            </div>
+                        </div>
+                        <!-- END : RECEIVING HISTORY section -->
+                    </div>
+                </div>
+               
+                <!-- ******************************************************* body for Receiving history section ******************************************************* -->
+                
+                <!-- ******************************************************* header for Finalize section ******************************************************* -->
+                <div class="sectionHeader row" ng-show="VendorOrderModel.EnableFinaliseOrder()">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                        <span class="headerlabel">
+                        <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                            ng-show="!VendorOrderModel.displaySections.Finalize"
+                            ng-class="{'defaultCursor': !GroupOnlyPermissions['Vendor order']['view']}"
+                            ng-Click="VendorOrderModel.showSection('Finalize')"> <!-- VendorOrderModel.displaySections.Finalize = true -->
+                        </i> 
+                        <i class="fa fa-angle-down" style="width:10px;"
+                            ng-show="VendorOrderModel.displaySections.Finalize"
+                            ng-Click="VendorOrderModel.showSection('Finalize')"> <!-- VendorOrderModel.displaySections.Finalize = false -->
+                        </i> 
+                        <span class="divider">|</span>
+                        <!-- <span class = "headdingFirstText">{{VendorOrderModel.LeftSideHeadingLables.Finalize}}</span> -->
+                        <span class="T2">{{VendorOrderModel.LeftSideHeadingLables.Finalize}} {{ 'Finalize' | translate }}</span>
+                        </span>
+                        <span class="ActionIcons pull-left ">
+                               <div class="dropdown selectDropdown checkboxDropdown">
+                                  <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                  <span class="caret"></span></button> -->
+                            </div>
+                        </span> 
+                    </div>
+                    
+                    </div>
+                </div>
+                <!-- ******************************************************* header for Finalize section ******************************************************* -->
+                
+                <!-- ******************************************************* body for Finalize section ******************************************************* -->
+                <div id="FinalizeSection" class="Finalize_Container" ng-show="VendorOrderModel.displaySections.Finalize && VendorOrderModel.EnableFinaliseOrder()">
+                    <div ng-show="VendorOrderModel.displaySections.Finalize">
+                        <!-- START: FINALIZE section -->
+                        <div class="main_section_COU row" id="FinalizeSection_General">
+                            <div class="main_section_COU_Header row" >
+                                <p class="actionRow T2">
+                                    <span class="sectionText">{{ 'Finalize' | translate }}</span>
+                                    <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                    <span class="ActionIcons">
+                                    <!-- <i class="fa fa-th"></i> -->
+                                    <i class="fa fa-question-circle" data-toggle="tooltip" title="{{VendorOrderModel.helpText['Finalize']}}"></i>
+                                    </span> 
+                                </p> 
+                            </div>
+                            <div class="col-lg-3 col-md-3 col-lg-offset-9 col-md-offset-9 finalizeInvoiceBtnSection">  
+                                       <button id="CO_active_invoice_not_Invoiced_gid_container_finalize_btn" 
+                                           class="btn T4 addmoreinfoBtn text-uppercase" ng-class="{'active_btn' : VendorOrderModel.EnableFinaliseOrder() && !VendorOrderModel.VendorOrderHeader.disableFinalizeOrderBtn, 'C5': !VendorOrderModel.EnableFinaliseOrder() || VendorOrderModel.VendorOrderHeader.disableFinalizeOrderBtn}"  
+                                               ng-disabled="!VendorOrderModel.EnableFinaliseOrder() || VendorOrderModel.VendorOrderHeader.disableFinalizeOrderBtn ||
+                                                            !GroupOnlyPermissions['Vendor order']['create/modify']"
+                                               style="margin: auto; width: 80%;" ng-click="VendorOrderModel.finalizeOrder()">{{ 'Label_Submit' | translate }} {{ 'Order' | translate }}
+
+                                               <i class="fa fa-angle-right" style="font-size: 15px; margin-left: 5px;"></i> <!-- VendorOrderModel.VendorOrderHeader.disableFinalizeOrderBtn Added by richa 21/01/2017 for disabling Finalize Order Button after click -->
+                                       </button>
+       
+                                   </div>  
+                        </div>
+                        <!-- END: FINALIZE section -->
+                    </div>
+                </div>
+                
+               <!-- For : You haven't added anything yet! -->
+            </div>
+            <!-- For : You haven't added anything yet! -->
+                <!-- ******************************************************* body for Finalize section ******************************************************* -->
+           <div style="height:600px; background: #E6EBEC; margin: 0 -15px;" ></div>
+            
+        </div>
+       </div> 
+     </div>
+     <!-- Start: Export Confirmation Modal -->
+     <div ng-show="VendorOrderModel.showExportConfirmationModal">
+        <modal-dialog id="{{VendorOrderModel.ConfirmationModel.id}}" modal-css="VendorOrderModel.ConfirmationModel.modalCss" hide-close-icon="VendorOrderModel.ConfirmationModel.hideCloseIcon" show-dialog="VendorOrderModel.ConfirmationModel.showDialog" heading-text="VendorOrderModel.ConfirmationModel.headingText" message-text="VendorOrderModel.ConfirmationModel.messageText" helper-text="VendorOrderModel.ConfirmationModel.helperText" 
+            warning-text="VendorOrderModel.ConfirmationModel.warningText" ok-btn-label="VendorOrderModel.ConfirmationModel.okBtnLabel" cancel-btn-label="VendorOrderModel.ConfirmationModel.cancelBtnLabel" is-alert="VendorOrderModel.ConfirmationModel.isAlert" payload="VendorOrderModel.ConfirmationModel.payload" 
+            ok-btn-css="VendorOrderModel.ConfirmationModel.okBtnCss" ok-btn-func="VendorOrderModel.ConfirmationModel.okBtnFunc({payload: VendorOrderModel.ConfirmationModel.payload})" cancel-btn-func="VendorOrderModel.ConfirmationModel.cancelBtnFunc()">
+            <div ng-if="(VendorOrderModel.ConfirmationModel.confirmationSource == 'VendorOrderExport')" class="searchInputArea export-dropdown" ng-class = "{'showingOverlay' : VendorOrderModel.selectExportTypeClicked}">
+                 <input  type="text" id="ExportType" class="searchInput" 
+                 autocomplete="off" ng-focus = "VendorOrderModel.selectExportTypeClicked = true" ng-blur="VendorOrderModel.selectExportTypeClicked = false"
+                 ng-model="VendorOrderModel.VendorOrderExportType.Name" readonly="readonly"/> 
+             <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow dfDownArrow handCursor" ng-click = "VendorOrderModel.setFocusOnInput('ExportType')"></i>
+             <div class="searchResultOverlay" id="ExportTypeDropDownDiv">
+                 <ul>
+                     <li ng-repeat="(key, value) in VendorOrderModel.ExportTypeMap | orderBy:key"
+                         ng-mousedown="VendorOrderModel.VendorOrderExportType = value"
+                         id="ExportType{{$index}}">
+                         <div class="fullName text-capitalize">{{value.Name}}</div>
+                     </li>  
+                    </ul> 
+             </div>  
+            </div>
+        </modal-dialog>
+    </div>
+    <!-- End: Export Confirmation Modal -->
+    </div>
+    <div class="LoadingDiv" ng-show="VendorOrderModel.isLoading">
+        <div class="loadingIconContainer">
+            <c:BPLoading />
+        </div>
+    </div>
+</apex:page>

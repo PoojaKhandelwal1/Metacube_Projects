@@ -1,0 +1,210 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"
+    controller="GlobalController">
+    <div class="fadein viewA" ui-view="AddAttachment" autoscroll='false'></div>
+    <div class="content bp-wrapper-container">
+        <div class="bp-subHeader bp-techScheduler-subHeader">
+            <div class="row container bp-top-header bp-tech-navigation-bar PB0">
+                <section class="bp-breadcrumb-container">
+                    <nav class="bp-breadcrumb-nav">
+                        <ul>
+                            <li><a ui-sref="homePage">Home</a></li>
+                            <li> <a ui-sref="UserSetting">{{'System_Settings' | translate}}</a></li>
+                            <li> <a class="bp-breadcrumb-active">Form repository</a></li>
+                        </ul>
+                    </nav>
+                </section>
+                <h1  class="col-xs-6  bp-hasEyebrow M0 P0">Form repository</h1>
+                <div class = "col-xs-11  bp-blue-navBar P0">
+                    <ul class=" nav nav-tabs bp-sub-header-menu-item bp-font-14" >
+                        <li  class="bp-active-nav" ng-click = "M_FormRepository.isSelectedNav = 'Active';F_FormRepository.resetAndLoadActiveTabData()">
+                            <a class="bp-font-11 PL0" ng-class="{'bp-active-group' : M_FormRepository.isSelectedNav == 'Active'}"> Active Forms</a>
+                        </li>
+                        <li  class="bp-active-nav" ng-click = "M_FormRepository.isSelectedNav = 'Available';F_FormRepository.resetAndLoadActiveTabData()">
+                            <a class="bp-font-11" ng-class="{'bp-active-group' : M_FormRepository.isSelectedNav == 'Available'}"> Available forms</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="main-container row container M0">
+            <div ng-if="M_FormRepository.isSelectedNav == 'Active'">
+                <h2 class="heading bp-bold-font bp-font-16 line-height-large bp-dark-grey1-font">Use this section to upload and manage your business forms.</h2>
+                <div class="normal-text bp-font-14 line-height-xlarge bp-dark-grey1-font" ng-if = "F_FormRepository.showFormAvailable()">
+                    <p class="allign-text-form">Looks like you haven't added any forms yet..</p> 
+                    <p class="allign-text-form">You can choose forms in the <a ng-click = "M_FormRepository.isSelectedNav = 'Available';F_FormRepository.resetAndLoadActiveTabData()" class="bp-blue-font available-form">available forms</a>tab or upload your own.</p>  
+                </div>
+                <!-- <button data-toggle="modal" data-target="#upload-form-modal-window"  class = "bp-btn bp-btn-normal text-uppercase bp-font-11 line-height-small upload-form-but"> -->
+                <droplet class ="" ng-model="FileUpload.interface">
+                    <div class="browse_but">
+                        <droplet-upload-single ng-model="FileUpload.interface" ng-click="F_FormRepository.setDefaultAddAttachmentModalData()">
+                        </droplet-upload-single> 
+                         <button class="bp-btn bp-btn-normal text-uppercase bp-font-11 line-height-small upload-form-but">upload a form</button>
+                     </div>
+                </droplet>
+                                
+                <!-- <button ng-click="F_FormRepository.openUploadFormAttachmentModal()" class = "bp-btn bp-btn-normal text-uppercase bp-font-11 line-height-small upload-form-but">
+                upload a form
+                </button> -->
+                <div class="accordion-container col-xs-12 P0" ng-class = "{'no-border': F_FormRepository.showFormAvailable()}">
+                    <div class="bp-accordion-entry expanded" ng-if = "value.length > 0" ng-class = "{'bp-collapse' : M_FormRepository.expandedSectionName != '{{M_FormRepository.sectionNameToSectionKey[key]}}'}" ng-repeat = "(key, value) in M_FormRepository.ActiveFormList" ng-init="ActiveFormIndex = $index">
+                        <div class="bp-accordion-header bp-cursor-pointer">
+                            <div class="bp-accordion-toggle"  ng-if = "M_FormRepository.expandedSectionName != M_FormRepository.sectionNameToSectionKey[key]" ng-click = "F_FormRepository.expandOrCollapseSection(M_FormRepository.sectionNameToSectionKey[key]+'SectionId',M_FormRepository.sectionNameToSectionKey[key])">
+                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue"></i>
+                            </div>
+                            <div class="bp-accordion-toggle" ng-if = "M_FormRepository.expandedSectionName == M_FormRepository.sectionNameToSectionKey[key]" ng-click = "F_FormRepository.expandOrCollapseSection(M_FormRepository.sectionNameToSectionKey[key]+'SectionId',M_FormRepository.sectionNameToSectionKey[key])">
+                                <i  ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="bp-blue"></i>
+                            </div>
+                            <div class="bp-accordion-header-left" ng-click = "F_FormRepository.expandOrCollapseSection(M_FormRepository.sectionNameToSectionKey[key]+'SectionId',M_FormRepository.sectionNameToSectionKey[key])">
+                                <div class="bp-accordion-name bp-dark-grey1-font line-height-large bp-font-16 bp-bold-font">
+                                    {{key}} forms
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bp-accordion-detail bp-collapse-div-transition" id="{{M_FormRepository.sectionNameToSectionKey[key]}}SectionId" 
+                            ng-class="{'bp-expand-div-transition': M_FormRepository.expandedSectionName == '{{M_FormRepository.sectionNameToSectionKey[key]}}'}">
+                            <div class="expandalble-container">
+                                <div ng-repeat="recValue in value " class="mb-small form-card-container" ng-click="F_FormRepository.openModalWindowEditMode(recValue)">
+                                    <div class="form-desc-container bp-cursor-pointer">
+                                        <a class="bp-blue-font bp-bold-font bp-font-16 line-height-medium">
+                                        
+                                            <i ng-if="recValue.IsManualUpload" ng-include="'{!Application_Images}/Icons/user.svg'"  class="pull-left manualUpload bp-blue3384ff bp-pointer-cursor"></i>
+                                            <span ng-class = "{'manual-upload-icon-desc' : recValue.IsManualUpload}">{{recValue.FormName}}</span></a>
+                                        <div class="remove-icon-container" ng-mouseenter="M_FormRepository.isRemoveHovered = true" ng-mouseleave="M_FormRepository.isRemoveHovered = false"
+                                             ng-class="{'remove-icon-display': M_FormRepository.isRemoveHovered}">
+                                            <span class="pull-right" data-toggle="tooltip" title="Delete" id="">
+                                                <i ng-if="recValue.IsManualUpload" ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="icon_fill_blue bp-pointer-cursor"
+                                                    ng-click="F_FormRepository.deleteForm(recValue.Id, $event)"></i>
+                                                <i ng-if="!recValue.IsManualUpload" ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="icon_fill_blue bp-pointer-cursor"
+                                                    ng-click="F_FormRepository.dactivateForm(key, $index, $event)"></i>
+                                            </span>
+                                        </div>
+                                        <p class="form-desc bp-dark-grey1-font line-height-large bp-font-14">{{recValue.Description}}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div ng-if="M_FormRepository.isSelectedNav == 'Available'">
+                <h2 class="heading bp-bold-font bp-font-16 line-height-large bp-dark-grey1-font"> Use this section to select from our library of forms.</h2>
+                <!-- <div class="searchFrom col-xs-12 col-sm-9 col-md-7 P0">
+                    <i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797 search-icon"></i>
+                    <input class = "form-search-input bp-input-text" type="text" placeholder="{{ 'Placeholder_search_group' | translate }}"/>
+                </div> -->
+                <div class="accordion-container col-xs-12 P0" ng-class = "{'no-border': F_FormRepository.showFormAvailable()}">
+                    <div class="bp-accordion-entry expanded" ng-class = "{'bp-collapse' : M_FormRepository.expandedSectionName != '{{M_FormRepository.sectionNameToSectionKey[key]}}'}" ng-repeat = "(key, value) in M_FormRepository.AvailableFormList">
+                        <div class="bp-accordion-header bp-cursor-pointer" ng-class="{'no-border' : {{$index}} == 0}">
+                            <div class="bp-accordion-toggle"  ng-if = "M_FormRepository.expandedSectionName != M_FormRepository.sectionNameToSectionKey[key]" ng-click = "F_FormRepository.expandOrCollapseSection(M_FormRepository.sectionNameToSectionKey[key]+'SectionId',M_FormRepository.sectionNameToSectionKey[key])">
+                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue"></i>
+                            </div>
+                            <div class="bp-accordion-toggle" ng-if = "M_FormRepository.expandedSectionName == M_FormRepository.sectionNameToSectionKey[key]" ng-click = "F_FormRepository.expandOrCollapseSection(M_FormRepository.sectionNameToSectionKey[key]+'SectionId',M_FormRepository.sectionNameToSectionKey[key])">
+                                <i  ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="bp-blue"></i>
+                            </div>
+                            <div class="bp-accordion-header-left" ng-click = "F_FormRepository.expandOrCollapseSection(M_FormRepository.sectionNameToSectionKey[key]+'SectionId',M_FormRepository.sectionNameToSectionKey[key])">
+                                <div class="bp-accordion-name bp-dark-grey1-font line-height-large bp-font-16 bp-bold-font">
+                                    {{key}} forms
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bp-accordion-detail bp-collapse-div-transition" id="{{M_FormRepository.sectionNameToSectionKey[key]}}SectionId" 
+                            ng-class="{'bp-expand-div-transition': M_FormRepository.expandedSectionName == '{{M_FormRepository.sectionNameToSectionKey[key]}}'}">
+                            <div class="expandalble-container">
+                                <div ng-repeat="recValue in value" class="mb-small" ng-class="{'selected-form':recValue.isSelected || recValue.IsActive}"> 
+                                    <div class="form-desc-container bp-cursor-pointer" >
+                                        <a class="bp-blue-font bp-bold-font bp-font-16 line-height-medium">{{recValue.FormName}}</a>
+                                        <p class="form-desc bp-dark-grey1-font line-height-large bp-font-14">{{recValue.Description}}</p>
+                                         <div class="select-icon" ng-if = "recValue.isSelected">
+                                            <i ng-include = "'{!Application_Images}/Icons/Checkmark-lrg.svg'" class="bp-blue bp-cursor-pointer"></i>
+                                        </div>
+                                        <div class="form-desc-overlay" ng-if = "!recValue.isSelected || recValue.IsActive">
+                                            <div class="overlay-button-container">
+                                                <button class="transparent-btn text-uppercase bp-font-12 line-height-normal bp-bold-font" ng-click="F_FormRepository.openModalWindowEditMode(recValue)">View</button>
+                                                <button class="bp-btn bp-btn-normal text-uppercase bp-font-12 line-height-normal select-btn" ng-if = "!recValue.isSelected && !recValue.IsActive" ng-click="F_FormRepository.selectedDeselectForm(key,$index)">select</button>
+                                                <button class="bp-btn bp-btn-normal text-uppercase bp-font-12 line-height-normal select-btn" ng-if = "recValue.IsActive" ng-click="F_FormRepository.dactivateForm(key, $index, $event)">deselect</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div ng-show = "value.length == 0" class="noAvailableForm">No available forms</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="LoadingDiv" ng-show="M_FormRepository.isLoading">
+            <div class="loadingIconContainer">
+                <c:BPLoading />
+            </div>
+        </div>
+        
+        <div id="upload-form-modal-window" class="modal fade modal-container upload-form-modal-window" role="dialog">
+            <div class="modal-dialog">
+                <!-- Modal content-->
+                <div class="modal-content col-xs-12 P0">
+                    <div class="modal-body">
+                       <header>
+                           <label class="line-height-xlarge H600 M0" ng-if="!M_FormRepository.formJson.Id">New upload</label>
+                         <i ng-if="M_FormRepository.formJson.IsManualUpload" ng-include="'{!Application_Images}/Icons/user.svg'"  class="pull-left manualUpload-dark-grey1 dark-grey1 bp-pointer-cursor"></i>
+                           <label class="line-height-xlarge H600 M0 ML6" ng-if="M_FormRepository.formJson.Id">{{M_FormRepository.formJson.FormName}}</label>
+                           <a ng-click="F_FormRepository.viewForm(M_FormRepository.formJson.FormAttachmentURL)" class="bp-blue-font pull-right H300 line-height-normal" ng-if="M_FormRepository.formJson.Id">View form</a>
+                       </header>
+                       <section class="section-container">
+                           <div ng-if = "M_FormRepository.formJson.IsManualUpload || !M_FormRepository.formJson.Id">
+                               <label class="H400">{{'Label_Name' | translate}}</label>
+                                <input class="H300 line-height-normal bp-input-text"   ng-class="{'bp-redborder' : M_FormRepository.formValidationModal['FormName']['isError'] == true}"
+                                
+                                ng-blur = "F_FormRepository.validateFieldWithKey('FormName')" ng-model="M_FormRepository.formJson.FormName"/>
+                           </div>
+                           <div>
+                               <label class="H400">{{'Label_Description' | translate}}</label>
+                                <textarea class="H301 line-height-normal bp-input-text" rows="1" placeholder="{{'Label_Description_repo_modal' | translate}}"
+                                 ng-class="{'bp-redborder' : M_FormRepository.formValidationModal['Description']['isError'] == true}"
+                                 ng-blur = "F_FormRepository.validateFieldWithKey('Description')" maxlength="50" ng-model="M_FormRepository.formJson.Description">
+                                </textarea>
+                                <span class="char-count">{{M_FormRepository.formJson.Description.length}}/50</span>
+                           </div>
+                           <div ng-if = "M_FormRepository.formJson.IsManualUpload || !M_FormRepository.formJson.Id">
+                           <label class="H400">{{'Where_does_this_form_gets_used' | translate}}</label>
+                               <div class = "bp-autocomplete-Wrapper autocomplete_v2">
+                                    <span class = "bp-autocomplete-image-icon">
+                                        <i ng-include = "'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue bp-cursor-pointer svg_width_2px" ng-click = "F_FormRepository.setFocus('form-group')"></i>
+                                    </span>
+                                                                    
+                                    <input type="text" id="form-group" class = "bp-autocomplete-input border-radius-none H301 bp-input-text" placeholder="{{'Please_select_a_section' | translate}}" ng-keyup="F_FormRepository.keyPressNavigationOnDropdownElements($event, 'form-group-dropdown-div', 'formGroup', M_FormRepository.formGroupList)" 
+                                        ng-model = "M_FormRepository.formJson.GroupingName" ng-focus="M_FormRepository.showFormGroupDropdown = true" 
+                                        ng-blur="M_FormRepository.showFormGroupDropdown = false; F_FormRepository.hideDropdown(); F_FormRepository.validateFieldWithKey('GroupingName')" 
+                                        ng-class="{'bp-redborder' : M_FormRepository.formValidationModal['GroupingName']['isError'] == true}" readonly="readonly"/>
+                                    <div class = "bp-autocomplete-dropdown-wrapper" ng-if="M_FormRepository.showFormGroupDropdown" id = "form-group-dropdown-div">
+                                        <ul>
+                                             <li ng-repeat = "formGroup in M_FormRepository.formGroupList" id = "formGroup_{{$index}}" ng-class="{'selected-row': $index == M_FormRepository.currentDropDownIndex}" ng-mousedown="F_FormRepository.selectFormGroup(formGroup)">
+                                                <div class="form-group-info">
+                                                    <span class="bp-autocomplete-text H301">{{formGroup.FormName}}</span>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                           </div>
+                           <div class="button-container">
+                               <button class="medium secondary" ng-click="F_FormRepository.saveFormData()" >Save</button>
+                                <button class="link-subtle H300" ng-click="F_FormRepository.hideUploadFormModalWindow()">Cancel</button>
+                           </div>
+                       </section>
+                   </div>
+               </div>
+           </div>
+    </div>
+        
+            <div class="fotter" ng-class="{'show-footer' : M_FormRepository.selectedFormCount > 0 && M_FormRepository.isSelectedNav == 'Available'}">
+                    <div class="footer-containt">
+                    <span class="H400 line-height-large">{{M_FormRepository.selectedFormCount}} selected</span>
+                        <div class="footer-button ">
+                            <button class="bp-normal-button primary text-uppercase"  ng-click="F_FormRepository.activateForm()"
+                               >Activate </button>   
+                        </div>
+                  </div>
+            </div>  
+    </div>
+</apex:page>

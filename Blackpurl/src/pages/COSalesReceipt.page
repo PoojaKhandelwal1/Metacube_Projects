@@ -1,0 +1,214 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" Controller="COSalesReceiptCtrl">
+    <html ng-app="COSRModule">
+        <head>
+            <title>Print COSalesReceipt</title>
+            <c:CSSFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <c:JsFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <apex:includeScript value="{!JSENCODE(Assests)}/Js/angular-ui-notification.min.js" />
+            <apex:includeScript value="{!JSENCODE(Assests)}/Js/angular-animate.min.js" />
+            <apex:stylesheet value="{!Application}/css/COSalesReceipt.css"/>  
+            <script type="text/javascript">
+                    var COSRModule = angular.module('COSRModule', ['ui-notification']);
+                      COSRModule.controller('COSRCtrl', function($scope, $window, $q, $timeout, $filter, Notification, COSRService) {
+                        $scope.M_COSR = $scope.M_COSR || {};
+                        $scope.F_COSR = $scope.F_COSR || {};
+                        $scope.F_COSR.LoadPrintPreview = function() {
+                            $scope.M_COSR.customerInvoiceId = location.search.split('id=')[1];
+                            if ($scope.M_COSR.customerInvoiceId == undefined) {
+                                $scope.M_COSR.customerInvoiceId = '';
+                            }
+                            COSRService.getCOInvoiceDetailsWithFinalize($scope.M_COSR.customerInvoiceId).then(function(successfulSearchResult) {
+                                console.log(successfulSearchResult);
+                                $scope.M_COSR.PrintReceiptData = successfulSearchResult;
+                            }, function(errorSearchResult) {
+                                responseData = errorSearchResult;
+                            });
+                        }
+                })
+                COSRModule.service("COSRService", function($q) {
+                    this.getCOInvoiceDetailsWithFinalize = function(InvoicePrintPreviewId) {
+                        InvoicePrintPreviewId = encodeString(InvoicePrintPreviewId);
+                        var deferred = $q.defer();
+                        // make AJAX request to the remote service
+                        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.COSalesReceiptCtrl.getCOInvoiceDetailsWithFinalize}', // method and parameter Changed by richa #2014 told by pooja
+                            InvoicePrintPreviewId, true,
+                            function(result, event) {
+                                if (event.type == 'exception') {
+                                    deferred.reject(JSON.parse('[]'));
+                                } else {
+                                    var InvoicePrintPreview = decodeString(result);
+                                    var find = '\'';
+                                    var re = new RegExp(find, 'g');
+                                    InvoicePrintPreview = InvoicePrintPreview.replace(re, '');
+                                    deferred.resolve(JSON.parse(InvoicePrintPreview));
+                                }
+                            }, {
+                                escape: false
+                            });
+                        return deferred.promise;
+                    }
+                });
+            </script>
+        </head>
+        <body ng-controller="COSRCtrl" ng-init="F_COSR.LoadPrintPreview()">
+            <div class="cosr-container" ng-show = "M_COSR.PrintReceiptData">
+                <div class="cosr-containt">
+                    <header>
+                        <label class="mb-small large-font">{{M_COSR.PrintReceiptData.CompanyInfo.CompanyName}}</label>
+                        <div class="mb-small">
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.CompanyInfo.Address1}}
+                            <span class="remove-white-space medium-font" ng-if = "M_COSR.PrintReceiptData.CompanyInfo.Address1 && M_COSR.PrintReceiptData.CompanyInfo.Address2">&nbsp;</span>
+                            </span>
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.CompanyInfo.Address2}}</span>
+                        </div>
+                         <div class="mb-small">
+                            <span class="text-capitalize medium-font">{{M_COSR.PrintReceiptData.CompanyInfo.City}}
+                            <span class="remove-white-space medium-font" ng-if = "M_COSR.PrintReceiptData.CompanyInfo.City && M_COSR.PrintReceiptData.CompanyInfo.State">&nbsp;</span>
+                            </span>
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.CompanyInfo.State}}
+                            <span class="remove-white-space medium-font" ng-if = "(M_COSR.PrintReceiptData.CompanyInfo.City || M_COSR.PrintReceiptData.CompanyInfo.State) && M_COSR.PrintReceiptData.CompanyInfo.PostalCode">&nbsp;</span>
+                            </span>
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.CompanyInfo.PostalCode}}</span>
+                        </div>
+                       <div class="mb-small">
+                            <span class="medium-font">{!$Label.Label_Phone}:</span>
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.CompanyInfo.FormattedBusinessPhone}}</span>
+                        </div>
+                         <div class="mb-small email-text">
+                            <span class="medium-font">{!$Label.Label_Email}: {{M_COSR.PrintReceiptData.CompanyInfo.BusinessEmail}}</span>
+                        </div>
+                        <div  class="mb-large">
+                            <span class="medium-font" ng-if = "M_COSR.PrintReceiptData.CompanyInfo.Country != 'Australia'">TaxID</span>
+                            <span class="medium-font" ng-if = "M_COSR.PrintReceiptData.CompanyInfo.Country == 'Australia'">ABN:</span>
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.CompanyInfo.TaxId}}</span>
+                        </div>
+                        <div class="cosr-date-container mb-large">
+                            <label class="mb-small medium-font">Sales Receipt</label>
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.COInvoice.InvoiceDate}}</span>
+                            <span class="medium-font">{{M_COSR.PrintReceiptData.COInvoice.InvoiceTime}}</span>
+                        </div>
+                    </header>
+                    <section class="mb-large">
+                        <div class="mb-small medium-font">
+                            <span class="invoice-heading">Invoice#</span>
+                            <span>{{M_COSR.PrintReceiptData.COInvoice.InvoiceNumber}}</span>
+                        </div>
+                        <div class="medium-font">
+                            <span class="invoice-heading">Clerk</span>
+                            <span>{{M_COSR.PrintReceiptData.Clerk}}</span>
+                        </div>
+                    </section>
+                    <section>
+                        <div>
+                            <p class="border-bottom heading small-font pb-small mb-small">Sold To</p>
+                            <p class="mb-small strong medium-font">{{M_COSR.PrintReceiptData.CustomerInfo.CustomerName}}</p>
+                            <div class="mb-small medium-font">
+                                <span>{{M_COSR.PrintReceiptData.CustomerInfo.CustomerAddress1}}
+                                <span class="remove-white-space" ng-if = "M_COSR.PrintReceiptData.CustomerInfo.CustomerAddress1 && M_COSR.PrintReceiptData.CustomerInfo.CustomerAddress2">&nbsp;</span>
+                                </span>
+                                <span>{{M_COSR.PrintReceiptData.CustomerInfo.CustomerAddress2}}</span>
+                            </div>
+                             <div class="mb-large medium-font">
+                                <span class="text-capitalize">{{M_COSR.PrintReceiptData.CustomerInfo.CustomerCity}}
+                                    <span class="remove-white-space" ng-if = "M_COSR.PrintReceiptData.CustomerInfo.CustomerCity && M_COSR.PrintReceiptData.CustomerInfo.CustomerState">&nbsp;</span>
+                                </span>
+                                <span>{{M_COSR.PrintReceiptData.CustomerInfo.CustomerState}}
+                                    <span class="remove-white-space" ng-if = "(M_COSR.PrintReceiptData.CustomerInfo.CustomerCity || M_COSR.PrintReceiptData.CustomerInfo.CustomerState) && M_COSR.PrintReceiptData.CustomerInfo.CustomerPostal">&nbsp;</span>
+                                </span>
+                                <span>{{M_COSR.PrintReceiptData.CustomerInfo.CustomerPostal}}</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="cosr-tbale">
+                        <table>
+                            <thead class="thead">
+                                <tr class="border-bottom">
+                                    <th class="small-font pb-small">ITEM</th>
+                                    <th class="small-font pb-small">QTY</th>
+                                    <th class="small-font pb-small">PRICE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat = "coInvoiceRec in M_COSR.PrintReceiptData.COInvoiceItemList">
+                                    <td class="medium-font">{{coInvoiceRec.ItemDesc}}</td>
+                                    <td class="medium-font">{{coInvoiceRec.Qty}}</td>
+                                    <td class="medium-font">{{coInvoiceRec.Price | currency}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+                    <section class="cost-total-container cosr-tbale mb-large">
+                        <table>
+                            <thead class="thead">
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            	<tr ng-if = "M_COSR.PrintReceiptData.ReceiptTotals.TotalLienPayout > 0">
+                                    <td></td>
+                                    <td class="medium-font">Lien Payout</td>
+                                    <td class="medium-font">{{M_COSR.PrintReceiptData.ReceiptTotals.TotalLienPayout | currency}}</td>
+                                </tr>
+                                <tr ng-if = "!M_COSR.PrintReceiptData.IsTaxIncludingPricing">
+                                    <td></td>
+                                    <td class="medium-font">Subtotal</td>
+                                    <td class="medium-font">{{M_COSR.PrintReceiptData.ReceiptTotals.SubTotal | currency}}</td>
+                                </tr>
+                                <tr ng-if = "M_COSR.PrintReceiptData.IsTaxIncludingPricing">
+                                    <td></td>
+                                   <td class="strong medium-font">TOTAL</td>
+                                    <td class="strong medium-font">{{M_COSR.PrintReceiptData.ReceiptTotals.Total | currency}}</td>
+                                </tr>
+                                 <tr ng-if = "M_COSR.PrintReceiptData.IsTaxIncludingPricing && M_COSR.PrintReceiptData.ReceiptTotals.SalesTaxList.length > 0">
+                                    <td></td>
+                                    <td class="medium-font">Includes:</td>
+                                    <td></td>
+                                </tr>
+                                 <tr ng-repeat = "salesTaxRec in M_COSR.PrintReceiptData.ReceiptTotals.SalesTaxList">
+                                    <td></td>
+                                    <td class="medium-font">{{salesTaxRec.TaxName}}</td>
+                                    <td class="medium-font">{{salesTaxRec.TaxAmount | currency}}</td>
+                                </tr>
+                                 <tr ng-if = "!M_COSR.PrintReceiptData.IsTaxIncludingPricing">
+                                    <td></td>
+                                    <td class="strong medium-font">TOTAL</td>
+                                    <td class="strong medium-font">{{M_COSR.PrintReceiptData.ReceiptTotals.Total | currency}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+                    
+                    <section class="cost-payment-container cosr-tbale mb-large" ng-if="M_COSR.PrintReceiptData.Transactions.length > 0">
+                        <table>
+                            <thead class="thead">
+                                <tr class="border-bottom">
+                                    <th class="small-font pb-small"><span>payments</span></th>
+                                    <th class="pb-small"></th>
+                                    <th class="pb-small"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat = "paymentRec in M_COSR.PrintReceiptData.Transactions">
+                                    <td></td>
+                                    <td class="medium-font">{{paymentRec.Method}}</td>
+                                    <td class="medium-font">{{paymentRec.Amount | currency}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
+                    <footer>
+                        <p class="small-font">{{M_COSR.PrintReceiptData.SalesReceiptWarrantyText}}</p>
+                        <div ng-if = "M_COSR.PrintReceiptData.IsSignatureLineforSalesReceipt">
+                            <span>Signature:</span>
+                            <span class="border-bottom signature-text"></span>
+                        </div>
+                    </footer>
+                    
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

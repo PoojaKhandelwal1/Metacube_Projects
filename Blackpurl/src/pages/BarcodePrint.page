@@ -1,0 +1,230 @@
+<apex:page standardStylesheets="false"  showChat="false" showHeader="false" sidebar="false" controller="BarcodePrintCtrl">
+    <html ng-app = "printBarCodepageModel">
+      
+    <head>
+        <title>Barcode Print</title>
+        <c:CSSFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+        <c:JsFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />  
+        <apex:includeScript value="{!JSENCODE(Assests)}/Js/JsBarCode.js" />
+        <apex:stylesheet value="{!Application}/css/Printcss.css"/>
+        <apex:includeScript value="{!JSENCODE(Assests)}/Js/jquery.dotdotdot.min.js" />
+         <apex:stylesheet value="{!Application}/css/PrintPreviewStyle.css"/>
+         <apex:stylesheet value="{!Application}/css/BarcodePrint.css"/>
+    <script>
+
+     var printBarCodepageModel = angular.module("printBarCodepageModel",[]);//, JsBarCode
+      printBarCodepageModel.controller("printBarCodePageCtrl", function($scope , $timeout, $window,PartInfoService) {
+             if($scope.printBarCodepageModel == undefined){   
+                $scope.printBarCodepageModel = {};
+            }
+             $scope.printBarCodepageModel.temp = [];
+             function getUrlVars() {
+                var vars = {};
+                var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m, key, value) {
+                    vars[key] = value;
+                });
+                return vars;
+            }
+           $scope.printBarCodepageModel.isFromVOR = getUrlVars()["PageName"];
+           console.log($scope.printBarCodepageModel.isFromVOR );
+           console.log("$scope.printBarCodepageModel.isFromVOR ");
+           $scope.printBarCodepageModel.printview = function(){
+                 $timeout($window.print, 0);
+            }
+            
+           
+           if($scope.printBarCodepageModel.isFromVOR == 'isFromVOR') {
+                 $scope.printBarCodepageModel.listPartForPrint = JSON.parse(decodeString(getUrlVars()["JSON"]));
+                 
+                  setTimeout(function() {
+                      for(var i=0;i<$scope.printBarCodepageModel.listPartForPrint.length;i++){
+                            if($scope.printBarCodepageModel.listPartForPrint[i].CustomerDetailList.length == 0 || $scope.printBarCodepageModel.listPartForPrint[i].NoOfStockLabels != 0){
+                                for(var j=0;j<$scope.printBarCodepageModel.getArrayBySize($scope.printBarCodepageModel.listPartForPrint[i].NoOfStockLabels).length;j++){
+                                    console.log("#barcode_"+i+'_' +j);
+                                    JsBarcode("#barcode_"+i+'_' +j, ''+$scope.printBarCodepageModel.listPartForPrint[i].PartId+'', {
+                                          width: 2,
+                                          height: 74,
+                                          fontSize: 20,
+                                          displayValue: true,
+                                          font: "Open Sans"
+                                        });
+                                    
+                                    //JsBarcode("#barcode_"+i+'_' +j, ''+$scope.printBarCodepageModel.listPartForPrint[i].PartDesc+'');
+                                }
+                            }if($scope.printBarCodepageModel.listPartForPrint[i].CustomerDetailList.length != 0){
+                            console.log("sadfjdsahj")
+                                for(var cust = 0 ;cust<$scope.printBarCodepageModel.listPartForPrint[i].CustomerDetailList.length;cust++){
+                                    console.log($scope.printBarCodepageModel.listPartForPrint[i].CustomerDetailList[cust].NoOfLabels);
+                                    for(var label = 0; label<$scope.printBarCodepageModel.getArrayBySize($scope.printBarCodepageModel.listPartForPrint[i].CustomerDetailList[cust].NoOfLabels).length;label++){
+                                        console.log("#barcode_"+i+'_' +cust + '_' + label);
+                                    JsBarcode("#barcode_"+i+'_' +cust + '_' + label, ''+$scope.printBarCodepageModel.listPartForPrint[i].PartId+'', {
+                                          width: 2,
+                                          height: 74,
+                                          fontSize: 20,
+                                          displayValue: true,
+                                          font: "Open Sans"
+                                        });
+                                    
+                                    //JsBarcode("#barcode_"+i+'_' +cust + '_' + label, ''+$scope.printBarCodepageModel.listPartForPrint[i].PartDesc+'');
+                                }
+                                }
+                            }
+                              
+                     } 
+              }, 1000);
+                 
+                $scope.printBarCodepageModel.getArrayBySize = function(num) {
+                        var dummyArray = new Array();
+                        if(typeof(num) == 'string'){
+                            num = parseInt(num);
+                        }
+                        
+                        for(i = 0; i < num; i++) {
+                            dummyArray.push(i);
+                            console.log(dummyArray);
+                        }
+                        return dummyArray;     
+            }
+            setTimeout(function() {
+                            $(".multilinedTextdec").dotdotdot()
+                      }, 10);
+                 
+           }else{
+                 if(getUrlVars()["id"] != undefined) {  
+                $scope.printBarCodepageModel.barcodeString = decodeURI(getUrlVars()["id"]);
+            }
+            if(getUrlVars()["qty"] != undefined){
+                $scope.printBarCodepageModel.qty = decodeURI(getUrlVars()["qty"]);
+            }
+            if(getUrlVars()["Id"] != undefined){
+                $scope.printBarCodepageModel.Id = decodeURI(getUrlVars()["Id"]);
+                console.log($scope.printBarCodepageModel.Id);
+            }
+               for(var i=0;i<$scope.printBarCodepageModel.qty;i++){
+                 $scope.printBarCodepageModel.temp.push(i);
+               }
+              setTimeout(function() {
+                 for(var i=0;i<$scope.printBarCodepageModel.qty;i++){
+                 JsBarcode("#barcode_"+i, ''+$scope.printBarCodepageModel.barcodeString+'', {
+                                          width: 2,
+                                          height: 74,
+                                          fontSize: 20,
+                                          displayValue: true,
+                                          font: "Open Sans"
+                                        });
+                 }
+              }, 1000);
+            
+            
+        
+                $scope.printBarCodepageModel.loadPartInfo = function(){
+                    var partId = $scope.printBarCodepageModel.Id;
+                    PartInfoService.getPartInfo(partId).then(function(partInfo) {
+                        console.log("partInfo");
+                        console.log(partInfo);
+                        $scope.printBarCodepageModel.partInfo = partInfo;
+                        setTimeout(function() {
+                            $(".multilinedTextdec").dotdotdot()
+                      }, 10);
+                    }, function(errorSearchResult) {
+                    });
+                }
+           }
+           
+                
+           });   
+            
+
+     printBarCodepageModel.service("PartInfoService", function ($q) {
+                    this.getPartInfo= function(partId)
+                    {   
+                        partId = encodeString(partId);
+
+                        var deferred = $q.defer();
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.BarcodePrintCtrl.getBarcodeInfo}',
+                                partId,
+
+                            function (result, event) {
+                               if (event.type == 'exception') {
+                                    deferred.reject(event.message);
+                                } else {
+                                    var partInfo = decodeString(result);
+                                    var find = '\'';
+
+
+
+
+                                    var re = new RegExp(find, 'g');
+                                    partInfo = partInfo.replace(re, '');
+                                    deferred.resolve(JSON.parse(partInfo));
+                                }
+                            }, {
+                                escape : true
+                        });
+                        return deferred.promise;
+                    }
+                    
+                  })  
+   
+      
+    </script>
+    </head>
+    
+             <body ng-controller="printBarCodePageCtrl">
+   <div class = "VORlabelPrint" ng-init="printBarCodepageModel.loadPartInfo()" ng-if = "printBarCodepageModel.isFromVOR == 'isFromPart'">
+        <div class = "VORlabelPrintWrapper">
+        <div  ng-repeat="i in printBarCodepageModel.temp track by $index" ng-init="parentIndex = $index"  class = "barcodeprintWrapper">
+                <p class = "P0 M0 T7 col-md-6 text-left CompanyName">{{printBarCodepageModel.partInfo.CompanyInfo.CompanyName}}</p>
+            <div class = "col-md-10 pull-left P0 M0  F20 multilinedText PartDescription">
+                <span class = "multilinedTextdec">{{printBarCodepageModel.partInfo.Description}}</span>
+                <span class = " text-right M0 T3 PR15 priceInfo RetailPrice" style="word-wrap: normal !important;">{{printBarCodepageModel.partInfo.RetailPrice | currency}}</span>
+                </div>
+             <div class = "text-center pull-left col-sm-12 P0 svgbarcode">
+            <svg id="barcode_{{$index}}"></svg>
+            </div>
+         </div>
+         </div>
+    </div>
+    
+    <div class = "VORlabelPrint"  ng-if = "printBarCodepageModel.isFromVOR == 'isFromVOR' && printBarCodepageModel.listPartForPrint.length > 0" >
+         <div  ng-repeat="partInfo in printBarCodepageModel.listPartForPrint track by $index" ng-init="parentIndex = $index" >
+            <div class = "VORlabelPrintWrapper" ng-if="partInfo.CustomerDetailList.length == 0 || printBarCodepageModel.listPartForPrint[i].NoOfStockLabels != 0">
+                <div ng-repeat="stocklabel in printBarCodepageModel.getArrayBySize(partInfo.NoOfStockLabels)" ng-init="childIndex = $index"  class = "barcodeprintWrapper">
+                    <p class = "P0 M0 T7 col-md-6 text-left CompanyName">{{partInfo.BusinessName}}</p>
+                    <div class = "col-md-10 pull-left P0 M0  F20 multilinedText PartDescription">
+                    <span class = "multilinedTextdec">{{partInfo.PartDesc}}</span>
+                    <span class = " text-right M0 T3 PR15 priceInfo RetailPrice">{{partInfo.RetailPrice | currency}}</span>
+                      
+                    </div>        
+                    <div class = "text-center pull-left col-sm-12 P0 svgbarcode">
+                    <svg id="barcode_{{parentIndex}}_{{childIndex}}"> </svg>      
+                    </div>  
+                 </div>    
+            </div>   
+              
+             <div  ng-if = "partInfo.CustomerDetailList.length > 0" >
+                <div  ng-repeat="custInfo in partInfo.CustomerDetailList" ng-init="custIndex = $index" class = "VORlabelPrintWrapper" >
+                    <div ng-repeat="i in printBarCodepageModel.getArrayBySize(custInfo.NoOfLabels)" ng-init="labelindex = $index" class = "barcodeprintWrapper">
+                        <p class = "P0 M0 T7 col-md-6 text-left CompanyName">{{partInfo.BusinessName}}</p>
+                        <div class = "col-md-10 pull-left P0 M0  F20 multilinedText PartDescription">
+                        <span class = "multilinedTextdec">{{custInfo.CONumber}}</span>
+                        <span class = " text-left M0 T3 PR15 priceInfo CustomerName">{{custInfo.CustomerName}}</span>
+                        <span class = "pull-right text-left M0 T3 PR15 priceInfo customerPhNumber">{{custInfo.PhoneNumber}}</span>
+                        </div>
+                        <div class = "text-center pull-left col-sm-12 P0 svgbarcode">
+                        <svg id="barcode_{{parentIndex}}_{{custIndex}}_{{labelindex}}"> </svg>
+                        </div>
+                    </div>
+                 </div>
+            </div> 
+            </div>
+          
+    </div>
+      <div class = "printBarcodeButton">
+          <button ng-click="printBarCodepageModel.printview()" class="btn C11 T4 addmoreinfoBtn active_btn pull-right MT25">Print</button>
+            </div>
+    </body>
+    
+    </html>
+</apex:page>

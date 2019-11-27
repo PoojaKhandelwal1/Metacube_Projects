@@ -1,0 +1,608 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" Controller="DealDocumentPrintCtrl">
+    <html ng-app="DealDocumentPrintModule" >
+        <head>
+            <c:CSSFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <c:JsFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <apex:stylesheet value="{!Application}/css/PrintPreviewStyle.css"/>
+            <apex:stylesheet value="{!Application}/css/Printcss.css"/>
+            <apex:stylesheet value="{!Application}/css/PrintCustomerOrderInvoice.css"/>
+            <apex:includeScript value="{!JSENCODE(Assests)}/Js/angular-ui-notification.min.js" />
+            <script type="text/javascript">
+                var DealDocumentPrintModule = angular.module('DealDocumentPrintModule', ['ui-notification']);
+                
+                DealDocumentPrintModule.filter('tel', function () {
+                    return function (tel) {
+                        return formatTel(tel);
+                    };
+                });
+                
+                DealDocumentPrintModule.controller('DealDocumentPrintController', function($scope, $window, $q, $timeout, Notification, DealDocumentPrintInfoService) {
+                    if($scope.DealDocumentPrintModel == undefined) {
+                        $scope.DealDocumentPrintModel = {};
+                    }
+                    $scope.parseFloat = parseFloat;
+                    $scope.DealDocumentPrintModel.DealDocumentPrintInfo=[];
+                    $scope.DealDocumentPrintModel.companyLogoURL = '{!JSENCODE(companyLogoURL)}';
+                     $scope.DealDocumentPrintModel.isDisplayTaxInvoice = {!isDisplayTaxInvoice};
+                    $scope.DealDocumentPrintModel.printview = function(){
+                         $timeout($window.print, 0);
+                    }
+                    $scope.DealDocumentPrintModel.showContent = false;
+                        
+                    $scope.LoadPrintPreview = function() {
+                        $scope.DealDocumentPrintModel.dealId = "{!JSENCODE(URLENCODE($CurrentPage.parameters.id))}";
+                        if($scope.DealDocumentPrintModel.dealId == undefined){
+                            $scope.DealDocumentPrintModel.dealId = '';
+                        }
+                        $scope.DealDocumentPrintModel.DealDocumentPrintInfo = parseJSON('{!DealDocumentDetailJson}');
+                        if(Object.keys($scope.DealDocumentPrintModel.DealDocumentPrintInfo).length != 0){
+                            $scope.DealDocumentPrintModel.showContent = true;
+                        } else{
+                            Notification.error("{!$Label.Generic_Error}");
+                        } 
+                        console.log($scope.DealDocumentPrintModel.DealDocumentPrintInfo);
+                        /*DealDocumentPrintInfoService.DealDocumentPrintDetails($scope.DealDocumentPrintModel.dealId).then(
+                            function (successfulSearchResult) {
+                                $scope.DealDocumentPrintModel.DealDocumentPrintInfo=successfulSearchResult;
+                                if(Object.keys($scope.DealDocumentPrintModel.DealDocumentPrintInfo).length != 0){
+                                    $scope.DealDocumentPrintModel.showContent = true;
+                                }
+                                else{
+                                    Notification.error("{!$Label.Generic_Error}");
+                                } 
+                            },
+                            function (errorSearchResult) {
+                                responseData = errorSearchResult;
+                            }
+                        );*/
+                    }
+                })        
+                
+                function parseJSON(result) {
+                    var resultData = decodeString(result);
+                    if (resultData != null && resultData != undefined && resultData != '' && typeof (resultData) == 'string') {
+                        var find = '\'';
+                        var re = new RegExp(find, 'g');
+                        if (resultData != null) {
+                            resultData = resultData.replace(re, '');
+                            if (/^[\],:{}\s]*$/.test(resultData.replace(/\\["\\\/bfnrtu]/g, '@').replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+                                resultData = JSON.parse(resultData);
+                            }
+                        }
+                    }
+                    return resultData;
+                }
+                
+                DealDocumentPrintModule.service("DealDocumentPrintInfoService", function ($q) {
+                    this.DealDocumentPrintDetails = function (DealDocumentPrintId) {
+                        DealDocumentPrintId = encodeString(DealDocumentPrintId);
+                        var deferred = $q.defer();
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.DealDocumentPrintCtrl.getDealDocumentDetails}',
+                                DealDocumentPrintId,
+                            function (result, event) {
+                            if (event.type == 'exception') {
+                                deferred.reject(event.message);
+                            } else {
+                                DealDocumentInvoicePrint = decodeString(result);
+                                var find = '\''; 
+                                var re = new RegExp(find, 'g');
+                                DealDocumentInvoicePrint = DealDocumentInvoicePrint.replace(re, '');
+                                deferred.resolve(JSON.parse(DealDocumentInvoicePrint));
+                            }
+                        }, {
+                            escape : true
+                        });
+                        return deferred.promise;
+                    }
+                });    
+            </script>
+        </head>
+        
+        <body ng-controller="DealDocumentPrintController" ng-init="LoadPrintPreview()" ng-cloak="ng-cloak">
+            <div class="content" ng-show="DealDocumentPrintModel.showContent">
+                <div class="PrintSection mainSection ServiceWorksheetSection">
+                    <div id="PrintPreview" class ="printpreview">
+                        <div class="main_section row">
+                            <div class="row rowGeneral">
+                                <div class="content PrintSection ServiceWorksheetPreview" >
+                                    <div class="WorksheetHeaderSection">
+                                        <div class = "col-md-12 P0">
+                                            <span class="pull-left">
+                                            <img ng-src="{{DealDocumentPrintModel.companyLogoURL}}" height="180px;" width="180px;"/>
+                                            </span>
+                                            <div class="StoreInfoBlock" >
+                                                <p class="text-capitalize storeName">{{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.CompanyName}}</p>
+                                                <div class="storeAddress pull-left">
+                                                    <p class="AddressLine">{{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.Address1}} {{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.Address2}}</p>
+                                                    <p class="AddressLine">{{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.City}}, {{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.State}}, {{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.PostalCode}} </p>
+                                                    <p class="AddressLine">{{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.BusinessPhone | tel}}&nbsp; &nbsp;{{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.BusinessEmail}}</p>
+                                                    <p class="AddressLine1"> {{DealDocumentPrintModel.DealDocumentPrintInfo.CompanyInfo.TaxId}} </p>
+                                                </div>
+                                            </div>
+                                            <h2 class="text-uppercase packagingSlip" ng-if = "{!documentType != null && documentType != '' && (documentType != 'Bill of sale' || (documentType == 'Bill of sale' &&  !isDisplayTaxInvoice))} " style="width: 220px;">{!documentType}</h2>
+                                            <h2 class="text-uppercase packagingSlip" ng-if = "{!documentType != null && documentType != '' && (documentType == 'Bill of sale' &&  isDisplayTaxInvoice)} " style="width: 320px;">T A X <br/> I N V O I C E</h2>
+                                            <h2 class="text-uppercase packagingSlip" ng-if = "!{!documentType != null && documentType != ''} && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.Status == 'Invoiced' " style="width: 220px;">Bill of Sale</h2>
+                                            <h2 class="text-uppercase packagingSlip" ng-if = "!{!documentType != null && documentType != ''} && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.Status != 'Invoiced' " style="width: 220px;">Offer to Purchase</h2>
+                                        </div> 
+                                        <div>
+                                            <div class="col-md-12 col-xs-12 CustomerAndUnitInfo page_break">
+                                                <div class="customerinfoBlock pull-left " >
+                                                    <div  class="CustomerInformationHeader  headerChange col-md-12 " ng-if = "{!documentType != 'Bill of sale'}">SOLD TO</div>
+                                                    <div  class="CustomerInformationHeader  headerChange col-md-12 " ng-if = "{!documentType == 'Bill of sale'} && !DealDocumentPrintModel.isDisplayTaxInvoice ">SOLD TO</div>
+                                                    <div  class="CustomerInformationHeader  headerChange col-md-12 " ng-if = "{!documentType == 'Bill of sale'} && DealDocumentPrintModel.isDisplayTaxInvoice">INVOICED AND DELIVERED TO</div>
+                                                    <h1 class="text-capitalize customerName col-xs-12 M0 P0 ">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerName}}</h1>
+                                                    <div class="CustomerAddress pull-left">
+                                                        <p class="AddressLine">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerAddress}}</p>
+                                                        <p class="AddressLine">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerAddress2}}</p>
+                                                        <p class="AddressLine">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerCityProv}},{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerState}}</p>
+                                                        <p class="AddressLine">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerPostal}}</p>
+                                                        <p class="AddressLine"><label>{!$Label.Label_Phone}: </label>  {{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerPhone | tel}}</p>
+                                                        <p class="AddressLine"><label>{!$Label.Label_Email}: </label>  {{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.CustomerEmail}}</p>
+                                                    </div>
+                                                </div>
+                                                <!-- End: Customer Info Section -->
+                                                <div class = "col-md-5 pull-right" style = " margin-top:30.48px ">
+                                                    <div ng-if = "{!documentType != null && documentType != ''}">
+                                                        <p class="CoNumber  col-md-12  P0" ><span class = "T3 col-md-4 P0">Order #:</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.OrderNumber}}</span></p>
+                                                        <p class="CoNumber  col-md-12  P0" ng-if = "{!documentType == 'Bill of sale'} "><span class = "T3 col-md-4 P0">Invoice #</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.InvoiceNumber ? DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.InvoiceNumber : DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.OrderNumber}}</span></p>
+                                                        <p class="CoNumber  col-md-12  P0" ng-if = "{!documentType == 'Bill of sale'}"><span class = "T3 col-md-4 P0">Date:</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.InvoiceDate}}</span></p>
+                                                        <p class="CoNumber  col-md-12  P0" ng-if = "{!documentType != 'Bill of sale'}"><span class = "T3 col-md-4 P0">Date:</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.OrderDate}}</span></p>
+                                                    </div>
+                                                    <div ng-if = "!{!documentType != null && documentType != ''}">
+                                                        <p class="CoNumber  col-md-12  P0" ><span class = "T3 col-md-4 P0">Order #:</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.OrderNumber}}</span></p>
+                                                        <p class="CoNumber  col-md-12  P0" ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.Status == 'Invoiced' "><span class = "T3 col-md-4 P0">Invoice #</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.InvoiceNumber}}</span></p>
+                                                        <p class="CoNumber  col-md-12  P0" ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.Status == 'Invoiced' "><span class = "T3 col-md-4 P0">Date:</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.InvoiceDate}}</span></p>
+                                                        <p class="CoNumber  col-md-12  P0" ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.Status != 'Invoiced' "><span class = "T3 col-md-4 P0">Date:</span> <span class = " col-md-7">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.OrderDate}}</span></p>
+                                                    </div>     
+                                                    <p class="CoNumber  col-md-12  P0"><span class = "T3 col-md-4 P0  ">Sold By:</span> <span class = " col-md-7 ">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.SoldBy}}</span></p>
+                                                </div>
+                                            </div>
+                                            <!--STATRT: Unit section -->
+                                            <div class=" col-md-12 P0" style="position:static;"  id="Unit_Deal_Item_gid_container" ng-repeat= "unitDeal in DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.UnitList" ng-init="UnitIndex = $index" ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.UnitList.length>0">
+                                                <table style="width: 100%;" class = "service_Job_table_Header">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                                <div class=" col-md-12 P0" style="position:static;">
+                                                                   <!--  <p class="T3 col-md-12 pull-left PR0 headerChange SoHeaderName page_break" style="position:static;">Unit Purchased - {{unitDeal.ItemDesc.UnitNumber}}
+                                                                        <span style="margin-left: 300px;" ng-if = "unitDeal.ItemDesc.VIN != null ">VIN: {{unitDeal.ItemDesc.VIN}}</span>
+                                                                    </p> -->
+                                                                    <div class="T3 col-md-12 pull-left PR0 headerChange SoHeaderName page_break" style="position:static;">
+                                                                        <div class="col-sm-7">Unit Purchased - 
+                                                                            <span ng-if="unitDeal.ItemDesc.COUId != null">{{unitDeal.ItemDesc.UnitNumber}}</span> 
+                                                                            <span ng-if="unitDeal.ItemDesc.COUId == null">Temporary unit {{UnitIndex + 1}}</span>
+                                                                        </div>
+                                                                        
+                                                                        <div class="col-sm-5" ng-if = "unitDeal.ItemDesc.VIN !=''">VIN: {{unitDeal.ItemDesc.VIN}}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <div class="col-md-12 serviceOrderGrid">
+                                                                <table class="table dealPrieviewtable pull-left" id="Print_Preview_ItemGrid">
+                                                                    <col width="6%" />
+                                                                    <col width="45%" />
+                                                                    <col width="9%" />
+                                                                    <col width="25%" />
+                                                                    <col width="15%" />
+                                                                    <tbody>
+                                                                        <tr class="tableHeader T3 ">
+                                                                            <td class="T17">{{unitDeal.ItemDesc.Year}}</td>
+                                                                            <td class="T17">{{unitDeal.ItemDesc.UnitName}}</td>
+                                                                            <td></td>
+                                                                            <td class="T17 Text-center">{{unitDeal.ItemDesc.Colour}}</td>
+                                                                            <td class="T17">{{unitDeal.ItemDesc.Mileage}}</td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                                <div class="dealNotes" ng-repeat = "notes in unitDeal.ItemDesc.NotesList track by $index" >
+                                                                    {{notes}} 
+                                                                </div>
+                                                                <!-- START: UnitDetails -->
+                                                                <div id="UnitDetails">
+                                                                    <div class=" col-md-12 P0" style="position:static;" ng-if = "unitDeal.DealUnitPriceCost.length > 0">
+                                                                        <div class="sectionBreak">Unit Details</div>
+                                                                    </div>
+                                                                    <table class="table dealPrieviewtable pull-left" id="Print_Preview_ItemGrid" ng-if = "unitDeal.DealUnitPriceCost.length > 0">
+                                                                        <col width="13%" />
+                                                                        <col width="32%" />
+                                                                        <col width="28%" />
+                                                                        <col width="13%" />
+                                                                        <col width="14%" />
+                                                                        <tbody ng-repeat = "dealUnitPrice in unitDeal.DealUnitPriceCost" ng-init="dealUnitPriceCostIndex = $index">
+                                                                            <tr class="tableHeader T3">
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14">{{dealUnitPrice.ItemDescription}}</td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14 text-right">{{dealUnitPrice.TotalPrice | currency}}</td>
+                                                                                <td class="deal_T14 text-right dealBold" ng-if="dealUnitPriceCostIndex == (unitDeal.DealUnitPriceCost.length-1)">{{unitDeal.UnitAndPriceCost | currency}}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                                <!-- End: UnitDetails -->
+                                                                <!-- START: Installed Options -->
+                                                                <div id="InstalledOptions">
+                                                                    <div class=" col-md-12 P0" style="position:static;" ng-if = "unitDeal.InstalloptionAndFeeList.length > 0">
+                                                                        <div class="sectionBreak">Installed Options</div>
+                                                                    </div>
+                                                                    <table class="table dealPrieviewtable pull-left" id="Print_Preview_ItemGrid" ng-if = "unitDeal.InstalloptionAndFeeList.length > 0">
+                                                                        <col width="13%" />
+                                                                        <col width="32%" />
+                                                                        <col width="5%" />
+                                                                        <col width="5%" />
+                                                                        <col width="5%" />
+                                                                        <col width="13%" />
+                                                                        <col width="13%" />
+                                                                        <col width="14%" />
+                                                                        <tbody ng-repeat = "installoptionAndFee in unitDeal.InstalloptionAndFeeList" ng-init="installoptionAndFeeIndex = $index">
+                                                                            <tr ng-show="installoptionAndFee.hasChildren" class="tableHeader T3">
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14">{{installoptionAndFee.ItemDescription}}</td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14 text-right"></td>
+                                                                                <td class="deal_T14 text-right">{{installoptionAndFee.Price | currency}}</td>
+                                                                                <td></td>
+                                                                            </tr>
+                                                                            <tr ng-repeat = "installoptionFee in installoptionAndFee.OptionAndFeeList" class="tableHeader T3" ng-init="installOptionIndex = $index">
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14" ng-class="{'PL20' : installoptionAndFee.hasChildren}">{{installoptionFee.Item}}</td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14">{{installoptionFee.Qty}}</td>
+                                                                                <td class="deal_T14">@</td>
+                                                                                <td class="deal_T14 text-right">{{installoptionFee.Price | currency}}</td>
+                                                                                <td class="deal_T14 text-right"><span ng-if="!merchandiseOptionAndFee.hasChildren">{{installoptionFee.Total | currency}}</span></td>
+                                                                                <td class="deal_T14 text-right dealBold" ng-if="(installoptionAndFeeIndex == (unitDeal.InstalloptionAndFeeList.length-1))  && (installOptionIndex == (installoptionAndFee.OptionAndFeeList.length-1))">{{unitDeal.InstalledOptionCost | currency}}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                                <!-- End: Installed Options -->
+                                                                <!-- START: Merchandise -->
+                                                                <div id="MerchandiseDetails">
+                                                                    <div class=" col-md-12 P0" style="position:static;" ng-if = "unitDeal.MerchandiseOptionAndFeeList.length > 0">
+                                                                        <div class="sectionBreak">Merchandise</div>
+                                                                    </div>
+                                                                    <table class="table dealPrieviewtable pull-left" id="Print_Preview_ItemGrid" ng-if = "unitDeal.MerchandiseOptionAndFeeList.length > 0">
+                                                                        <col width="13%" />
+                                                                        <col width="32%" />
+                                                                        <col width="5%" />
+                                                                        <col width="5%" />
+                                                                        <col width="5%" />
+                                                                        <col width="13%" />
+                                                                        <col width="13%" />
+                                                                        <col width="14%" />
+                                                                        <tbody ng-repeat = "merchandiseOptionAndFee in unitDeal.MerchandiseOptionAndFeeList" ng-init="merchandiseIndex = $index">
+                                                                            <tr ng-show="merchandiseOptionAndFee.hasChildren" class="tableHeader T3">
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14">{{merchandiseOptionAndFee.ItemDescription}}</td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14 text-right"></td>
+                                                                                <td class="deal_T14 text-right">{{merchandiseOptionAndFee.Price | currency}}</td>
+                                                                                <td></td>
+                                                                            </tr>
+                                                                            <tr ng-repeat = "merchandiseOptionFee in merchandiseOptionAndFee.OptionAndFeeList" class="tableHeader T3" ng-init="merchandiseOptionIndex = $index">
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14" ng-class="{'PL20' : merchandiseOptionAndFee.hasChildren}">{{merchandiseOptionFee.Item}}</td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14">{{merchandiseOptionFee.Qty}}</td>
+                                                                                <td class="deal_T14">@</td>
+                                                                                <td class="deal_T14 text-right">{{merchandiseOptionFee.Price | currency}}</td>
+                                                                                <td class="deal_T14 text-right"><span ng-if="!merchandiseOptionAndFee.hasChildren">{{merchandiseOptionFee.Total | currency}}</span></td>
+                                                                                <td class="deal_T14 text-right dealBold" ng-if="(merchandiseIndex == (unitDeal.MerchandiseOptionAndFeeList.length-1)) && (merchandiseOptionIndex == (merchandiseOptionAndFee.OptionAndFeeList.length-1))">{{unitDeal.MerchandiseOptionCost | currency}}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                                <!-- End: Merchandise -->
+                                                                <!-- START: Other Products & Fees -->
+                                                                <div id="OtherProductsAndFeesDetails">
+                                                                    <div class=" col-md-12 P0" style="position:static;" ng-if = "unitDeal.OtherProductsAndFeeList.length > 0">
+                                                                        <div class="sectionBreak">Other Products &amp; Fees</div>
+                                                                    </div>
+                                                                    <table class="table dealPrieviewtable pull-left" id="Print_Preview_ItemGrid" ng-if = "unitDeal.OtherProductsAndFeeList.length > 0">
+                                                                        <col width="13%" />
+                                                                        <col width="32%" />
+                                                                        <col width="28%" />
+                                                                        <col width="13%" />
+                                                                        <col width="14%" />
+                                                                        <tbody ng-repeat = "otherProductsFee in unitDeal.OtherProductsAndFeeList" ng-init="otherProductsFeeIndex = $index">
+                                                                            <tr class="tableHeader T3" ng-repeat = "otherProductFeeList in otherProductsFee.OptionAndFeeList">
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14">{{otherProductFeeList.Item}}</td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14 text-right">{{otherProductFeeList.Total | currency}}</td>
+                                                                                <td class="deal_T14 text-right dealBold" ng-if="otherProductsFeeIndex == (unitDeal.OtherProductsAndFeeList.length-1)">{{unitDeal.OtherProductsAndFeeCost | currency}}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                                <!-- End: Other Products & Fees -->
+                                                            </div>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <!-- End: Unit Section -->
+                                              
+                                              
+                                            <!--STATRT: TradeIn section -->
+                                            <div class=" col-md-12 P0" style="position:static;"  id="Trade_In_Deal_Item_gid_container" ng-repeat= "tradeInDeal in DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TradeInList" ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TradeInList.length>0">
+                                                <table style="width: 100%;" class = "service_Job_table_Header">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                                <div class=" col-md-12 P0" style="position:static;">
+                                                                    <!-- <p class="T3 col-md-12 pull-left PR0 headerChange SoHeaderName page_break" style="position:static;">Trade-In - {{tradeInDeal.ItemDesc.UnitNumber}}
+                                                                        <span style="margin-left: 300px;">VIN: {{tradeInDeal.ItemDesc.VIN}}</span>
+                                                                    </p> -->
+                                                                    <div class="T3 col-md-12 pull-left PR0 headerChange SoHeaderName page_break" style="position:static;">
+                                                                        <div class="col-sm-7">Trade-In - {{tradeInDeal.ItemDesc.UnitNumber}}</div>
+                                                                        <div class="col-sm-5" ng-if = "unitDeal.ItemDesc.VIN !=''">VIN: {{tradeInDeal.ItemDesc.VIN}}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <div class="col-md-12 serviceOrderGrid">
+                                                                <table class="table dealPrieviewtable pull-left" id="Print_Preview_ItemGrid">
+                                                                    <col width="6%" />
+                                                                    <col width="45%" />
+                                                                    <col width="9%" />
+                                                                    <col width="25%" />
+                                                                    <col width="15%" />
+                                                                    <tbody>
+                                                                        <tr class="tableHeader T3 ">
+                                                                            <td class="T17" >{{tradeInDeal.ItemDesc.Year}}</td>
+                                                                            <td class="T17">{{tradeInDeal.ItemDesc.UnitName}}</td>
+                                                                            <td></td>
+                                                                            <td class="T17 Text-center">{{tradeInDeal.ItemDesc.Colour}}</td>
+                                                                            <td class="T17">{{tradeInDeal.ItemDesc.Mileage}}</td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                                <div class="dealNotes" ng-repeat = "notes in tradeInDeal.ItemDesc.NotesList track by $index" >
+                                                                    {{notes}} 
+                                                                </div>
+                                                                <p class="pull-right deal_T14" style="font-size: 14px;"><span style="margin-right: 63px;">Agreed Trade-In value</span><span class="dealBold">{{tradeInDeal.AgreedValue | currency}}</span></p>
+                                                            </div>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <!-- End: Trade In Section -->
+                                            
+                                            <div class=" col-md-12 P0" style="position:static;"  id="FinancingProductWrapper" ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.DealType == 'Financed'">
+                                                <table style="width: 100%;" class = "service_Job_table_Header">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                                <div class=" col-md-12 P0" style="position:static;">
+                                                                   <!--  <p class="T3 col-md-12 pull-left PR0 headerChange SoHeaderName page_break" style="position:static;">Unit Purchased - {{unitDeal.ItemDesc.UnitNumber}}
+                                                                        <span style="margin-left: 300px;" ng-if = "unitDeal.ItemDesc.VIN != null ">VIN: {{unitDeal.ItemDesc.VIN}}</span>
+                                                                    </p> -->
+                                                                    <div class="T3 col-md-12 pull-left PR0 headerChange SoHeaderName page_break" style="position:static;">
+                                                                        <div class="col-sm-7">Financing - {{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FinanceCompanyName}}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <div class="col-md-12 serviceOrderGrid">
+                                                                <table class="table dealPrieviewtable pull-left" id="Print_Preview_ItemGrid">
+                                                                    <col width="6%" />
+                                                                    <col width="94%" />
+                                                                    <col width="9%" />
+                                                                    <col width="25%" />
+                                                                    <col width="15%" />
+                                                                    <tbody>
+                                                                        <tr>
+                                                                        <td class="T17"></td>
+                                                                            <td class="T17 text-lowercase" ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.CoBuyerId">
+                                                                                <span>Co-buyer:</span> <span>{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.CoBuyerName}}</span>
+                                                                            </td>
+                                                                        </tr>
+                                                                        <tr class="tableHeader T3 ">
+                                                                            <td class="T17"></td>
+                                                                            <td class="T17 text-lowercase" ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.EstimatedPayment">
+                                                                            <span>{{(DealDocumentPrintModel.DealDocumentPrintInfo.AmountFinanced ? DealDocumentPrintModel.DealDocumentPrintInfo.AmountFinanced : 0) | currency}}</span>
+                                                                            at <span>{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.InterestRate ? DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.InterestRate : 0}}%</span> 
+                                                                            with <sapn class = "text-capitalize">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.PaymentFrequency}}</sapn>
+                                                                            payments of {{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.EstimatedPayment | currency}}
+                                                                            <span ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.LoanTerm">for {{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.LoanTerm}}</span> 
+                                                                            <span ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.LoanTerm == 1 && DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.TermType == 'Months'">Month</span>
+                                                                            <span ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.LoanTerm == 1 && DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.TermType == 'Years'">Year</span>
+                                                                            <span class = "text-capitalize" ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.LoanTerm > 1">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.TermType}}</span>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                         </div>
+                                                    </tr>
+                                                    
+                                                      <!-- START: Other Products & Fees -->
+                                                                <div id="FinancingProductId" style="width: 100%; float: left;" ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductList.length > 0" >
+                                                                    <div class=" col-md-12 P0" style="position:static;">
+                                                                        <div class="sectionBreak">Financing Product </div>
+                                                                    </div>
+                                                                    <table class="table dealPrieviewtable pull-left" id="Print_Preview_Financing_Product_Grid">
+                                                                        <col width="13%" />
+                                                                        <col width="32%" />
+                                                                        <col width="28%" />
+                                                                        <col width="13%" />
+                                                                        <col width="14%" />
+                                                                        <tbody>
+                                                                            <tr class="tableHeader T3" ng-repeat = "FIProductRec in DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductList" ng-init="FIProductRecIndex = $index">
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14">{{FIProductRec.ItemDescription}}</td>
+                                                                                <td class="deal_T14"></td>
+                                                                                <td class="deal_T14 text-right">{{FIProductRec.Price | currency}}</td>
+                                                                                <td class="deal_T14 text-right dealBold" ng-if="(FIProductRecIndex == (DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductList.length-1))">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTotal + DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTax | currency}}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                                <!-- End: Other Products & Fees -->
+                                   </tbody>
+                        </table>
+              </div>
+                                        </div>
+                                        <div class="col-md-12 P0">
+                                            <div class="col-md-7 P0 leftWrappper" ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.Transactions.length>0">
+                                                <div class="pull-left InvoicePaymentHeaderWrpper" style="padding-bottom: 50px;">
+                                                    <div class=" col-md-12 InvoicePaymentHeader text-uppercase">
+                                                        <p class="pull-left  PR0">Deal Payments</p>
+                                                    </div>
+                                                    <table class="col-md-12 ">
+                                                        <col width="40%" />
+                                                        <col width="30%" />
+                                                        <col width="30%" />
+                                                        <tbody ng-repeat = "paymentInfo in DealDocumentPrintModel.DealDocumentPrintInfo.Transactions">
+                                                            <tr style = " font-family: Arial; font-size: 16px; ">
+                                                                <td  class=" T17" >{{paymentInfo.Method}}</td>
+                                                                <td class=" T17 P0 text-left">{{paymentInfo.TransactionDate}}</td>
+                                                                <td class=" T17 P0 text-right">{{paymentInfo.Amount | currency}}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-5 pull-right rightWrapper">
+                                                <div class="col-md-12 TotalTable  pull-left DealTotalTable">
+                                                    <div class=" text-uppercase  P0">
+                                                        <p class="  pull-left  PR0">Totals</p>
+                                                    </div>
+                                                </div>
+                                                <table class="col-md-12 ">
+                                                    <tbody style = " font-family: Arial; font-size: 15px; "  class="P0">
+                                                        <tr ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalUnits != 0">
+                                                            <td class="col-md-6 P0">Units</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalUnits | currency}}</td>
+                                                        </tr>
+                                                        <tr ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalTradeIn != 0">
+                                                            <td class="col-md-6 P0">Trade-Ins</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalTradeIn | currency}}</td>
+                                                        </tr>
+                                                        <tr ng-if = "DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalLienPayout != 0">
+                                                            <td class="col-md-6 P0">Lien Payout</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalLienPayout | currency}}</td>
+                                                        </tr>
+                                                        <tr
+                                                            ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalInstalledOption != 0">
+                                                            <td class="col-md-6 P0">Installed Options</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalInstalledOption | currency}}</td>
+                                                        </tr>
+                                                        <tr
+                                                            ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalMerchandiseOption != 0">
+                                                            <td class="col-md-6 P0">Merchandise</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalMerchandiseOption | currency}}</td>
+                                                        </tr>
+                                                        <tr
+                                                            ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalOtherProductsAndFee != 0">
+                                                            <td class="col-md-6 P0">Other Products &amp; Fees</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalOtherProductsAndFee | currency}}</td>
+                                                        </tr>
+                                                        <tr ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductList.length > 0 && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.DealType == 'Financed' && ((!DealDocumentPrintModel.DealDocumentPrintInfo.IsTaxIncludingPricing && DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTotal != 0) || 
+                                                            (DealDocumentPrintModel.DealDocumentPrintInfo.IsTaxIncludingPricing && ((DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTotal + DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTax) != 0)))">
+                                                            <td class="col-md-6 P0">Financing Product</td>
+                                                            <td class="col-md-6 P0 text-right" ng-if="!DealDocumentPrintModel.DealDocumentPrintInfo.IsTaxIncludingPricing">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTotal | currency}}</td>
+                                                            <td class="col-md-6 P0 text-right" ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.IsTaxIncludingPricing">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTotal + DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.FIProductTax | currency}}</td>
+                                                        </tr>
+                                                        <tr
+                                                            ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalStampDuty != 0">
+                                                            <td class="col-md-6 P0">Stamp Duty</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDetailWrapperObj.TotalStampDuty | currency}}</td>
+                                                        </tr>
+                                                        <tr style="font-weight: bold;"
+                                                            ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.SubTotal != 0">
+                                                            <td class="col-md-6 P0 BR0">Sub-Total</td>
+                                                            <td class="col-md-6 P0 text-right TDB">{{DealDocumentPrintModel.DealDocumentPrintInfo.SubTotal | currency}}</td>
+                                                        </tr>
+                                                        <tr ng-if="!DealDocumentPrintModel.DealDocumentPrintInfo.IsTaxIncludingPricing"
+                                                            ng-repeat="tax in DealDocumentPrintModel.DealDocumentPrintInfo.SalesTaxList">
+                                                            <td class="col-md-6 P0">{{tax.TaxName}}</td>
+                                                            <td class=" col-md-6 P0 text-right BB0">{{tax.TaxAmount | currency}}</td>
+                                                        </tr>
+                                                        <tr style="font-weight: bold;">
+                                                            <td class=" col-md-6 P0">Total</td>
+                                                            <td class=" col-md-6 P0 text-right TDB  text-uppercase">
+                                                                <span>{{DealDocumentPrintModel.DealDocumentPrintInfo.Total | currency}}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.IsTaxIncludingPricing"
+                                                            ng-repeat="tax in DealDocumentPrintModel.DealDocumentPrintInfo.SalesTaxList">
+                                                            <td class="col-md-6 P0">{{tax.TaxName}} included</td>
+                                                            <td class=" col-md-6 P0 text-right BB0">{{tax.TaxAmount | currency}}</td>
+                                                        </tr>
+                                                        <tr ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.DownPayment >= 0 && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.DealType == 'Financed'">
+                                                            <td class=" col-md-6 P0"> Agreed Downpayment</td>
+                                                            <td class=" col-md-6 P0 text-right BB0">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealFinanceObj.DownPayment * -1 | currency}} </td>
+                                                        </tr>
+                                                        <tr style="font-weight: bold; text-transform: uppercase;" ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.AmountFinanced && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.DealType == 'Financed'">
+                                                            <td class=" col-md-6 P0" style="padding-bottom:10px;"> Amount Financed</td>
+                                                            <td class=" col-md-6 P0 text-right BB0" style="padding-bottom:10px;">{{DealDocumentPrintModel.DealDocumentPrintInfo.AmountFinanced | currency}} </td>
+                                                        </tr>
+                                                        <tr ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.AmountPaid != 0">
+                                                            <td class=" col-md-6 P0"> Amount Paid</td>
+                                                            <td class=" col-md-6 P0 text-right BB0">{{DealDocumentPrintModel.DealDocumentPrintInfo.AmountPaid * -1| currency}} </td>
+                                                        </tr>
+                                                        <tr
+                                                            ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.BalanceDue != 0 && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.DealType != 'Financed'">
+                                                            <td class="col-md-6 P0">Balance Due</td>
+                                                            <td class="col-md-6 P0 text-right">{{DealDocumentPrintModel.DealDocumentPrintInfo.BalanceDue | currency}}</td>
+                                                        </tr>
+                                                        <tr ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DueFromCustomer && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.DealType == 'Financed'">
+                                                            <td class=" col-md-6 P0"> Due from customer</td>
+                                                            <td class=" col-md-6 P0 text-right BB0">{{DealDocumentPrintModel.DealDocumentPrintInfo.DueFromCustomer | currency}} </td>
+                                                        </tr>
+                                                        <tr ng-if="DealDocumentPrintModel.DealDocumentPrintInfo.DueFromFinance && DealDocumentPrintModel.DealDocumentPrintInfo.DealInfo.DealType == 'Financed'">
+                                                            <td class=" col-md-6 P0"> Due from financing</td>
+                                                            <td class=" col-md-6 P0 text-right BB0">{{DealDocumentPrintModel.DealDocumentPrintInfo.DueFromFinance | currency}} </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>                                               
+                                            </div>
+                                        </div>
+                                        <!-- Start: Disclaimers Section --> 
+                                        <div class="disclaimersSection">
+                                            <p class="MB0 WarrantyText">{{DealDocumentPrintModel.DealDocumentPrintInfo.DealDocumentWarrantyText}}</p>
+                                            <div ng-show="DealDocumentPrintModel.DealDocumentPrintInfo.IsSignatureLineforDealDocument" class="WarrantySignatureText">
+                                                <div class="pull-left">
+                                                    <p>Buyer :&nbsp;&nbsp; </p>
+                                                </div>
+                                                <div class="WarrantySignature"></div>
+                                            </div>
+                                              <div ng-show="DealDocumentPrintModel.DealDocumentPrintInfo.IsSignatureLineforDealDocument" class="WarrantySignatureText">
+                                                <div class="pull-left">
+                                                    <p>Seller :&nbsp;&nbsp; </p>
+                                                </div>
+                                                <div class="WarrantySignature"></div>
+                                            </div>
+                                        </div>
+                                        <!-- End: Disclaimers Section --> 
+                                        <div class="col-lg-3 col-md-3 col-lg-offset-9 col-md-offset-9 serviceWorksheetPrintBTn">
+                                            <button ng-click="DealDocumentPrintModel.printview()" class="btn C11 T4 addmoreinfoBtn active_btn pull-right MT25 MR0">Print</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

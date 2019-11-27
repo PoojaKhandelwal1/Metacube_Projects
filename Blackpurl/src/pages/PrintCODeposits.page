@@ -1,0 +1,704 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" Controller="PrintCODepositCtrl">
+    <html ng-app="serviceWorksheetModule" >
+        <head>
+            <c:CSSFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <c:JsFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />  
+            <apex:stylesheet value="{!Application}/css/PrintPreviewStyle.css"/>
+            <apex:stylesheet value="{!Application}/css/Printcss.css"/>
+            <apex:stylesheet value="{!Application}/css/PrintCODeposits.css"/>
+            
+            <script>
+                var serviceWorksheetModule = angular.module('serviceWorksheetModule', []);
+                
+                serviceWorksheetModule.filter('tel', function () {
+                   return function (tel) {
+                       return formatTel(tel);
+                   };
+                });
+                
+                serviceWorksheetModule.factory('serviceWorksheetService', function ($q) {
+                    return {
+                        getServiceWorksheetData : function (CoHeaderId) {
+                            CoHeaderId = encodeString(CoHeaderId);
+                            var deferred = $q.defer();
+                            // make AJAX request to the remote service
+                            Visualforce.remoting.Manager.invokeAction( '{!$RemoteAction.PrintCODepositCtrl.getPrintCODepositData}' ,CoHeaderId, 
+                            function (result, event) {
+                                if (event.type == 'exception') {
+                                    deferred.reject(event.message);
+                                } else {
+                                    var responseData = decodeString(result);
+                                    var find = '\'';
+                                    var re = new RegExp(find, 'g');
+                                    responseData = responseData.replace(re, '');
+                                    if(responseData != ''){
+                                        deferred.resolve(JSON.parse(responseData));
+                                    } else {
+                                        deferred.resolve(responseData);
+                                    }
+                                }
+                            }, {
+                                escape : true
+                            });
+                            return deferred.promise;
+                        }
+                    }
+                });
+        
+        
+                
+                serviceWorksheetModule.controller('ServiceWorksheetController', function (serviceWorksheetService, $scope,$timeout, $window) {
+                    $scope.serviceWorksheetModal = {};
+                    $scope.serviceWorksheetModal.isDataLoaded = false;
+                    $scope.serviceWorksheetModal.LoadServiceWorksheetData = function()  {
+                        
+                        $scope.serviceWorksheetModal.CoHeaderId = "{!JSENCODE(URLENCODE($CurrentPage.parameters.id))}";
+                        var CoHeaderId = $scope.serviceWorksheetModal.CoHeaderId;
+                        
+                        var responseData = {};
+                        serviceWorksheetService.getServiceWorksheetData(CoHeaderId)
+                        .then(function (successfulServiceWorksheetData) {
+                            responseData = successfulServiceWorksheetData;
+                            
+                            $scope.serviceWorksheetModal.processResults(responseData);
+                            $scope.serviceWorksheetModal.isDataLoaded = true;
+                        },
+                        function (errorSearchResult) {
+                            responseData = errorSearchResult;
+                        }); 
+                    }
+                    $scope.serviceWorksheetModal.printview = function() {
+                        $timeout($window.print, 0);
+                    }
+                    $scope.serviceWorksheetModal.processResults = function(responseData){
+                        
+                        $scope.serviceWorksheetModal.serviceWorksheetData = responseData;
+                        
+                    }   
+                });
+            </script>
+        </head>
+        
+        <body ng-controller="ServiceWorksheetController" ng-init="serviceWorksheetModal.LoadServiceWorksheetData()" >
+            <div class="content" ng-show=""  >
+                <div class="PrintSection mainSection ServiceWorksheetSection">
+                    <div id="PrintPreview" class ="printpreview">
+                        <div class="main_section row">
+                            <div class="row rowGeneral">
+                                <div class="content PrintSection ServiceWorksheetPreview" ng-if="serviceWorksheetModal.isDataLoaded">
+                                
+                                
+                                    
+
+                                    <!-- Start: Print CO Deposits Header Section --> 
+                                    <div class="PrintCODepositsHeaderSection">
+                                                                                 
+                                        <div class="storeLogo">
+                                            <img class = "bp-company-logo-fit-contain" src="{!companyLogoURL}" height="155.8px;" width="155.8px;"/><!-- height="80px;" edited by kajal 12th april, 2017 #1847 -->
+                                        </div>
+                                        <!-- Start: Store Info Block -->
+                                      <div class="StoreInfoBlock">
+  
+                                            <h1 class="text-capitalize storeName">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.CompanyName}}</h1>
+                                            <div class="storeAddress pull-left">
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.Address1}} {{serviceWorksheetModal.serviceWorksheetData.StoreInfo.Address2}}</p>
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.City}}
+                                                    <span ng-if="serviceWorksheetModal.serviceWorksheetData.StoreInfo.City && serviceWorksheetModal.serviceWorksheetData.StoreInfo.State"> &nbsp;&nbsp;
+                                                    </span> {{serviceWorksheetModal.serviceWorksheetData.StoreInfo.State}}
+                                                    <span ng-if="(serviceWorksheetModal.serviceWorksheetData.StoreInfo.City || serviceWorksheetModal.serviceWorksheetData.StoreInfo.State) 
+                                                        && serviceWorksheetModal.serviceWorksheetData.StoreInfo.PostalCode"> &nbsp; &nbsp;
+                                                    </span> {{serviceWorksheetModal.serviceWorksheetData.StoreInfo.PostalCode}}
+                                                </p>
+                                                <p class="AddressLine"><span>{!$Label.Label_Phone}: </span>{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.BusinessPhone}}</p>
+                                                <p class = "AddressLine"><span>{!$Label.Label_Email}: </span> {{serviceWorksheetModal.serviceWorksheetData.StoreInfo.BusinessEmail}}</p>
+                                                <p class="AddressLine" ng-if="serviceWorksheetModal.serviceWorksheetData.StoreInfo.TaxId != '' && serviceWorksheetModal.serviceWorksheetData.StoreInfo.Country != 'Australia'">Tax ID: {{serviceWorksheetModal.serviceWorksheetData.StoreInfo.TaxId}}</p>
+                                                
+                                                <p class="AddressLine" ng-if="serviceWorksheetModal.serviceWorksheetData.StoreInfo.TaxId != '' && serviceWorksheetModal.serviceWorksheetData.StoreInfo.Country == 'Australia'">ABN: {{serviceWorksheetModal.serviceWorksheetData.StoreInfo.TaxId}}</p>
+                                            </div>
+                                        </div>
+                                        <!-- End: Store Info Block --> 
+                                        
+                                        
+                                        <!-- <div class="CustomerOrderTitle pull-right">
+                                                                                       
+                                            <p class="text-uppercase">Customer Order</p>
+                                        </div> -->
+                                        
+                                        <!-- Start: Service Worksheet Number Section -->
+                                        <div class="DocumentTitleAndCONumber pull-right">
+                                            <div class="DocumentTitle">Customer Order</div>
+                                            <p><span class="DocumentTitleDataLabel">Order #</span> <span class="DocumentTitleDataValue">{{serviceWorksheetModal.serviceWorksheetData.COHeaderInfo.Name}}</span></p>
+                                            <p><span class="DocumentTitleDataLabel">Date</span> <span class="DocumentTitleDataValue">{{serviceWorksheetModal.serviceWorksheetData.COHeaderInfo.OrderedDate}}</span></p>
+                                        </div>
+                                        <!-- End: Service Worksheet Number Section -->
+                                        
+                                    </div>
+                                    
+                                    
+                                    <!-- Start: Customer and CO Info Section --> 
+                                    <div class="col-md-12 col-xs-12 CustomerAndUnitInfo" style="margin-top: 41.4px;">
+                                    
+                                        <!-- Start: Customer Info Section --> 
+                                        <div class="customerinfoBlock">
+                                            <div class="CustomerInformationHeader">Sold To</div>
+                                            <h1 class="text-capitalize customerName" style="margin-bottom: 0;">{{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.CustomerName}}</h1><!-- Jim Smith -->
+                                             <div class="CustomerAddress pull-left">
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingStreet1}}</p><!-- Unit #405 -->
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingStreet2}}</p><!-- 7821 Rexdale Boulevard -->
+                                                <p class="AddressLine">{{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingCity}}<span ng-if="serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingCity && serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingState">&nbsp;
+                                                </span> {{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingState}}</p><!-- Toronto, Ontario -->
+                                                <p class="AddressLine M0">{{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingCountry}} {{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.BillingPostalCode}}</p><!-- J3I 19S -->
+                                                <p class="AddressLine1 M0"><label class="LabelPhone">{!$Label.Label_Phone}: </label>  {{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.Phone | tel}}</p>
+                                                <p><label class="labelEmail">{!$Label.Label_Email}: </label>  {{serviceWorksheetModal.serviceWorksheetData.CustomerInfo.Email}}</p>
+                                                   
+                                            </div>
+                                        </div>
+                                        <!-- End: Customer Info Section -->
+                                    </div>
+                                    <!-- End: Customer And Unit Info Section -->
+                                    <!-- End: Print CO Deposits Header Section --> 
+            
+                                    <!-- Start: Merchandise Section --> 
+                                    <div class="col-md-12 col-xs-12 MerchandiseSection" ng-if="serviceWorksheetModal.serviceWorksheetData.MerchandiseCOKHRecord.MerchandiseCOKHList.length != 0"> <!-- serviceWorksheetModal.serviceWorksheetData.MerchandiseRecord.COLIList.length Changed by richa 14 april -->
+                                        <div class="col-md-12 col-xs-12 MerchandiseHeader">
+                                            Merchandise
+                                            <span class="pull-right MerchandiseTotal">{{serviceWorksheetModal.serviceWorksheetData.MerchandiseCOKHRecord.Total | currency}}</span>
+                                        </div>       
+                                        
+                                        <!-- Start: Merchandise Line Items grid  --> 
+                                         <div class="gid_container_MerchandiseLineItems">
+                                           <table class="table pull-left" id="Print_Preview_MerchandiseLineItemsGrid">  <!-- ng-if="SoHeader.SOLIList && SoHeader.SOLIList.length != 0" -->
+                                               <col width="15%" />
+                                               <col width="37%" /> 
+
+
+                                               <col width="2%" />
+                                               <col width="10%" />
+                                               <col width="8%" />
+                                               <col width="4%" />
+                                               <col width="11%" />
+                                               <col width="12%" />
+
+                                               <col width="1%" />
+                                                 
+                                               <thead>
+                                                   <tr class="tableHeader">
+                                                       <th>{!$Label.Label_Type}</th>
+                                                       <th>Item/Description</th>
+                                                       <th></th>
+                                                       <th>{!$Label.Label_Status}</th>
+                                                       <th>Qty</th>
+                                                       <th></th>
+                                                       <th>{!$Label.Label_Price}</th>
+
+                                                       <th style="text-align: right !important;">{!$Label.Label_Total}</th>
+                                                       <th></th>
+                                                   </tr>
+                                               </thead>
+                                               
+                                               <!-- <tbody class="" ng-repeat="COLI in serviceWorksheetModal.serviceWorksheetData.MerchandiseRecord.COLIList">
+                                                   <tr>
+                                                       <td>{{COLI.Type}}</td>
+                                                       <td>{{COLI.ItemDesc}}</td> 
+                                                       <td></td>
+
+                                                        <td ng-if = "(COLI.Type == 'Part' && !COLI.IsNonInventoryPart) || COLI.Type != 'Part'">{{COLI.Status}}</td> 
+                                                       <td ng-if = "(COLI.Type == 'Part' && COLI.IsNonInventoryPart)">In Stock</td>
+
+                                                       <td>{{COLI.Need}}</td>  
+                                                       <td style="text-align: right !important; padding: 0 !important;">@</td>  
+                                                       <td>{{COLI.Price | currency}}</td> 
+                                                       <td style="text-align: right !important;">{{COLI.Total | currency}}</td> 
+                                                       <td></td>   
+                                                   </tr>
+                                               </tbody> -->
+                                               
+                                               <tbody ng-repeat = "COKH in serviceWorksheetModal.serviceWorksheetData.MerchandiseCOKHRecord.MerchandiseCOKHList">
+                                                    <tr ng-show="COKH.Id != null">
+                                                        <td>Kit</td>
+                                                        <td>{{COKH.ItemDescription}}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td style="text-align: right !important;">{{COKH.Price | currency }}</td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr ng-repeat="COLI in COKH.COLIList">
+                                                        <td  ng-if = "COLI.IsPart" 
+                                                        ng-class="{'KitLineItemPL': COKH.Id != null}">
+                                                            Part
+                                                        </td> 
+                                                        <td  ng-if = "COLI.IsFee" 
+                                                        ng-class="{'KitLineItemPL': COKH.Id != null}">
+                                                            Fee 
+                                                        </td>
+                                                        <td  ng-if = "COLI.IsLabor" 
+                                                        ng-class="{'KitLineItemPL': COKH.Id != null}">
+                                                            Labor
+                                                        </td>
+                                                       <td>{{COLI.Item}}</td> 
+                                                       <td></td>
+
+                                                        <td ng-if = "(COLI.IsPart && !COLI.IsNonInventoryPart) || !COLI.IsPart">{{COLI.Status}}</td> 
+                                                       <td ng-if = "(COLI.IsPart && COLI.IsNonInventoryPart)">{{COLI.Status == "Invoiced" ? "Invoiced" : "In Stock"}}</td>   <!-- Changed by richa Issue #1879 25 april -->
+
+                                                       <td>{{COLI.Qty}}</td>  
+                                                       <td style="text-align: right !important; padding: 0 !important;">@</td>  
+                                                       <td>{{COLI.Price | currency}}</td> 
+                                                       <td style="text-align: right !important;"
+                                                        ng-show="COKH.Id == null">
+                                                            <span ng-if="COLI.SubTotal == null">{{(COLI.Qty * COLI.Price) | currency}}</span>
+                                                            <span ng-if="COLI.SubTotal != null">{{COLI.SubTotal | currency }}</span>
+                                                        </td> 
+                                                       <td></td> 
+                                                  </tr> 
+                                                </tbody>
+                                           </table>
+                                         </div>
+                                         <!-- End: Merchandise Line Items grid  -->
+                                    </div>
+                                    <!-- End: Merchandise Section -->     
+                                    
+                                      <!-- Start: SoHeader List Section --> 
+                                        <div class="col-md-12 col-xs-12 SoHeaderList" ng-repeat="SoHeader in serviceWorksheetModal.serviceWorksheetData.SOHeadersList"> <!-- serviceWorksheetModal.serviceWorksheetData.SOHeadersList -->
+                                                                                                                                                                                    <!-- Ticket#1845: unit.SOHeaderList -> serviceWorksheetModal.serviceWorksheetData.SOHeadersList: 
+                                                                                                                                                                                        Changed By Pooja 1 May 2017 -->
+                                            <div> <!-- ng-if="SoHeader.SOLIList && SoHeader.SOLIList.length != 0" -->
+                                           <div class="col-md-12 col-xs-12 SoHeaderName">
+                                               {{SoHeader.SoHeaderName}}
+                                               <span class="pull-right SoHeaderTotal">{{SoHeader.Total | currency}}</span>
+                                           </div>       
+                                           <div class="SOHeaderInfoBlock">
+                                                <!-- Start: Ticket#1845: Added By Pooja 1 May 2017 -->
+                                                <div class="col-md-12 SOHeaderInfoBlockW P0 FL"  ng-if = "SoHeader.Unit">
+                                                     <label class ="pull-left SOHeaderInfoBlockLabel">Unit:  </label>
+                                                     <div class = "pull-left SOHeaderInfoBlockContent">
+                                                         <p class ="pull-left">{{SoHeader.Unit}} </p>
+                                                     </div>
+                                                 </div>
+                                                 <!-- End: Ticket#1845: Added By Pooja 1 May 2017 -->
+                                                 
+                                               <div class="col-md-12 SOHeaderInfoBlockW P0 FL"  ng-if = "SoHeader.ConcernList.length != 0">
+                                                   <label class ="pull-left SOHeaderInfoBlockLabel">{!$Label.Label_Concern}:  </label>
+                                                   <div class = "pull-left SOHeaderInfoBlockContent">
+                                                       <!-- <p ng-repeat="concern in SoHeader.ConcernList" class = "pull-left">{{concern}} </p> -->
+                                                       <p ng-if="SoHeader.ConcernList.length == 1" class ="pull-left">{{SoHeader.ConcernList[0]}} </p>
+                                                       <ul ng-if="SoHeader.ConcernList.length > 1"><li ng-repeat="concern in SoHeader.ConcernList">{{concern}}</li></ul>
+                                                   </div>
+                                               </div><!-- Things are broken -->
+                                              <div class="col-md-12 SOHeaderInfoBlockW P0 FL"  ng-if = "SoHeader.CauseList.length != 0">
+                                                  <label  class ="pull-left SOHeaderInfoBlockLabel">{!$Label.Label_Cause}:  </label>
+                                                   <div class = "pull-left SOHeaderInfoBlockContent">
+                                                       <!-- <p  ng-repeat = "cause in SoHeader.CauseList" class = "pull-left">{{cause}} </p> -->
+                                                       <p ng-if="SoHeader.CauseList.length == 1" class ="pull-left">{{SoHeader.CauseList[0]}} </p>
+                                                       <ul ng-if="SoHeader.CauseList.length > 1"><li ng-repeat = "cause in SoHeader.CauseList">{{cause}}</li></ul>
+                                                   </div>
+                                              </div>
+                                                           <!-- Things are broken -->
+                                              <div class="col-md-12 SOHeaderInfoBlockW P0 FL"  ng-if = "SoHeader.CorrectionList.length != 0">
+                                                   <label  class ="pull-left SOHeaderInfoBlockLabel">{!$Label.Label_Correction}:  </label>
+                                                   <div class = "pull-left SOHeaderInfoBlockContent">
+                                                       <!-- <p ng-repeat="correction in SoHeader.CorrectionList" class = "pull-left">{{correction}} </p> -->
+                                                       <p ng-if="SoHeader.CorrectionList.length == 1" class ="pull-left">{{SoHeader.CorrectionList[0]}} </p>
+                                                       <ul ng-if="SoHeader.CorrectionList.length > 1"><li ng-repeat="correction in SoHeader.CorrectionList">{{correction}}</li></ul>
+                                                   </div>
+                                              </div><!-- Things are broken -->
+                                               <!-- <p><label style="min-width: 86.23px" ng-repeat="cause in SoHeader.CauseList">Cause: </label>  {{cause}}</p> --><!-- The customer broke them -->
+                                               <!-- <p><label ng-repeat="correction in SoHeader.CorrectionList">Correction: </label>  {{correction}}</p> --><!-- We fixed the things -->
+                                           </div>
+                                           <!-- Start: SoHeader Line Items grid  --> 
+                                            <div class="gid_container_SoLineItems">
+                                                 <table class="table pull-left" id="Print_Preview_SoLineItemsGrid"  ng-if="SoHeader.SOGridItems && SoHeader.SOGridItems.length != 0"> <!-- SoHeader.SOLIList && SoHeader.SOLIList.length != 0 -->
+                                                  <col width="15%" />
+                                                 <col width="37%" /> 
+                                                 <col width="2%" />
+                                                 <col width="10%" />
+                                                 <col width="8%" />
+                                                 <col width="4%" />
+                                                 <col width="11%" />
+                                                 <col width="12%" />
+                                                 <col width="1%" />
+                                                  <thead>
+                                                      <tr class="tableHeader">
+                                                          <th>{!$Label.Label_Type}</th>
+                                                          <th>Item/Description</th>
+                                                          <th></th>
+
+                                                          <th>{!$Label.Label_Status}</th>
+                                                          <th>Qty</th>
+                                                          <th></th>
+                                                          <th>{!$Label.Label_Price}</th>
+
+                                                          <th style="text-align: right !important;">{!$Label.Label_Total}</th>
+                                                          <th></th>
+                                                      </tr>
+                                                  </thead>
+
+                                                  <tbody class="" ng-repeat="soGrid in SoHeader.SOGridItems">
+                                                      <tr ng-show="soGrid.SOKH.Id != null">
+                                                          <td>Kit</td>
+                                                          <td>{{soGrid.SOKH.ItemDescription}}</td> 
+                                                          <td></td>
+                                                          <td></td>  
+                                                          <td></td> 
+
+                                                          <td></td>
+                                                          <td ></td> 
+                                                          <td style="text-align: right !important;">{{soGrid.SOKH.FixedPrice | currency}}</td> 
+                                                          <td></td>   
+                                                      </tr>
+                                                      <tr ng-repeat="SoLi in soGrid.SOKH.SOLIList">
+                                                          <td  ng-if = "SoLi.IsPart" 
+                                                          ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                              Part
+                                                          </td> 
+                                                          <td  ng-if = "SoLi.IsFee" 
+                                                          ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                              Fee 
+                                                          </td>
+                                                          <td  ng-if = "SoLi.IsLabour" 
+                                                          ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                              Labor
+                                                          </td>
+                                                          <td  ng-if = "SoLi.IsSublet" 
+                                                            ng-class="{'KitLineItemPL': soGrid.SOKH.Id != null}">
+                                                                Sublet
+                                                          </td>
+                                                          <td>{{SoLi.ItemDesc}}</td> 
+                                                          <td></td>
+                                                          <td ng-if = "(SoLi.IsPart && !SoLi.IsNonInventoryPart)">{{SoLi.Status}}</td>  
+                                                          <td ng-if = "SoLi.IsPart && SoLi.IsNonInventoryPart">{{SoLi.Status == "Invoiced" ? "Invoiced" : "In Stock"}}</td>   <!-- Changed by richa Issue #1879 25 april -->
+                                                          <!-- START: Edited by kajal 8th june 2017, #2017 -->
+                                                          <!-- <td ng-if = "SoLi.IsFee">{{SoLi.Status == "Invoiced" ? "Invoiced" : "Ready"}}</td> -->  <!-- Changed by richa Issue #1879 25 april -->
+                                                          <!-- <td ng-if = "SoLi.IsLabour">{{SoHeader.SoHeaderInvoiceStatus == "Invoiced" ? "Invoiced" : "Ready"}}</td> -->
+                                                          <td ng-if = "SoLi.IsFee || SoLi.IsLabour || SoLi.IsSublet">{{(SoHeader.SoHeaderInvoiceStatus == 'Invoiced') ? 'Invoiced' : 'Ready'}}</td>
+                                                          <!-- END: Edited by kajal 8th june 2017, #2017 -->
+                                                          <td>{{SoLi.QtyNeeded}}</td> 
+
+                                                          <td style="text-align: right !important; padding: 0 !important; ">@</td>
+                                                          <td >{{SoLi.KitPrice | currency}}</td> 
+                                                          <td style="text-align: right !important;"
+                                                              ng-show="soGrid.SOKH.Id == null">
+                                                              <span>{{(SoLi.QtyNeeded * SoLi.KitPrice) | currency}}</span>
+                                                          </td>
+                                                          <td></td>   
+                                                      </tr>
+                                                  </tbody>
+                                                  <tbody ng-if="SoHeader.ShopSupplyTotal > 0">
+                                                    <tr>
+                                                        <td ></td>
+                                                        <td >Shop Supplies <span ng-if="serviceWorksheetModal.serviceWorksheetData.IsItemizedByLaborCode">Detail</span></td> 
+                                                        <td > </td>
+                                                        <td > </td>
+                                                        <td >1</td>
+                                                        <td style="text-align: right !important; padding: 0 !important; ">@</td> 
+                                                        <td>{{SoHeader.ShopSupplyTotal | currency}}</td> 
+                                                        <td style="text-align: right !important;">
+                                                            <span>{{SoHeader.ShopSupplyTotal | currency}}</span>
+                                                        </td>
+                                                        <td > </td>
+                                                    </tr>
+                                                    <tr class="shopSuppliesDetailList" ng-if="SoHeader.ShopSupplyDetailSet.length > 0">
+                                                        <td></td>
+                                                        <td colspan="5">
+                                                            <ul class="ListTypeHypen">
+                                                              <li ng-repeat="supplyValue in SoHeader.ShopSupplyDetailSet">{{supplyValue}}</li>
+                                                            </ul>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                                  
+                                              </table>
+                                            </div>
+                                            <!-- End: SoHeader Line Items grid  -->
+                                           </div>
+                                      </div>
+                                      <!-- End: SoHeader List Section -->
+                                      
+                                    <!-- Start: Deal Section -->
+                                    <div class="col-md-12 col-xs-12 MerchandiseSection SoHeaderList" id=""
+                                        ng-if = "serviceWorksheetModal.serviceWorksheetData.DealInfo.UnitList.length>0">
+                                        <div class="col-md-12 col-xs-12 SoHeaderName">
+                                            Deal
+                                            <span class="pull-right">{{serviceWorksheetModal.serviceWorksheetData.DealInfo.DealTotal | currency}}</span>
+                                        </div>
+                                        <div class="SOHeaderInfoBlock">
+                                            <div class="col-md-12 SOHeaderInfoBlockW P0 FL" ng-if="serviceWorksheetModal.serviceWorksheetData.DealInfo.DealFinanceObj.CoBuyerId != null">
+                                                <label class ="pull-left SOHeaderInfoBlockLabel">Co-buyer: </label>
+                                                <div class ="pull-left SOHeaderInfoBlockContent">
+                                                    <p class="pull-left">{{serviceWorksheetModal.serviceWorksheetData.DealInfo.DealFinanceObj.CoBuyerName}}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="gid_container_SoLineItems" ng-if="serviceWorksheetModal.serviceWorksheetData.DealInfo.UnitList.length>0">
+                                            <table class="table pull-left" id="">
+                                                <col width="15%" />
+                                                <col width="37%" /> 
+                                                <col width="2%" />
+                                                <col width="10%" />
+                                                <col width="8%" />
+                                                <col width="4%" />
+                                                <col width="11%" />
+                                                <col width="12%" />
+                                                <col width="1%" />
+                                                <thead>
+                                                    <tr class="tableHeader">
+                                                        <th>{!$Label.Label_Type}</th>
+                                                        <th>Item/Description</th>
+                                                        <th></th>
+                                                        <th>{!$Label.Label_Status}</th>
+                                                        <th>Qty</th>
+                                                        <th></th>
+                                                        <th>{!$Label.Label_Price}</th>
+    
+                                                        <th style="text-align: right !important;">{!$Label.Label_Total}</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody ng-repeat="dealInfo in serviceWorksheetModal.serviceWorksheetData.DealInfo.UnitList" ng-init="dealItemIndex = $index">
+                                                    <tr>
+                                                        <td>Unit</td>
+                                                        <td>{{dealInfo.ItemDesc}}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td>{{dealInfo.BaseUnitPriceTotal | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-if="(dealInfo.FactoryOptionList == undefined || dealInfo.FactoryOptionList.length==0) && 
+                                                        (dealInfo.DealerOptionList == undefined || dealInfo.DealerOptionList.length==0)">
+                                                        {{dealInfo.DealUnitPriceAndCostTotal | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-if="!((dealInfo.FactoryOptionList == undefined || dealInfo.FactoryOptionList.length==0) && 
+                                                        (dealInfo.DealerOptionList == undefined || dealInfo.DealerOptionList.length==0))">
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr ng-repeat = "factoryOptionData in dealInfo.FactoryOptionList" ng-init="factoryOptionIndex = $index">
+                                                        <td></td>
+                                                        <td>{{factoryOptionData.ItemDescription}}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td>{{factoryOptionData.Price | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-if="dealInfo.FactoryOptionList.length>0 && (dealInfo.DealerOptionList == undefined 
+                                                        || dealInfo.DealerOptionList.length==0) && (factoryOptionIndex == (dealInfo.FactoryOptionList.length-1))">
+                                                        {{dealInfo.DealUnitPriceAndCostTotal | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-if="!(dealInfo.FactoryOptionList.length>0 && (dealInfo.DealerOptionList == undefined 
+                                                        || dealInfo.DealerOptionList.length==0) && (factoryOptionIndex == (dealInfo.FactoryOptionList.length-1)))">
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr ng-repeat = "dealerInstalledOptionData in dealInfo.DealerOptionList" ng-init="dealerInstalledOptionIndex = $index">
+                                                        <td></td>
+                                                        <td>{{dealerInstalledOptionData.ItemDescription}}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td>{{dealerInstalledOptionData.TotalPrice | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-if="dealInfo.DealerOptionList.length>0
+                                                        && (dealerInstalledOptionIndex == (dealInfo.DealerOptionList.length-1))">
+                                                        {{dealInfo.DealUnitPriceAndCostTotal | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-if="!(dealInfo.DealerOptionList.length>0
+                                                        && (dealerInstalledOptionIndex == (dealInfo.DealerOptionList.length-1)))">
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr ng-repeat-start= "optionFeeDataKH in dealInfo.DealKitHeaderList"
+                                                     ng-show="optionFeeDataKH.hasChildren">
+                                                        <td></td>
+                                                        <td>{{optionFeeDataKH.ItemDescription}}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td style="text-align: right !important;">{{optionFeeDataKH.Price | currency}}</td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr ng-repeat = "optionFeeData in optionFeeDataKH.OptionAndFeeList">
+                                                        <td></td>
+                                                        <td>{{optionFeeData.Item}}</td>
+                                                        <td></td>
+                                                        <td>{{optionFeeData.Status}}</td>
+                                                        <td>{{optionFeeData.Qty}}</td>
+                                                        <td>@</td>
+                                                        <td>{{optionFeeData.Price | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-show="!optionFeeDataKH.hasChildren">{{optionFeeData.Total | currency}}</td>
+                                                        <td style="text-align: right !important;" ng-show="optionFeeDataKH.hasChildren"></td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr ng-repeat-end="ng-repeat-end"></tr>
+                                                </tbody>
+                                                <tbody ng-repeat="dealInfo in serviceWorksheetModal.serviceWorksheetData.DealInfo.TradeInList" 
+                                                    ng-init="dealItemIndex = $index">
+                                                    <tr>
+                                                        <td>Trade</td>
+                                                        <td>{{dealInfo.ItemDesc}}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td style="text-align: right !important;">
+                                                            {{dealInfo.AgreedValue | currency}}
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tbody>
+                                                  <tbody ng-repeat="dealFIPInfoRec in serviceWorksheetModal.serviceWorksheetData.DealInfo.DealFinanceObj.FIProductList" 
+                                                        ng-if = "serviceWorksheetModal.serviceWorksheetData.DealInfo.DealType == 'Financed'
+                                                                 && serviceWorksheetModal.serviceWorksheetData.DealInfo.DealFinanceObj.FIProductList.length>0" ng-init="dealFIPInfoIndex = $index">
+                                                    <tr>
+                                                        <td>Financing Product</td>
+                                                        <td>{{dealFIPInfoRec.ItemDescription}}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td>{{dealFIPInfoRec.Price | currency}}</td>
+                                                        <td style="text-align: right !important;">
+                                                            {{dealFIPInfoRec.Price | currency}}
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <!-- End: Deal Section -->
+                                    
+                                    <!-- Start: Totals And Deposits Section -->
+                                    <div class="col-md-12 col-xs-12 TotalsAndDepositsSection"> 
+                                   
+                                        <!-- Start: Deposits List Section --> 
+                                        <div class="DepositsSection" ng-if="serviceWorksheetModal.serviceWorksheetData.CODepositList.length != 0"> <!-- ng-if="unit.CustomerInfo.CustomerName != null && unit.CustomerInfo.CustomerName != '' && unit.CustomerInfo.CustomerName != undefined" -->
+                                            <div class="DepositsSectionHeader">Deposits</div>
+                                            <table class="table pull-left" id="Print_Preview_DepositLineItemsGrid">  <!-- ng-if="SoHeader.SOLIList && SoHeader.SOLIList.length != 0" -->
+                                                <col width="35%" />
+                                                <col width="35%" /> 
+                                                <col width="10%" />
+                                                <col width="20%" />
+                                                <tbody class="" ng-repeat="CODeposit in serviceWorksheetModal.serviceWorksheetData.CODepositList"
+                                                    ng-if="CODeposit.depositType != 'Cash Rounding'"> <!-- ng-if Added by richa #1992 -->
+                                                    <tr>
+                                                        <td>{{CODeposit.depositType}}</td>
+                                                        <td>{{CODeposit.CreatedDate}}</td> 
+                                                        <td></td>
+                                                        <td>{{CODeposit.Amount | currency}}</td> 
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <!-- End: Deposits List Section -->
+                                            
+                                            
+                                        <div class="col-md-5 TotalsBlock pull-right">
+                                                    <div class="TotalsHeader">TOTALS</div>
+                                                    <div class="TotalsContent">
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalUnits != 0">
+                                                            <p class="pull-left MB0">Units</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalUnits | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalTradeIns != 0">
+                                                            <p class="pull-left MB0">Trade-Ins</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalTradeIns | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalLienPayout != 0">
+                                                            <p class="pull-left MB0">Lien Payout</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalLienPayout | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalWarranty != 0">
+                                                            <p class="pull-left MB0">Warranty</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalWarranty | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalSublet != 0">
+                                                            <p class="pull-left MB0">Sublet</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalSublet | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalOtherProducts != 0">
+                                                            <p class="pull-left MB0">Other Products</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalOtherProducts | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalPart != 0">
+                                                            <p class="pull-left MB0">Parts</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalPart | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalLabor != 0">
+                                                            <p class="pull-left MB0">Labor</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalLabor | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalFee != 0">
+                                                            <p class="pull-left MB0">Fees</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalFee | currency}}</p>
+                                                        </div>                                                  
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalShopSupplies != 0">
+                                                            <p class="pull-left MB0">Shop Supplies</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalShopSupplies | currency}}</p>
+                                                        </div>    
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.StampDuty != 0">
+                                                            <p class="pull-left MB0">Stamp Duty</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.StampDuty | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalFinanceProducts != 0">
+                                                            <p class="pull-left MB0">Financing Product</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.TotalFinanceProducts | currency}}</p>
+                                                        </div>                                                
+                                                    </div>
+                                                    <div class="TotalsContent TotalsContent1">
+                                                        <div class="FWB">
+                                                            <p class="pull-left MB0">Sub-Total</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.SubTotal | currency}}</p></div>
+                                                        <div ng-if="!serviceWorksheetModal.serviceWorksheetData.IsTaxIncludePricing"
+                                                            ng-repeat="tax in serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.SalesTaxList">
+                                                            <p class="pull-left MB0">{{tax.TaxName}}</p>
+                                                            <p class="pull-right MB0">{{tax.TaxAmount | currency}}</p>
+                                                        </div>
+                                                        <div class="FWB">
+                                                            <p class="pull-left MB0">Total</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.Total | currency}}</p>
+                                                        </div>
+                                                        <div ng-if="serviceWorksheetModal.serviceWorksheetData.IsTaxIncludePricing"
+                                                            ng-repeat="tax in serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.SalesTaxList">
+                                                            <p class="pull-left MB0">{{tax.TaxName}} included</p>
+                                                            <p class="pull-right MB0">{{tax.TaxAmount | currency}}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="pull-left MB0">Amount Paid</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.AmountPaid | currency}}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="pull-left MB0">Balance Due</p>
+                                                            <p class="pull-right MB0">{{serviceWorksheetModal.serviceWorksheetData.WorksheetTotal.BalanceDue | currency}}</p>
+                                                        </div>
+                                                    </div>
+                                       </div>
+                                   </div>
+                                    <!-- End: Totals Section --> 
+                                    <!-- Start: Disclaimers Section --> 
+                                    <div class="disclaimersSection">
+                                        <p class="MB0 WarrantyText">{{serviceWorksheetModal.serviceWorksheetData.StoreInfo.OrderDepositWarrantyText}}</p>
+                                        <div ng-show="serviceWorksheetModal.serviceWorksheetData.StoreInfo.IsSignatureLineforOrderDeposit" class="WarrantySignatureText">
+                                            <div class="pull-left"><p>Signature :&nbsp;&nbsp; </p></div>
+                                            <div class="WarrantySignature"></div>
+                                        </div>
+                                    </div>
+                                    <!-- End: Disclaimers Section --> 
+                                    <div class="col-lg-3 col-md-3 col-lg-offset-9 col-md-offset-9 serviceWorksheetPrintBTn">
+                                        <button ng-click="serviceWorksheetModal.printview()" class="btn C11 T4 addmoreinfoBtn active_btn pull-right MT25 MR0">Print</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+
+
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

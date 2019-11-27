@@ -1,0 +1,93 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" controller="Oauth_callbackCtrl">
+    <html ng-app="IntegrationCallbackApp">
+        <head>
+            <title>Accounting Integration Setup</title> 
+            <apex:stylesheet value="{!Application}/css/global.css"/>
+            <apex:includeScript value="{!Assests}/Js/angular.min.js" />
+            <apex:includeScript value="{!Application}/Js/Other/util.js" />
+            <style type='text/css'>
+                .errorBlock{
+                    margin: 0 auto;
+                    text-align: center;
+                    margin-top: 50px;
+                    color: red;
+                }
+            </style>
+            <script>
+            
+                function getUrlVars() {
+                    var vars = {};
+                    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+                    vars[key] = value;
+                    });
+                    return vars;
+                }
+                
+                var IntegrationCallbackModule = angular.module('IntegrationCallbackApp', []);
+                
+                IntegrationCallbackModule.controller('IntegrationCallbackController', function ($scope, IntegrationCallbackFactory) {
+                    $scope.IntegrationCallbackModel = {};
+                    $scope.IntegrationCallbackModel.isLoading  = true;
+                    $scope.IntegrationCallbackModel.loadData = function(){
+                        $scope.IntegrationCallbackModel.urlParameters = {};
+                        console.log(getUrlVars());
+                        for(var urlVar in getUrlVars()) {
+                            $scope.IntegrationCallbackModel.urlParameters[urlVar] = decodeURI(getUrlVars()[urlVar]);
+                        }
+                        IntegrationCallbackFactory.saveAccessToken(angular.toJson($scope.IntegrationCallbackModel.urlParameters)).then(function(successfulResult) {
+                            if(successfulResult == 'success'){
+                                var s = window.opener.angular.element('#AccountingSetupController').scope();
+                                s.AccountingSetupModel.getConnectedCompanyInfo();
+                                window.close();
+                            }else{
+                                $scope.IntegrationCallbackModel.isLoading  = false;
+                                $scope.IntegrationCallbackModel.errorMessage = successfulResult;
+                            }
+                        },
+                        function(errorSearchResult){ 
+                            $scope.IntegrationCallbackModel.errorMessage = successfulResult;
+                            $scope.IntegrationCallbackModel.isLoading  = false;
+                        });
+                    }
+                });
+                
+                IntegrationCallbackModule.factory('IntegrationCallbackFactory', function($q){
+                    return {
+                        saveAccessToken: function(urlParametersJson) {
+                            urlParametersJson = encodeString(urlParametersJson);
+                            var deferred = $q.defer();
+                           // make AJAX request to the remote service
+                           Visualforce.remoting.Manager.invokeAction(
+                               '{!$RemoteAction.Oauth_callbackCtrl.saveAccessSecretKeys}',
+                                urlParametersJson,
+                               function (result, event) {
+                               if (event.type == 'exception') {
+                                   deferred.reject(event.message);
+                               } else {
+                                   var apiresponse = decodeString(result);
+                                   deferred.resolve(apiresponse);
+                               }
+                           }, {
+                               escape : true
+                           });
+                           return deferred.promise;
+                        }
+                    }
+                });
+            </script>
+        </head>
+        <body ng-cloak="ng-cloak" ng-controller="IntegrationCallbackController"
+                                   ng-init="IntegrationCallbackModel.loadData()" >
+              <div class="LoadingDiv" ng-show="IntegrationCallbackModel.isLoading">
+	            <div class="loadingIconContainer">
+	                <c:BPLoading />
+	            </div>
+	        </div>   
+            <div class="errorBlock" ng-if="!IntegrationCallbackModel.isLoading">
+                <h3> Some error occurred... </h3>
+                <p>error Message{{IntegrationCallbackModel.errorMessage}}</p>
+            </div>
+            
+        </body>
+    </html>
+</apex:page>

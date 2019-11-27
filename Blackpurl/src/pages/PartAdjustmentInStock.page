@@ -1,0 +1,148 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0" controller="GlobalController">
+		<!-- <apex:stylesheet value="{!Application}/css/PartAdjustmentInStock.css"/>  -->
+        <div>
+         <route-loading-indicator></route-loading-indicator>
+        <div id="addNewPartAdjust" class="modal fade" role="dialog">
+	        <div class="modal-dialog">
+	            <!-- Modal content-->
+	            <div class="modal-content col-md-12">
+	                <div class="modal-body popup_container kit_popup_container">
+	                    <div class="popupinside col-md-12 popupright partAdjustPopUp ">
+	                    <div class="right_heading_container col-md-12">
+	                                <h1 class="right_panel_heading">{{'Adjust_Stock_Quantity'| translate }}  </h1>
+	                                <div class="savecancle_btncntnr">
+	                                <button class="btn btn-default grayBtn" id="closemodal"
+	                                              ng-click="partAdjustModal.adjustclosePopup()" >{{'Cancel_Label'| translate}}
+	                                </button>
+	                                  <button class="btn btn-default greenBtn"  ng-disabled = "partAdjustModal.adjustPart.isPreviewActive"
+	                                              ng-click="partAdjustModal.showPreview(partId, partAdjustModal.adjustPart.QtyIn,partAdjustModal.adjustPart.cost,partAdjustModal.adjustBucketList)" >{{'Preview'| translate}}
+	                                </button>
+	                                 <button class="btn btn-default greenBtn" ng-disabled = "partAdjustModal.isFormSubmitted" ng-show = "!partAdjustModal.adjustPart.showAdjustPreview"
+	                                 	ng-click="partAdjustModal.isFormSubmitted = true; partAdjustModal.applyAction()">{{'Label_Apply'| translate }}</button>
+	                                
+	                                </div>
+	                    </div>
+	                
+	                	 <div class="tabconainer">
+	                                <form>
+	                                    <div class="clearfix"></div>
+	                                    <div class="option_field MT20">
+	                                        <div class="lable_fields">
+	                                            <p class="pull-right">{{'I_want_to'| translate }}</p>
+	                                        </div>
+	                                        <div class="form_fields MT">
+	                                            <div class="form-group haff MB ">
+	                                                <select class="form-control" id="make" ng-model="partAdjustModal.adjustPart.SelectedInStock" 
+	                                                 ng-change = "partAdjustModal.PreviewActive(partAdjustModal.adjustPart.SelectedInStock, partAdjustModal.adjustPart.QtyIn, partAdjustModaladjustPart.adjustPart.cost)">
+	                                                    <option value="select">{{'Label_Select'| translate }}</option>
+	                                                    <option value="Increase">{{'increase'| translate }}</option>  
+	                                                    <option value="Decrease">{{'decrease'| translate }}</option>
+	                                                </select>
+	                                            </div>
+	                                        </div>
+	                                        <div class="lable_fields">
+	                                            <p class="pull-right">{{'In_stock_by'| translate }}</p>
+	                                        </div>
+	                                        <div class="form_fields">
+	                                            <div class="form-group large MB">
+	                                                <input type="text" class="form-control" id="txtdescription" ng-model="partAdjustModal.adjustPart.QtyIn" placeholder="{{'Placeholder_Enter_qty'| translate }}"  
+	                                                        maxlength="10" ng-change = "partAdjustModal.PreviewActive(partAdjustModal.adjustPart.SelectedInStock, partAdjustModal.adjustPart.QtyIn, partAdjustModal.adjustPart.cost)"/>
+	                                            </div>
+	                                        </div>
+	                                    </div>
+	                                    
+	                                       <div class="option_field increaseOptionField" ng-if = "partAdjustModal.adjustPart.SelectedInStock == 'Increase'">
+	                                            <div class ="pull-left"> 
+	                                            <span class="T3_1 pull-left marginright5 margintop10">{{'I_want_set_cost'| translate }}</span> <!-- Changed by richa see -> set #135 23/09/16 --> <!-- Changed by richa T3 -> T3_1 -->
+	                                             <span class ="T3 pull-left marginright5 margintop10" ng-show = "partAdjustModal.adjustPart.QtyIn">{{partAdjustModal.adjustPart.QtyIn}}</span> 
+	                                             <span class="T3_1 pull-left marginright5 margintop10">{{'Item_to'| translate }}</span> <!-- Changed by richa T3 -> T3_1 -->
+		                                            <div class="form_fields marginright5"> 
+			                                            <div class="form-group small MB"> 
+			                                            <input type="text" class="form-control" id="txtcost" ng-model = "partAdjustModal.adjustPart.cost" ng-change = "partAdjustModal.PreviewActive(partAdjustModal.adjustPart.SelectedInStock,partAdjustModal.adjustPart.QtyIn,partAdjustModal.adjustPart.cost)"/>
+			                                             </div>
+		                                             </div> 
+		                                            <span class="T3_1 pull-left margintop10"> {{'Per_item'| translate }}</span><!-- Changed by richa T3 -> T3_1 -->
+	                                              </div>
+	                                    </div>
+	                                </form>
+	                            </div>
+	                	<div class ="col-md-12 P0 main_container_partAdjust" ng-show = "!partAdjustModal.adjustPart.showAdjustPreview">
+	                		<p class="PartAdjustHeadding">{{'CostDetails_Help_Text'| translate }}</p>
+	                		<div class="gid_container_Customer part_Adjust_gid_container" id="part_Adjust_gid_container">
+	                                        <table class="table pull-left" id="part_Adjust_ItemGrid">
+	                                            <col width="1%" />
+	                                            <col width="14%" />
+	                                            <col width="10%" />
+	                                            <col width="10%" />
+	                                            <col width="15%" />
+	                                            <col width="10%" />
+	                                            <col width="10%" />
+	                                            <col width="10%" />
+	                                            <col width="10%" />
+	                                            <col width="10%" />
+	                                            <thead>
+	                                                <tr class="tableHeader T3 C2 ">
+	                                                    <th class="T3 text-uppercase PLR0"></th>
+	                                                    <th class="T3 text-uppercase PLR0">{{'Label_Source'| translate }}</th>
+	                                                    <th class="T3 text-uppercase PLR0">{{'Label_Date'| translate }}</th>
+	                                                    <th class="T3 text-uppercase PLR0">{{'Label_id_no'| translate }}</th>
+	                                                    <th class="T3 text-uppercase PLR0">{{'Label_Reference'| translate }}</th>
+	                                                    <th class="T3 text-uppercase text-center">{{'Label_Qty_In'| translate }}</th>
+	                                                    <th class="T3 text-uppercase text-center">{{'Label_Qty_Out'| translate }}</th>
+	                                                    <th class="T3 text-uppercase text-center">{{'Label_Remaining'| translate }}</th>
+	                                                    <th class="T3 text-uppercase text-center">{{'Cost'| translate }}</th>
+	                                                    <th class="T3 text-uppercase text-center">{{'Label_Total'| translate }}</th>
+	                                                </tr>
+	                                            </thead>
+	                                            
+	                                            
+	                                             <tbody class="parentBody printChild" ng-repeat = " FifoBucket in partAdjustModal.adjustBucketListPreview " ng-disabled="FifoBucket.PartFIFOActivityLineItemList.length == 0" ng-init="FifoBucketHeaderIndex = $index" >
+	                                                <tr>
+		                                                <td></td>
+		                                                <td>{{FifoBucket.SourceName}}</td>
+		                                                <td>{{FifoBucket.CreatedDate}}</td>
+		                                                <td><a href="">{{FifoBucket.UniqueId}}</a></td>
+		                                                <td>{{FifoBucket.Reference}}</td>
+		                                                <td class ="text-center" >{{FifoBucket.QtyIn}}</td>
+		                                                <td class ="text-center">{{FifoBucket.QtyOut}}</td>
+		                                                <td class ="text-center">{{FifoBucket.RemainingQty}}</td>
+		                                                <td class ="text-center">{{FifoBucket.Cost | currency}}</td>
+		                                                <td class ="text-center">{{FifoBucket.Total | currency}}</td>  
+	                                                </tr>
+	                                                <tr ng-repeat="FifoBucketLineItem in FifoBucket.PartFIFOActivityLineItemList" 
+	                                                	ng-class="{'T3': FifoBucketLineItem.isCostAdjustment, 'T7' : !FifoBucketLineItem.isCostAdjustment}">
+		                                                <td></td>
+		                                                <td></td>
+		                                                <td>{{FifoBucketLineItem.CreatedDate}}</td>
+		                                                <td><a href="">{{FifoBucketLineItem.UniqueId}}</a></td>
+		                                                <td>{{FifoBucketLineItem.Reference}}</td>
+		                                                <td></td>
+		                                                <td class ="text-center">{{FifoBucketLineItem.QtyOut}}</td>
+		                                                <td></td>
+		                                                <td></td>
+		                                                <td></td>
+	                                                </tr>
+	                                               
+	                                            </tbody>
+	                                        </table>
+	                                    </div>
+	                	</div>
+	                	 <div class="right_heading_container col-md-12">
+	                                <div class="savecancle_btncntnr">
+	                                 <button class="btn btn-default grayBtn" id="closemodal"
+	                                     ng-click="partAdjustModal.adjustclosePopup()" >{{'Cancel_Label'| translate }}</button>
+	                                  <button class="btn btn-default greenBtn" 
+	                                      ng-click="partAdjustModal.showPreview(partId, partAdjustModal.adjustPart.QtyIn,partAdjustModal.adjustPart.cost,partAdjustModal.adjustBucketList )" 
+	                                      ng-disabled = "partAdjustModal.adjustPart.isPreviewActive">{{'Preview'| translate }}
+	                                 </button>
+	                                 <button class="btn btn-default greenBtn" ng-disabled = "partAdjustModal.isFormSubmitted" ng-show = "!partAdjustModal.adjustPart.showAdjustPreview"
+	                                      ng-click="partAdjustModal.isFormSubmitted = true; partAdjustModal.applyAction()">{{'Label_Apply'| translate }}</button>
+	                                </div>
+	                            </div>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	    </div>
+	</div>
+</apex:page>

@@ -1,0 +1,362 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"  controller="GlobalController">
+        <!-- <apex:stylesheet value="{!Application}/css/AddEditFee.css"/> -->
+	<div>
+   	<route-loading-indicator></route-loading-indicator>
+   	<div ng-if="!isRouteLoading" ng-cloak="ng-cloak"> 
+	<div id="AddEditFee" class="modal fade" role="dialog">
+		<div class="modal-dialog"
+			ng-class="{'edit_modal-dialog' : AddEditFee.isEditMode == true}">
+			<!-- Modal content-->
+			<div class="modal-content col-md-12">
+				<div class="modal-body popup_container fee_popup_container"
+				ng-class="{ fee_popup_container_edit: AddEditFee.isEditMode==true }">
+					<div class="popupinside">
+
+						<!-- popup left start here -->
+						<div class="col-lg-4 col-md-4 popupleft"
+							ng-show="AddEditFee.isEditMode!=true" style="height: 430px;">
+							<div class="popupleft_container" id="topsection">
+  
+								<h1 class="letpanel_heading">{{ 'existing_fees_like_this' | translate }}</h1>
+								<i class="fa fa-question-circle helptip" data-toggle="tooltip"
+									title="Similar Fees that already exist in your business"
+									style="float: left; font-weight: bold; color: #B7BEC6; margin-top: 20px; margin-bottom: 10px; font-size: 20px;"></i>
+
+								<!-- Similar record 1st record -->
+								<div class="min_overflow">
+									<div class="goldbox col-lg-12 col-md-12"
+										ng-repeat="fee in AddEditFee.SimilarFee">
+										<div class="rightgoldbox rightgoldboxML" id="CustomerSugesstionDiv" style="margin-left: 0px;">
+											<div>
+												<p class="cust_name">{{fee.Code}}</p>
+												<p>{{ 'PriceLevelGrid_Description' | translate }} : {{fee.Description}}</p>
+												<p>{{ 'Label_Price' | translate }} : ${{fee.Price}}</p>
+												<p>
+													{{ 'ViewLabour_Taxable' | translate }} : <span class="ng-binding  PL20"
+														ng-if="fee.IsTaxable">{{ 'Label_Yes' | translate }}</span> <span
+														class="ng-binding  PL20" ng-if="!fee.IsTaxable">{{ 'Label_No' | translate }}</span>
+												</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- popup left end here -->
+						<div style="height: 450px;" class="popupright"
+							ng-class="{'col-lg-8 col-md-8': AddEditFee.isEditMode == false , 'col-lg-12 col-md-12 leftbordernone': AddEditFee.isEditMode == true}">
+							<div class="right_heading_container col-md-12">
+								<h1 class="right_panel_heading" ng-if="!AddEditFee.isEditMode">{{ 'New_Label' | translate }}
+									{{ 'Fee_Object_Display_Label' | translate }}</h1>
+								<h1 class="right_panel_heading" ng-if="AddEditFee.isEditMode">{{ 'Edit_Label' | translate }}
+									{{ 'Fee_Object_Display_Label' | translate }}</h1>
+
+								<div class="savecancle_btncntnr">
+									<button type="button" id="closemodal"
+										class="btn btn-default grayBtn"
+										ng-click="AddEditFee.closePopup();"
+										ng-attr-tabindex="{{AddEditFee.tabIndexValue + 31}}" ng-keydown = "AddEditFee.adjustTabIndex($event);">{{ 'Cancel_Label' | translate }}</button>
+									<button type="button" class="btn btn-default greenBtn"
+										ng-click="AddEditFee.SaveFeeForm();"
+										ng-disabled="AddEditFee.disableSaveButton"
+										ng-attr-tabindex="{{AddEditFee.tabIndexValue + 30}}">{{ 'Save_Label' | translate }}</button> <!-- ng-disabled Added by richa 21/01/2017 for disabling button after one click -->
+								</div>
+							</div>
+
+							<div class="tabconainer">
+								<form>
+									<!-- START: Code field -->
+									<div class="clearfix"></div>
+									<div class="option_field">
+										<div class="lable_fields required">
+											<span class="form_lable_icons text hiddenfield"> </span>
+											<p class="req-label">{{ 'Label_Code' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group large MB">
+												<input type="text" class="form-control" id="feetxtCode"
+													placeholder="{{ 'Label_Code' | translate }}" rel="feeCode" maxlength="255"
+													ng-model="AddEditFee.feeModel.Code"
+													ng-disabled="AddEditFee.isEditMode"
+													ng-blur="AddEditFee.getSimilarFees('Code'); AddEditFee.validateFieldWithKey('Code');"
+													ng-class="{'redborder' : AddEditFee.FeeFormValidationModal['Code']['isError'] == true}"
+													data-toggle="tooltip"
+													title="{{AddEditFee.FeeFormValidationModal['Code']['ErrorMessage']}}"
+													ng-attr-tabindex="{{AddEditFee.tabIndexValue + 1}}"
+													ng-focus="AddEditFee.formFieldJustGotFocus('feeCode')" />
+											</div>
+											<div class="controls1 controls" id="feeCode">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditFee.helpText['Code']}}"></i> <i
+													class="fa fa-times"
+													ng-click="AddEditFee.clearFields('Code')"></i>
+											</div>
+										</div>
+									</div>
+									<!-- END: Code field -->
+
+									<!-- START: Description field -->
+									<div class="clearfix"></div>
+									<div class="option_field">
+										<div class="lable_fields">
+											<!-- <span class="form_lable_icons text"> 100 </span> -->
+											<span class="form_lable_icons text" style="background: none;"></span>
+											<p class="req-label">{{ 'PriceLevelGrid_Description' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group large MB">
+												<input type="text" class="form-control"
+													id="feetxtDescription" placeholder="{{ 'PriceLevelGrid_Description' | translate }}"
+													rel="feeDescription" maxlength="255"
+													ng-model="AddEditFee.feeModel.Description"
+													ng-blur="AddEditFee.getSimilarFees('Description'); AddEditFee.validateFieldWithKey('Description');"
+													ng-class="{'redborder' : AddEditFee.FeeFormValidationModal['Description']['isError'] == true}"
+													data-toggle="tooltip"
+													title="{{AddEditFee.FeeFormValidationModal['Description']['ErrorMessage']}}"
+													ng-attr-tabindex="{{AddEditFee.tabIndexValue + 2}}" 
+													ng-focus="AddEditFee.formFieldJustGotFocus('feeDescription')"/>
+											</div>
+											<div class="controls1 controls" id="feeDescription">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditFee.helpText['Description']}}"></i> <i
+													class="fa fa-times"
+													ng-click="AddEditFee.clearFields('Description')"></i>
+											</div>
+										</div>
+									</div>
+									<!-- END: Description field -->
+
+									<!-- START: Prices field -->
+									<div class="clearfix"></div>
+									<div class="option_field">
+										<div class="lable_fields required">
+											<span class="form_lable_icons text hiddenfield"> </span>
+											<p>{{ 'Label_Price' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group medium MB">
+												<price-only-input id-value="Rate"
+													class-value="form-control large" place-holder-value="Price"
+													max-length="15" precision-length="2"
+													validationkey="FeeCategory"
+													errorclass="AddEditFee.FeeFormValidationModal"
+													tab-index="{{AddEditFee.tabIndexValue + 5}}"
+													input-value="AddEditFee.feeModel.Price"
+													validation-modal="AddEditFee.FeeFormValidationModal"
+													validation-modal-key="Price" input-model="AddEditFee"
+													rel-value="feePrice" />
+											</div>
+											<div class="controls1 controls" id="feePrice">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditFee.helpText['Price']}}"></i> <i
+													class="fa fa-times"
+													ng-click="AddEditFee.feeModel.Price = ''"></i>
+											</div>
+										</div>
+									</div>
+									<!-- END: Prices field -->
+
+									<!-- START: Cost Method field by Nikhil 10/07/17-->
+									<div class="clearfix"></div>
+									<div class="option_field" ng-show="!AddEditFee.isEditMode || (AddEditFee.isEditMode && GroupOnlyPermissions.Costs['read only'])">
+										<div class="lable_fields">
+											<span class="form_lable_icons text" style="background: none;"></span>
+											<p>{{ 'cost_method' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group medium MB">
+                                             	<select class = "form-control" ng-model="AddEditFee.feeModel.CostMethod" 
+                                             		ng-options="costValues for costValues in AddEditFee.costMethodValueList track by costValues"
+                                             		ng-attr-tabindex="{{AddEditFee.tabIndexValue + 6}}"
+                                             		ng-change = "AddEditFee.changeCostMethodValidateType()"
+                                                    ng-disabled = "(AddEditFee.isEditMode && !GroupOnlyPermissions.Costs['modify'])">
+                                             	</select>
+											</div>
+										</div>
+									</div>
+									 
+									<!-- END: Cost Method field -->
+									
+									<!-- START: Cost Rate field by gourav(performance) 10/07/17 -->
+									<div class="clearfix"></div>
+									<div class="option_field" ng-show="!AddEditFee.isEditMode || (AddEditFee.isEditMode && GroupOnlyPermissions.Costs['read only'])">
+										<div class="lable_fields">
+											<span class="form_lable_icons text" style="background: none;"></span>
+											<p>{{ 'cost_rate' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group medium MB">
+											<price-only-input id-value="CostRate"
+													class-value="form-control large" place-holder-value="Cost Rate"
+													max-length="15" precision-length="2"
+													validationkey="CostRate"
+													errorclass="AddEditFee.FeeFormValidationModal"
+													ng-attr-tabindex="{{AddEditFee.tabIndexValue + 7}}"
+													input-value="AddEditFee.feeModel.CostRate"
+													validation-modal="AddEditFee.FeeFormValidationModal"
+													validation-modal-key="CostRate" input-model="AddEditFee"
+													rel-value="feeCostRate"  format-value="AddEditFee.formatCostValue" 
+                                                    disabled-value = "(AddEditFee.isEditMode && !GroupOnlyPermissions.Costs['modify'])" />
+											
+											</div>
+											<div class="controls1 controls" id="feeCostRate">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditFee.helpText['CostRate']}}"></i> <i
+													class="fa fa-times"
+													ng-click="AddEditFee.feeModel.CostRate = '0.00'" ></i>
+											</div>
+										</div>
+										
+									</div>
+									
+									<!-- END: Cost Rate field -->
+									
+									
+
+									<!-- START: Category field -->
+									<div class="clearfix"></div>
+									<div class="option_field">
+										<div class="lable_fields">
+											<span class="form_lable_icons text hiddenfield"> </span>
+											<p class="req-label">{{ 'SalesTaxGridItem_Category' | translate }}</p>
+										</div>
+										<div class="form_fields angucomplete-overide-dropdown ">
+											<div class="form-group medium MB ML">
+												<autocompleteold id="CategoryName"
+													ng-attr-tabindex="{{AddEditFee.tabIndexValue + 8}}"
+													rel-value="feeCategoryName"
+													placeholder="{{'Category_Object_Display_Label'| translate }}"
+													type="{!$Label.Category_Object_Display_Label}"
+													titlefield="Name" validationkey="CategoryName"
+													errorclass="AddEditFee.FeeFormValidationModal"
+													typesearchmodal="AddEditFee.CategoryNameStr" 
+													filter-param = "AddEditFee.FeeFieldsFilter.FeeCategory"/>
+											</div>
+											<div class="controls1 controls" id="feeCategoryName">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditFee.helpText['CategoryName']}}"></i> <i
+													class="fa fa-times"
+													ng-click="AddEditFee.CategoryNameStr = ''"></i>
+											</div>
+										</div>
+									</div>
+									<!-- END: Category field -->
+
+									<!-- START: Taxable field -->
+									<div class="clearfix"></div>
+									<div class="option_field">
+										<div class="lable_fields">
+											<span class="form_lable_icons text hiddenfield"> </span>
+											<p>{{ 'ViewLabour_Taxable' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group large">
+												<label class="checkbox smschkbox"> <span
+													class="chk_tick" style="margin: 6px 0;" id="Taxable"
+													rel="IsTaxable"
+													ng-class="{'chked' : AddEditFee.feeModel.IsTaxable, 'permissionDisabledChk': (AddEditFee.isEditMode && !GroupOnlyPermissions['Sales Taxes']['assign'])}">
+														<i class="fa fa-check-square chksqure"
+														ng-click="AddEditFee.onSelectTaxable();"
+														ng-keyup="AddEditFee.onKeyUpTaxable($event);"
+														ng-attr-tabindex="{{AddEditFee.tabIndexValue + 9}}"></i>
+												</span>
+												</label>
+											</div>
+											<div class="controls1 controls" id="IsTaxable">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditFee.helpText['FeeTaxable']}}"></i>
+											</div>
+										</div>
+									</div>
+									<!-- END: Taxable field -->
+
+									<!-- START: Applicable Tax field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field" ng-show="AddEditFee.feeModel.IsTaxable == true">
+                                        <div class="lable_fields">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p>{{ 'Applicable_tax_Label' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <select class="form-control" rel="applicabletax"
+                                             		ng-attr-tabindex="{{AddEditFee.tabIndexValue + 10}}"
+                                             		ng-model = "AddEditFee.feeModel.ApplicableTaxId" 
+                                                    ng-focus="AddEditFee.formFieldJustGotFocus('applicabletax')"
+                                             		ng-change = "AddEditFee.changeApplicableTax()"
+                                             		ng-options="taxItem.Id as taxItem.Name for taxItem in AddEditFee.TaxList"
+                                                    ng-disabled="(AddEditFee.isEditMode && !GroupOnlyPermissions['Sales Taxes']['assign'])"></select>
+                                            </div>
+                                            <div  class="controls1 ApplicableTax controls" id="applicabletax">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="Fee Applicable Tax"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- END: Applicable Tax field -->
+									
+									<div class="clearfix"></div>
+									<div class="option_field" ng-show="AddEditFee.isEditMode==true">
+										<div class="lable_fields">
+											<span class="form_lable_icons text hiddenfield"> </span>
+											<p>{{ 'Label_Active' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group large">
+												<label class="checkbox smschkbox"> <span
+													class="chk_tick" style="margin: 6px 0;" id="Taxable"
+													rel="IsActive"
+													ng-class="{'chked' : AddEditFee.feeModel.IsActive}">
+														<i class="fa fa-check-square chksqure"
+														ng-click="AddEditFee.onSelectActive();"
+														ng-keyup="AddEditFee.onKeyUpActive($event);"
+														ng-attr-tabindex="{{AddEditFee.tabIndexValue + 11}}"></i>
+												</span>
+												</label>
+											</div>
+											<div class="controls1 controls" id="IsActive">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditFee.helpText['FeeActive']}}"></i>
+											</div>
+										</div>
+									</div>
+                                    <div class="clearfix"></div>
+                                    <div class="option_field" >
+                                        <div class="lable_fields">      
+                                             <span class="form_lable_icons text hiddenfield"> </span>
+											<p>{{ 'Include_in_profit_calculation' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group large align-label">
+                                             <label class="bp-switch">
+                                                 <input ng-model="AddEditFee.feeModel.IsIncludeInProfitCalculation" type="checkbox"
+                                                  rel="IsIncludedInProfitCalculation"/>
+                                                 <div class="bp-slider round"></div>
+                                             </label>
+                                            </div>
+                                       </div> 
+                            	</div>
+								</form>
+							</div>
+
+							<div class="right_heading_container col-md-12">
+								<div class="savecancle_btncntnr">
+									<button type="button" id="closemodal"
+										class="btn btn-default grayBtn"
+										ng-click="AddEditFee.closePopup();"
+										ng-attr-tabindex="{{AddEditFee.tabIndexValue + 21}}">{{ 'Cancel_Label' | translate }}</button>
+									<button type="button" class="btn btn-default greenBtn"
+										ng-click="AddEditFee.SaveFeeForm();"
+										ng-disabled="AddEditFee.disableSaveButton"
+										ng-attr-tabindex="{{AddEditFee.tabIndexValue + 20}}">{{ 'Save_Label' | translate }}</button> <!-- ng-disabled Added by richa 21/01/2017 for disabling button after one click -->
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	</div>
+	</div>
+</apex:page>

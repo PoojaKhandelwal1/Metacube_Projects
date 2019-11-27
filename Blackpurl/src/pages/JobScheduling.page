@@ -1,0 +1,534 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+   <!-- <apex:stylesheet value="{!Application}/css/JobScheduling.css"/>
+    <apex:stylesheet value="{!Application}/css/newUI.css"/> -->
+   <div class="content" ng-cloak = "" id = "JobSchedulingWrappercontent">
+      <div class="container-fluid">
+         <div class="row">
+            <div class="col-sm-3 col-md-2 sideBarWrapperContent">
+                <div class="sidebarWrapper">
+                   <div class="sidebar">
+                      <h2>Schedule</h2>
+                          <button id="addNewButton" class="btn btn-primary" ng-click = "JobSchedulingModel.addNewEvent()" >
+                            <span ariaHidden = "true"> 
+                                <i class = "white addNewIconWidth" ng-include = "'{!Application_Images}/Icons/add-circle.svg'"></i>
+                            </span> 
+                            <span class = "addNewButtonText">NEW</span>
+                          </button>
+                      <ul class="calenderNavigation">
+                         <li><a href="" ng-click="JobSchedulingModel.getPreviousMonth()"><i class = "blue_008DC1 svg_width iconWidth" ng-include="'{!Application_Images}/Icons/arrow-left-1.svg'"></i></a></li>
+                         <li><a href="" ng-click="JobSchedulingModel.getNextMonth()"><i class = "blue_008DC1 svg_width iconWidth" ng-include = "'{!Application_Images}/Icons/arrow-right-1.svg'"></i></a></li>
+                         <li class="weekName">
+                            {{JobSchedulingModel.currentMonth.format("MMMM YYYY")}}<!-- August 2017 -->
+                         </li>
+                      </ul>
+                      <table class="calenderTable">
+                         <thead>
+                            <tr>    
+                               <th ng-repeat="dayPrefix in JobSchedulingModel.MiniCalendarWeekDaysPrefixes track by $index">{{dayPrefix}}</th>
+                            </tr>
+                         </thead>
+                         <tbody>
+                            <tr ng-repeat="week in JobSchedulingModel.weeksOfMonth">
+                               <td ng-click="JobSchedulingModel.selectDay(day)" ng-repeat="day in week.days"
+                                  ng-class="{'nonCurrentMonth': !day.isCurrentMonth,
+                                  'calendarToday': day.isToday,
+                                  'borderRadius50': !JobSchedulingModel.isHighlightedDaysContainToday(),
+                                  'curWeek': day.highlightDay,
+                                  'start': day.startDayForView,
+                                  'end': day.endDayForView}">{{day.number}}</td>
+                            </tr>
+                         </tbody>
+                      </table>
+                           <div class = "calenderFilter">
+                            <!-- <div class="row M0 JobSchedulingFilter">
+                                <span class="form-label all col-sm-8">View all</span>
+                                <label class="switch">
+                                    <input type="checkbox" 
+                                    ng-checked="JobSchedulingModel.filterJson.ViewAll"
+                                    ng-click = "JobSchedulingModel.applyFilter( 'All',$event)"  />
+                                    <div class="slider round"></div>
+                                </label>
+                            </div> -->
+                             <div class="row M0 JobSchedulingFilter">
+                                <span class="form-label appointents col-sm-8">Appointments</span>
+                                <label class="switch appointentsswitch">
+                                    <input type="checkbox"
+                                    ng-checked="JobSchedulingModel.filterJson.Appointment" 
+                                    ng-click = "JobSchedulingModel.applyFilter('Appointment')"  />
+                                    <div class="slider round"></div>
+                                </label>
+                            </div>
+                             <div class="row M0 JobSchedulingFilter">
+                                <span class="form-label appointmentsWithSerice col-sm-8">Appointments with service</span>
+                                <label class="switch appointentswithserviceswitch">
+                                    <input type="checkbox" 
+                                    ng-checked="JobSchedulingModel.filterJson.Appointmentwithservice"
+                                    ng-click = "JobSchedulingModel.applyFilter('Appointment With Service')" />
+                                    <div class="slider round"></div>
+                                </label>
+                            </div>
+                             <div class="row M0 JobSchedulingFilter">
+                                <span class="form-label reminders col-sm-8">Reminders</span>
+                                <label class="switch remindersswitch">
+                                    <input type="checkbox" 
+                                    ng-checked="JobSchedulingModel.filterJson.Reminder"
+                                    ng-click = "JobSchedulingModel.applyFilter('Reminder')" />
+                                    <div class="slider round"></div>
+                                </label>
+                            </div>
+                        </div>
+                   </div>
+                </div>
+            </div>
+            <div class="col-sm-9 col-md-10 removeLeftPadding mainCalendarWrapper">
+               <div class="calenderArea">
+                  <div class="calenderHeader" id="calenderHeader">
+                     <div class="row">
+                        <div class="col-xs-8 col-md-7">
+                           <ul class="calenderNavigation">
+                            <li class = "bp-today-wrapper"><button
+                            ng-disabled = "JobSchedulingModel.disableToday()" class = "bp-btn-secondaryCTA bp-btn bp-today-but" ng-click = "JobSchedulingModel.selectcurrentDay()">TODAY </button> </li>
+                              <li class = "bp-border-blue bp-arrow-height"><a href="" ng-click="JobSchedulingModel.getTimeSlotForSelectedView(JobSchedulingModel.currentView, 'Previous')"><i class = "blue_008DC1 svg_width_2px iconWidth" ng-include="'{!Application_Images}/Icons/arrow-left-1.svg'"></i></a></li>
+                              <li class = "bp-border-blue bp-arrow-height bp-arrow-rightcal"><a href="" ng-click="JobSchedulingModel.getTimeSlotForSelectedView(JobSchedulingModel.currentView, 'Next')"><i class = "blue_008DC1 svg_width_2px iconWidth" ng-include = "'{!Application_Images}/Icons/arrow-right-1.svg'"></i></a></li>
+                              <li class="weekName">
+                                 {{JobSchedulingModel.CalendarViewsJSON[JobSchedulingModel.currentView].TimePeriodOfMainCalendar}}<!-- August 13 - August 18, 2017 -->
+                              </li>
+                           </ul>
+                        </div>
+                        <div class="col-xs-4 col-md-5 P0">
+                           <ul class="calenderChanger pull-right">
+                              <li ng-repeat="name in JobSchedulingModel.CalendarViewNames | orderBy:'value.OrderNo'"
+                                 ng-class="{'calActive': JobSchedulingModel.CalendarViewsJSON[name].IsActive}">
+                                 <a href="" ng-click="JobSchedulingModel.changeCalendarView(name)">
+                                    <!-- {{viewName.Name}} --> {{name}}
+                                 </a>
+                              </li>
+                           </ul>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="calenderDetail">
+                    <!-- <div class="loadingIconDiv" ng-show="JobSchedulingModel.isCalendarLoading">
+                        <c:BPCalendarLoading />
+                    </div> -->
+                     <table class="table calenderWeekTable " id = "calenderWeekTable" ng-show = "JobSchedulingModel.currentView != 'Month' && !JobSchedulingModel.isCalendarLoading"
+                        ng-class="{'threeDaysView': JobSchedulingModel.currentView == '3 Days',
+                                    'singleDayView': JobSchedulingModel.currentView == 'Day'}" > <!--  ng-show="JobSchedulingModel.isCalendarLoading" -->
+                        <thead>
+                           <tr>
+                              <th class="time"></th>
+                              <th ng-repeat="date in JobSchedulingModel.CalendarViewsJSON[JobSchedulingModel.currentView].MainCalendarHeader"
+                                ng-class="{'calendarToday': date.isToday && JobSchedulingModel.currentView != 'Day', 'calendarDayToday' : date.isToday && JobSchedulingModel.currentView == 'Day', 'calendarDay' :  JobSchedulingModel.currentView == 'Day'}">
+                                 {{date.title}}
+                              </th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           <tr ng-repeat-start = "TimeSlot in JobSchedulingModel.TimeSlotList"  >
+                               <td class="time" ng-if= "TimeSlot.Time != '8:00' ||  TimeSlot.TimePeriod == 'PM' " ><span>{{TimeSlot.Time | spliceTime}}{{TimeSlot.TimePeriod}}</span></td>
+                               <td class="time" id = "JobSchedulingScrollId" ng-if= "TimeSlot.Time  == '8:00' && TimeSlot.TimePeriod == 'AM'" ><span>{{TimeSlot.Time | spliceTime}}{{TimeSlot.TimePeriod}}</span></td>
+                              <td ng-repeat="DateSlot in JobSchedulingModel.CalendarViewsJSON[JobSchedulingModel.currentView].Date"
+                                 id="{{JobSchedulingModel.createEventWrapperID(DateSlot,TimeSlot.Time,TimeSlot.TimePeriod,false)}}" 
+                                 ng-click="JobSchedulingModel.openNewEventModelPopup(DateSlot,TimeSlot.Time,TimeSlot.TimePeriod,false)"
+                                 ng-class="{'calendarToday': JobSchedulingModel.CalendarViewsJSON[JobSchedulingModel.currentView].MainCalendarHeader[$index].isToday && JobSchedulingModel.currentView != 'Day'}">
+                                 <!-- data-target="#appointmentModal" data-toggle="modal" -->
+                                 <p ng-show="JobSchedulingModel.createEventWrapperID(DateSlot,TimeSlot.Time,TimeSlot.TimePeriod,false) == JobSchedulingModel.displayCurrentDateTimeTdId" 
+                                    class="currentTime" ng-style="JobSchedulingModel.CurrentDateTimeIndicatorStyle"></p>
+                              </td>
+                              <!-- calEventID_{{DateSlot.date}}_{{TimeSlot.Time}}_{{TimeSlot.TimePeriod}} ng-click="JobSchedulingModel.openNewEventModelPopup()" -->
+                           </tr>
+                           <tr ng-repeat-end="ng-repeat-end"
+                              ng-if="!$last">
+                              <td class="time"></td>
+                              <td ng-repeat="DateSlot in JobSchedulingModel.CalendarViewsJSON[JobSchedulingModel.currentView].Date"
+                               id="{{JobSchedulingModel.createEventWrapperID(DateSlot,TimeSlot.Time ,TimeSlot.TimePeriod, true)}}" 
+                                 ng-click="JobSchedulingModel.openNewEventModelPopup(DateSlot,TimeSlot.Time,TimeSlot.TimePeriod,true)"
+                                 ng-class="{'calendarToday': JobSchedulingModel.CalendarViewsJSON[JobSchedulingModel.currentView].MainCalendarHeader[$index].isToday && JobSchedulingModel.currentView != 'Day'}">
+                                 <p ng-show="JobSchedulingModel.createEventWrapperID(DateSlot,TimeSlot.Time ,TimeSlot.TimePeriod, true) == JobSchedulingModel.displayCurrentDateTimeTdId" 
+                                    class="currentTime" ng-style="JobSchedulingModel.CurrentDateTimeIndicatorStyle"></p>
+                              </td>
+                           </tr>
+                        </tbody>
+                     </table>
+                    
+                    
+                    <table class="table calenderMonthTable" id = "calenderMonthTable" ng-show = "JobSchedulingModel.currentView == 'Month'  && !JobSchedulingModel.isCalendarLoading">
+                                <thead>
+                                    <tr>
+                                        <th>MONDAY</th>
+                                        <th>TUESDAY</th>
+                                        <th>WEDNESDAY</th>
+                                        <th>THURSDAY</th>
+                                        <th>FRIDAY</th>
+                                        <th>SATURDAY</th>
+                                        <th>SUNDAY</th>                                                                         
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                
+                                    <tr ng-repeat="week in JobSchedulingModel.weeksOfMonthForMainCalendar">
+                                        <td ng-click = "JobSchedulingModel.openNewEventModelPopup(day.dayDate,'8:00','AM')"  ng-repeat="day in week.days"   id="{{JobSchedulingModel.createEventMonthWrapperID(day.dayDate,day.monthName,day.isCurrentMonth)}}"
+                                        ng-class="{'nonCurrentMonth': !day.isCurrentMonth,
+                                                'calendarToday': day.isToday}" ><!--  -->
+                                        <p ng-class="{'calendarToday': day.isToday}" class="date">{{day.number}}</p></td>
+                                        <!-- <td class="nonCurrentMonth"><p class="date">31</p></td>
+                                        <td>
+                                            <p class="date">1</p>
+                                            <p class="appointmentWithService">Amanda Jon... <span class="time">8.00am</span></p>
+                                            <p class="appointmentWithService">Amanda Jon... <span class="time">11.00am</span></p>                                           
+                                        </td>
+                                        <td><p class="date">2</p></td>
+                                        <td><p class="date">3</p></td>
+                                        <td><p class="date">4</p></td>
+                                        <td><p class="date">5</p></td> -->
+                                    </tr>
+                                    <!-- <tr>
+                                        <td><p class="date">6</p></td>
+                                        <td>
+                                            <p class="date">7</p>
+                                            <p class="reminder">Reminder <span class="time">11.00am</span></p>                                          
+                                        </td>
+                                        <td><p class="date">8</p></td>
+                                        <td>
+                                            <p class="date">9</p>
+                                            <p class="appointment">12 Appointments</p>                                          
+                                        </td>
+                                        <td><p class="date">10</p></td>
+                                        <td><p class="date">11</p></td>
+                                        <td><p class="date">12</p></td>
+                                    </tr>
+                                    <tr>
+                                        <td><p class="date">13</p></td>
+                                        <td><p class="date">14</p></td>
+                                        <td class="today">
+                                            <p class="today date">15</p>
+                                            <p class="appointment">Service check <span class="time">8:15am</span></p>                                           
+                                            <p class="reminder">Reminder <span class="time">11:00am</span></p>                                                                                      
+                                        </td>
+                                        <td>
+                                            <p class="date">16</p>
+                                            <p class="appointment">Service check <span class="time">8:15am</span></p>                                           
+                                            <p class="appointment">3 Appointm...<span class="time">11:00am</span></p>                                           
+                                        </td>
+                                        <td><p class="date">17</p></td>
+                                        <td><p class="date">18</p></td>
+                                        <td><p class="date">19</p></td>
+                                    </tr>
+                                    <tr>
+                                        <td><p class="date">20</p></td>
+                                        <td><p class="date">21</p></td>
+                                        <td><p class="date">22</p></td>
+                                        <td><p class="date">23</p></td>
+                                        <td>
+                                            <p class="date">24</p>
+                                            <p class="reminder">Reminder <span class="time">11:00am</span></p>                                                                                      
+                                        </td>
+                                        <td><p class="date">25</p></td>
+                                        <td><p class="date">26</p></td>
+                                    </tr>
+                                    <tr>
+                                        <td><p class="date">27</p></td>
+                                        <td><p class="date">28</p></td>
+                                        <td><p class="date">29</p></td>
+                                        <td><p class="date">30</p></td>
+                                        <td><p class="date">31</p></td>
+                                        <td class="nonCurrentMonth"><p class="date">1</p></td>
+                                        <td class="nonCurrentMonth"><p class="date">2</p></td>
+                                    </tr>    -->                                
+                                </tbody>                                
+                            </table>
+                
+                  </div>
+              
+              
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+   <div class="modal fade bp-model-dialog" id="appointmentModal" tabindex="-1" role="dialog" aria-labelledby="appointmentModalLabel">
+      <div class="modal-dialog" role="document">
+         <div class="modal-content jobSchedulingModeContent">
+            <div class="modal-header">
+               <button type="button" class="close appointmentModalCloseIcon" data-dismiss="modal" aria-label="Close" 
+                    ng-click = "JobSchedulingModel.hidenewAddEditEventPopup()"
+                    ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 12}}"
+                    ng-keydown = "JobSchedulingModel.adjustTabIndex($event);">
+                    <span aria-hidden="true"><i class = "white  closeiconWidth " ng-include="'{!Application_Images}/Icons/close.svg'"></i></span>
+               </button>
+               <h4 class="modal-title" id="appointmentModalLabel">
+                    <span class="selected SelectedAppointmentType appointmentModalEventType" 
+                        ng-class="{SelectedEventType: JobSchedulingModel.newCalendereventJSON.Type == 'Appointment'}" 
+                        ng-click = "JobSchedulingModel.SelectTitle($event, 'Appointment')">
+                        Appointment
+                    </span>
+                    <span class="appointmentModalEventType" 
+                        ng-class="{SelectedEventType: JobSchedulingModel.newCalendereventJSON.Type == 'Reminder'}" 
+                        ng-click = "JobSchedulingModel.SelectTitle($event,'Reminder')">
+                        Reminder
+                    </span>
+               </h4>
+            </div>
+            <div class="modal-body">
+               <form  >
+                  <div class="form-group">
+                     <input type="text" id = "appointmentTitleId" class="appointmentTitle form-control" placeholder="{{JobSchedulingModel.EventTitle}}" 
+                        ng-model = "JobSchedulingModel.newCalendereventJSON.Title" ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 1}}">
+                     </input>
+                  </div>
+                  <div class="form-group">
+                     <p for="fromDate">From</p>
+                     <div class="row">
+                        <div class="col-sm-6">
+                           <input type="text"  id="fromDate"
+                              ui-date="JobSchedulingModel.DeliverydateStartDateOptions" 
+                              style="background: #FFF;position: initial;" 
+                              ui-date-format="{{JobSchedulingModel.dateFormat}}" 
+                              class="form-control width200 datePickerColor datepicker"
+                              ng-model="JobSchedulingModel.newCalendereventJSON.StartDate"
+                              readonly="readonly" ng-change = "JobSchedulingModel.setToDateFormate()" 
+                              ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 2}}"/>
+                           <!-- <span class="input-group-addon btn" 
+                              ng-click="JobSchedulingModel.showDatePicker($event)" 
+                              
+                              style="cursor:pointer; position: absolute;right: 13%;top: 30%; padding: 0;font-size: 18px;"
+                              >
+                           <span class="glyphicon glyphicon-calendar"></span>
+                           </span> -->
+                           <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobSchedulingCalendarIcon grey_DDDDDD"
+                                ng-click="JobSchedulingModel.showDatePicker($event,'fromDate')" id="removeKeywordBtn" >
+                           </i>
+                            
+                        </div>
+                        <div class="col-sm-6">
+                           <input type="text" class="form-control" id="fromTime" ng-focus="JobSchedulingModel.showJobSchedulingFromTimeList()"
+                           name = 'FromTime' ng-keydown="JobSchedulingModel.hideJobSchedulingTimeList($event)"
+                            ng-model = "JobSchedulingModel.newCalendereventJSON.ActualStartTime"
+                            ng-class="{'redborder' : JobSchedulingModel.ScheduleEventFormValidationModal['ActualStartTime']['isError'] == true}"
+                            data-toggle="tooltip"
+                            title="{{JobSchedulingModel.ScheduleEventFormValidationModal['ActualStartTime']['ErrorMessage']}}"
+                            ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 3}}"
+                            ng-blur="JobSchedulingModel.validateFieldWithKey('ActualStartTime')"/>
+                           <ul class = "timeSloatDropdown" ng-show="JobSchedulingModel.isFromTimeDropdownVisible"
+                            id="fromTimeDropDown">
+                              <li ng-repeat = " JobSchedulingTimeList in JobSchedulingModel.defaultTimeSlotList" 
+                                should-focus = "$index == JobSchedulingModel.fromTimeCurrentIndex"
+                                 ng-click = "JobSchedulingModel.changeSelectdtimeSloat(JobSchedulingTimeList.Time,'StartTime')"
+                                 ng-class="{'BP_SchedulingEvent-time-selected-row': $index == JobSchedulingModel.fromTimeCurrentIndex}">
+                                 {{JobSchedulingTimeList.Time}}
+                              </li>
+                           </ul>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="form-group">
+                     <p for="fromDate">To</p>
+                     <div class="row">
+                        <div class="col-sm-6">
+                           <input type="text"  id="toDate"
+                              ui-date="JobSchedulingModel.DeliverydateEndDateOptions" 
+                              style="background: #FFF;position: initial;" 
+                              ui-date-format="{{JobSchedulingModel.dateFormat}}" 
+                              class="form-control width200 datePickerColor datepicker"
+                              readonly="readonly"   
+                              ng-model="JobSchedulingModel.newCalendereventJSON.EndDate" 
+                              ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 4}}"/> <!-- ng-model="JobSchedulingModel.newCalendereventJSON.EndDate" -->
+                           <!-- <span class="input-group-addon btn" 
+                              ng-click="JobSchedulingModel.showDatePicker($event)" 
+                              style="cursor:pointer; position: absolute;right: 13%;top: 30%; padding: 0;font-size: 18px;">
+                           <span class="glyphicon glyphicon-calendar"></span>
+                           </span> -->
+                           
+                           <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobSchedulingCalendarIcon grey_DDDDDD"
+                                ng-click="JobSchedulingModel.showDatePicker($event,'toDate')" id="removeKeywordBtn" >
+                            </i>
+                        </div>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="toTime" ng-focus="JobSchedulingModel.showJobSchedulingToTimeList()" 
+                            ng-keydown="JobSchedulingModel.hideJobSchedulingTimeList($event)"
+                            ng-model = "JobSchedulingModel.newCalendereventJSON.ActualEndTime"
+                            ng-class="{'redborder' : JobSchedulingModel.ScheduleEventFormValidationModal['ActualEndTime']['isError'] == true}"
+                            data-toggle="tooltip" name = 'ToTime'
+                            title="{{JobSchedulingModel.ScheduleEventFormValidationModal['ActualEndTime']['ErrorMessage']}}"
+                            ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 5}}"
+                            ng-blur="JobSchedulingModel.validateFieldWithKey('ActualEndTime')"/>
+                           <ul class = "timeSloatDropdown"  ng-show="JobSchedulingModel.isToTimeDropdownVisible"
+                            id="toTimeDropDown">
+                              <li ng-repeat = " JobSchedulingTimeList in JobSchedulingModel.defaultTimeSlotList"
+                              should-focus = "$index == JobSchedulingModel.toTimeCurrentIndex"
+                                 ng-click = "JobSchedulingModel.changeSelectdtimeSloat(JobSchedulingTimeList.Time,'EndTime')"
+                                 ng-class="{'BP_SchedulingEvent-time-selected-row': $index == JobSchedulingModel.toTimeCurrentIndex}">
+                                 {{JobSchedulingTimeList.Time}}
+                              </li>
+                           </ul>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="form-group">
+                     <textarea class="form-control" placeholder="Additional notes" 
+                        ng-model = "JobSchedulingModel.newCalendereventJSON.Notes"
+                        maxlength="500"
+                        ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 6}}">
+                     </textarea>
+                  </div>
+               </form>
+               <button class="btn-transparent btn-addServiceJob mar-bot-20 addServiceJobAlign" 
+                  ng-if = "JobSchedulingModel.newCalendereventJSON.Id != null && JobSchedulingModel.newCalendereventJSON.COHeaderId == null  && JobSchedulingModel.editJobSchedulingModel.Type == 'Appointment'"
+                  ng-click = "JobSchedulingModel.addServiceJobAppointment(JobSchedulingModel.editJobSchedulingModel.Id)"
+                  ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 7}}">
+                  <i class = "blue_008DC1 svg_width servicejobiconWidth" ng-include="'{!Application_Images}/Icons/service-job.svg'"></i>
+                  <span class = "addNewButtonText" >ADD SERVICE JOB
+                  </span>
+               </button>
+               <!-- <button class="btn-transparent btn-addServiceJob" 
+                    ng-if = "JobSchedulingModel.newCalendereventJSON.Id != null && JobSchedulingModel.newCalendereventJSON.COHeaderId != null && JobSchedulingModel.editJobSchedulingModel.Type == 'Appointment'"
+                    ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 8}}">
+                   <i class = "blue_008DC1 svg_width servicejobiconWidth" ng-include="'{!Application_Images}/Icons/service-job.svg'"></i>
+                    VIEW SERVICE JOB DETAILS
+               </button> -->
+            </div>
+            <div class="modal-footer">
+               <button class="btn-transparent btn-delete"  ng-click = "JobSchedulingModel.deleteJobSchedulingEvent(JobSchedulingModel.newCalendereventJSON.Id)" ng-disabled="disableDeleteButton"
+                    ng-if = "JobSchedulingModel.newCalendereventJSON.Id != null"
+                    ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 9}}">
+                    <span ariaHidden = "true"> 
+                        <i class = "red_FF6458 deleteIconWidth" ng-include="'{!Application_Images}/Icons/trash.svg'"></i>
+                    </span>
+                    <span class = "addNewButtonText" >DELETE
+                    </span>
+                     
+                    <span ng-if="JobSchedulingModel.newCalendereventJSON.Type == 'Appointment'">&nbsp;APPOINTMENT</span>
+                    <span ng-if="JobSchedulingModel.newCalendereventJSON.Type == 'Reminder'">&nbsp;REMINDER</span>
+               </button>
+               <button type="button" class="btn btn-primary" ng-if = "!JobSchedulingModel.newCalendereventJSON.Id"  
+                    ng-click = "JobSchedulingModel.createEventOnJobScheduling(JobSchedulingModel.newCalendereventJSON)"
+                    ng-disabled="disableSaveButton"
+                    ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 10}}">
+                    CREATE
+                </button>
+               <button type="button" class="btn btn-primary" ng-if = "JobSchedulingModel.newCalendereventJSON.Id"  
+                    ng-click = "JobSchedulingModel.createEventOnJobScheduling(JobSchedulingModel.newCalendereventJSON)"
+                    ng-disabled="disableSaveButton"
+                    ng-attr-tabindex="{{JobSchedulingModel.tabIndexValue + 11}}">
+                    SAVE
+               </button>
+            </div>
+         </div>
+      </div>
+   </div>
+   <div id="appointmentPopover" class="BP_popOver" ng-class="{'rightArrrow': JobSchedulingModel.appointmentPopoverPosition == 'left', 
+                                                                'downArrrow': JobSchedulingModel.appointmentPopoverPosition == 'top',
+                                                                'leftArrrow': JobSchedulingModel.appointmentPopoverPosition == 'right',
+                                                                'upArrrow': JobSchedulingModel.appointmentPopoverPosition == 'bottom'}">
+                                                                
+      <div class="appointmentPreview" id = "appointmentPopoverHeader">
+         <div class="popOverHeader"> 
+            <button class="btn-transparent btn-viewServiceJobPreview pull-left" ng-show="JobSchedulingModel.isOenFromMultipleEventPopup == true" 
+                ng-click = "JobSchedulingModel.showMultipleEventPopup()"><span aria-hidden="true"><i class = "black_525252 svg_width closeiconWidth " ng-include="'{!Application_Images}/Icons/arrow-left-2.svg'"></i></span></button>
+            <button class="btn-transparent btn-closePopover" ng-click = "JobSchedulingModel.closeappointmentPopover()"><span aria-hidden="true"><i class = "black_525252 svg_width closeiconWidth " ng-include="'{!Application_Images}/Icons/close.svg'"></i></span></button>
+         </div>
+         <div class="dateTime" ng-show="JobSchedulingModel.editJobSchedulingModel.IsAllDayEvent == false"
+         ng-class="{'reminders': JobSchedulingModel.editJobSchedulingModel.Type == 'Reminder', 
+                'appointents': JobSchedulingModel.editJobSchedulingModel.Type == 'Appointment' && JobSchedulingModel.editJobSchedulingModel.COHeaderId == null,
+                'appointmentsWithSerice': JobSchedulingModel.editJobSchedulingModel.Type == 'Appointment' && JobSchedulingModel.editJobSchedulingModel.COHeaderId != null
+                }">{{JobSchedulingModel.editJobSchedulingModel.StartDate}} - {{JobSchedulingModel.editJobSchedulingModel.ActualStartTime}}-{{JobSchedulingModel.editJobSchedulingModel.ActualEndTime}}</div>
+         <div class="dateTime" ng-show="JobSchedulingModel.editJobSchedulingModel.IsAllDayEvent == true">{{JobSchedulingModel.editJobSchedulingModel.StartDate}} - {{JobSchedulingModel.editJobSchedulingModel.EndDate}}</div>
+         <div class="title">{{JobSchedulingModel.editJobSchedulingModel.Title}}</div>
+         <div class="desc">{{JobSchedulingModel.editJobSchedulingModel.Notes}}</div>
+         <div class = "jobSchedulingCustomerInfo" ng-if = "JobSchedulingModel.customerInfoForEditJobSchedulingModel.CustomerName != null">
+            <div class="customerInfo ng-binding">Customer:<span>{{JobSchedulingModel.customerInfoForEditJobSchedulingModel.CustomerName}}</span><br/>
+                <span ng-if="{!IsLoadNewCustomerOrder}">
+                    <a ng-click = "JobSchedulingModel.MoveToState('CustomerOrder_V2',{Id:  JobSchedulingModel.customerInfoForEditJobSchedulingModel.COHeaderId})">{{JobSchedulingModel.customerInfoForEditJobSchedulingModel.CustomerOrderNumber}}</a>
+                </span>
+                <span ng-if="{!!IsLoadNewCustomerOrder}">
+                    <a ng-click = "JobSchedulingModel.MoveToState('CustomerOrder',{Id:  JobSchedulingModel.customerInfoForEditJobSchedulingModel.COHeaderId})">{{JobSchedulingModel.customerInfoForEditJobSchedulingModel.CustomerOrderNumber}}</a>
+                </span>
+            </div>
+         </div>
+         <button class="btn-transparent btn-addServiceJob addServiceJobAlign" 
+            ng-show = "JobSchedulingModel.editJobSchedulingModel.COHeaderId == null && JobSchedulingModel.editJobSchedulingModel.Type == 'Appointment'" 
+            ng-click = "JobSchedulingModel.addServiceJobAppointment(JobSchedulingModel.editJobSchedulingModel.Id)">
+            <span ariaHiddden = "true">
+                <i class = "blue_008DC1  addServiceJobWidth" ng-include="'{!Application_Images}/Icons/service-job.svg'"></i>
+            </span>
+            <span class = "addNewButtonText">ADD SERVICE JOB</span>
+         </button>
+         <button class="btn-transparent btn-addServiceJob" 
+            ng-show = "JobSchedulingModel.editJobSchedulingModel.COHeaderId != null && JobSchedulingModel.editJobSchedulingModel.Type == 'Appointment'" 
+            ng-click = "JobSchedulingModel.openjobschedulingServiceJobPopup(JobSchedulingModel.editJobSchedulingModel.COHeaderId)"
+            data-target="#appointmentWithServiceDetails" data-toggle="modal">
+            <i class = "blue_008DC1 svg_width servicejobiconWidth" ng-include="'{!Application_Images}/Icons/service-job.svg'"></i>
+            VIEW SERVICE JOB DETAILS
+         </button>
+         <div class="popOverFooter">
+            <button class="btn-transparent btn-delete" ng-click = "JobSchedulingModel.deleteJobSchedulingEvent(JobSchedulingModel.editJobSchedulingModel.Id)" ng-disabled="disableDeleteButton">
+                <span ariaHidden = "true"> 
+                        <i class = "red_FF6458 deleteIconWidth" ng-include="'{!Application_Images}/Icons/trash.svg'"></i>
+                </span>
+                <span class = "addNewButtonText" >DELETE
+                </span>
+                
+            </button>
+            <button class="btn-primary btn-edit pull-right"  ng-click = "JobSchedulingModel.openEditEventModelPopup(JobSchedulingModel.editJobSchedulingModel)">EDIT</button>
+         </div>
+      </div>
+      
+      <div class="appointmentWithServiceDetails" id = "appointmentWithServicePopover">
+         <div class="popOverHeader">
+            <button class="btn-transparent btn-viewServiceJobPreview pull-left" ng-click = "JobSchedulingModel.showEditJobSchedulingPopup()"><span aria-hidden="true"><i class = "black_525252 svg_width closeiconWidth " ng-include="'{!Application_Images}/Icons/arrow-left-2.svg'"></i></span></button>                                                    
+            <button class="btn-transparent btn-closePopover" ng-click="JobSchedulingModel.closeappointmentPopover()" ><span aria-hidden="true"><i class = "black_525252 svg_width closeiconWidth " ng-include="'{!Application_Images}/Icons/close.svg'"></i></span></button>
+         </div>
+         <div class="customerInfo">Customer:<span>{{JobSchedulingModel.serviceJobInfo.CustomerName}}</span><br/>{{JobSchedulingModel.serviceJobInfo.CustomerOrderNumber}}</div>
+         <ul class="serviceListBox" ng-repeat = "soInfo in JobSchedulingModel.serviceJobInfo.ServiceOrderList">
+            <li><strong>{{soInfo.SectionName}}</strong></li>
+             <li>Unit: {{soInfo.Year}}&nbsp;{{soInfo.Make}}&nbsp;{{soInfo.Model}}&nbsp;{{soInfo.SubModel}}</li>
+            <li>Job Type: {{soInfo.JobType}}</li>
+            <li>Job Status: {{soInfo.JobStatus}}</li>
+            <li>Service Need: {{soInfo.ServiceNeeded}}</li>
+         </ul>
+      </div>
+   </div>
+   <div class="BP_popOver multipleAppointmentsPopover" id = "multipleAppointmentsPopover"
+    ng-class="{'rightArrrow': JobSchedulingModel.multipleEventPopoverPosition == 'left', 
+                'downArrrow': JobSchedulingModel.multipleEventPopoverPosition == 'top',
+                'leftArrrow': JobSchedulingModel.multipleEventPopoverPosition == 'right',
+                'upArrrow': JobSchedulingModel.multipleEventPopoverPosition == 'bottom'}">
+        <div class="appointmentPreview">
+            <div class="popOverHeader">
+                <button class="btn-transparent btn-closePopover" ng-click = "JobSchedulingModel.closemultipleAppointmentsPopup()"><span aria-hidden="true"><i class = "black_525252 svg_width closeiconWidth " ng-include="'{!Application_Images}/Icons/close.svg'"></i></span></button>
+            </div>                                                  
+            <ul class="appointmentList">
+                <li  ng-class="{'reminder': eventListData.Type =='Reminder','appointment': eventListData.Type !='Reminder' && eventListData.COHeaderId == null ,'appointmentsWithSerice': eventListData.Type !='Reminder' && eventListData.COHeaderId != null}"  ng-repeat = "eventListData in JobSchedulingModel.EventsListPopUpModel" 
+                    ng-click="JobSchedulingModel.editJobSchedulEventPopup($event, eventListData.Id, true, false)">
+                    <p class="appointmentListLabel"><strong>{{eventListData.Title}}{{}}</strong></p>
+                    <p>{{eventListData.Notes}}</p> <!-- <p>Customer pay<br/>Replacing (unit name)</p> -->
+                </li>
+            </ul>   
+        </div>
+    </div>
+    
+        
+        <div class="modal fade  PastDatePopup" id="PastDatePopup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close CreateGroupModalCloseIcon" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true" ng-click = "JobSchedulingModel.notCreatePastEvent()">
+                            <i class="white_FFF  closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                        </span>
+                    </button>
+                </div>       
+                <div class="modal-body">
+                    <div class="userGroupInfoArea">
+                    <div class="heading">THIS EVENT OCCURS IN THE PAST</div>
+                            <div class="heading subheading">Are you sure you want to create it ?</div>
+                            <button class="btn btn-primary deleteButton" data-dismiss="modal" aria-label="Close"
+                                ng-click = "JobSchedulingModel.createPastEvent();">YES, PROCEED</button>    
+                            <div class="heading cancelBtn" data-dismiss="modal" aria-label="Close" ng-click = "JobSchedulingModel.notCreatePastEvent()">CANCEL</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+</apex:page>

@@ -1,0 +1,1051 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0" controller="GlobalController">
+        <apex:stylesheet value="{!Application}/css/ViewPart.css"/>
+        <title></title>
+        <c:PartPopUpOnVendorOrder />
+        <div>
+            <route-loading-indicator></route-loading-indicator>
+            <div ng-if="ViewPart.PartLocator.showDialog">
+            	<part-locator modal-css="ViewPart.PartLocator.modalCss" hide-close-icon="ViewPart.PartLocator.hideCloseIcon" show-dialog="ViewPart.PartLocator.showDialog"
+		             heading-text="ViewPart.PartLocator.headingText" 
+		             part-description="ViewPart.PartLocator.partDescription"
+		           	 availabilty-text="ViewPart.PartLocator.availabiltyText" 
+		              availabilty-number="ViewPart.PartLocator.availabiltyNumber" phone-number="ViewPart.PartLocator.phoneNumber"
+		              near-dealer-list = "ViewPart.PartLocator.nearDealerList"
+		              all-dealer-list = "ViewPart.PartLocator.allDealerList">
+	            </part-locator>
+	        </div>
+            <div class="content" ng-cloak="ng-cloak" ><!-- ng-if="!isRouteLoading"  -->
+                <div class="col-lg-2 col-md-2 sidePanel ">
+                    <div class="sidepaneluserinfo row">
+                        <!-- <div class="userimg">
+                            <div style="float:left;background-color: #373c40; border-radius: 5px; padding: 1px; margin-right: 5px;">
+                                    <img  src="{!URLFOR($Resource.Images, 'star.png')}" style="height:35px; width:35px; padding: 5px;"/>
+                            </div>
+                        </div> -->
+                        <div class="userNameblock userNameblock_Part_ML5">
+                            <p class="T3"> 
+                           <!--  <span ng-show="ViewPart.CustomerInfo.CustomerInfo.Type == 'Individual'"> {{ViewPart.CustomerInfo.CustomerInfo.FirstName}} {{ViewPart.CustomerInfo.CustomerInfo.LastName}}</span> -->
+                            <!-- <span ng-show="ViewPart.CustomerInfo.CustomerInfo.Type != 'Individual'"> {{ViewPart.PartInfo.PartDetailRec.VendorName}} </span> -->
+                            <span> {{ViewPart.PartInfo.PartDetailRec.Description}} </span>
+                            </p>
+                            <p class="customerNumber">{{ViewPart.PartInfo.PartDetailRec.PartNumber}}</p>
+                        </div>
+                    </div>
+                    <div class="clearfix"></div>
+                    <div class="row statusRow">
+                       <!--  <span class="userType T3" ng-show="ViewPart.CustomerInfo.CustomerInfo.Type == 'Individual'">Individual</span>
+                        <span class="userType T3" ng-show="ViewPart.CustomerInfo.CustomerInfo.Type != 'Individual'">Business</span> -->
+                        
+                        <span class="userType T3" ng-class="{'green' : ViewPart.PartInfo.PartDetailRec.Status == '{{ 'Part_Object_Status_InStock' | translate }}', 'red' : (ViewPart.PartInfo.PartDetailRec.Status == '{{ 'Part_Object_Status_Required' | translate }}' || ViewPart.PartInfo.PartDetailRec.Status == '{{ 'Part_Object_Status_OutofStock' | translate }}'), 'blue' : ViewPart.PartInfo.PartDetailRec.Status == '{{ 'Part_Object_Status_Committed' | translate }}', 'gray': alternateOrder.Status == '{{ 'Part_Object_Status_OnOrder' | translate }}'}">
+                        {{ViewPart.PartInfo.PartDetailRec.Status}}</span>
+                    </div>
+                    
+                    
+                    <div class="leftPanelLinks">
+                        <a class="row T10 mainSectionLink" ng-class="{'active' : ViewPart.activeSidepanelink =='#InfoSection'}" 
+                            href="#InfoSection" ng-click="ViewPart.sidepanelLink($event, 'Info')" ><span class="alphabetLetter">{{ 'A' | translate }}</span>{{ 'Page_Section_Info' | translate }}</a>
+                        <a class="row T10 subSectionLink" href="#InfoSection" ng-click="ViewPart.sidepanelLink($event, 'Info')">  <!--  href="#Info_General" -->
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_General' | translate }}</a>
+                        <a class="row T10 subSectionLink" href="#Info_Stocking" ng-click="ViewPart.sidepanelLink($event, 'Info')" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart"> <!-- ng-if Added by richa 25/11/2016 -->
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_Stocking' | translate }}</a>
+                            
+                            
+                        <a class="row T10 mainSectionLink" ng-class="{'active' : ViewPart.activeSidepanelink =='#StatisticsSection'}" 
+                            href="#StatisticsSection" ng-click="ViewPart.sidepanelLink($event, 'Statistics')" ><span class="alphabetLetter">{{ 'B' | translate }}</span>{{ 'Page_Section_Statistics' | translate }}</a>                    
+                        <a class="row T10 subSectionLink" href="#Vital_Statistics" ng-click="ViewPart.sidepanelLink($event, 'Statistics')">
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_VitalStatistics' | translate }}</a>
+                        <!-- <a class="row T10 subSectionLink hiddenElements" style="display:none" href="#Telemetry_Statistics" ng-click="ViewPart.sidepanelLink($event, 'Statistics')">
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_Telemetry' | translate }}</a> -->  <!-- hidden -->
+                        
+                        <a class="row T10 mainSectionLink" ng-class="{'active' : ViewPart.activeSidepanelink =='#RelatedSection'}" 
+                            href="#RelatedSection" ng-click="ViewPart.sidepanelLink($event, 'Related')" ><span class="alphabetLetter">C</span>{{ 'Page_Section_Related' | translate }}</a>
+        <!--                 <a class="subSectionLink row T10" href="#RelatedSection" ng-click="ViewPart.sidepanelLink($event)"> -->
+        <!--                     <span class="alphabetLetter"></span>Active Orders</a> -->
+                        <a class="row T10 subSectionLink" href="#VP_Active_Orders_block_heading_panel" ng-click="ViewPart.sidepanelLink($event, 'Related')" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart && GroupOnlyPermissions['Vendor order']['view']"> <!-- ng-if Added by richa 25/11/2016 -->
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_Active_Vendor_Order' | translate }}</a>  <!-- {{ 'Page_Section_ActiveOrder' | translate }} -->
+                        <a class="row T10 subSectionLink" href="#VP_Active_Sales_Orders_block_heading_panel" ng-click="ViewPart.sidepanelLink($event, 'Related')"
+                        ng-show="GroupOnlyPermissions['Merchandise']['view'] || GroupOnlyPermissions['Service job']['view'] || GroupOnlyPermissions['Deal']['view']">
+                            <span class="alphabetLetter"></span>{{ 'Active_Sales_Orders' | translate }}</a>
+                        <a class="row T10 subSectionLink" href="#VP_Alternate_Parts_block_heading_panel" ng-click="ViewPart.sidepanelLink($event, 'Related')">
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_AlternateParts' | translate }}</a>
+                        <!-- <a class="row T10 subSectionLink" href="#VP_Tax_Exemptions_block_heading_panel" ng-click="ViewPart.sidepanelLink($event, 'Related')">
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_TaxExemptions' | translate }}</a>
+                         -->    
+                        <a class="row T10 mainSectionLink" ng-class="{'active' : ViewPart.activeSidepanelink =='#CostTrackingSection'}" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart"
+                            href="#CostTrackingSection" ng-click="ViewPart.sidepanelLink($event, 'CostTracking')" ><span class="alphabetLetter">D</span>{{ 'Page_Section_Cost_Tracking' | translate }}</a> <!-- ng-if Added by richa 25/11/2016 -->
+                        <a class="row T10 subSectionLink" href="#Cost_Summary" ng-click="ViewPart.sidepanelLink($event, 'CostTracking')" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart"> <!-- ng-if Added by richa 25/11/2016 -->
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_Cost_Summary' | translate }}</a>
+                        <a class="row T10 subSectionLink" href="#Cost_Details" ng-click="ViewPart.sidepanelLink($event, 'CostTracking')" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart"> <!-- ng-if Added by richa 25/11/2016 -->
+                            <span class="alphabetLetter"></span>{{ 'Page_Section_Cost_Details' | translate }}</a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col-lg-10 col-md-10 mainSection" > <!-- Scroll Issue: style="margin-top: 98px;": Removed By Pooja-->
+                <div class=" sectionHeader row fixedRow" >
+                    <div class="col-lg-6 col-md-6" ng-show="ViewPart.activeSidepanelink =='#InfoSection'">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel infoprintbarcodediv">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!ViewPart.displaySections.Info"
+                                ng-Click="ViewPart.displaySections.Info = true">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="ViewPart.displaySections.Info"
+                                ng-Click="ViewPart.displaySections.Info = false">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{ 'A' | translate }} {{ 'Page_Section_Info' | translate }}</span>
+                            <span class=" ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown" id="infoprintbarcodediv">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                      <ul class="dropdown-menu">
+                                        <li> <!-- ng-click = "ViewPart.showHideRecords()" Commented by RM -->
+                                            <a ng-click="ViewPart.PrintBarCode(ViewPart.PartInfo.PartDetailRec)">{{ 'Label_Print_barcode' | translate }}</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </span> 
+                            </span>
+                             <!--  <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                </div>
+                            </span> --> 
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-6" ng-show="ViewPart.activeSidepanelink =='#StatisticsSection'">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!ViewPart.displaySections.Statistics"
+                                ng-Click="ViewPart.displaySections.Statistics = true">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="ViewPart.displaySections.Statistics"
+                                ng-Click="ViewPart.displaySections.Statistics = false">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{ 'B' | translate }} {{ 'Page_Section_Statistics' | translate }}</span>
+                            </span>
+                              <!-- <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                </div>
+                            </span>  -->
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-6" ng-show="ViewPart.activeSidepanelink =='#RelatedSection'">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!ViewPart.displaySections.Related"
+                                ng-Click="ViewPart.displaySections.Related = true">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="ViewPart.displaySections.Related"
+                                ng-Click="ViewPart.displaySections.Related = false">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{ 'C' | translate }} {{ 'Page_Section_Related' | translate }}</span>
+                            </span>
+                              <!-- <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                </div>
+                            </span>  -->
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-6" ng-show="ViewPart.activeSidepanelink =='#CostTrackingSection'">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel costTrackingDropdown">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!ViewPart.displaySections.CostTracking"
+                                ng-Click="ViewPart.displayCostTrackingSection(!ViewPart.displaySections.CostTracking)">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="ViewPart.displaySections.CostTracking"
+                                ng-Click="ViewPart.displayCostTrackingSection(!ViewPart.displaySections.CostTracking)">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{ 'D' | translate }} {{ 'Page_Section_Cost_Tracking' | translate }}</span>
+                            <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown" id="costtrackingdiv">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                      <ul class="dropdown-menu">
+                                        <li ng-click = "ViewPart.showHideRecords()">
+                                            <a ng-if = "!ViewPart.toggle">{{ 'Label_Show_History' | translate }}</a><a ng-if = "ViewPart.toggle">{{ 'Label_Hide_History' | translate }}</a>
+                                        </li>
+                                        <li ng-click = "ViewPart.adjustStock()" ng-if = "ViewPart.PartInfo.OversoldQty == 0" ng-class="{'mutedgray' : !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Adjust_In_Stock' | translate }}</a></li>
+                                        <li class = "modifyCostSummary" ng-if = "ViewPart.PartInfo.OversoldQty == 0" ng-click="!ViewPart.disableModifyCostSummary && ViewPart.openModifyCostSummaryPopup()"  ng-class="{'disabledModifyCostSummary' : ViewPart.disableModifyCostSummary || !GroupOnlyPermissions['Costs']['modify']}"> <a>{{ 'Modify_Cost_Summary' | translate }}</a></li>
+                                        <li ng-click="ViewPart.openModifyCostSourcePopup()"  ng-if = "ViewPart.PartInfo.OversoldQty == 0" ng-class="{'mutedgray' : modifyCostSoourceeditMode || !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Modify_Cost_Source' | translate }}</a></li>
+                                        <li ng-click = "ViewPart.ShowMessage()" ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-class="{'mutedgray' : !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Adjust_In_Stock' | translate }}</a></li>
+                                        <li class = "modifyCostSummary"  ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-click="ViewPart.ShowMessage()"  ng-class="{'disabledModifyCostSummary' : ViewPart.disableModifyCostSummary || !GroupOnlyPermissions['Costs']['modify']}"> <a>{{ 'Modify_Cost_Summary' | translate }}</a></li>
+                                        <li ng-click="ViewPart.ShowMessage()"  ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-class="{'mutedgray' : modifyCostSoourceeditMode || !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Modify_Cost_Source' | translate }}</a></li>
+                                        <li ng-click="ViewPart.openResolveOversoldPopup()" ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-class="{'mutedgray' : !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Resolve_Oversold' | translate }}</a></li>
+                                    </ul>
+                                </div>
+                            </span> 
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-6 fixedContent">
+                    <div class="fa-icons">
+                        <i class="fa fa-refresh fa-2x fa-fw"
+                                        ng-class="{'fa-spin' : ViewPart.isrefresh}"
+                                        ng-click="ViewPart.refreshViewPart();"></i></div>
+                        <button type="button" class="flatBtn text-uppercase" ng-click="ViewPart.editPart()"
+                        ng-disabled="!GroupOnlyPermissions['Parts'].enabled" ng-class="{'permissionDisabledButton' : !GroupOnlyPermissions['Parts'].enabled}"
+                        >{{ 'Edit_Label' | translate }}</button>
+                        <!-- <div class="fa-icons pull-right">
+                            <i class="fa fa-floppy-o"></i>
+                            <i class="fa fa-cog"></i>
+                        </div> --> <!-- Commented by richa -->
+                        <div class="col-lg-7 col-md-6 searchToAdd pull-right viewVendorSearchBox">
+                            <div class="input-group">
+                                <div class="input-group-btn">
+                                    <button type="button" class="btn C5 LabelBtn">
+                                    <span class="T5" style="color: #939CA9;">{{ 'Label_To' | translate }}:</span>
+                                    <span style="color: #FFFFFF;">{{ViewPart.selectedItem}}</span>
+                                    </button>
+                                    <button type="button" class="btn C5 dropdown-toggle caretBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="caret"></span>
+                                    <span class="sr-only">{{ 'Label_Toggle_Dropdown' | translate }}</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="#InfoSection" ng-click="ViewPart.dropDownItem($event, 'Info')">{{ 'Page_Section_Info' | translate }}</a></li>
+                                        <li><a href="#StatisticsSection" ng-click="ViewPart.dropDownItem($event, 'Statistics')">{{ 'Page_Section_Statistics' | translate }}</a></li>
+                                        <li><a href="#RelatedSection" ng-click="ViewPart.dropDownItem($event, 'Related')">{{ 'Page_Section_Related' | translate }}</a></li>
+                                        <li><a href="#CostTrackingSection" ng-click="ViewPart.dropDownItem($event, 'Cost Tracking')" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart">{{ 'Page_Section_Cost_Tracking' | translate }}</a></li> <!-- ng-if Added by richa 25/11/2016 -->
+                                        <li role="separator" class="divider"></li>
+                                        <li><a class="text-uppercase">{{ 'Label_Advanced' | translate }} {{ 'Label_Search' | translate }}</a></li>
+    
+                                    </ul>
+                                </div>
+                                <!-- /btn-group -->
+                                <div class="inner-addon right-addon">
+                                    <i class="fa fa-search fa-flip-horizontal"></i>
+                                    <c:SearchToAddHtml />
+                                    <!-- <input class="header-search form-control"  placeholder="search to Add Related" type="text" /> -->
+                                </div>
+                            </div>
+                            <!-- /input-group -->
+                        </div>
+                    </div>
+                </div>
+                <div id="InfoSection" >
+                    <div class="main_section row main_section_margin_top" ng-show="ViewPart.displaySections.Info">
+                        <div id="Info_General">
+                            <p class="actionRow T2">
+                                <span class="sectionText">{{ 'Page_Section_General' | translate }}</span>
+                                <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                <span class="ActionIcons">
+                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ViewPart.helpText['General']}}"></i>
+                                </span> 
+                            </p>
+                            <div class="row rowGeneral" >
+                                <div class="col-md-4 col-lg-4 subsectionGeneral_rightonly">
+                                <!-- <div class="row">
+                                    <div class="col-md-5 col-lg-5 " >
+                                        <div  class="row ">
+                                            <div class="col-md-12 col-lg-12  Profile_pic">
+                                                <img src="{!URLFOR($Resource.Images, 'profile_default.jpg')}" style="height:120px;width:100%"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7 col-lg-7" >
+                                    </div>
+                                </div> -->
+                                <div class="row" >
+                                    <div class="col-md-8 col-lg-8 " >
+                                        <div  class="row ">
+                                            <div class="col-md-12 col-lg-12">
+                                                <span class="T1">
+                                                    {{ViewPart.PartInfo.PartDetailRec.Description}}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 col-lg-4 " >
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 col-lg-12">
+                                        <span>
+                                            <label class="T7" for="labelFirstName">{{ 'Vendor_Object_Display_Label' | translate }} : </label>
+                                        </span>
+                                        <span class="T7 ng-binding">
+                                            {{ViewPart.PartInfo.PartDetailRec.VendorName}}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="row" >
+                                    <div class="col-md-5 col-lg-5 " >
+                                        <div  class="row ">
+                                            <div class="col-md-12 col-lg-12">
+                                                <span class="T7">
+                                                    {{ViewPart.PartInfo.PartDetailRec.PartNumber}}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7 col-lg-7 " >
+                                    </div>
+                                </div>
+                                <div class="row" >
+                                    <div class="col-md-5 col-lg-5 " >
+                                        <div  class="row ">
+                                            <div class="col-md-12 col-lg-12 Active_Button_row ">
+                                                <button class="form-control C10 T4 Active_Button round_btn text-uppercase Active_Button_PointerEventNone" ng-if="ViewPart.PartInfo.PartDetailRec.Active == true">{{ 'Label_Active' | translate }}</button> 
+                                                <button class="form-control C9 T4 Active_Button round_btn text-uppercase Active_Button_PointerEventNone" ng-if="ViewPart.PartInfo.PartDetailRec.Active ==false" >{{ 'Label_Deactive' | translate }}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7 col-lg-7 " >
+                                    </div>
+                                </div>
+                                    <div class="general_info_part">
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5  part_general_column">
+                                            <span>    
+                                            <label class="T7 " for="labelFirstName">{{ 'Part_type' | translate }}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7 " >
+                                            <span class="blue T3"> {{ViewPart.PartInfo.PartDetailRec.PartType}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5  part_general_column">
+                                            <span>    
+                                            <label class="T7 " for="labelFirstName">{!$ObjectType.Part__c.fields.MSRP__c.Label}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7 " >
+                                            <span class="blue T3"> {{ViewPart.PartInfo.PartDetailRec.MSRP | currency}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column"> 
+                                            <span>    
+                                            <label class="T7 " for="labelFirstName">{!$ObjectType.Part__c.fields.Retail_Price__c.Label}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class=" T3" > {{ViewPart.PartInfo.PartDetailRec.Retail | currency}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>    
+                                            <label class="T7 " for="labelFirstName">{!$ObjectType.Part__c.fields.Enviro_Fee__c.Label}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3"> {{ViewPart.PartInfo.PartDetailRec.EnviroFee | currency}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row" ng-if="ViewPart.PartInfo.PartDetailRec.EnvFeeId != null">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>    
+                                            <label class="T7 " for="labelFirstName">{!$ObjectType.Part__c.fields.Enviro_Fee_Code__c.Label}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3">
+                                                <a ui-sref="ViewFee({Id: ViewPart.PartInfo.PartDetailRec.EnvFeeId})" target="_blank"> {{ViewPart.PartInfo.PartDetailRec.EnvFeeDesc}} </a>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="row" ng-if = "ViewPart.PartInfo.PartDetailRec.PriceMethod != ''">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7 " for="labelFirstName">{{ 'Part_Object_Pricing_Method' | translate }}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3"  >{{ViewPart.PartInfo.PartDetailRec.PriceMethod}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column"> 
+                                            <span>    
+                                            <label class="T7 " for="labelFirstName">{!$ObjectType.Part__c.fields.Taxable__c.Label}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class=" T3" ng-if="ViewPart.PartInfo.PartDetailRec.IsTaxable"> {{ 'Label_Yes' | translate }} </span>
+                                            <span class=" T3" ng-if="!ViewPart.PartInfo.PartDetailRec.IsTaxable"> {{ 'Label_No' | translate }} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>    
+                                            <label class="T7" for="labelFirstName">{!$ObjectType.Part__c.fields.Category__c.Label}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3"><a ng-click="ViewPart.MoveToPage('CategoryMgmt')" target = "_blank"> {{ViewPart.PartInfo.PartDetailRec.CategoryName}} </a></span>
+                                        </div>
+                                    </div>
+                                    <!-- <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7 " for="labelFirstName">{!$ObjectType.Part__c.fields.Superseded_By__c.Label}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3"><a ng-mouseover="ViewPart.openpartpopup($event, ViewPart.PartInfo.PartDetailRec.ReplacedById);" ng-mouseleave="ViewPart.hidePartPopUp();">{{ViewPart.PartInfo.PartDetailRec.ReplacedByName}} </a></span>
+                                        </div>
+    
+                                    </div> -->
+    
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7 " for="labelFirstName">{!$ObjectType.Part__c.fields.Location__c.Label}s</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <div ng-repeat="location in ViewPart.getLocations()"> 
+                                                 <i class="fa fa-caret-up"></i> <span class=" T3" style="margin-left: 5px;">{{location}} </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+    
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7" for="labelFirstName">{{ 'PriceLevelGrid_Description' | translate }}</label>
+                                                
+    
+                                            </span>
+                                        </div>
+                                         <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3">{{ViewPart.PartInfo.PartDetailRec.Description}}</span>
+                                        </div>
+                                    </div>
+                                    <div class="row" ng-if="ViewPart.PartInfo.PartDetailRec.IsTaxable">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7" for="labelFirstName">{{ 'Applicable_tax_Label' | translate }}</label>
+                                                <!-- class="T7 label_favorite" -->
+                                            </span>
+                                        </div>
+                                         <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3">{{ViewPart.PartInfo.PartDetailRec.ApplicableTaxName}}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Start: Added By Pooja 25 Nov. 2016 -->
+                                    <div class="row" ng-if="ViewPart.PartInfo.PartDetailRec.MfgPart">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7" for="labelFirstName">{{ 'Mfg_part' | translate }} #</label>
+                                                
+                                            </span>
+                                        </div>
+                                         <div class="col-lg-7 col-md-7">
+                                            <span class="blue T3 ng-binding">{{ViewPart.PartInfo.PartDetailRec.MfgPart}}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row" ng-if="ViewPart.PartInfo.PartDetailRec.SKUNumber">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7" for="labelFirstName">{{ 'Sku' | translate }} #</label>
+                                                
+                                            </span>
+                                        </div>
+                                         <div class="col-lg-7 col-md-7">
+                                            <span class="blue T3 ng-binding">{{ViewPart.PartInfo.PartDetailRec.SKUNumber}}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7" for="labelFirstName">{{ 'Non_Inventory_part' | translate }}</label> 
+                                                
+                                            </span>
+                                        </div>
+                                         <div class="col-lg-7 col-md-7">
+                                            <span class="blue T3 ng-binding">{{ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart ? 'Yes' : 'No'}}</span>
+                                        </div>
+                                    </div> 
+                                    
+                                    <div class="row assign-tag-wrapper" ng-if="ViewPart.PartInfo.PartDetailRec.AssignedTags">
+                                                <div class="col-lg-5 col-md-5 part_general_column">
+                                                    <span>
+                                                        <label class="T7" for="labelFirstName">{{ 'AssignedTags' | translate }}</label>
+                                                    </span>
+                                                </div>
+                                                <div  class="col-lg-7 col-md-7" >
+                                                    <ul class="tag-ul-list">
+                                                        <li class="tag-list" ng-repeat = "AssignedTagsRec in ViewPart.PartInfo.PartDetailRec.AssignedTags">
+                                                            <span class="tag-name-span">{{AssignedTagsRec}}</span>
+                                                        </li>
+                                                    </ul>
+                                                    
+                                                </div>
+                                            </div>
+                                    
+                                  </div>
+                                  <div class="brp-container" ng-if="ViewPart.PartInfo.PartDetailRec.IsBRPPart">
+                                          <button class="bp-btn bp-btn-normal bp-btn-xs" ng-click="ViewPart.openPartLocatorWindow()">{{ 'BRP_Availability' | translate }}</button>
+                                  </div>
+                                </div>
+                                <div class="col-md-4 col-lg-4 subsectionGeneral">
+                                    <div  class="row ">
+                                        <div class="col-md-8 col-lg-8 " >
+                                        </div>
+                                        <div class="col-md-4 col-lg-4" >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-lg-4 subsectionGeneral hiddenElements">  <!-- hidden -->
+                                    <mb-datepicker element-id='date1'
+                                        input-class="testClass"
+                                        input-name="testName"
+                                        arrows="arrows"
+                                        calendar-header="header"
+                                        date="date"
+                                        date-format="YYYY-MM-DD" ></mb-datepicker>
+                                </div>
+                            </div>
+                        </div>
+                        
+                          
+                        <div class = "viewPartStocking" id="Info_Stocking" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart"> <!-- ng-if Added by richa 25/11/2016 -->
+                                <p class="actionRow T2">
+                                    <span class="sectionText">{{ 'Page_Section_Stocking' | translate }}</span>
+                                    <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                    <span class="ActionIcons">
+                                    <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ViewPart.helpText['Stocking']}}"></i>
+                                    </span> 
+                                </p>
+                                <div class="row rowStocking" > 
+                                    <div class="stockButtons col-lg-12 col-md-12">
+                                        <div class="row">
+                                            <div class=" col-lg-2 col-md-2 " style="padding-left:10px ;text-align:center;cursor:pointer">
+                                                <div class="T4 round_btn text-uppercase" ng-class="{ C11: ViewPart.activeButton=='CurrentStock' ,  C5: ViewPart.activeButton=='Ordering'}" ng-click="ViewPart.changeActiveButton('CurrentStock')"> {{ 'Label_Current_Stock' | translate }} </div>
+                                            </div>
+                                           
+                                            <div class=" col-lg-2 col-md-2 " style="padding-left:10px;text-align:center;cursor:pointer">
+                                                <div class="T4 round_btn text-uppercase" ng-class="{ C5: ViewPart.activeButton=='CurrentStock' ,  C11: ViewPart.activeButton=='Ordering'}" ng-click="ViewPart.changeActiveButton('Ordering')"> {{ 'Label_Ordering' | translate }} </div>
+                                            </div>
+                                             
+                                            <div class="col-lg-8 col-md-8"></div>
+    
+    
+    
+    
+                                        </div>
+                                    </div>
+                                    <div class="viewPatPopupOnPage1">
+                                        <c:ViewPartInformation />
+                                    </div>
+                                    <div class="main_section_vp row" id="GeneralSection_Stocking_Block" style="margin-left: -20px; margin-right: -20px;">
+                                    <div class="gid_container T6" id="View_Part_Active_Orders_Empty_Div" 
+                                        ng-show="ViewPart.PartInfo.PartDetailRec.length == 0" style="padding-left: 44px;">
+                                        {{ 'Label_No_Records_Found' | translate }}
+                                    </div>
+                                    <div ng-show="ViewPart.PartInfo.PartDetailRec.length != 0">
+                                        <div class="gid_container_Customer" id="Customer_Owned_Units">
+                                            <table class="table" id="CM_Owned_UnitsGrid">
+                                                <col width="1%" />
+                                                <col width="19%" />
+                                                <col width="16%" />
+                                                <col width="15%" />
+                                                <col width="15%" ng-show = "GroupOnlyPermissions['Costs']['read only']"/>
+                                                <col width="15%" ng-show = "GroupOnlyPermissions['Costs']['read only']"/>
+                                                <col width="16%" ng-show = "GroupOnlyPermissions['Costs']['read only']"/>
+                                                <col width="3%"  />
+                                                <tr class="tableHeader T3 C2">
+                                                    <th></th>
+                                                    <th class = "text-center">{{ 'Order_In_Lots_Of' | translate }}</th>
+                                                    <th class = "text-center" >{!$ObjectType.Part__c.fields.Package_Qty__c.Label}</th>
+                                                    <th class = "text-center" >{{ 'Label_Unit' | translate }}</th>
+                                                    <th  class = "text-center" ng-show = "GroupOnlyPermissions['Costs']['read only']">{{ 'Label_Cost' | translate }}({{ 'Label_Item' | translate }})</th>
+                                                    <th  class = "text-center" ng-show = "GroupOnlyPermissions['Costs']['read only']">{{ 'Label_Cost' | translate }}({{ 'Label_Package' | translate }})</th>
+                                                    <th class = "text-center"  ng-show = "GroupOnlyPermissions['Costs']['read only']">{{ 'Profitability_Label' | translate }}</th>
+                                                    <th></th>
+                                                </tr>
+                                                <tbody>
+                                                    <!-- ng-repeat="activeOrder in ViewPartRelatedListModal.PartRelatedInfo.ActiveOrders"  -->
+                                                    <!-- Display rows -->
+                                                    <tr class="clickable_row" id="row1"
+                                                        rel="owned_unit_row{{$index}}_edit" ng-click="" ng-blur=""
+                                                        ng-class-even="'C2'">
+                                                        <td style="background: #fff"></td>
+        
+                                                        <!-- <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_1_{{$index}}" class="T7">  * </td> -->
+                                                        <td
+                                                            id="VP_Active_Orders_block_grid_container_tbody_tr_td_2_{{$index}}"
+                                                           class = "text-center">{{ViewPart.PartInfo.PartDetailRec.OrderLots}}
+                                                        </td>
+                                                        <td
+                                                            id="VP_Active_Orders_block_grid_container_tbody_tr_td_3_{{$index}}"
+                                                            class="T7 text-center" >
+                                                            {{ViewPart.PartInfo.PartDetailRec.PackagedQty}}</td>
+                                                        <td
+                                                            id="VP_Active_Orders_block_grid_container_tbody_tr_td_4_{{$index}}"
+                                                            class="T7 text-center" >
+                                                            {{ViewPart.PartInfo.PartDetailRec.PackagedUnit}}</td>
+                                                        <td
+                                                            id="VP_Active_Orders_block_grid_container_tbody_tr_td_4_{{$index}}"
+                                                            class="T7 text-center" 
+                                                            ng-show = "GroupOnlyPermissions['Costs']['read only']">{{ViewPart.PartInfo.PartDetailRec.Cost |
+                                                            currency}}</td>
+                                                         <!-- <td class = "T7 text-center" ng-show = "!GroupOnlyPermissions['Costs']['read only']">-</td> -->
+                                                        <td
+                                                            id="VP_Active_Orders_block_grid_container_tbody_tr_td_4_{{$index}}"
+                                                            class="T7 text-center"  ng-show = "GroupOnlyPermissions['Costs']['read only']">
+                                                            {{ViewPart.PartInfo.PartDetailRec.PackagedCost | currency}}
+                                                        </td>
+                                                       <!--  <td class = "T7 text-center" ng-show = "!GroupOnlyPermissions['Costs']['read only']">-</td> -->
+                                                        <td
+                                                            id="VP_Active_Orders_block_grid_container_tbody_tr_td_5_{{$index}}"
+                                                            class="T7 text-center" ng-show = "GroupOnlyPermissions['Costs']['read only']">
+                                                                        <span style="margin-top: 1%;" ng-class="{'green' : ViewPart.PartInfo.PartDetailRec.ProfitAmount >= 0, 'red' : ViewPart.PartInfo.PartDetailRec.ProfitAmount < 0}">
+                                                                            <i class="fa fa-arrow-up" ng-if="ViewPart.PartInfo.PartDetailRec.ProfitAmount >= 0"> </i>
+                                                                            <i class="fa fa-arrow-down" ng-if="ViewPart.PartInfo.PartDetailRec.ProfitAmount < 0"> </i>
+                                                                        </span>
+                                                                        <span style="margin-left: 2%;" ng-class="{'green' : ViewPart.PartInfo.PartDetailRec.ProfitAmount >= 0, 'red' : ViewPart.PartInfo.PartDetailRec.ProfitAmount < 0}">
+                                                                            {{ 'Currency_Symbol' | translate }}{{ViewPart.PartInfo.PartDetailRec.ProfitAmount | number : 2}}
+                                                                        </span>
+                                                                        <span ng-class="{'green' : ViewPart.PartInfo.PartDetailRec.ProfitAmount >= 0, 'red' : ViewPart.PartInfo.PartDetailRec.ProfitAmount < 0}">
+                                                                            ({{ViewPart.PartInfo.PartDetailRec.ProfitPercent | number : 1}}%)
+                                                                        </span> 
+                                                        </td>
+                                                    </tr>
+        
+                                                </tbody>
+                                            </table>
+                                        </div>
+    
+                                    <!-- Pagination container -->
+                                    <!-- <div class="row pagination_container" id="View_Part_Active_Orders_Pagination" style="margin-left: 10px; margin-right: 0;"
+                                    ng-if="ViewPartRelatedListModal.PartRelatedInfo.TotalActiveOrders != undefined" >
+                                        <list-pagination id-value = "View_Part_Active_Orders_Pagination_" 
+                                                    total-records-length = "ViewPartRelatedListModal.PartRelatedInfo.TotalActiveOrders"
+                                                    page-size = "ViewPartRelatedListModal.ActiveOrders_sectionModel.activeOrdersPageSize"
+                                                    current-page = "ViewPartRelatedListModal.ActiveOrders_sectionModel.activeOrdersCurrentPage"
+                                                    changes-count = "ViewPartRelatedListModal.ActiveOrders_sectionModel.activeOrdersChangesCount"
+                                                    pagination-control-method = "ViewPartRelatedListModal.Active_Orders_paginationControlsAction" />
+                                    </div> -->
+                           
+                                </div>
+                            </div>
+                                </div>
+     
+                         </div>
+                    </div>
+                </div>
+                <div class="sectionHeader row" style="margin-top: 48px"> <!-- Scroll Issue: style="margin-top: 48px": Added By Pooja  -->
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!ViewPart.displaySections.Statistics"
+                                ng-Click="ViewPart.displaySections.Statistics = true">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="ViewPart.displaySections.Statistics"
+                                ng-Click="ViewPart.displaySections.Statistics = false">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{ 'B' | translate }} {{ 'Page_Section_Statistics' | translate }}</span>
+                            </span>
+                              <!-- <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                </div>
+                            </span>  -->
+                        </div>
+                    </div>
+                </div>
+                <div id="StatisticsSection" >
+                    <div class="main_section row" ng-show="ViewPart.displaySections.Statistics">
+                        <div id="Vital_Statistics" class="Vital_Statistics">
+                            <p class="actionRow T2">
+                                <span class="sectionText">{{ 'Page_Section_VitalStatistics' | translate }}</span> 
+    
+                                <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                <span class="ActionIcons">
+                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ViewPart.helpText['VitalStatistics']}}"></i>
+                                </span> 
+                            </p>
+                            <div class="row statistics_row">
+                                        <!-- <div style="height:84px ; float :left ; margin-left: 1%;" class="C7" >
+                                                <div>
+                                                    <div class="T4" style="width: 100%" >{{ 'Count_Confidence' | translate }}</div>
+                                                    <div class="T13"  style="width: 100%">85%</div>
+                                                    <div class="T13"  style="width: 100%" ng-show="ViewPart.CustomerInfo.OrdersLifetime == null" >0</div>
+                                                </div> 
+                                        </div> -->
+                                        <div  style="  height:84px ; float :left ; margin-left: 1%;" class="C7" >
+                                                <div>
+                                                    <div class="T4"  style="width: 100%">{{ 'Sold_Lifetime' | translate }}</div>
+                                                    <div class="T13"  style="width: 100%">{{ViewPart.PartInfo.SoldLifeTime | number : 0}}</div>
+                                                    <!-- <div class="T13"  style="width: 100%" ng-show="ViewPart.CustomerInfo.OpenOrders == null"> 0</div> -->
+                                                </div> 
+                                        </div>
+                                        <div  style="  height:84px ; float :left ; margin-left: 1%;" class="C7" >
+                                                <div>
+                                                    <div class="T4" style="width: 100%"  >{{ 'Revenue_Lifetime' | translate }}</div>
+                                                    <div class="T13"  style="width: 100%"> {{ViewPart.PartInfo.RevenueLifeTime | currency}}</div>
+                                                    <!-- <div class="T13"  style="width: 100%" ng-show="ViewPart.CustomerInfo.AverageSpendPerHour == null" > $0</div> -->
+                                                </div> 
+                                        </div> 
+                                        <div  style="  height:84px ; float :left ; margin-left: 1%;" class="C7" >
+                                                <div>
+                                                    <div>
+                                                        <div class="T4" style="width: 100%" >{{ 'Special_Order' | translate }}</div>
+                                                        <div class="T13" style="width: 100%">{{ViewPart.PartInfo.SpecialOrderReceivedPercentage}}%</div>
+                                                       <!--  <div class="T13" style="width: 100%"  ng-show="ViewPart.CustomerInfo.LastVisit == ''"  > 0</div> -->
+                                                    </div>  
+                                                </div>  
+                                        </div>
+                                        <div  style="  height:84px ; float :left ; margin-left: 1%;" class="C7" >
+                                                <div>
+                                                    <div class="T4" style="width: 100%" >{{ 'Last_Sold' | translate }}</div>
+                                                    <div class="T13" style="width: 100%" >{{ViewPart.PartInfo.LastSold}}</div>
+                                                </div> 
+                                        </div>
+                                        <div  style="  height:84px ; float :left ; margin-left: 1%;" class="C7" >
+                                                <div>
+                                                    <div class="T4"  style="width: 100%" >{{ 'Last_Ordered' | translate }}</div>
+                                                    <div class="T13"  style="width: 100%" >{{ViewPart.PartInfo.LastOrderedDate}}</div>
+                                                </div> 
+                                        </div>
+                            </div>
+                        </div>
+                        
+                        <div id="Telemetry_Statistics">
+                            <div class="telemetry_Main hiddenElements">   <!-- hidden -->
+                                <p class="actionRow T2 ">
+                                    <span class="sectionText">{{ 'Page_Section_Telemetry' | translate }}</span>
+                                    <span class="actionText">{{ 'Label_Actions' | translate }}</span>
+                                    <span class="ActionIcons">
+                                    <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ViewPart.helpText['Telemetry']}}"></i>
+                                    </span> 
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sectionHeader row">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!ViewPart.displaySections.Related"
+                                ng-Click="ViewPart.displaySections.Related = true">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="ViewPart.displaySections.Related"
+                                ng-Click="ViewPart.displaySections.Related = false">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{ 'C' | translate }} {{ 'Page_Section_Related' | translate }}</span>
+                            </span>
+                              <!-- <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                </div>
+                            </span>  -->
+                        </div>
+                    </div>
+                </div>
+                
+                <c:ViewPartRelatedList />
+                
+                <div class="sectionHeader row" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart"> <!-- ng-if Added by richa 25/11/2016 -->
+                    <div class=" col-lg-6 col-md-6">
+                        <div class="fixedHeaderText">
+                            <span class="headerlabel">
+                            <i class="fa fa-angle-right" style="width:10px; padding: 0 3px;"
+                                ng-show="!ViewPart.displaySections.CostTracking"
+                                ng-Click="ViewPart.displayCostTrackingSection(!ViewPart.displaySections.CostTracking)">
+                            </i> 
+                            <i class="fa fa-angle-down" style="width:10px;"
+                                ng-show="ViewPart.displaySections.CostTracking"
+                                ng-Click="ViewPart.displayCostTrackingSection(!ViewPart.displaySections.CostTracking)">
+                            </i> 
+                            <span class="divider">|</span>
+                            <span class="T2">{{ 'D' | translate }} {{ 'Page_Section_Cost_Tracking' | translate }}</span>
+                            </span>
+                              <span class="ActionIcons pull-left ">
+                                   <div class="dropdown selectDropdown checkboxDropdown">
+                                      <button class="btn dropdown-toggle" type="button" data-toggle="dropdown" id="costtrackingMenu">{{ 'Label_Actions' | translate }}
+                                      <span class="caret"></span></button>
+                                      <ul class="dropdown-menu">
+                                        <li ng-click = "ViewPart.showHideRecords()">
+                                            <a ng-if = "!ViewPart.toggle">{{ 'Label_Show_History' | translate }}</a><a ng-if = "ViewPart.toggle">{{ 'Label_Hide_History' | translate }}</a>
+                                        </li>
+                                        <li ng-click = "ViewPart.adjustStock()" ng-class="{'mutedgray' : !GroupOnlyPermissions['Costs']['modify']}" ng-if = "ViewPart.PartInfo.OversoldQty == 0"><a>{{ 'Adjust_In_Stock' | translate }}</a></li>
+                                        <li class = "modifyCostSummary" ng-if = "ViewPart.PartInfo.OversoldQty == 0" ng-click="!ViewPart.disableModifyCostSummary && ViewPart.openModifyCostSummaryPopup()"  ng-class="{'disabledModifyCostSummary' : ViewPart.disableModifyCostSummary || !GroupOnlyPermissions['Costs']['modify']}"> <a>{{ 'Modify_Cost_Summary' | translate }}</a></li>
+                                        <li ng-click="ViewPart.openModifyCostSourcePopup()"  ng-if = "ViewPart.PartInfo.OversoldQty == 0" ng-class="{'mutedgray' : modifyCostSoourceeditMode || !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Modify_Cost_Source' | translate }}</a></li>
+                                        <li ng-click = "ViewPart.ShowMessage()" ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-class="{'mutedgray' : !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Adjust_In_Stock' | translate }}</a></li>
+                                        <li class = "modifyCostSummary"  ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-click="ViewPart.ShowMessage()"  ng-class="{'disabledModifyCostSummary' : ViewPart.disableModifyCostSummary || !GroupOnlyPermissions['Costs']['modify']}"> <a>{{ 'Modify_Cost_Summary' | translate }}</a></li>
+                                        <li ng-click="ViewPart.ShowMessage()"  ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-class="{'mutedgray' : modifyCostSoourceeditMode || !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Modify_Cost_Source' | translate }}</a></li>
+                                        <li ng-click="ViewPart.openResolveOversoldPopup()" ng-if = "ViewPart.PartInfo.OversoldQty != 0" ng-class="{'mutedgray' : !GroupOnlyPermissions['Costs']['modify']}"><a>{{ 'Resolve_Oversold' | translate }}</a></li>
+                                    </ul>
+                                </div>
+                            </span> 
+                        </div>
+                    </div>
+    
+                </div>
+                <div id="CostTrackingSection" ng-if="!ViewPart.PartInfo.PartDetailRec.IsNonInventoryPart"> <!-- ng-if Added by richa 25/11/2016 -->
+                    <div class="main_section row" ng-show="ViewPart.displaySections.CostTracking">
+                       <div id="Cost_Summary">
+                            <p class="actionRow T2 ">
+                                <span class="sectionText">{{ 'Page_Section_Cost_Summary' | translate }}</span>
+                                <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                <span class="ActionIcons">
+                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ViewPart.helpText['CostSummary']}}"></i>
+                                </span> 
+                            </p>
+                            
+    
+                            <div class="row rowGeneral" >
+                                <div class="col-md-4 col-lg-4 subsectionGeneral_rightonly">
+                                
+                                <div class="cost_summary_part">
+                                    <div class="row" ng-if = "ViewPart.PartInfo.OversoldQty != 0">
+                                        <div class="col-lg-5 col-md-5  part_general_column">
+                                            <span class="Requiredtd">    
+                                            {{ 'Oversold_Valuation' | translate }}
+    
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7 " >
+                                            <span class="RequiredtdVal "> {{ViewPart.PartInfo.OversoldValuation| currency}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row" ng-if = "ViewPart.PartInfo.OversoldQty != 0">
+                                        <div class="col-lg-5 col-md-5 part_general_column"> 
+                                            <span class="Requiredtd">{{ 'Oversold_Qty' | translate }}
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class=" RequiredtdVal " > {{ViewPart.PartInfo.OversoldQty}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>    
+                                            <label class="T7 " for="labelFirstName">{{ 'Total_Valuation' | translate }}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class=" T3"> {{ViewPart.PartInfo.TotalValuation| currency}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7 " for="labelFirstName">{{ 'Qty_In_Stock' | translate }}</label>
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class=" T3"  >{{ViewPart.PartInfo.QtyInStock}} </span>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-5 col-md-5 part_general_column">
+                                            <span>
+                                                <label class="T7 " for="labelFirstName">{{ 'Average_Cost' | translate }} =</label>~
+                                            </span>
+                                        </div>
+                                        <div  class="col-lg-7 col-md-7" >
+                                            <span class="blue T3">{{ViewPart.PartInfo.AverageCost| currency}}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    </div>
+                                </div>
+                            </div>
+                        
+    
+                        </div>
+                      
+                        <div id="Cost_Details">
+                            <div class="telemetry_Main">
+                                <p class="actionRow T2 ">
+                                    <span class="sectionText">{{ 'Page_Section_Cost_Details' | translate }}</span>
+                                    <!-- <span class="actionText">{{ 'Label_Actions' | translate }}</span> -->
+                                    <span class="ActionIcons">
+                                    <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ViewPart.helpText['CostDetails']}}"></i>
+                                    </span> 
+                                </p>
+                            
+    
+                            <div class="row rowCostDetails" > 
+                                    
+                                
+    
+                                <div class="main_section_vp row" id="CostTrackingSection_Cost_Details_Block" style="margin-left: -20px; margin-right: -20px;">
+                                    <div class="gid_container T6" id="Cost_Details_Empty_Div" 
+                                        ng-show="ViewPart.PartInfo.PartFIFOBucketList.length  == 0 && ViewPart.PartInfo.TotalFIFORecords > 0" style="padding-left: 36px;">
+                                        {{ 'Select_show_hide_history_to_see_details' | translate }}
+                                    </div>
+                                    <div class="gid_container T6" id="Cost_Details_Empty_Div" 
+                                        ng-show="ViewPart.PartInfo.PartFIFOBucketList.length  == 0 && ViewPart.PartInfo.TotalFIFORecords == 0 " style="padding-left: 36px;">
+                                        {{ 'No_costing_activity_for_this_part' | translate }}
+                                    </div>
+                                    <div ng-show="ViewPart.PartInfo.PartFIFOBucketList.length != 0">
+                                    <div class="gid_container_Customer" id="View_Part_Cost_Details" >
+                                        <table class="table" id="VP_Cost_DetailsGrid">
+                                            <col width="1%"  />
+                                            <col width="4%"  />
+    
+    
+    
+    
+                                            <col width="12%" />
+                                                <col width="9%"  />
+                                                <col width="10%" />
+                                                <col width="12%"  />
+                                                <col width="9%"  />
+                                                <col width="9%" />
+                                                <col width="9%"  />
+                                                <col width="10%" />
+                                                <col width="10%"  />
+                                            <col width="1%"  />
+                                            <tr  class="tableHeader T3 C2">
+                                                <th></th>
+                                                <th></th>
+                                                <!-- <th style="cursor: pointer;" ng-click="ViewPartRelatedListModal.Active_Orders_sortControlsAction($event)">
+                                                    <i class="fa fa-sort-asc" ng-show="ViewPartRelatedListModal.ActiveOrders_sectionModel.sorting[0].sortDirection == 'ASC'"/>
+                                                    <i class="fa fa-sort-desc" ng-show="ViewPartRelatedListModal.ActiveOrders_sectionModel.sorting[0].sortDirection == 'DESC'"/>
+                                                    <i class="fa fa-sort" ng-show="ViewPartRelatedListModal.ActiveOrders_sectionModel.sorting[0].sortDirection == ''"/>
+                                                    {{ 'PO_Object_Short_Display_Label' | translate }}
+                                                </th> -->
+                                                <th class="">{{ 'Label_Source' | translate }}</th>
+                                                <th class="text-center">{{ 'Label_Date' | translate }}</th>
+                                                <th class="">{{ 'Label_Id' | translate }}#</th>
+                                                <th class="">{{ 'Label_Reference' | translate }}</th>
+                                                <th class="text-center">{{ 'Label_Qty_In' | translate }}</th>
+                                                <th class="text-center">{{ 'Label_Qty_Out' | translate }}</th>
+    
+    
+    
+    
+    
+    
+                                                <th class="text-center">{{ 'Label_Remaining' | translate }}</th>
+                                                <th class="text-center">{{ 'Label_Cost' | translate }}</th>
+                                                <th class="text-center">{{ 'Label_Total' | translate }}</th>
+    
+    
+                                                <th></th>
+                                            </tr>
+                                            <tbody ng-repeat="FifoBucket in ViewPart.PartInfo.PartFIFOBucketList " class="parentBody" ng-init="FifoBucketHeaderIndex = $index">
+                                                <!-- Display rows -->
+                                                <tr class="clickable_row" id="row1" ng-class-even="'C2'" ng-click="ViewPart.updateFifoBucketLineItem( FifoBucketHeaderIndex)"  >
+                                                    <td style="background:#fff"></td>
+                                                    <td id="VP_Cost_Details_block_grid_container_tbody_tr_td_1_{{$index}}" >
+                                                        <a href="" class="edite_btn" rel="row1_edit">
+                                                            <i class="fa fa-list  Plr5 FC7 F18 first_icon"></i> 
+                                                        </a>
+                                                    </td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_2_{{$index}}" class="T7 " >{{FifoBucket.SourceName}}</td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_3_{{$index}}" class="T7 text-center">{{FifoBucket.CreatedDate}}  </td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7 " ng-if="(FifoBucket.SourceName == 'Vendor Invoice')"><a ui-sref="VendorOrderInvoicing({Id: FifoBucket.ReferenceId})">{{FifoBucket.UniqueId}}</a></td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7 " ng-if="(FifoBucket.SourceName == 'Vendor Receiving')"><a ui-sref="VendorOrderReceiving({Id: FifoBucket.ReferenceId})">{{FifoBucket.UniqueId}}</a></td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7 " ng-if="(FifoBucket.SourceName != 'Vendor Invoice' && FifoBucket.SourceName != 'Vendor Receiving' && FifoBucket.SourceName != 'Customer Return' && FifoBucket.SourceName != 'Oversold')"><a href= "javascript:void(0)">{{FifoBucket.UniqueId}}</a></td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_4_{{$index}}" class="T7 " ng-if="(FifoBucket.SourceName == 'Customer Return' || FifoBucket.SourceName == 'Oversold')"><a ui-sref="CustomerOrder_V2({Id: FifoBucket.ReferenceId})">{{FifoBucket.UniqueId}}</a></td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_5_{{$index}}"  class="T7 ">{{FifoBucket.Reference}}   </td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_6_{{$index}}" class ="T7 text-center">{{FifoBucket.QtyIn}}</td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_7_{{$index}}" class ="T7 text-center">{{FifoBucket.QtyOut}}  </td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_8_{{$index}}" class ="T7 text-center">{{FifoBucket.RemainingQty}}  </td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_9_{{$index}}" class ="T7 text-center">{{FifoBucket.Cost| currency}}</td>
+                                                    <td id="VP_Active_Orders_block_grid_container_tbody_tr_td_10_{{$index}}" class ="T7 text-center">{{FifoBucket.Total| currency}}</td> 
+                                                    <td style="background:#fff"></td>
+                                                </tr>
+                                                <tr style="display: table-row;"  ng-show="FifoBucket.PartFIFOActivityLineItemList.length == 0 && ViewPart.PartInfo.PartFIFOBucketList[FifoBucketHeaderIndex].isEdit">
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td class="T7">{{ 'No_activity_available' | translate }}</td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                        <td style="background:#fff"></td>
+                                                    </tr>
+                                                <tr style="display: table-row;"  ng-show="ViewPart.PartInfo.PartFIFOBucketList[FifoBucketHeaderIndex].isEdit" class="Editable_row" ng-repeat-start="FifoBucketLineItem in FifoBucket.PartFIFOActivityLineItemList" >
+                                                    <td style="background:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                    <td class ="T7 text-center">{{FifoBucketLineItem.CreatedDate}}</td>
+                                                    <td class ="T7" ng-if="(FifoBucketLineItem.ReferenceId != null && FifoBucketLineItem.ReferenceId != '')">
+                                                        <a ng-if="FifoBucketLineItem.Reference == 'Vendor Return'" ui-sref="ReturnVO({Id: FifoBucketLineItem.ReferenceId})">{{FifoBucketLineItem.UniqueId}}</a>
+                                                        <a ng-if="FifoBucketLineItem.Reference != 'Vendor Return'" ui-sref="CustomerOrder_V2({Id: FifoBucketLineItem.ReferenceId})">{{FifoBucketLineItem.UniqueId}}</a>
+                                                    </td>
+                                                    <td class ="T7" ng-if="(FifoBucketLineItem.ReferenceId == null || FifoBucketLineItem.ReferenceId == '')"><a href = "javascript:void(0)">{{FifoBucketLineItem.UniqueId}}</a></td>
+                                                    <td class ="T7">{{FifoBucketLineItem.Reference}}</td>
+                                                    <td style="background:#fff"></td>
+                                                    <td class ="T7 text-center">{{FifoBucketLineItem.QtyOut}}</td>
+                                                    <td style="background:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                    <td style="background:#fff"></td>
+                                                </tr>
+                                                <tr ng-repeat-end="ng-repeat-end" ></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                
+                                <!-- Pagination container -->
+                               <!--  <div class="row pagination_container" id="View_Part_Active_Orders_Pagination" style="margin-left: 10px; margin-right: 0;"
+                                    ng-if="ViewPartRelatedListModal.PartRelatedInfo.TotalActiveOrders != undefined" >
+                                    <list-pagination id-value = "View_Part_Active_Orders_Pagination_" 
+                                                    total-records-length = "ViewPartRelatedListModal.PartRelatedInfo.TotalActiveOrders"
+                                                    page-size = "ViewPartRelatedListModal.ActiveOrders_sectionModel.activeOrdersPageSize"
+                                                    current-page = "ViewPartRelatedListModal.ActiveOrders_sectionModel.activeOrdersCurrentPage"
+                                                    changes-count = "ViewPartRelatedListModal.ActiveOrders_sectionModel.activeOrdersChangesCount"
+                                                    pagination-control-method = "ViewPartRelatedListModal.Active_Orders_paginationControlsAction" />
+                                </div> -->
+                            </div>
+                        
+                                    </div>
+                                </div>
+     
+    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="height:600px; background: #E6EBEC; margin: 0 -15px;" ></div>
+            </div>
+            <div class="LoadingDiv" ng-show="ViewPart.isLoading">
+                <div class="loadingIconContainer">
+                    <c:BPLoading />
+                </div>
+            </div>
+            
+            
+        </div>
+        <div class="fadein" ui-view="PartAdjustmentInStock" autoscroll='false'></div>
+        <div class="fadein" ui-view="ModifyCostSummary" autoscroll='false'></div>
+        <div class="fadein" ui-view="ModifyCostSource" autoscroll='false'></div>
+        <div class="fadein" ui-view="ResolveOversold" autoscroll='false'></div>
+        <div class="fadein" ui-view="PrintBarCode" autoscroll='false'></div>
+        <div class="fadein" ui-view="EditPart" autoscroll='false'></div>
+    </div>
+</apex:page>

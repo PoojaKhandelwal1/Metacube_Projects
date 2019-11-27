@@ -1,0 +1,537 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+   <!-- <apex:stylesheet value="{!Application}/css/newUI.css"/>
+   <apex:stylesheet value="{!Application}/css/JobClocking.css"/>
+     <apex:stylesheet value="{!Application}/css/MiniCalendar.css"/> -->
+   <div class="modal fade bp-model-dialog bp-job-clocking-wrapper" id="bp-job-clocking" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+         <div class="modal-content">
+            <div class="modal-body P0">
+               <button type="button" class="close bp-close-but" ng-click = "jobClockingModel.hideRelatedPartPopup();">
+               <span aria-hidden="true">
+               <i class="white_FFF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+               </span>                  
+               </button>
+               <div class="content bp-wrapper-container">
+                  <div class="bp-subHeader">
+                     <div class="container">
+                        <div class="GroupSummaryWrapper bp-top-header">
+                           <div class="row">
+                              <div class="col-sm-6">
+                                 <h1 class="modalHeader" ng-if = "!jobClockingModel.isTechnicianMode &&  jobClockingModel.viewChange == 'service jobs'">
+                                    {{ 'All_open_jobs' | translate }}
+                                 </h1>
+                                 <h1 class="modalHeader" translate="Person_s_jobs" translate-values="{{ { personName : jobClockingModel.selectedClockingStaff.TechinicianName} }}"
+                                    ng-if = "jobClockingModel.isTechnicianMode &&  jobClockingModel.viewChange == 'service jobs'">
+                                    
+                                 </h1>
+                                   <h1 class="modalHeader" ng-if = "!jobClockingModel.isTechnicianMode &&  jobClockingModel.viewChange == 'other tasks'">
+                                    {{ 'All_tasks' | translate }}
+                                 </h1>
+                                 <h1 class="modalHeader" translate="Person_s_tasks" translate-values="{{ { personName : jobClockingModel.selectedClockingStaff.TechinicianName} }}" 
+                                    ng-if = "jobClockingModel.isTechnicianMode &&  jobClockingModel.viewChange == 'other tasks'">
+                                    
+                                 </h1>
+                                 <h1 class="modalHeader" ng-if = "jobClockingModel.viewChange == 'manage tasks'">
+                                    <!-- <span ng-click="CashReconciliationModel.MoveToState('homePage');">{!$Label.Homepage}</span> -->
+                                    <!--<a class="bp-hyperLink" ui-sref="homePage">All open Jobs - goes here</a>-->
+                                    {{ 'All_tasks' | translate }}
+                                 </h1>
+                                
+                                 
+                              </div>
+                              <div class="col-lg-4 col-md-4 col-xs-5 jobsSearch pull-right">
+                                 <div class="bp-cell">
+                                    <div class="storeAvatar" ng-if = "!jobClockingModel.isTechnicianMode">
+                                       <i  ng-include="'{!Application_Images}/Icons/store.svg'" class="white"></i>                                          
+                                    </div>
+                                    <div ng-if = "jobClockingModel.isTechnicianMode" 
+                                       class = "circle text-uppercase">
+                                       {{jobClockingModel.selectedClockingStaff.FirstName | limitTo : 1}}{{jobClockingModel.selectedClockingStaff.LastName | limitTo : 1}}
+                                    </div>
+                                 </div>
+                                 <div class="bp-cell  searchInputArea" ng-class="{'showingOverlay' : jobClockingModel.isFocused}">
+                                    <i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797" ng-class = "{'blue_008DC1' : jobClockingModel.TechinicianObj.Name != '' && jobClockingModel.TechinicianObj.Name != null}"></i>
+                                    <input ng-if = "!jobClockingModel.isTechnicianMode" type="text" id="addTechnicianInput" class="searchInput" placeholder="{{ 'Select_technician' | translate }}"
+                                       ng-focus="jobClockingModel.getAllTechnicianList()" name="addTechnicianInput" autocomplete="off"
+                                       ng-blur="jobClockingModel.setBlurOnInput()"
+                                       ng-keyup="jobClockingModel.changeSeletedclockingStaff($event)"  
+                                       ng-model="jobClockingModel.TechinicianObj.Name"
+                                       />
+                                    <input ng-if = "jobClockingModel.isTechnicianMode" type="text" id="addTechnicianInput" class="searchInput" placeholder="{{ 'Change_technician' | translate }}"
+                                       ng-focus="jobClockingModel.getAllTechnicianList()" name="addTechnicianInput" autocomplete="off"
+                                       ng-blur="jobClockingModel.setBlurOnInput()"
+                                       ng-keyup="jobClockingModel.changeSeletedclockingStaff($event)" 
+                                       ng-model="jobClockingModel.TechinicianObj.Name" 
+                                       />
+                                    <div class="searchResultOverlay" id="autocompleteScrollDiv">
+                                       <ul>
+                                          <li ng-repeat="clockingStaffRec in jobClockingModel.allUserList | filter:{'TechinicianName' : jobClockingModel.TechinicianObj.Name } as filtered" id="tag_{{$index}}"
+                                             ng-class="{'selected-row': $index == jobClockingModel.currentSelectedClockingStaffIndex}"
+                                             ng-mousedown="jobClockingModel.selectClockingstaff(clockingStaffRec)" >
+                                             <div class = "circle text-uppercase">{{clockingStaffRec.FirstName | limitTo : 1}}{{clockingStaffRec.LastName | limitTo : 1}}</div>
+                                             <div class="fullName   ">{{clockingStaffRec.TechinicianName}}</div>
+                                          </li>
+                                       </ul>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row0">
+                           <div class = "col-xs-12  bp-blue-navBar P0">
+                              <ul class="nav nav-tabs bp-sub-header-menu-item">
+                                 <li class="bp-active-nav" ng-click = "jobClockingModel.changeView('service jobs')">
+                                    <a class = "text-uppercase" ng-class = "{'bp-active-group' : jobClockingModel.viewChange == 'service jobs'}">{{ 'Service_jobs' | translate }}</a></li>
+                                 <li class="bp-active-nav" ng-click = "jobClockingModel.changeView('other tasks')">
+                                    <a class = "text-uppercase" ng-class = "{'bp-active-group' : jobClockingModel.viewChange == 'other tasks'}">{{ 'Other_tasks' | translate }}</a></li>
+                                 <li class="bp-active-nav" ng-click = "jobClockingModel.changeView('manage tasks')">
+                                    <a class = "text-uppercase" ng-class = "{'bp-active-group' : jobClockingModel.viewChange == 'manage tasks'}" 
+                                        ng-show="GroupOnlyPermissions['Manage job clocking']['enabled']">{{ 'Manage_tasks' | translate }}</a></li>
+                              </ul>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="pageContent bp-wrapper-container" ng-if = "jobClockingModel.viewChange == 'service jobs'">
+                  <div class="pageHeader bp-wrapper-container"  ng-if = "!jobClockingModel.isTechnicianMode">
+               </div>
+               
+                 <div class="pageHeader bp-wrapper-container"  ng-if = "jobClockingModel.isTechnicianMode">
+                  <div class="container">
+                     <div class="row">
+                        <div class="col-sm-4">
+                           <div class="backLink" ng-click = "jobClockingModel.backToAllServiceJons()"><a><i ng-include="'{!Application_Images}/Icons/arrow-left-1.svg'" class="blue_00A3DB"></i> Back to all jobs</a></div>
+                        </div>
+                        <div class="col-sm-8 text-right">
+                          <span class="clockMessage">You have clocked{{ '' | translate }} {{jobClockingModel.IsPayrollOn ? 'on' : 'off' }} your day</span>
+                           <label class="bp-switchLabel text-uppercase">{{ 'Off' | translate }}</label>
+                           <label class="bp-switch appointentsswitch">
+                               <input type="checkbox" ng-checked="jobClockingModel.IsPayrollOn" ng-click="jobClockingModel.setPayrollForTechnician()" />
+                              <div class="bp-slider round"></div>
+                           </label>
+                           <label class="bp-switchLabel text-uppercase">{{ 'On' | translate }}</label>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+                  <div class="container">
+                     <div class="jobsList" ng-class = "{'isTechnicianSelected' : jobClockingModel.selectedClockingStaff.Id != null}">  
+                        <div class="jobEntry" id = "{{jobClockingDefaultItem.Id}}" ng-repeat="jobClockingDefaultItem in jobClockingModel.jobClockingDefaultList" ng-init="jobClockingItemIndex = $index" >
+                           <div class="jobHeader bp-flex-grid-container">
+                              <div class="columnForTab col1">
+                              <div class="bp-grid-column">
+                                 <span class="jobStatus " ng-class="{'bp-main-bg-green'  : jobClockingDefaultItem.ServiceJobStatus == 'Complete' || jobClockingDefaultItem.ServiceJobStatus == 'Invoiced',
+                                    'bp-main-bg-yellow' : jobClockingDefaultItem.ServiceJobStatus == 'In Progress',
+                                    'bp-main-bg-purple' : jobClockingDefaultItem.ServiceJobStatus == 'New',
+                                    'bp-main-bg-cyan'   : jobClockingDefaultItem.ServiceJobStatus == 'Ready',
+                                    'bp-main-bg-orange' : jobClockingDefaultItem.ServiceJobStatus == 'Estimate',
+                                    'bp-main-bg-coral'  : jobClockingDefaultItem.ServiceJobStatus == 'On Hold'}">
+                                 {{jobClockingDefaultItem.ServiceJobStatus}}
+                                 </span>
+                              </div>
+                              <div class="bp-grid-column">
+                                 <div class="jobId">
+                                    <span ng-if="{!IsLoadNewCustomerOrder}">
+                                        <a class = "CoName" ui-sref="CustomerOrder_V2({Id: jobClockingDefaultItem['COHeaderId']})" target="_blank"> <span class="number">{{jobClockingDefaultItem.COName}}</span></a>
+                                    </span>
+                                    <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                        <a class = "CoName" ui-sref="CustomerOrder({Id: jobClockingDefaultItem['COHeaderId']})" target="_blank"> <span class="number">{{jobClockingDefaultItem.COName}}</span></a>
+                                    </span>
+                                    <span class="pay">{{jobClockingDefaultItem.ServiceJobType}}</span>
+                                 </div>
+                              </div>
+                               </div>
+                              <div class="columnForTab col2">
+                              <div class="bp-grid-column">
+                                  <div class="jobVehicle">
+                                    <span class="name text-capitalize">  
+                                        <span>{{jobClockingDefaultItem.CustomerName}}
+                                            <span ng-if = "jobClockingDefaultItem.UnitName">-</span>
+                                        </span>
+                                        <span  ng-if = "jobClockingDefaultItem.UnitName != null && jobClockingDefaultItem.UnitName != '' && jobClockingDefaultItem.UnitName != undefined">{{jobClockingDefaultItem.UnitName}}</span>
+                                   </span>
+                                    <!-- <span class="customer text-capitalize">{{ 'Label_Customer' | translate }}: {{jobClockingDefaultItem.CustomerName}}</span> -->
+                                    <span class="customer">{{jobClockingDefaultItem.ServiceJobName}}:</span>
+                                    <span class="customer">
+                                        {{jobClockingDefaultItem.ConcernList}} 
+                                    </span>
+                                 </div>
+                              </div>
+                              <div class="bp-grid-column">
+                                 <ul class="techniciansList" ng-if = "jobClockingDefaultItem.TechnicianList.length > 0">
+                                    <li data-toggle="tooltip" title="{{ 'Assign_technician' | translate }} " ng-if = "!jobClockingModel.isTechnicianMode && GroupOnlyPermissions['Manage job clocking']['enabled'] " class="addNew" ng-click = "jobClockingModel.getTechnicianList(jobClockingDefaultItem.Id,$event)">
+                                       <div class="circle"><i ng-include="'{!Application_Images}/Icons/close.svg'" class="gray_979797"></i></div>
+                                    </li>
+                                    <li ng-if = "!jobClockingModel.isTechnicianMode" ng-repeat = "technicianItem in jobClockingDefaultItem.TechnicianList" ng-click = "jobClockingModel.removeTechnician(jobClockingDefaultItem.Id,$event,technicianItem.IsClocked,technicianItem.TechnicianId)"
+                                       ng-class = "{'available' : !technicianItem.IsClocked,
+                                       'working' : technicianItem.IsClocked}" data-toggle="tooltip" title="{{technicianItem.FirstName}} {{technicianItem.LastName}} ">
+                                       <div class = "circle"
+                                          >{{technicianItem.FirstName | limitTo : 1}}{{technicianItem.LastName | limitTo : 1}}
+                                       </div>  
+                                    </li>
+                                    <li ng-if = "jobClockingModel.isTechnicianMode && jobClockingModel.selectedClockingStaff.Id != technicianItem.TechnicianId" ng-repeat = "technicianItem in jobClockingDefaultItem.TechnicianList" ng-click = "jobClockingModel.removeTechnician(jobClockingDefaultItem.Id,$event,technicianItem.IsClocked,technicianItem.TechnicianId)"
+                                       ng-class = "{'available' : !technicianItem.IsClocked,
+                                       'working' : technicianItem.IsClocked}" data-toggle="tooltip" title="{{technicianItem.FirstName}} {{technicianItem.LastName}} ">
+                                       <div class = "circle"
+                                          >{{technicianItem.FirstName | limitTo : 1}}{{technicianItem.LastName | limitTo : 1}}</div>
+                                    </li>
+                                 </ul>
+                              </div>
+                              </div>
+                              <div class="columnForTab col3">                              
+                              <div class= "bp-grid-column counter" ng-class = "{'on':jobClockingDefaultItem.IsServiceJobClocked,  
+                                 'off' : !jobClockingDefaultItem.IsServiceJobClocked}" ng-if = "jobClockingDefaultItem.TechnicianList.length > 0 && !jobClockingModel.isTechnicianMode">
+                                 <div class="jobTime" >
+                                    <div class="time">{{jobClockingDefaultItem.TimeSpent}}</div>
+                                    <div class="current" ng-if = "jobClockingDefaultItem.IsServiceJobClocked">{{ 'Current' | translate }}: {{jobClockingDefaultItem.CurrentlyClocked}}</div>
+                                    <a class="detailToggle">
+                                    <i ng-if = "jobClockingModel.isEdit != jobClockingItemIndex "  ng-click = "jobClockingModel.openEditModeclocking(jobClockingItemIndex,jobClockingDefaultItem.Id)" ng-include="'{!Application_Images}/Icons/arrow-down-1.svg'" class="blue_008DC1"></i>
+                                    <i ng-if = "jobClockingModel.isEdit == jobClockingItemIndex " ng-click = "jobClockingModel.closeEditModeclocking(jobClockingItemIndex)" ng-include="'{!Application_Images}/Icons/arrow-up-1.svg'" class="blue_008DC1"></i>
+                                    </a>
+                                 </div>
+                              </div>
+                              <div class= "bp-grid-column counter timeLogingContainer" ng-if = "jobClockingModel.checkshowStopBut(jobClockingItemIndex)" 
+                                 ng-class = "{'on':jobClockingDefaultItem.IsServiceJobClocked,  'off' : !jobClockingDefaultItem.IsServiceJobClocked}">
+                                 <div class="jobTime" >
+                                    <i ng-if = "!jobClockingDefaultItem.IsServiceJobClocked" ng-click = "jobClockingModel.clockONTechnician(jobClockingDefaultItem.Id)"  ng-include="'{!Application_Images}/Icons/Play_btn.svg'" class="timeLogingBtn blue_008DC1"></i>
+                                    <i ng-if = "jobClockingDefaultItem.IsServiceJobClocked" ng-click = "jobClockingModel.showNotesSection(jobClockingItemIndex,jobClockingDefaultItem.Id)" ng-include="'{!Application_Images}/Icons/Stop_btn.svg'" class="timeLogingBtn blue_008DC1"></i>
+                                    <div class="time">{{jobClockingDefaultItem.TimeSpent}}</div>
+                                    <div class="current" ng-if = "jobClockingDefaultItem.IsServiceJobClocked">Current:{{jobClockingDefaultItem.CurrentlyClocked}}</div>
+                                    <a class="detailToggle">  
+                                    <i ng-if = "jobClockingModel.isEdit != jobClockingItemIndex " ng-click = "jobClockingModel.openEditModeclocking(jobClockingItemIndex,jobClockingDefaultItem.Id)" ng-include="'{!Application_Images}/Icons/arrow-down-1.svg'" class="blue_008DC1"></i>
+                                    <i ng-if = "jobClockingModel.isEdit == jobClockingItemIndex " ng-click = "jobClockingModel.closeEditModeclocking(jobClockingItemIndex,'fromServiceJob')" ng-include="'{!Application_Images}/Icons/arrow-up-1.svg'" class="blue_008DC1"></i>
+                                    </a>
+                                 </div>
+                              </div>
+                              <div class="bp-grid-column counter" ng-if = "jobClockingDefaultItem.TechnicianList.length == 0 && !jobClockingModel.isTechnicianMode ">
+                                 <button ng-if = "GroupOnlyPermissions['Manage job clocking']['enabled']" class="bp-btn-Assign-Tech btn-block bp-btn bp-btn-secondaryCTA text-capitalize"
+                                    ng-click = "jobClockingModel.getTechnicianList(jobClockingDefaultItem.Id,$event,'isAssignTech')">{{ 'Assign_technician' | translate }}</button>
+                              </div>
+                              <div class="bp-grid-column counter" ng-if = "!jobClockingModel.checkshowStopBut(jobClockingItemIndex) && jobClockingModel.isTechnicianMode">
+                                 <button class="bp-btn-Assign-Tech btn-block bp-btn bp-btn-secondaryCTA"
+                                    ng-click = "jobClockingModel.selfassignToTechnician(jobClockingDefaultItem.Id)">{{ 'Assign_to_me' | translate }}</button>
+                              </div>
+                           </div>
+                           </div>
+                           <div class="jobDetails bp-flex-grid-container bp-collapse-div-transition" id="jobDetails__{{jobClockingItemIndex}}" ng-show = "!jobClockingModel.isTechnicianMode || (jobClockingModel.isTechnicianMode && jobClockingModel.showHistory)">
+                              <ul class="userActivityList">
+                              <li ng-if = "jobClockingModel.loginUserList.length == 0">
+                              <span>{{ 'No_hours_log_history_is_available' | translate }}</span>
+                              </li>
+                                 <li ng-repeat = "loginUserRec in jobClockingModel.loginUserList" >
+                                    <span class="NameIntials text-uppercase">{{loginUserRec.TechnicianFirstName | limitTo : 1}}{{loginUserRec.TechnicianLastName | limitTo : 1}}</span>
+                                    <span ng-bind-html = "jobClockingModel.to_trusted(loginUserRec.Activity)"></span>
+                                 </li>
+                              </ul>  
+                           </div>
+                           <div class="jobDetails jobClckingNote bp-flex-grid-container bp-collapse-div-transition" id="jobDetailsTech__{{jobClockingItemIndex}}" ng-show = "(jobClockingModel.isTechnicianMode && !jobClockingModel.showHistory)">
+                              <div class = "jobClckingNoteWrapper">
+                                  <div class="bp-grid-column"></div>
+                                  <div class="bp-grid-column"></div>
+                                  <div class="bp-grid-column">
+                                     <p class="clocingOffHead">{{ 'You_can_add_a_note_before_clocking_off' | translate }}</p>
+                                     <textarea class="bp-input-text" placeholder="{{ 'Type_your_note_here' | translate }}" ng-model = "jobClockingModel.notesModel"></textarea>
+                                  </div>
+                                  <div class="bp-grid-column">
+                                     <button class="bp-btn bp-btn-normal bp-btn-small text-uppercase" ng-disabled="jobClockingModel.notesModel == '' || jobClockingModel.notesModel == null "
+                                     ng-click = "jobClockingModel.clockOFFTechnician(jobClockingDefaultItem.Id,jobClockingItemIndex)"
+                                     >{{ 'Save_Label' | translate }}</button>
+                                  </div>
+                                  <div class="bp-grid-column">
+                                     <button class="bp-btn bp-btn-small bp-btn-secondaryCTA skip text-uppercase" ng-click = "jobClockingModel.skipNotes(jobClockingDefaultItem.Id,jobClockingItemIndex)">{{ 'Skip' | translate }}</button>
+                                  </div>
+                               </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class = "pageContent bp-wrapper-container" ng-if = "jobClockingModel.viewChange == 'other tasks'">
+                <div class="pageHeader bp-wrapper-container"  ng-if = "jobClockingModel.isTechnicianMode">
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="backLink" ng-click = "jobClockingModel.backToAllServiceJons()"><a><i ng-include="'{!Application_Images}/Icons/arrow-left-1.svg'" class="blue_00A3DB"></i> {{ 'Back_to_all_tasks' | translate }}</a></div>                               
+                                </div>
+                                <div class="col-sm-6 text-right">
+                                    <span class="clockMessage">You have clocked {{jobClockingModel.IsPayrollOn ? 'on' : 'off' }} your day{{ '' | translate }}</span>
+                                     <label class="bp-switchLabel text-uppercase">{{ 'Off' | translate }}</label>
+                                     <label class="bp-switch">
+                                         <input type="checkbox" ng-checked="jobClockingModel.IsPayrollOn" ng-click="jobClockingModel.setPayrollForTechnician()" />
+                                        <div class="bp-slider round"></div>s
+                                    </label>
+                                    <label class="bp-switchLabel text-uppercase">{{ 'On' | translate }}</label>
+                                </div>  
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pageHeader bp-wrapper-container"  ng-if = "!jobClockingModel.isTechnicianMode"></div>
+                 <div class="container">
+                            <div class="otherTaskList" ng-class = "{'isTechnicianSelected' : jobClockingModel.selectedClockingStaff.Id != null}">
+                                <div id="{{taskListRec.Id}}" class="otherTaskEntry bp-flex-grid-container bp-expanded-deletable-div-transition" ng-repeat = "taskListRec in jobClockingModel.defaultTaskList">
+                                    <div class="bp-grid-column">
+                                        <div class="taskName" ng-if = "jobClockingModel.editOtherTaskList != $index">{{taskListRec.Name}}</div>
+                                        <div class="taskName" ng-if = "jobClockingModel.editOtherTaskList == $index"><input type = "text" class = "bp-input-text" ng-model = "taskListRec.Name" ng-blur = "jobClockingModel.addEditTask(taskListRec.Id,taskListRec.Name)" /></div>
+                                    </div>
+                                    <div class="bp-grid-column counter" ng-if = "jobClockingModel.isTechnicianMode"
+                                     ng-class = "{'on':taskListRec.IsClockedOn,  'off' : !taskListRec.IsClockedOn}">
+                                        <div class="taskTime" ng-if = "!taskListRec.IsClockedOn"><i ng-include="'{!Application_Images}/Icons/Play_btn.svg'" class="timeLogingBtn bp-pointer-cursor"
+                                                                ng-click = "jobClockingModel.setClockkOnforTask(taskListRec.Id)"></i>{{taskListRec.TimeSpent}}
+                                    
+                                        
+                                    </div> 
+                                        <div class="taskTime" ng-if = "taskListRec.IsClockedOn"><i ng-include="'{!Application_Images}/Icons/Stop_btn.svg'" class="timeLogingBtn bp-pointer-cursor"
+                                                                ng-click = "jobClockingModel.setClockOffForTask(taskListRec.Id)"></i>{{taskListRec.TimeSpent}}
+                                        <div class="current" ng-if = "taskListRec.IsClockedOn">{{ 'Current' | translate }}:{{taskListRec.CurrentlyClocked}}</div>                           
+                                    </div> 
+                                    </div>  
+                                    <div class="bp-grid-column actions" ng-if = "!jobClockingModel.isTechnicianMode">
+                                         <div class="technicianlistwrapper">
+                                                 <ul class="techniciansList">
+                                                    
+                                                    <li ng-repeat = "technicianItem in taskListRec.TechnicianList" 
+                                                       ng-class = "{'available' : !technicianItem.IsClocked,
+                                                       'working' : technicianItem.IsClocked}" data-toggle="tooltip" title="{{technicianItem.FirstName}} {{technicianItem.LastName}} ">
+                                                       <div class = "circle"
+                                                          >{{technicianItem.FirstName | limitTo : 1}}{{technicianItem.LastName | limitTo : 1}}
+                                                       </div>  
+                                                    </li>
+                                                   
+                                                 </ul>
+                                </div>
+                                        <i ng-include="'{!Application_Images}/Icons/edit_filled.svg'" data-toggle="tooltip" title="{{ 'Edit_Label' | translate}} " ng-click = "jobClockingModel.editTaskList($index)" class="grey_DDDDDD bp-pointer-cursor"></i>
+                                        <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" data-toggle="tooltip" title="{{ 'Delete_Label' | translate}}" class="grey_DDDDDD bp-pointer-cursor LIDeleteBtn" ng-click = "jobClockingModel.openDeleteConfirmationPopup('defaultTaskGrid', taskListRec.Id)"></i>                                        
+                                    </div>
+                                </div>
+                                <div class="otherTaskEntry bp-flex-grid-container" ng-if = "jobClockingModel.createnewTaskDiv">
+                                    <div class="bp-grid-column bp-create-new-task" >
+                                            <div class="taskName">
+                                                <input type = "text" class = "bp-input-text" id = "newTaskInput"
+                                                ng-keydown = "jobClockingModel.enterTaskSave(null,jobClockingModel.newOtherTaskList.Name,$event)" placeholder="{{ 'Placeholder_task_name' | translate }}" ng-model = "jobClockingModel.newOtherTaskList.Name"/>
+                                                <button class = "bp-btn bp-btn-normal bp-btn-small text-uppercase" ng-click = "jobClockingModel.addEditTask(null,jobClockingModel.newOtherTaskList.Name)"
+                                                    ng-disabled="jobClockingModel.newOtherTaskList.Name == '' || jobClockingModel.newOtherTaskList.Name == null || jobClockingModel.newOtherTaskList.Name == undefined">{{ 'Save_Label' | translate }}</button>
+                                                <button class = "bp-btn bp-btn-secondaryCTA bp-btn-small text-uppercase" ng-click = "jobClockingModel.cancelNewTask()">{{ 'Cancel_Label' | translate }}</button>
+                                            </div>
+                                    </div>
+                                    <div class="bp-grid-column">
+                                    </div>
+                                </div>
+                                <div class="otherTaskEntry bp-flex-grid-container" ng-if = "!jobClockingModel.isTechnicianMode && GroupOnlyPermissions['Manage job clocking']['enabled']">
+                                    <div class="bp-grid-column createNewTask">
+                                        <a ng-click = "jobClockingModel.createNewTask()"><i ng-include="'{!Application_Images}/Icons/add-circle.svg'" class="blue_008DC1 bp-pointer-cursor"></i>{{ 'Create_new_task' | translate }}</a>
+                                    </div>
+                                </div>
+                            </div>                  
+                        </div>
+               </div>
+               <div class = "pageContent bp-wrapper-container" ng-if = "jobClockingModel.viewChange == 'manage tasks'">
+                     <div class="pageHeader bp-wrapper-container"></div>
+                     <div class="container">
+                        <div class = "manageTaskList">
+                                <div class = "searchforManageTaskList">
+                                    <p class = "manageTaskHeading">{{ 'Search_by_date_range' | translate }}</p>
+                                         <div class="datePickerWrappercontainer">
+                                            <input type="text"  id="fromDate" style="background: #FFF;position: initial;" ui-date="jobClockingModel.FromDateOptions" 
+                                          ui-date-format="{{jobClockingModel.dateFormat}}" 
+                                          class="bp-input-text  datePickerColor datepicker jobclockingcalenderDateTextBox"
+                                          ng-model = "jobClockingModel.fromDate" placeholder="{{ 'Label_From' | translate }}" readonly="readonly"
+                                          ng-change = "jobClockingModel.setToDateFormate();jobClockingModel.loadJobClockingEntriesUsingFilter()"
+                                          />        
+                                           <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon grey_DDDDDD"
+                                               id="removeKeywordBtn" ng-click = "jobClockingModel.showDatePicker($event,'fromDate')">
+                                            </i> 
+                                           </div>
+                                    <div class="datePickerWrappercontainer">
+                                                    <input type="text"  id="toDate"
+                                              style="background: #FFF;position: initial;"
+                                                ui-date="jobClockingModel.toDateOptions" 
+                                              ui-date-format="{{jobClockingModel.dateFormat}}"  
+                                              class="bp-input-text  datePickerColor datepicker jobclockingcalenderDateTextBox"
+                                              ng-model = "jobClockingModel.toDate"
+                                              placeholder="{{ 'Label_To' | translate }}"
+                                              readonly="readonly"
+                                              ng-change = "jobClockingModel.loadJobClockingEntriesUsingFilter()"   
+                                              /> <!-- ng-model="JobSchedulingModel.newCalendereventJSON.EndDate" -->
+                                           <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon grey_DDDDDD"
+                                               id="removeKeywordBtn" ng-click = "jobClockingModel.showDatePicker($event,'toDate')">
+                                            </i>
+                                           </div>
+                                           <div class="searchInputAreaforTask searchInputArea" ng-class="{'showingOverlay' : jobClockingModel.isTaskFilterFocused}">
+                                                <i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797"
+                                                ng-class = "{'blue_008DC1' : jobClockingModel.taskFilterValue != '' && jobClockingModel.taskFilterValue != null}"></i>
+                                                <input type="text" id="addTaskInput" class="searchInput datePickerColor datepicker jobclockingcalenderDateTextBox" placeholder="{{ 'Placeholder_task' | translate }}"
+                                                   ng-focus="jobClockingModel.getAllTasksForTaskFilter()" name="addTaskInput" autocomplete="off"
+                                                   ng-blur="jobClockingModel.setBlurOnInputForTaskFilter()"
+                                                   ng-keyup="jobClockingModel.changeTaskForFilter($event)" 
+                                                   ng-model="jobClockingModel.taskFilterValue" 
+                                                   />
+                                                <div class="searchResultOverlay" id="autocompleteScrollTaskFilterDiv">
+                                                   <ul>
+                                                      <li ng-repeat="taskRec in jobClockingModel.taskList | filter:{'Name' : jobClockingModel.taskFilterValue } as filtered" id="taskFilter_{{$index}}"
+                                                         ng-class="{'selected-row': $index == jobClockingModel.currentTaskIndexForFilter}"
+                                                         ng-mousedown="jobClockingModel.selectTaskForFilter(taskRec)" >
+                                                         <div class="fullName   ">{{taskRec.Name}}</div>
+                                                      </li>
+                                                   </ul>
+                                                </div>
+                                         </div>
+                                </div>
+                                
+                                <div class = "taskListTable" id = "taskListTable">
+                                    <table class = "bp-editable-table">
+                                    <col width="18%"  />
+                                    <col width="22%"  />
+                                    <col width="14%"  />
+                                    <col width="12%"  />
+                                     <col width="12%"  />
+                                      <col width="13%"  />
+                                    <col width="9%"  />
+                                        <thead>
+                                            <tr>
+                                                <th class = "text-uppercase">{{ 'Task' | translate }}</th>
+                                                <th class = "text-uppercase">{{ 'Technician' | translate }}</th>
+                                                <th class = "text-uppercase">{{ 'Label_Date' | translate }}</th>
+                                                <th class = "text-uppercase">{{ 'In' | translate }}</th>
+                                                <th class = "text-uppercase">{{ 'Out' | translate }}</th>
+                                                <th class = "text-uppercase">{{ 'Time' | translate }}</th>
+                                                <th class = "text-uppercase"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr ng-repeat = "taskRec in jobClockingModel.manageTaskList" class = "bp-expanded-deletable-div-transition" id = "{{taskRec.Id}}" >
+                                                <td ng-class = "{'setBgColor' : jobClockingModel.editManageTask == $index || jobClockingModel.setBGColorForManageTask == $index}" class = "boldText">{{taskRec.TaskName}}</td>
+                                                <td ng-class = "{'setBgColor' : jobClockingModel.editManageTask == $index || jobClockingModel.setBGColorForManageTask == $index}">
+                                                    <div class="InnerFlexContainer">
+                                                        <span class="NameInitials text-uppercase">{{taskRec.TechnicianFirstName  | limitTo : 1}}{{taskRec.TechnicianLastName | limitTo : 1}}</span>
+                                                        <span class ="setTextEllipsis">{{taskRec.TechnicianFirstName}} {{taskRec.TechnicianLastName}}</span>
+                                                    </div>
+                                                </td>
+                                                <td ng-class = "{'setBgColor' : jobClockingModel.editManageTask == $index || jobClockingModel.setBGColorForManageTask == $index}">{{taskRec.StartDate}}</td>
+                                                <td ng-class = "{'setBgColor' : jobClockingModel.editManageTask == $index || jobClockingModel.setBGColorForManageTask == $index}"><span ng-if = "jobClockingModel.editManageTask != $index" >{{taskRec.StartTime}}</span>
+                                                    <span ng-if = "jobClockingModel.editManageTask == $index" ><input type="text" class = "bp-input-text inTimeEdit timeField" id = "InTime_{{$index}}" ng-model = "taskRec.StartTime" ng-blur = "jobClockingModel.saveManajeTask($index,taskRec,$event, 'StartTime');"/> </span>
+                                                </td>
+                                                <td ng-class = "{'setBgColor' : jobClockingModel.editManageTask == $index || jobClockingModel.setBGColorForManageTask == $index}"><span ng-if = "jobClockingModel.editManageTask != $index" >{{taskRec.EndTime}} </span>
+                                                    <span ng-if = "jobClockingModel.editManageTask == $index" ><input type="text" class = "bp-input-text inTimeEdit timeField" id = "EndTime_{{$index}}" ng-blur = "jobClockingModel.saveManajeTask($index,taskRec,$event, 'EndTime');" ng-model = "taskRec.EndTime"/> </span></td>
+                                                <td ng-class = "{'setBgColor' : jobClockingModel.editManageTask == $index || jobClockingModel.setBGColorForManageTask == $index}" class = "boldText">{{taskRec.TimeDifference}}</td>
+                                                 <td ng-class = "{'setBgColor' : jobClockingModel.editManageTask == $index || jobClockingModel.setBGColorForManageTask == $index}">
+                                                    <i ng-include="'{!Application_Images}/Icons/edit_filled.svg'" data-toggle="tooltip" title="{{ 'Edit_Label' | translate }} " class="gray_DDDDDD bp-pointer-cursor" ng-click = "jobClockingModel.editManageTaskList($index)"></i>
+                                                    <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" 
+                                                        ng-click = "jobClockingModel.openDeleteConfirmationPopup('manageTaskGrid', taskRec.Id)" 
+                                                        data-toggle="tooltip" title="{{ 'Delete_Label' | translate }} " class="gray_DDDDDD bp-pointer-cursor LIDeleteBtn"></i>
+                                                </td>
+                                            </tr>
+                                            <tr ng-if = "jobClockingModel.createTaskEntryDiv" class = "createNewManageTask">
+                                                <td>
+                                                    <span>
+                                                        <div class="searchInputArea" ng-class="{'showingOverlay' : jobClockingModel.isTaskFieldFocused}">
+                                                            <input type="text" ng-focus="jobClockingModel.getAllTasksForAddTaskEntry()"
+                                                              class="searchInput inTimeEdit"
+                                                              ng-model="jobClockingModel.newTaskEntryTaskName" 
+                                                              ng-blur="jobClockingModel.setTaskBlurForNewTaskEntry()" 
+                                                              ng-keyup="jobClockingModel.changeTaskForNewTaskEntry($event)"
+                                                              placeholder="{{ 'Placeholder_task' | translate }}" /> 
+                                                            <div class="searchResultOverlay" id="autocompleteScrollTaskDiv">
+                                                               <ul>
+                                                                  <li ng-repeat="taskRec in jobClockingModel.taskListForAddTaskEntry | filter:{'Name' : jobClockingModel.newTaskEntryTaskName } as filtered" id="task_{{$index}}"
+                                                                     ng-class="{'selected-row': $index == jobClockingModel.currentTaskIndexForAddNewTsk}"
+                                                                     ng-mousedown="jobClockingModel.selectTaskForAddTaskEntry(taskRec)" >
+                                                                     <div class="fullName   ">{{taskRec.Name}}</div>
+                                                                  </li>
+                                                               </ul>
+                                                            </div>
+                                                        </div>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span>
+                                                        <div class="searchInputArea" ng-class="{'showingOverlay' : jobClockingModel.isTechFieldFocused}">
+                                                            <input type="text" ng-focus="jobClockingModel.getTechnicianListForAddTaskEntry()"
+                                                              class="searchInput inTimeEdit"
+                                                              ng-model="jobClockingModel.newTaskEntryTechName" 
+                                                              ng-blur="jobClockingModel.setTechBlurForNewTaskEntry()" 
+                                                              ng-keyup="jobClockingModel.changeTechForNewTaskEntry($event)"
+                                                              placeholder="{{ 'Placholder_technician_name' | translate }}" /> 
+                                                            <div class="searchResultOverlay" id="autocompleteScrollTechDiv">
+                                                               <ul>
+                                                                  <li ng-repeat="techRec in jobClockingModel.techListForAddTaskEntry | filter:{'TechinicianName' : jobClockingModel.newTaskEntryTechName } as filtered" id="tech_{{$index}}"
+                                                                     ng-class="{'selected-row': $index == jobClockingModel.currentTechIndexForAddNewTsk}"
+                                                                     ng-mousedown="jobClockingModel.selectTechForAddTaskEntry(techRec)" >
+                                                                     <div class = "circle text-uppercase">{{techRec.FirstName | limitTo : 1}}{{techRec.LastName | limitTo : 1}}</div>
+                                                                     <div class="fullName   ">{{techRec.TechinicianName}}</div>
+                                                                  </li>
+                                                               </ul>
+                                                            </div>
+                                                        </div>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="datePickerWrappercontainer">
+                                                        <span><input type="text"  id="taskDate"
+                                                          ui-date="jobClockingModel.FromDateOptions" 
+                                                          ui-date-format="{{jobClockingModel.dateFormat}}"  
+                                                          class="bp-input-text datePickerColor inTimeEdit datepicker jobclockingcalenderDateTextBox"
+                                                          ng-model="jobClockingModel.newTaskEntry.StartDate"
+                                                          readonly="readonly" 
+                                                          placeholder="{{ 'Placeholder_date' | translate }}"
+                                                          /> 
+                                                       <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon grey_DDDDDD"
+                                                           id="removeKeywordBtn" ng-click = "jobClockingModel.showDatePicker($event,'taskDate')">
+                                                        </i></span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span><input type="text" placeholder="{{ 'Placeholder_time_in' | translate }}" class = "bp-input-text inTimeEdit timeField" id="" ng-model="jobClockingModel.newTaskEntry.StartTime" ng-blur="jobClockingModel.validateTime(-1, 'StartTime')"/> </span>
+                                                </td>
+                                                <td>
+                                                    <span><input type="text" placeholder="{{ 'Placeholder_time_out' | translate }}" class = "bp-input-text inTimeEdit timeField" id="" ng-model="jobClockingModel.newTaskEntry.EndTime" ng-blur="jobClockingModel.validateTime(-1, 'EndTime')"/>  </span>
+                                                </td>
+                                                <td>
+                                                <button class = "bp-btn bp-btn-normal pull-right bp-btn-small text-uppercase" 
+                                                    ng-disabled="jobClockingModel.disableTaskEntrySaveButton()"
+                                                    ng-click="jobClockingModel.saveAddNewTaskEntry()"
+                                                    ng-enter="jobClockingModel.saveAddNewTaskEntry()">{{ 'Save_Label' | translate }}</button>
+                                                </td>
+                                                <td>
+                                                <button class = "bp-btn bp-btn-secondaryCTA bp-btn-small text-uppercase"
+                                                    ng-click="jobClockingModel.cancelManageTaskEntry()">{{ 'Cancel_Label' | translate }}</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="otherTaskEntry bp-flex-grid-container">
+                                    <div class="bp-grid-column createNewTask">
+                                        <a ng-click="jobClockingModel.createManageTaskEntry()"><i ng-include="'{!Application_Images}/Icons/add-circle.svg'" class="blue_008DC1 bp-pointer-cursor"></i>{{ 'Add_new_entry' | translate }}</a>
+                                    </div>
+                                </div>
+                        </div>
+                     </div>
+                    
+              
+               </div>
+            </div>
+         </div>
+      </div>
+      <div class="clockingStaffPopup">
+         <ul >
+            <li ng-repeat = "techRec in jobClockingModel.technicianList" ng-click = "jobClockingModel.assignTechnician(techRec.Id)">
+               <div class="shortName text-uppercase">{{techRec.FirstName | limitTo : 1}}{{techRec.LastName | limitTo : 1}}</div>
+               <div class="fullName">{{techRec.FirstName}}</div>
+                <div class="fullName">{{techRec.LastName}}</div>
+            </li>
+         </ul>
+      </div>
+      <div class="clockingStaffremoveTech">
+         <button class="btn-block bp-btn bp-btn-secondaryCTA bp-btn-Assign-Tech" ng-click = "jobClockingModel.removeTechnicianfromassign()">{{ 'Remove_technician' | translate }}</button>
+      </div>
+   </div>
+   
+   <div class="deleteConfiramtionPopup">
+        <div class="heading" translate="Are_you_sure_delete_item_name_parameterized_permanently" translate-values="{{ { itemName: jobClockingModel.deletedItemName } }}"></div>
+        <div class="deletePopupActionBtns">
+            <button class="bp-btn deleteBtn" ng-click = "jobClockingModel.deleteItem()">{{ 'Delete_Label' | translate }}</button>
+            <button class="bp-btn cancelBtn" ng-click = "jobClockingModel.hideDeleteConfirmationPopup()">{{ 'Cancel_Label' | translate }}</button>
+        </div>
+  </div>
+</apex:page>

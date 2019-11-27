@@ -1,0 +1,110 @@
+<apex:component controller="GlobalController">
+    <div class="content bp-schedule-container" ng-controller="WeekScheduleGridCtrl">
+        <div class="row container M0">
+         <div id="week_grid_header" ng-class="{ 'bp-cursor-pointer': currentStateName === 'AddEditAppointment'}">
+            <div class="bp-calendar-nav-bar-container">
+                <bp-calendar-nav-bar id-value="{{M_WeekScheduleGrid.StateName}}" current-periodic-view="weekly" 
+                    is-loading="M_WeekScheduleGrid.isLoading" current-date="M_WeekScheduleGrid.currentDate"
+                    on-load-action="F_WeekScheduleGrid.loadData(startDate, endDate)">
+                </bp-calendar-nav-bar>
+            </div>
+               <div class="bp-legend">
+               <div class="bp-week-total-hour">
+                    <label class="total-count">{{M_WeekScheduleGrid.ProgressBarJSON.BookedHours}}/{{M_WeekScheduleGrid.ProgressBarJSON.TotalWorkingHours}}</label>
+                    <span class="hour-text text-uppercase">{{ 'Hours_booked' | translate }}</span>
+                </div>
+                <div id="legend-dropdown" class="pull-left">
+                <div class="bp-legend-container bp-cursor-pointer" ng-click = "F_WeekScheduleGrid.showHideLegendDropdown()">
+                    <div class="bp-legend-header">
+                        <span class="bp-circle bp-dark-grey2"></span>
+                        <span class="bp-circle bp-main-bg-green "></span>
+                         <i class="bp-blue downArrow" ng-class = "{'bp-rotate-svg' :M_WeekScheduleGrid.isRotate }" ng-include="'{!Application_Images}/Icons/arrowDown.svg'"></i>
+                    </div>
+                </div>
+                <div class="legend-dropdown"  ng-if="M_WeekScheduleGrid.isShowLegendDropdown">
+                         <nav>
+                         <li>
+                            <span class="bp-font-16">{{'Legend' | translate }}</span>
+                         </li>
+                            <li>
+                                  <span class="bp-circle bp-dark-grey2"></span>
+                                  <span>{{ 'Hours_booked' | translate }}</span>
+                            </li>
+                             <li>
+                                  <span class="bp-circle bp-main-bg-green"></span>
+                                  <span>{{ 'Hours_available' | translate }}</span>
+                            </li>
+                         </nav>
+                    </div>
+                </div>
+            </div>
+             </div>
+            <div class="bp-week-schedule-container-tablet-view bp-week-schedule-container">
+                <div class="bp-week-name">
+                    <p>
+                        <span></span>
+                    </p>
+                </div>
+                <div class="bp-progress-bar-container" >
+                    <div class="bp-progress-container no-border-bg">
+                        <span>{{ 'Morning' | translate }}</span>
+                    </div>
+                    <div class="bp-progress-container  no-border-bg">
+                        <span>{{ 'Afternoon' | translate }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bp-week-schedule-container" ng-repeat="progressBarRec in M_WeekScheduleGrid.ProgressBarJSON.WeekDataList" 
+                ng-init="weekDataIndex  = $index" ng-class = "{'bp-current-date' : progressBarRec.IsToday,'border-top': weekDataIndex == 0}">
+                <div class="bp-week-name">
+                    <p class="pull-left" ng-class="{'bp-dark-grey2-font': progressBarRec.IsToday}">
+                        {{M_WeekScheduleGrid.currentWeekdays[$index].day}}
+                    </p>
+                    <span class="pull-left" ng-class="{'bp-dark-grey2-font': progressBarRec.IsToday}">{{M_WeekScheduleGrid.currentWeekdays[$index].date}}</span>
+                </div>
+                <div class="bp-progress-bar-container" >
+                    <div class="bp-progress-container" ng-class="{ 'bp-progress-disabled': (daySegmentRec.TotalWorkingHours == 0 && daySegmentRec.BookedHours == 0),'bp-past-date-progress-bar' : F_WeekScheduleGrid.isDayBeforeToday(weekDataIndex)}" 
+                        ng-click="F_WeekScheduleGrid.selectDateTimeSchedule(weekDataIndex,daySegmentIndex)" ng-repeat="daySegmentRec in progressBarRec.DaySegments track by $index" ng-init = "daySegmentIndex  = $index">
+                        <span class="bp-title-day-time MT5-mobile" ng-if="$index == 0">AM</span>
+                        <span class="bp-title-day-time" ng-if="$index == 1">PM</span>
+                        <div class="progress" ng-class = "{'MT5-mobile' : $index == 0}">
+                            <div class="bar"  ng-style="{width:{{ daySegmentRec.TotalWorkingHours ?((daySegmentRec.BookedHours / daySegmentRec.TotalWorkingHours) * 100): 100}} + '%'}">
+                                <span class="percent">{{daySegmentRec.BookedHours}}/{{daySegmentRec.TotalWorkingHours}}</span>
+                            </div>
+                            <span class="right-percent pull-right">
+                            <span class="bp-hrs-left pull-right" 
+                                ng-if="daySegmentRec.TotalWorkingHours && daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours <= 1 && !F_WeekScheduleGrid.isDayBeforeToday(weekDataIndex) && daySegmentRec.AvailableHours > 0" 
+                                ng-class = "{'MR20': F_WeekScheduleGrid.isDayBeforeToday(weekDataIndex) || daySegmentRec.TotalWorkingHours <= 0 || daySegmentRec.AvailableHours <= 0}">{{(daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours)? daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours: 0 }} {{ 'Hr_left' | translate }}</span>
+                            <span class="bp-hrs-left pull-right" 
+                                ng-if="daySegmentRec.TotalWorkingHours && daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours > 1 && !F_WeekScheduleGrid.isDayBeforeToday(weekDataIndex) && daySegmentRec.AvailableHours > 0" 
+                                ng-class = "{'MR20': F_WeekScheduleGrid.isDayBeforeToday(weekDataIndex) || daySegmentRec.TotalWorkingHours <= 0 || daySegmentRec.AvailableHours <= 0}">{{(daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours)? daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours: 0 }} {{ 'Hrs_left' | translate }}</span>
+                            <i ng-if="!F_WeekScheduleGrid.isDayBeforeToday(weekDataIndex) && daySegmentRec.TotalWorkingHours > 0" ng-include="'{!Application_Images}/Icons/add-circle.svg'" 
+                                class="BP_navBarActionIcon BP_AddNewIcon white">
+                            </i>
+                            </span>
+                        </div>
+                        <div class="col-xs-12 P0">
+                            <span class="bp-no-of-appointment-schedule bp-cursor-pointer" ng-if="!(daySegmentRec.TotalAppointments > 1)">{{daySegmentRec.TotalAppointments}} {{ 'Appointment' | translate }}</span>
+                            <span class="bp-no-of-appointment-schedule bp-cursor-pointer" ng-if="daySegmentRec.TotalAppointments > 1">{{daySegmentRec.TotalAppointments}} {{ 'Appointments' | translate }}</span>
+                            <span class="bp-oversold-schedule pull-right" ng-if="daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours <0 && daySegmentRec.BookedHours - daySegmentRec.TotalWorkingHours <= 1">{{(daySegmentRec.BookedHours - daySegmentRec.TotalWorkingHours) ? daySegmentRec.BookedHours - daySegmentRec.TotalWorkingHours : 0}}{{ 'Hr_overbooked' | translate }}</span>
+                            <span class="bp-oversold-schedule pull-right" ng-if="daySegmentRec.TotalWorkingHours - daySegmentRec.BookedHours <0 && daySegmentRec.BookedHours - daySegmentRec.TotalWorkingHours > 1">{{(daySegmentRec.BookedHours - daySegmentRec.TotalWorkingHours) ? daySegmentRec.BookedHours - daySegmentRec.TotalWorkingHours : 0}}{{ 'Hrs_overbooked' | translate }}</span>
+                        </div>
+                        <div class="bp-blue-overlay" 
+                            ng-if="M_WeekScheduleGrid.selectedAppointmentObject.AppointmentDate === M_WeekScheduleGrid.ProgressBarJSON.WeekDataList[weekDataIndex].AppointmentDate 
+                                && M_WeekScheduleGrid.selectedAppointmentObject.SelectedSegment === daySegmentIndex">
+                            <i ng-include = "'{!Application_Images}/Icons/Checkmark-lrg.svg'" ></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class = "bp-weeschedule-grid-backdrop" ng-if = "M_WeekScheduleGrid.isShowLegendDropdown" ng-click = "F_WeekScheduleGrid.hideLegendDropDown()"></div>
+        <div class="LoadingDiv" ng-show="M_WeekScheduleGrid.isLoading">
+        <div class="loadingIconContainer">
+            <c:BPLoading />
+        </div>
+    </div>
+    </div>
+    
+    
+</apex:component>

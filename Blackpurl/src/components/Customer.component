@@ -1,0 +1,86 @@
+<apex:component controller="GlobalController">
+    <div class="bp-accordion-entry expanded" ng-class="{'bp-collapse' : M_CO.expandedSectionName != 'customer'}">
+        <div class="bp-accordion-header bp-blue">
+            <div class="bp-accordion-toggle" ng-if="M_CO.expandedSectionName != 'customer'" ng-click="F_CO.expandOrCollapseSection('customerSectionId','customer')">
+                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="white_FFF_NewCO"></i>
+            </div>
+            <div class="bp-accordion-toggle" ng-if="M_CO.expandedSectionName == 'customer'" ng-click="F_CO.expandOrCollapseSection('customerSectionId','customer')">
+                <i ng-include="'{!Application_Images}/Icons/arrowUp.svg'" class="white_FFF_NewCO"></i>
+            </div>
+            <div class="bp-accordion-header-left" ng-click="F_CO.expandOrCollapseSection('customerSectionId','customer')">
+                <div class="bp-accordion-name" ng-if=" M_CO.coHeaderRec.CustomerId == undefined && !F_CO.isCOWithoutCustomer()">
+                    <i ng-include="'{!Application_Images}/Icons/customer.svg'" class="white_FFF_NewCO  left-icon"></i>{{'Select_Customer'| translate}}
+                </div>
+                <div class="bp-accordion-name bp-accordion-title-name" ng-if="M_CO.coHeaderRec.CustomerId != undefined && !F_CO.isCOWithoutCustomer()">
+                    <i ng-include="'{!Application_Images}/Icons/customer.svg'" class="white_FFF_NewCO  left-icon"></i>
+                    <div class="bp-title-name">{{M_CO.CustomerCardInfo.CustomerName}}</div>
+                </div>
+                <div class="bp-accordian-right-content bp-accordian-right-noborder" ng-if="M_CO.coHeaderRec.CustomerId != undefined && !F_CO.isCOWithoutCustomer()">
+                    <span class="text-capitalize">{{'Label_Price_Level'| translate}}: {{M_CO.CustomerCardInfo.PriceLevelName ? M_CO.CustomerCardInfo.PriceLevelName : None}}</span>
+                </div>
+                <div class="bp-accordion-name bp-accordion-title-name" ng-if="F_CO.isCOWithoutCustomer()">
+                    <i ng-include="'{!Application_Images}/Icons/customer.svg'" class="white_FFF_NewCO  left-icon"></i>
+                    <div class="bp-title-name">{{M_CO.CustomerCardInfo.CustomerName}}
+                        <!-- Unit Inventory -->
+                    </div>
+                </div>
+                <div class="bp-accordian-right-content bp-accordian-right-noborder" ng-if="F_CO.isCOWithoutCustomer()">
+                    <span class="text-capitalize">{{'Label_Price_Level'| translate}}: {{M_CO.CustomerCardInfo.PriceLevelName ? M_CO.CustomerCardInfo.PriceLevelName : None}}</span>
+                </div>
+            </div>
+        </div>
+        <div class="bp-accordion-detail bp-collapse-div-transition" id="customerSectionId" ng-class="{'bp-expand-div-transition': M_CO.expandedSectionName == 'customer'}">
+            <div class="select-customer-section" ng-if="(M_CO.coHeaderRec.CustomerId == undefined && !F_CO.isCOWithoutCustomer() && M_CO.coHeaderRec.OrderStatus != 'Closed') || M_CO.isChangeCustomer">
+                <div class="left">
+                    <label>{{'Search_for_an_existing_customer' | translate}}</label>
+                    <autocompletev2 id="autocompletev2Id" template-name="Customer" section-name="Customer" section-id="Customer" default-value="M_CO.CustomerCardInfo.CustomerName" />
+                </div>
+                <div class="right">
+                    <label class="labelForCeateNewCustomer" ng-if="M_CO.coHeaderRec.OrderStatus != 'Closed'">{{'OR' | translate}}</label>
+                    <button class="btn bp-btn-normal" ng-click="F_CO.openAddEditCustomerPopup()" ng-if="M_CO.coHeaderRec.OrderStatus != 'Closed'">{{'CREATE_NEW_CUSTOMER' | translate}}</button>
+                </div>
+            </div>
+            <div class="select-customer-section showing-customer" ng-if="!M_CO.isChangeCustomer && M_CO.coHeaderRec.CustomerId != undefined && !F_CO.isCOWithoutCustomer()" ng-class="{'padding-bottom30': !(M_CO.coHeaderRec.CustomerId != undefined && M_CO.SOHeaderList.length == 0 && M_CO.Deal.DealInfo.Id == undefined && M_CO.COInvoiceHistoryList.length == 0)}">
+                <div class="left">
+                    <div class="name">
+                        <span class="bp-blue-font bp-set-text-ellipses" ng-class="{'bp-blue-hover' : M_CO.coHeaderRec.CustomerId}" ng-click="F_CO.moveToState('ViewCustomer',{Id:M_CO.coHeaderRec.CustomerId},true)">{{M_CO.CustomerCardInfo.CustomerName}}</span>
+                    </div>
+                    <div class="email">{{M_CO.CustomerCardInfo.CustomerEmail}}
+                        <span>
+                        <span ng-if = "M_CO.CustomerCardInfo.CustomerEmail && F_CO.getCustomerPhoneNumber()">-</span>
+                        <span>{{F_CO.getCustomerPhoneNumber()}}</span>
+                        </span>
+                    </div>
+                    <div class="level">
+                        <p class="bp-text-lowerCase M0 pull-left bp-bold-font PR4">{{'Label_Price_Level' | translate}}:</p> {{M_CO.CustomerCardInfo.PriceLevelName ? M_CO.CustomerCardInfo.PriceLevelName : 'None'}}</div>
+                    <div class="exemption"><strong>{{'Tooltip_Tax_Exemptions' | translate}}:</strong> {{M_CO.CustomerCardInfo.ExemptionTaxName ? M_CO.CustomerCardInfo.ExemptionTaxName : 'None'}}</div>
+                    <div class="activeCusstomer" ng-if = "M_CO.CustomerCardInfo.TotalActiveOrders > 0" ng-click = "F_CO.showActiveCustomerOrderpopup()"> {{M_CO.CustomerCardInfo.TotalActiveOrders}} {{'active_customer_orders' | translate}}</div>
+                	<div ng-if="M_CO.CustomerCardInfo.TotalActiveOrders == 0" class="no-active-order">No active order</div>
+                </div>
+                <div class="right">
+                    <button class="btn  text-uppercase btn-customer-select btn-send-text" ng-if="M_CO.coHeaderRec.OrderStatus != 'Closed'" ng-click="F_CO.openMessagePopUp('sendText')" ng-disabled="F_CO.disableSendTextButtton()">{{'send_a_text' | translate}}</button>
+                    <br/>
+                </div>
+            </div>
+            <div class="select-customer-section showing-customer" ng-if="F_CO.isCOWithoutCustomer() && !M_CO.isChangeCustomer" ng-class="{'padding-bottom30': !F_CO.isAddCustomerActionForCashSaleAvailable()}">
+                <div class="left">
+                    <div class="name">{{M_CO.CustomerCardInfo.CustomerName}}
+                    </div>
+                    <div class="email">{{M_CO.coHeaderRec.COType == 'Internal Service' ? 'Internal Service Orders' : 'In-Stock Merchandise Only'}}</div>
+                    <div class="level">
+                        <p class="bp-text-lowerCase M0 pull-left bp-bold-font PR4">{{'Label_Price_Level' | translate}}</p> {{M_CO.CustomerCardInfo.PriceLevelName ? M_CO.CustomerCardInfo.PriceLevelName : 'None'}}</div>
+                    <div class="exemption"><strong>{{'Tooltip_Tax_Exemptions' | translate}}:</strong> {{M_CO.CustomerCardInfo.ExemptionTaxName ? M_CO.CustomerCardInfo.ExemptionTaxName : 'None'}}</div>
+                    <!-- <div class="aactiveCusstomer text-right"> {{M_CO.CustomerCardInfo.TotalActiveOrders}}{!$Label.active_customer_orders}</div> -->
+                </div>
+                <div class="right">
+                </div>
+            </div>
+            <div class="removeCustomer" ng-if="M_CO.coHeaderRec.CustomerId != undefined && M_CO.SOHeaderList.length == 0 && M_CO.Deal.DealInfo.Id == undefined && M_CO.COInvoiceHistoryList.length == 0">
+                <a ng-click="F_CO.changeCustomer()">{{'Change_customer_label' | translate}}</a>
+            </div>
+            <div class="removeCustomer" ng-if="M_CO.coHeaderRec.CustomerId == undefined && M_CO.coHeaderRec.COType == 'Cash Sale' && !M_CO.isChangeCustomer && F_CO.isAddCustomerActionForCashSaleAvailable()">
+                <a ng-click="F_CO.changeCustomer()">{{'Add_customer' | translate}}</a>
+            </div>
+        </div>
+    </div>
+</apex:component>

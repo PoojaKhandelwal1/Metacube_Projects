@@ -1,0 +1,630 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"
+	Controller="GlobalController">
+     <!--    <apex:stylesheet value="{!Application}/css/PriceFileImport.css"/> -->
+		<div>
+            <route-loading-indicator></route-loading-indicator>
+            <div ng-cloak="ng-cloak" class="content cashSaleContainer priceFileImportContainer"><!-- ng-cloak="ng-cloak" -->
+                <!-- Start: cash Sale Crumbs Section -->
+                <div class="row cashSaleCrumbsDiv M0">
+                    <div id="cashSaleCrumbs" class="col-xs-12 col-sm-12 col-md-12 col-lg-12 cashSaleCrumbs pricefileBackButton p0">
+                       <ul class="col-xs-12 col-sm-12 col-md-12 col-lg-12 p0 cashSaleCrumbs_UL">
+                           <li class="col-xs-1 col-sm-1 col-md-1 col-lg-1 p0 cashSaleCrumbs_li1">
+                              <a class="M0 backElementOfactiveChevron" ng-class="{'previousElementOfactiveChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '1', 
+                                'activeChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '0', 'disableChevron': PriceFileImportModel.selectedcashSaleChevronIndex == '3'}"   ng-click = "PriceFileImportModel.backAction();" >
+                                <i class="fa fa-angle-left" aria-hidden="true" style="font-size: 20px;" ></i> {{ 'Back' | translate }}
+                             </a>
+
+                          </li>
+                          <li class="col-xs-4 col-sm-4 col-md-4 col-lg-4 p0 cashSaleCrumbs_li2">
+                             <a class="M0 text-capitalize" ng-class="{'previousElementOfactiveChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '2', 
+                                'activeChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '1', 'disableChevron': PriceFileImportModel.selectedcashSaleChevronIndex == '3'}" 
+                                ng-click="PriceFileImportModel.NextAction(1); PriceFileImportModel.reCalculateHeightForSections() ">{{ 'Import_settings' | translate }}</a>
+                          </li>
+                          <li class="col-xs-4 col-sm-4 col-md-4 col-lg-4 p0 cashSaleCrumbs_li3">
+                             <a class="M0 text-capitalize" ng-class="{'previousElementOfactiveChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '3', 
+                                'activeChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '2', 'disableChevron': PriceFileImportModel.selectedcashSaleChevronIndex != '2' }" 
+                                ng-click="PriceFileImportModel.NextAction(2)">{{ 'Field_mapping' | translate }}</a>
+                          </li> 
+                          <li class="col-xs-3 col-sm-3 col-md-3 col-lg-3 p0 cashSaleCrumbs_li4">
+                             <a class="M0" ng-class="{'previousElementOfactiveChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '4', 
+                                'activeChevron' : PriceFileImportModel.selectedcashSaleChevronIndex == '3' , 'disableChevron': PriceFileImportModel.selectedcashSaleChevronIndex != '3'}" 
+                                ng-click="PriceFileImportModel.NextAction(3)">{{ 'Results' | translate }}</a>  
+                          </li>
+                       </ul>
+                    </div>
+                </div>
+                <div class="row cashSaleContent M0" ng-show="PriceFileImportModel.selectedcashSaleChevronIndex == '1' || PriceFileImportModel.selectedcashSaleChevronIndex == '2'">
+                    <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6 barcodeScanner_And_STA_Wrapper print_barcodeScanner_And_STA_Wrapper p0">
+                        <div ng-show="PriceFileImportModel.selectedcashSaleChevronIndex == '1'">
+                            <div class="STA_text_header">
+                                <div class="STA_Holder">
+                                     <h3 class="VendorName selectVendor" ng-if="PriceFileImportModel.recentlyAddedVendor == null || PriceFileImportModel.recentlyAddedVendor == undefined">
+                                     {{ 'Get_started_first_select_vendor' | translate }}</h3> 
+                                    <h3 class="VendorName selectVendor" ng-if="PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined">
+                                    {{ 'Select_vendor' | translate }}</h3>
+                                    <c:CashSaleSTA />
+                                </div>
+                            </div>
+                            <div ng-if = "PriceFileImportModel.PriceFileTabledata.length>0">
+                                <div class = "priceFileImportAddRemoveGrid editSaleActionBtns" >
+                                    <div class="saleQuantityContent">
+                                        <p class="M0">{{ 'Price_file_to_import' | translate }}:</p>
+                                        <label style="text-transform:lowercase;" data-toggle="tooltip" title="{{FileUpload.fileToBeUploaded.name}}" data-original-title="FileUpload.fileToBeUploaded.name">{{FileUpload.fileToBeUploaded.name}}</label>
+                                    </div>
+                                    <div class="editSaleRemoveItemAction marginLeftFromCancel marginTopFromCancel priceFileRemoveBut" ng-click="PriceFileImportModel.removeFile()"> <!-- ng-class="{'marginLeftFromCancel': !CashSaleModel.IsNewLineItemInserted, 'marginTopFromCancel': !CashSaleModel.IsNewLineItemInserted}" 05/11/2016 -->
+                                    <span class ="removeItemImage removeItemLogo"></span>
+                                    <a   class = "removeText" >{{ 'Label_Remove' | translate }}</a>
+                            </div>
+                                </div>
+                                <div class = "priceFileImportAddRemoveGrid" >
+                                        <div class="saleQuantityContent selectFieldLabelsRecord col-md-12 P0">
+                                        <p class="M0">{{ 'Field_labels_located_record' | translate }} {{PriceFileImportModel.fieldNumber}} </p>
+                                        </div>
+                                         <div class = "col-md-6 P0">
+                                         <number-only-input-blur-price-file input-value="PriceFileImportModel.fieldNumber" id-val="saleQuantityContent" include-negative="true" include-zero="true"
+                                                                callback-Function="PriceFileImportModel.changeFieldLable(event ,PriceFileImportModel.fieldNumber)" 
+                                                                class="pull-left"
+                                                                tab-index="{{PriceFileImportModel.tabIndexValue + 1}}" 
+                                                                packaged="!PriceFileImportModel.IsInstall"/>
+
+                                        </div>
+                                           <div class = "col-md-5 P0" style="margin-top: 11px;">                    
+                                         <span class="chk_tick"  ng-class="{'chked': PriceFileImportModel.IsInstall }"  id="isInstall"
+                                    ng-click = "PriceFileImportModel.checkHeaderInclude()"
+                                 >
+                                                      <i class="fa fa-check-square chksqure"></i>
+                                </span>
+                                <label style="float: left;padding-top: 5px;">{{ 'No_field_label' | translate }} </label>
+                                </div>
+                                 </div>
+                             <div class="editSaleActionBtns priceFileNextActionButton">
+                                    <a class="editSaleCancelAction" ng-click="PriceFileImportModel.MoveToState('UserSetting',{Id:  'Home'});" target="_self"> 
+                                <span class="text-uppercase">{{ 'Cancel_Label' | translate }}</span>
+                                 <img src="{!Application_Images}/Cancel_Red.png"  />
+                              </a>
+                              <div class="editSaleAddToSaleAction marginTopFromCancel ">
+                                        <button type="button" class="btn btn-default editNextSaleBtn text-uppercase" ng-attr-tabindex="{{PriceFileImportModel.tabIndexValue + 2}}"
+                                        ng-click="PriceFileImportModel.selectedcashSaleChevronIndex = '2'; PriceFileImportModel.reCalculateHeightForSections(); PriceFileImportModel.calculateJsonForFields();">Next
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div ng-show="PriceFileImportModel.selectedcashSaleChevronIndex == '2'"  class = "fieldMappingWrapper">
+                            <div class="STA_text_header">
+                                <div class="STA_Holder">
+                                    <h3 class="VendorName">{{ 'Field_mapping' | translate }}</h3> 
+                                    <p class = "F13">{{ 'Match_field_labels_import_file' | translate }}</p>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <h4 class="M0 blue_Text F16">{{ 'Part_record_fields' | translate }}</h4>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <h4 class="M0 blue_Text F16 ">{{ 'Fields_from_price_file' | translate }}</h4>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 req-label T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[0].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[0]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true | filter:{label:'!None'} "
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(0)"
+                                            default-option="Select field">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 req-label T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[1].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[1]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true | filter:{label:'!None'} "
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(1)"
+                                            default-option="Select field">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 req-label T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[2].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[2]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true | filter:{label:'!None'} "
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(2)"
+                                            default-option="Select field">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText" ng-class="{'req-label': !PriceFileImportModel.PartPricingFieldsOnVendor.IsCalculatePartRetailPrice}">{{PriceFileImportModel.partRecordFields[3].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[3]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true | filter:{label:'!None'} "
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(3)"
+                                            default-option="Select field"
+                                            ng-if="!PriceFileImportModel.PartPricingFieldsOnVendor.IsCalculatePartRetailPrice">
+                                    </select>
+                                    
+                                    <input ng-if="PriceFileImportModel.PartPricingFieldsOnVendor.IsCalculatePartRetailPrice" type="text"
+                                    	class="form-control T7 pull-left fieldMappingDropdown"
+                                    	value="Calculated based on {{PriceFileImportModel.PartPricingFieldsOnVendor.RetailBaseValue}}"
+                                    	ng-disabled="true"></input>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[4].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[4]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true"
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(4)"
+                                            default-option="Select field">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 req-label T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[5].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[5]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true | filter:{label:'!None'} "
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(5)"
+                                            default-option="Select field">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[8].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[8]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true"
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(8)"
+                                            default-option="Select field">
+                                    </select>
+                                </div>
+                            </div>
+                             <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[9].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[9]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true"
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(9)"
+                                            default-option="Select field">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid" >
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[10].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[10]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true"
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(10)"
+                                            default-option="Select field" ng-focus="PriceFileImportModel.showToolTip('packageQtyFiledId')" ng-blur="PriceFileImportModel.hideToolTip('packageQtyFiledId')">
+                                    </select>
+                                </div>
+                                
+                                <div class="bp-info-tooltip" id="packageQtyFiledId">
+	                                <i class="fa fa-info-circle" data-customtoggle="tooltip"
+	                                	title="Price File field which contains a numeric value to represent the Package Qty of a part"></i>
+	                            </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid " ng-show="PriceFileImportModel.PartRecordResultJson[10].Value">
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[11].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                   	<input type="checkbox" class="bp-chck-tick-checkbox" ng-model="PriceFileImportModel.FieldsMapped[11]"
+                                   		ng-focus="PriceFileImportModel.showToolTip('perItemPriceCheckboxId')" 
+                                     	ng-blur="PriceFileImportModel.hideToolTip('perItemPriceCheckboxId')"
+                                     	ng-change="PriceFileImportModel.updateStatusOfMappedFields(11)"/>
+                                </div>
+                                
+                                <div class="bp-info-tooltip" id="perItemPriceCheckboxId">
+	                                <i class="fa fa-info-circle" data-customtoggle="tooltip"
+	                                	title="Select this when the Price fields always represent a 'per item' price"></i>
+	                            </div>
+                            </div>
+                            
+                            <div class = "priceFileImportAddRemoveSubGrid " ng-show="PriceFileImportModel.PartRecordResultJson[10].Value">
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[12].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                   	<input type="checkbox" class="bp-chck-tick-checkbox" ng-model="PriceFileImportModel.FieldsMapped[12]" 
+                                   		ng-focus="PriceFileImportModel.showToolTip('perItemCostCheckboxId')" 
+                                     	ng-blur="PriceFileImportModel.hideToolTip('perItemCostCheckboxId')"
+                                     	ng-change="PriceFileImportModel.updateStatusOfMappedFields(12)"/>
+                                </div>
+                                
+                                <div class="bp-info-tooltip" id="perItemCostCheckboxId">
+	                                <i class="fa fa-info-circle" data-customtoggle="tooltip"
+	                                	title="Select this when the Cost fields always represent a 'per item' cost"></i>
+	                            </div>
+                            </div>
+                            <div class = "priceFileImportAddRemoveSubGrid actionButton">
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[13].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[13]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true"
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(13)"
+                                            default-option="Select field" ng-focus="PriceFileImportModel.showToolTip('ReplacedByPartFieldId')" 
+                                            ng-blur="PriceFileImportModel.hideToolTip('ReplacedByPartFieldId')">
+                                    </select>
+                                </div>
+                                
+                                <div class="bp-info-tooltip" id="ReplacedByPartFieldId">
+	                                <i class="fa fa-info-circle" data-customtoggle="tooltip"
+	                                	title="Vendor supplied part number which should be used in place of the part"></i>
+	                            </div>
+                            </div>
+
+                            <div class = "priceFileImportAddRemoveSubGrid actionButton">
+                                <div class="col-md-4 col-lg-4 Plr0">
+                                    <p class="M0 T3 text-uppercase priceFileText">{{PriceFileImportModel.partRecordFields[14].Key}}</p>
+                                </div>
+                                <div class="col-md-5 col-lg-5 Plr3">
+                                    <select class="form-control T7 pull-left fieldMappingDropdown" 
+                                            ng-model="PriceFileImportModel.FieldsMapped[14]"
+                                            ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | filter:{label:'!Calculated value'}:true | filter:{label:'!MSRP'}:true | filter:{label:'!RETAIL'}:true"
+                                            ng-change="PriceFileImportModel.updateStatusOfMappedFields(14)"
+                                            default-option="Select field" ng-focus="PriceFileImportModel.showToolTip('ReplacesPartFieldId')" 
+                                            ng-blur="PriceFileImportModel.hideToolTip('ReplacesPartFieldId')">
+                                    </select>
+                                </div>
+                                
+                                <div class="bp-info-tooltip" id="ReplacesPartFieldId">
+	                                <i class="fa fa-info-circle" data-customtoggle="tooltip"
+	                                	title="Vendor supplied part number which has been replaced by the part"></i>
+	                            </div>
+                            </div>
+                            <div ng-if="PriceFileImportModel.FieldsMapped[2] == 'Calculated value' || PriceFileImportModel.FieldsMapped[3] == 'Calculated value'">
+                                <div class="STA_text_header MT35">
+                                    <div class="STA_Holder">
+                                        <h3 class="VendorName">{{ 'Calculated_values' | translate }}</h3> 
+                                    </div>
+                                </div>
+                                
+                                <div class = "priceFileImportAddRemoveSubGrid" ng-if="PriceFileImportModel.FieldsMapped[2] == 'Calculated value'">
+                                    <div class="col-md-2 col-lg-2 Plr0 calculatedValuesLabel">
+                                        <p class="M0 T7 text-uppercase">{{ 'MSRP' | translate }} = </p>
+                                    </div>
+                                    <div class="col-md-3 col-lg-3 PL5 calculatedValuesFieldsDropdown">
+                                         <select class="form-control pull-left fieldMappingDropdown" 
+                                                ng-model="PriceFileImportModel.FieldsMapped[6]"
+                                                ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | customFilter :PriceFileImportModel.ExcludeMsrpFieldList"
+                                                ng-change="PriceFileImportModel.updateStatusOfMappedFields(6);"
+                                                ng-attr-tabindex ="{{PriceFileImportModel.tabIndexValue + 11}}"
+                                                default-option="Select field">
+                                        </select><!--  | filter:{ label : !PriceFileImportModel.ExcludeMsrpFieldList} -->
+
+
+                                    </div>
+                                    <div class="col-md-3 col-lg-3 PL5 calculatedValuesFieldsDropdown">
+                                         <select class="form-control pull-left fieldMappingDropdown" 
+                                                ng-model="PriceFileImportModel.partRecordCalculatedFields[0].isIncreased"
+                                               ng-change="PriceFileImportModel.calculateMappedFieldValues(0);"
+                                               ng-attr-tabindex ="{{PriceFileImportModel.tabIndexValue + 12}}">
+                                                <option class="text-lowercase" value="true">{{ 'Increased' | translate }}</option>
+
+
+                                                <option class="text-lowercase"  value="false">{{ 'Decreased' | translate }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1 col-lg-1 Plr0 text-center calculatedValuesBy text-lowercase">{{ 'Label_By' | translate }}</div>
+                                    <div class="col-md-3 col-lg-3 Plr0">
+                                         <div class="form-group pricefiled">
+                                             <span class="M0 currency"><!-- blue_Text -->
+                                                 <i class="fa fa-percent"></i>
+                                             </span>
+                                             <price-only-input id-value="updatedPercentage"
+                                             class-value="form-control text-left T7 " 
+                                             max-length="15" precision-length="2"
+                                             rel-value="updatedPercentageId"
+                                             tab-index="{{PriceFileImportModel.tabIndexValue + 13}}"
+                                             input-value = "PriceFileImportModel.partRecordCalculatedFields[0].value" 
+                                             validation-modal = "PriceFileImportModel.PriceFileImportValidationModal"
+                                             validation-modal-key = "MSRP"
+                                             input-model = "PriceFileImportModel"
+                                             blur-callback = "PriceFileImportModel.calculateMsrpValue;"
+                                             allow-negative ="true" 
+                                             packaged = ""/>
+                                         </div>
+                                    </div>
+                                </div>
+                                <div class = "priceFileImportAddRemoveSubGrid"  ng-if="PriceFileImportModel.FieldsMapped[3] == 'Calculated value'">
+                                    <div class="col-md-2 col-lg-2 Plr0 calculatedValuesLabel">
+                                        <p class="M0 T7 text-uppercase">{{ 'Label_Retail' | translate }} = </p>
+                                    </div>
+                                    <div class="col-md-3 col-lg-3 PL5 calculatedValuesFieldsDropdown">
+                                         <select class="form-control pull-left fieldMappingDropdown" 
+                                                ng-model="PriceFileImportModel.FieldsMapped[7]"
+                                                ng-options="field.label as field.label for field in PriceFileImportModel.fieldMappingJSON | customFilter : PriceFileImportModel.ExcludeRetailFieldList"
+                                                ng-change="PriceFileImportModel.updateStatusOfMappedFields(7)"
+                                                 ng-attr-tabindex ="{{PriceFileImportModel.tabIndexValue + 14}}"
+                                                 default-option="Select field">
+                                        </select><!--  | filter:{ label : !PriceFileImportModel.ExcludeRetailFieldList} -->
+
+                                    </div>
+                                    <div class="col-md-3 col-lg-3 PL5 calculatedValuesFieldsDropdown">
+                                         <select class="form-control pull-left fieldMappingDropdown" 
+                                                ng-model="PriceFileImportModel.partRecordCalculatedFields[1].isIncreased"
+                                               ng-change="PriceFileImportModel.calculateMappedFieldValues(1)"
+                                                ng-attr-tabindex ="{{PriceFileImportModel.tabIndexValue + 15}}">
+                                                <option value="true" class="text-lowercase">{{ 'Increased' | translate }}</option>
+                                                <option class="text-lowercase" value="false">{{ 'Decreased' | translate }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1 col-lg-1 Plr0 text-center calculatedValuesBy text-lowercase">{{ 'By' | translate }}</div>
+                                    <div class="col-md-3 col-lg-3 Plr0">
+                                         <div class="form-group pricefiled">
+                                             <span class="M0 currency retailCurrency"><!-- blue_Text -->
+                                                 <i class="fa fa-percent"></i>
+                                             </span>
+                                             <price-only-input id-value="updatedPercentage"
+                                             class-value="form-control text-left T7 " 
+                                             max-length="15" precision-length="2"
+                                             rel-value="updatedPercentageId"
+                                             tab-index="{{PriceFileImportModel.tabIndexValue + 16}}"
+                                             input-value = "PriceFileImportModel.partRecordCalculatedFields[1].value" 
+                                             validation-modal = "PriceFileImportModel.PriceFileImportValidationModal"
+                                             validation-modal-key = "RETAIL"
+                                             input-model = "PriceFileImportModel"
+                                             blur-callback = "PriceFileImportModel.calculateRetailValue" 
+                                             allow-negative ="true"
+                                             packaged = ""/>
+                                         </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                            
+                            <div class="editSaleActionBtns priceFileNextActionButton fieldMappingEditButtons">
+                               <a class="editSaleCancelAction" ng-click = "PriceFileImportModel.selectedcashSaleChevronIndex = '1';PriceFileImportModel.reCalculateHeightForSections();"> 
+                                    <span>CANCEL</span>
+                                    <img src="{!Application_Images}/Cancel_Red.png"  />
+                                    <!-- <div class="sprite Cancel_Red pull-right"></div> -->
+                                </a>
+                                <div class="editSaleAddToSaleAction marginTopFromCancel fieldMappingSubmitBtn">
+                                    <button type="button" class="btn btn-default editSubmitSaleBtn text-uppercase" 
+                                    ng-attr-tabindex="{{PriceFileImportModel.tabIndexValue + 2}}"
+                                    ng-class="{'enableSubmitSaleBtn' : PriceFileImportModel.enableSubmitBtn == true}"
+                                    ng-click="PriceFileImportModel.openComfirmationPopup()"
+                                    ng-disabled="PriceFileImportModel.enableSubmitBtn == false">{{ 'Label_Submit' | translate }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6 cashSaleDetailsSection p0" ng-class="{'backWhite' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">
+                    <!-- Start: Import Setting right panel -->
+                        <!-- Start: Price file Import Section -->
+                        <div ng-show="PriceFileImportModel.selectedcashSaleChevronIndex == '1'">
+                            <div class="priceFileImporter priceFileImporterFileImport" 
+                            ng-class="{'divDisabled' : (PriceFileImportModel.recentlyAddedVendor == null || PriceFileImportModel.recentlyAddedVendor == undefined) }">
+                                <div ng-show="PriceFileImportModel.PriceFileTabledata.length==0">
+                                <h3 class="priceFileImporterHeader" 
+
+                                ng-class="{'isActive' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">
+                                {{ 'Next_add_price_file' | translate }}</h3>
+                                    <droplet class ="browse_droplet" ng-model="FileUpload.interface" ng-class="{'uploading' : FileUpload.interface.isUploading() }">
+                                        <div class="priceFileImporterContentSection dropletcontainer" ng-class="{'isActivePriceFileImporterContentSection' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">
+                                            <section class="col-md-12 browse_section P0" >
+                                                <section class="droplet smalldroplet">
+                                                        <div class="col-md-12 Plr0">
+                                                            <div class="dragAndDropImageSection">
+                                                                <i class="fa fa-cloud-upload" aria-hidden="true" ng-class="{'isActive' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }"></i>
+                                                            </div>
+                                                            <div class="dragAndDropHeaderSection drag-container">
+                                                                <h2 ng-class="{'isActive' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">
+                                                                 {{ 'Drag_and_drop_file_here' | translate }}</h2>
+                                                                 <span class = "orSectionmargin" ng-class="{'isActive' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">{{ 'or' | translate }}</span>
+                                                                <div class ="browse_but col-md-12 P0 text-center">
+                                                                    <droplet-upload-single ng-model="FileUpload.interface" id="fileUpload" service-model ="FileUpload.sectionName"
+                                                                    onchange="angular.element(this).scope().PriceFileImportModel.hideGrid()">
+                                                                    </droplet-upload-single>
+            
+                                                                    <button class="btn btn-default text-uppercase "
+                                                                    ng-class="{'browse_but1' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined),
+                                                                    'browseActionBtn' : (PriceFileImportModel.recentlyAddedVendor == null || PriceFileImportModel.recentlyAddedVendor == undefined)}">
+                                                                        {{ 'Browse' | translate }}
+                                                                    </button>
+                                                                </div>
+                                                            </div> 
+                                                        </div> 
+                                                </section>
+
+                                            </section>
+                                        </div>
+                                    </droplet>
+                                </div>
+                                <div ng-show="PriceFileImportModel.PriceFileTabledata.length > 0">
+                                    <!-- Start: Preview of Price File -->
+                                    <h3 class="priceFileImporterHeader" 
+                                    ng-class="{'isActive' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">
+                                    {{ 'Preview_price_file_import' | translate }} </h3>
+                                    <div class="grid_priceFileData pull-left" id="priceFileData" ><!-- gid_container_Customer -->
+                                       <table class="table priceFileDataTable" id="priceFileDataTable">
+                                           <thead>
+                                               <tr class="tableHeader T3">
+                                                   <th width="5%" ng-class="{'priceFileDisable' : PriceFileImportModel.FirstRecord == 1}" class="navigationIcons" ng-click="PriceFileImportModel.PreviousRecords()"><i class="fa fa-angle-left" ></i></th>
+                                                   <th width="30%" ng-repeat="headerItem in PriceFileImportModel.TableHeader" >{{headerItem}}</th>
+                                                   <th width="5%" class="navigationIcons" ng-class = "{'priceFileDisable' : PriceFileImportModel.LastRecord == PriceFileImportModel.FileLength}" ng-click="PriceFileImportModel.NextRecords()"><i class="fa fa-angle-right" ></i></th>
+                                               </tr>
+                                           </thead>
+                                           <tbody class="parentBody" >
+                                               <tr ng-class-odd="'C2'"  ng-class-even="'evenPriceImportFile'"   ng-repeat="item in PriceFileImportModel.PriceFileTabledata"  
+                                                   ng-click="">
+                                                   <td class="table1_td1"></td>
+                                                   <td class="table1_td2" style = "text-transform: uppercase;" ng-class = "{'T3' :(PriceFileImportModel.FirstRecord + $index) == PriceFileImportModel.fieldNumber, 'removeClassT3' : PriceFileImportModel.IsInstall }" 
+                                                   ng-repeat= "(record, values) in item" ng-init="setRecord = PriceFileImportModel.FirstRecord + $index">{{values["Record"+setRecord]}}</td>
+                                                   <td class="table1_td3" ng-class="{'shrinkTd' : !PriceFileImportModel.isScrollInTable}"></td>
+                                               </tr>
+                                           </tbody>
+                                        </table>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div ng-show="PriceFileImportModel.selectedcashSaleChevronIndex == '2'">
+                            <div class="priceFileImporter priceFileImporterFileToImport">
+                                <h3 class="priceFileImporterHeader pull-left" 
+                                ng-class="{'isActive' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">
+                                {{ 'Price_file_to_import' | translate }}</h3>
+
+
+                                <div class=" grid_priceFileData" id="priceFileData" ><!-- gid_container_Customer -->
+                                   <table class="table priceFileDataTable" id="priceFileDataTable">
+                                       <thead>
+                                           <tr class="tableHeader T3">
+                                               <th width="33%" style="padding: 8px 10px 8px 20px;">{{ 'Field_label' | translate }}</th>
+                                               <th width="33%">{{ 'Record_1' | translate }}</th>
+                                               <th width="33%">{{ 'Label_Status' | translate }}</th>
+                                           </tr>
+                                       </thead>
+                                       <tbody class="parentBody" ng-init="">
+
+                                           <tr ng-class-odd="'C2'"  ng-class-even="'evenPriceImportFile'"   ng-repeat="item in PriceFileImportModel.PriceFieldMappingStatusJSON"  
+                                               ng-click="">
+                                               <td class="table2_td1 T3" style = "text-transform: uppercase; padding: 8px 10px 8px 20px;">{{item.fieldLabel}} </td>
+                                               <td class="table2_td2" style = "text-transform: uppercase;">{{item.value}} </td>
+                                               <td class="table2_td3 T3"  ng-class="{'shrinkLastTd' : !PriceFileImportModel.isScrollInTable}">{{item.status}}</td>
+                                           </tr>
+                                       </tbody>
+                                    </table>
+                                </div>
+                                
+                                <h3 class="priceFileImporterHeader pull-left" 
+                                ng-class="{'isActive' : (PriceFileImportModel.recentlyAddedVendor != null && PriceFileImportModel.recentlyAddedVendor != undefined) }">
+                                {{ 'Part_record_results' | translate }}</h3>
+                                <div class=" grid_priceFileData" id="priceFileData" ><!-- gid_container_Customer -->
+                                   <table class="table priceFileDataTable" id="priceFileDataTable">
+                                       <thead>
+                                           <tr class="tableHeader T3">
+
+                                               <th width="33%" style="padding: 8px 10px 8px 20px;">{{ 'Field_label' | translate }}</th>
+
+                                               <th width="63%">{{ 'Record_1' | translate }}</th>
+                                               <th width="3%"></th>
+                                           </tr>
+                                       </thead>
+                                       <tbody class="parentBody" ng-init="">
+                                           <tr ng-class-odd="'C2'"  ng-class-even="'evenPriceImportFile'"    
+                                               ng-repeat="item in PriceFileImportModel.PartRecordResultJson" ng-show="(item.Key != 'ALL PRICES ARE PER ITEM' && item.Key != 'ALL COSTS ARE PER ITEM')">
+
+                                               <td width="33%" style="text-transform: uppercase; padding: 8px 10px 8px 20px;" class = "T3">{{item.Key}}</td><!-- width="33.5%" -->
+                                               <td width="63%" class = "text-uppercase" ng-class="{'Requiredtd':item.Value=='Calculation not defined'}">
+                                               {{(item.isNumericValue) == true ? ((item.Value) | currency) : item.Value}}
+                                               </td>
+                                               <td width="3%"></td>
+                                           </tr>
+                                           
+                                           <tr ng-class-odd="'C2'"  ng-class-even="'evenPriceImportFile'"    
+                                               ng-repeat="item in PriceFileImportModel.PartRecordResultJson" 
+                                               ng-show="(item.Key == 'ALL PRICES ARE PER ITEM' || item.Key == 'ALL COSTS ARE PER ITEM') && PriceFileImportModel.PartRecordResultJson[10].Value">
+
+                                               <td width="33%" style="text-transform: uppercase; padding: 8px 10px 8px 20px;" class = "T3">{{item.Key}}</td>
+                                               <td width="63%" class = "text-uppercase" ng-class="{'Requiredtd':item.Value=='Calculation not defined'}">
+                                               	{{(item.isNumericValue) == true ? ((item.Value) | currency) : item.Value}}
+                                               </td>
+                                               <td width="3%"></td>
+                                           </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+
+                            </div>
+                        </div>
+                    </div> 
+                    </div>
+                <div class = "row priceFileResult " ng-show="PriceFileImportModel.selectedcashSaleChevronIndex == '3'">
+                    <div class = "resultWrapper" >
+                        <p class ="resultHeading" style="margin-bottom: 20px;" ng-show="!PriceFileImportModel.isProcessingFile">{{ 'Price_file_import_completion_message' | translate }}</p>
+                        <p class ="resultHeading" style="margin-bottom: 20px;" ng-show="PriceFileImportModel.isProcessingFile">{{ 'Please_wait_message' | translate }}</p>
+                        <p class ="resultHeading" style="margin: 0px; ">{{ 'Results' | translate }}</p>
+                        <p class ="resultSuccess" style = "width: 100%; float: left; margin: 0;" ><strong style="font-weight: 600;">{{PriceFileImportModel.SuccessResultCount}}</strong>{{ '' | translate }}&nbsp;records were processed </p> 
+                        <p class ="resultSuccess" style = "width: 100%; float: left; margin: 0;" ng-show="PriceFileImportModel.UpdatedCount > 0 ">&nbsp;&nbsp;&nbsp;&nbsp;<strong style="font-weight: 600;">{{PriceFileImportModel.UpdatedCount}}</strong>&nbsp;{{ 'Existing_parts_were_updated' | translate }} </p> 
+                        <p class ="resultSuccess" style = "width: 100%; float: left; margin: 0;" ng-show="PriceFileImportModel.InsertedCount > 0 " >&nbsp;&nbsp;&nbsp;&nbsp;<strong style="font-weight: 600;">{{PriceFileImportModel.InsertedCount}}</strong>&nbsp;{{ 'New_parts_were_created' | translate }} </p> 
+                        <p class = "resultFaild" style="float: left;text-decoration: none; margin: 0; width: 100%;" ng-show="PriceFileImportModel.ErrorResultCount > 0" >&nbsp;&nbsp;&nbsp;&nbsp;<strong style="font-weight: 600;">{{PriceFileImportModel.ErrorResultCount}}</strong>&nbsp;{{ 'Records_failed_could_not_processed' | translate }} </p>
+                          <div class="importNewPriceFile" ng-show="!PriceFileImportModel.isProcessingFile">
+                                            <button type="button" class="btn btn-default text-uppercase" ng-attr-tabindex="{{PriceFileImportModel.tabIndexValue + 2}}"
+                                            ng-click = "PriceFileImportModel.selectedcashSaleChevronIndex = '1';PriceFileImportModel.reCalculateHeightForSections();PriceFileImportModel.removeFile();">{{ 'Import_new_price_file' | translate }}
+                                            </button>
+                          </div>
+                           <div class="importExitPriceFile" ng-show="!PriceFileImportModel.isProcessingFile">
+                                 <a target="_self" ng-click="PriceFileImportModel.MoveToState('UserSetting',{Id:  'Home'});">
+                                     <button type="button" class="btn btn-default text-uppercase" ng-attr-tabindex="{{PriceFileImportModel.tabIndexValue + 2}}">
+                                     	{{ 'Exit' | translate}}
+                                     </button>
+                                 </a>
+                           </div>
+                        </div>
+                </div>
+                <div class="row cashSaleCopyright M0">
+                    <p>{{ 'BlackPurl' | translate }} @ {{ 'Current_year_value' | translate }} {{ 'All_rights_reserved' | translate}}
+                        <a href="http://www.blackpurl.com/terms-of-use/" target="_blank">{{ 'Terms_of_use' | translate}}</a>
+                        <a href="http://www.blackpurl.com/privacy-policy/" target="_blank">{{ 'Privacy_policy' | translate}}</a>
+                    </p>
+               </div>
+                <div id="ProcessFileConfirmationPopup" class="modal fade ProcessFileConfirmationPopup" role="dialog">
+                    <div class="modal-dialog modal-dialog_PriceFile" ><!-- ng-class="{'mutedGray' : PriceFileImportModel.isProcessingFile}" -->
+                        <!-- Modal content-->
+                        <div class="modal-content col-md-12">
+                            <div class="modal-body popupContainerProcessFileConfirmation">
+                                <div class="popupinside">
+                                    <div class="ProcessFileConfirmationHeading">
+                                        <p>{{ 'Process_price_file_import' | translate }}</p>
+
+                                    </div>
+                                    <div class="ProcessFileConfirmationSubHeading1">
+                                        <p>{{ 'Price_file_mapping_confirmation' | translate }}</p>
+                                    </div>
+                                    <div class="ProcessFileActionsContainer">
+                                        <a >
+                                        <img src="{!Application_Images}/Cancel_Red.png" ng-click="PriceFileImportModel.closeComfirmationPopup(true);"/>
+                                        <span class="text-uppercase" ng-click="PriceFileImportModel.closeComfirmationPopup(true);">{{ 'Cancel_Label' | translate }}</span>
+                                        </a>
+                                        <div>
+                                        <button id="createSpecialOrderActionBtn" type="button"   class="btn btn-default ProcessFileActionBtn text-uppercase" ng-click="PriceFileImportModel.selectedcashSaleChevronIndex = '3'; PriceFileImportModel.closeComfirmationPopup(false);">
+                                            {{ 'Confirm_processing_Label' | translate }}
+                                        </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+		</div>
+</apex:page>

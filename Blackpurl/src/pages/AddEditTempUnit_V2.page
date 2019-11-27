@@ -1,0 +1,510 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+<!-- <apex:stylesheet value="{!Application}/css/AddEditTempUnit_V2.css"/>
+<apex:stylesheet value="{!Application}/css/MiniCalendar.css"/> -->
+    <!-- START: Print/Email Document Modal window -->
+    <div class="modal fade-scale bp-model-dialog  CreateGroupModal print-modal-popup temp-Unit-Popup" ng-class="{'unit-Popup': M_AddEditUnit.UnitType == 'COU'}" id="tempUnitMmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                        <button type="button" class="close bp-close-but CreateGroupModalCloseIcon" data-dismiss="modal" aria-label="Close" >
+                            <span aria-hidden="true">
+                                <i class="white_FFF svg_width closeiconWidth" ng-click="F_AddEditUnit.hideAddEditUnitOrderModal()" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                            </span>
+                        </button>
+                    </div> 
+                
+                <div class="modal-body">
+                     <div class="userGroupInfoArea">  
+                         <div class="heading text-center">{{M_AddEditUnit.UnitActionsWithType[M_AddEditUnit.UnitType]}}</div>
+                         <div class="tab-content-print">
+                            <div class="row lr-pad-14">
+                                <div class="col-sm-6 left-container">
+                                    <div class="form-input" ng-if="M_AddEditUnit.UnitType == 'COU'">
+                                        <label class="print-item-label">{{ 'VIN_number' | translate }}</label>
+                                        <div class="bp-cell  searchInputArea ">
+                                            <input  type="text" id="VIN_Unit" class="bp-input-text searchInput" ng-class="{'MB5': M_AddEditUnit.UnitType == 'COU' && M_AddEditUnit.vehicleSpecificationsResult != '' && M_AddEditUnit.vehicleSpecificationsResult != 'Loading'}"
+                                                ng-keydown="F_AddEditUnit.keydownForVIN($event)" ng-blur="F_AddEditUnit.getVehicleSpecification()" ng-model="M_AddEditUnit.unitRec.VIN" maxlength = "40" placeholder="{{ 'Placeholder_VIN' | translate }}"/>
+                                        		  <i class="input-loading-icon" ng-if="M_AddEditUnit.vehicleSpecificationsResult == 'Loading'">
+											      	<svg class="input-spiner" width="85px" height="85px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+													   <circle class="input-spiner-path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+													</svg>
+	                                       		</i>
+                                        
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-input form-input-sub-item" ng-if="M_AddEditUnit.UnitType == 'COU' && M_AddEditUnit.vehicleSpecificationsResult == 'Match found'">
+                                        <label class="print-item-label bp-font-14">{{ 'Vehicle_lookup_information' | translate }}:</label>
+                                        <div class="bp-cell  searchInputArea ">
+                                            <info-card-component id-value="couInfoCardAddNewId"
+                                              object-payload="M_AddEditUnit.unitCardInfoPayload"
+                                              button-action="F_AddEditUnit.setDataFromBRP()">
+                                           </info-card-component>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-input result-text" ng-if="M_AddEditUnit.UnitType == 'COU' && M_AddEditUnit.vehicleSpecificationsResult == 'Match not found'">
+                                        <span class="print-item-label bp-font-14">{{ 'No_BRP_match_found' | translate }}</span>
+                                    </div>
+                                    
+                                    <div class="form-input">
+                                        <label class="print-item-label">{{ 'Make_Object_Display_Label' | translate }}</label>
+                                        <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showMakeList }">
+                                            <input  type="text" id="MakeUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                autocomplete="off" ng-focus = "F_AddEditUnit.getMakeList()" ng-blur = "F_AddEditUnit.hideMakeList();F_AddEditUnit.ValidateUnitFields('MakeName');"
+                                                ng-model="M_AddEditUnit.unitRec.MakeName"
+                                                ng-class="{'bp-redborder' : M_AddEditUnit.UnitValidation['MakeName']['isError'] == true}"
+                                                ng-click = "F_AddEditUnit.setFocusOnElement('MakeUnitOrdering')"
+                                                ng-keyup="F_AddEditUnit.keyBoardNavigation($event, filteredMake, 'make'); F_AddEditUnit.clearMakeModelSubModelValue();" />
+                                            <div class="searchResultOverlay" id="makeDropDownDiv"> <!-- M_AddEditUnit.UnitMakeName -->
+                                                <ul>
+                                                    <li ng-repeat="unitMake in M_AddEditUnit.UnitMakeList | filter:{'UnitMakeName' : M_AddEditUnit.unitRec.MakeName} as filteredMake"
+                                                        ng-mousedown="F_AddEditUnit.selectUnitMake(unitMake)"
+                                                        ng-class="{'selected-row': $index == M_AddEditUnit.makeCurrentIndex}"
+                                                        id="make{{$index}}">
+                                                        <div class="fullName text-capitalize">{{unitMake.UnitMakeName}}</div>
+                                                    </li>  
+                                                </ul> 
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-input">
+                                        <label class="print-item-label bp-dark-grey2-font">{{ 'Model_Object_Display_Label' | translate }}</label>
+                                        <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showModelList }">
+                                            <input  type="text" id="ModelUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                autocomplete="off" ng-focus = "F_AddEditUnit.getModelList()" ng-blur = "F_AddEditUnit.hideModelList();F_AddEditUnit.ValidateUnitFields('ModelName');"
+                                                ng-model="M_AddEditUnit.unitRec.ModelName"
+                                                ng-class="{'bp-redborder' : M_AddEditUnit.UnitValidation['ModelName']['isError'] == true}"
+                                                ng-keyup="F_AddEditUnit.keyBoardNavigation($event, filteredModel, 'model'); F_AddEditUnit.clearModelSubModelValue();" /> <!-- readonly="readonly" -->
+                                            <div class="searchResultOverlay" id="modelDropDownDiv">
+                                                <ul>
+                                                    <li ng-if = "unitModel.UnitModelName" ng-repeat="unitModel in M_AddEditUnit.UnitModelList | filter:{'UnitModelName' : M_AddEditUnit.unitRec.ModelName} as filteredModel"
+                                                        ng-mousedown="F_AddEditUnit.selectUnitModel(unitModel)"
+                                                        ng-class="{'selected-row': $index == M_AddEditUnit.modelCurrentIndex}"
+                                                        id="model{{$index}}">
+                                                        <div class="fullName text-capitalize">{{unitModel.UnitModelName}}</div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div class="form-input">
+                                        <label class="print-item-label bp-dark-grey2-font">{{ 'Sub_model' | translate }}<!-- {!$Label.Sub_model_Label} --></label>
+                                        <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showSubModelList }">
+                                            <input  type="text" id="SubModelUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                autocomplete="off" ng-focus = "F_AddEditUnit.getSubModelList()" ng-blur = "F_AddEditUnit.hideSubModelList()"
+                                                ng-model="M_AddEditUnit.unitRec.SubModelName" 
+                                                ng-keyup="F_AddEditUnit.keyBoardNavigation($event, filteredSubModel, 'subModel'); F_AddEditUnit.clearSubModelValue();" /> 
+                                            <div class="searchResultOverlay" id="subModelDropDownDiv">
+                                                <ul>
+                                                    <li ng-if="M_AddEditUnit.UnitSubModelList.length > 0 && unitSubModel.SubModelName" ng-repeat="unitSubModel in M_AddEditUnit.UnitSubModelList | filter:{'SubModelName' : M_AddEditUnit.unitRec.SubModelName} as filteredSubModel"
+                                                        ng-mousedown="F_AddEditUnit.selectUnitSubModel(unitSubModel)"
+                                                        ng-class="{'selected-row': $index == M_AddEditUnit.subModelCurrentIndex}"
+                                                        id="subModel{{$index}}">
+                                                        <div class="fullName text-capitalize">{{unitSubModel.SubModelName}}</div>
+                                                    </li>
+                                                    <li ng-if="M_AddEditUnit.UnitSubModelList.length == 0">
+                                                        <div class="fullName">{{ 'No_sub_model_found' | translate }}</div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <div class="col-sm-6" ng-if="M_AddEditUnit.UnitType == 'Temp Unit'">
+                                    <div class="form-input">
+                                        <label class="print-item-label bp-dark-grey2-font">{{ 'Label_Year' | translate }}</label>
+                                        <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showYears }">
+                                            <numbers-only 
+                                                class-value="bp-input-text searchInput"
+                                                id-value="YearAddEditUnit"
+                                                place-holder-value="{{ 'Please_select' | translate }}"
+                                                include-blank="true"
+                                                blur-value="M_AddEditUnit.showYears = false"
+                                                focus-value="F_AddEditUnit.getYears('Year')"
+                                                input-model-value="M_AddEditUnit.SearchYear"
+                                                input-keyup-value="F_AddEditUnit.keyBoardNavigation($event, filteredYear, 'year')" />
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditUnit.setFocusOnElement('YearAddEditUnit')"></i>
+                                            <div class="searchResultOverlay" id="yearDropDownDiv">
+                                                <ul>
+                                                    <li  ng-if="filteredYear.length > 0" ng-repeat="yearValue in M_AddEditUnit.Years | filter:{'year' : M_AddEditUnit.SearchYear} as filteredYear"
+                                                        ng-mousedown="M_AddEditUnit.unitRec.Year = yearValue.year; M_AddEditUnit.SearchYear = yearValue.year;"
+                                                        ng-class="{'selected-row': $index == M_AddEditUnit.yearCurrentIndex}"
+                                                        id="year{{$index}}">
+                                                        <div class="fullName">{{yearValue.year}}</div>
+                                                    </li>
+                                                    <li  ng-if="filteredYear.length == 0" id="TradeInNoResults" class="BP_angucomplete-row-NoResults-Msg">
+                                                        <div class="">{{ 'No_Results_Found' | translate }}</div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-input">
+                                        <div class="bp-cell  searchInputArea ">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Exterior_color' | translate }}</label>
+                                            <input type="text" class="bp-input-text inputText" placeholder="{{ 'Placeholder_color' | translate }}"
+                                                        ng-model="M_AddEditUnit.unitRec.ExteriorColour" />
+                                        </div>
+                                    </div>
+                                    <div class="form-input">
+                                        <div class="form-input tempform-btn">
+                                            <button class="bp-btn bp-btn-normal" ng-click = "F_AddEditUnit.addUnit()" ng-disabled = "F_AddEditUnit.disablesaveBtn()">Save</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-sm-6" ng-if="M_AddEditUnit.UnitType == 'COU'">
+                                    <div class="form-input col-xs-12 P0" ng-if="M_AddEditUnit.UnitType == 'COU'">
+                                        <div class="col-sm-6 P0 mr50">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Label_Year' | translate }}</label>
+                                            <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showYears }">
+                                                <numbers-only 
+                                                    class-value="bp-input-text searchInput"
+                                                    id-value="YearAddEditUnit"
+                                                    place-holder-value="{{ 'Please_select' | translate }}"
+                                                    include-blank="true"
+                                                    blur-value="M_AddEditUnit.showYears = false"
+                                                    focus-value="F_AddEditUnit.getYears('Year')"
+                                                    input-model-value="M_AddEditUnit.SearchYear"
+                                                    input-keyup-value="F_AddEditUnit.keyBoardNavigation($event, filteredYear, 'year')" />
+                                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditUnit.setFocusOnElement('YearAddEditUnit')"></i>
+                                                <div class="searchResultOverlay" id="yearDropDownDiv">
+                                                    <ul>
+                                                        <li  ng-if="filteredYear.length > 0" ng-repeat="yearValue in M_AddEditUnit.Years | filter:{'year' : M_AddEditUnit.SearchYear} as filteredYear"
+                                                            ng-mousedown="M_AddEditUnit.unitRec.Year = yearValue.year; M_AddEditUnit.SearchYear = yearValue.year;"
+                                                            ng-class="{'selected-row': $index == M_AddEditUnit.yearCurrentIndex}"
+                                                            id="year{{$index}}">
+                                                            <div class="fullName">{{yearValue.year}}</div>
+                                                        </li>
+                                                        <li  ng-if="filteredYear.length == 0" id="TradeInNoResults" class="BP_angucomplete-row-NoResults-Msg">
+                                                            <div class="">{{ 'No_Results_Found' | translate }}</div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-input pull-left">
+                                        <div class="bp-cell searchInputArea ">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Exterior_color' | translate }}</label>
+                                            <input type="text" class="bp-input-text searchInput" placeholder="{{ 'Placeholder_color' | translate }}"
+                                                        ng-model="M_AddEditUnit.unitRec.Color" />
+                                        </div>
+                                    </div>
+                                    <div class="form-input">
+                                        <div class="col-sm-6 unit-PopupInputRight">
+                                            <div class="bp-cell  searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Plate_reg_number' | translate }}</label>
+                                                <input type="text" 
+                                                class="bp-input-text searchInput" 
+                                                    autocomplete="off" maxLength="20" ng-model="M_AddEditUnit.unitRec.Plate" />
+                                            </div>
+                                        </div>
+                                        <div class ="col-sm-6 unit-PopupInputLeft">
+                                            <div class="bp-cell  searchInputArea makeRegSeachingWrapper">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Reg_Expiry_Date' | translate }}</label>
+                                                <input type="text" id="RegExpiryDateUnitOrdering" ui-date-format="{{M_AddEditUnit.dateFormat}}"
+                                                ui-date="M_AddEditUnit.RegExpDateOptions" class="bp-input-text searchInput UnitOrderingMFDate" 
+                                                placeholder="{{ 'Please_select' | translate }}" readonly="readonly"
+                                                            ng-model="M_AddEditUnit.unitRec.RegExpiryDate" />
+                                                            <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="UnitOrderingMFDateicon grey_DDDDDD"
+                                               id="removeKeywordBtn" ng-click = "F_AddEditUnit.showCalender('RegExpiryDateUnitOrdering')">
+                                            </i> 
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-input">
+                                        <div class="col-sm-6 unit-PopupInputRight">
+                                            <div class="bp-cell  searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Label_Mileage' | translate }}<!-- {!$Label.Exterior_colour_Label} --></label>
+                                                <numbers-only 
+                                                    class-value="bp-input-text searchInput"
+                                                    id-value="MileageUnit"
+                                                    place-holder-value="{{ 'Placeholder_mileage' | translate }}"
+                                                    max-length="6"
+                                                    precision-length = "1"
+                                                    force-precision-length = "false"
+                                                    include-blank="true"
+                                                    input-model-value="M_AddEditUnit.unitRec.Mileage" />
+                                            </div>
+                                        </div>
+                                        <div class ="col-sm-6 unit-PopupInputLeft">
+                                            <div class="bp-cell  searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Mileage_type' | translate }}</label>
+                                                <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showMileageTypes }">
+                                            <input  type="text" id="MileageTypeUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                autocomplete="off" ng-focus="M_AddEditUnit.showMileageTypes = true" ng-blur="M_AddEditUnit.showMileageTypes = false"
+                                                readonly="readonly" ng-model="M_AddEditUnit.unitRec.MileageType" />
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditUnit.setFocusOnElement('MileageTypeUnitOrdering')"></i>
+                                            <div class="searchResultOverlay" id="MileageTypeUnitOrderingScrollDiv">
+                                                <ul>
+                                                    <li ng-repeat="type in M_AddEditUnit.MileageTypeList" ng-mousedown="F_AddEditUnit.selectMileageType(type)">
+                                                        <div class="fullName">{{type}}</div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            <div class="row M0 lr-pad-14 PT16" ng-if="M_AddEditUnit.UnitType == 'COU'">
+                                <div class="col-sm-12 P0">
+                                    <div class="col-sm-12 P0">
+                                        <h2 class="print-item-label bp-dark-grey2-font MB20">{{ 'Additional_information' | translate }}</h2>
+                                    </div>
+                                    <div class="col-sm-6 P0 additional-info-left-container">
+                                        <div class="form-input col-xs-12 P0" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.Tags.isPrimary">
+                                            <div class="col-sm-6 P0 mr50">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Tags' | translate }}</label>
+                                            <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showTagsList}">
+                                                <input  type="text" id="TagsUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                    autocomplete="off" ng-focus="F_AddEditUnit.getTagsList()" ng-blur="F_AddEditUnit.hideTagsList()"
+                                                    ng-model="M_AddEditUnit.TagNameStr" ng-keyup="F_AddEditUnit.keyBoardNavigation($event, M_AddEditUnit.FilteredTagList, 'tag')" />
+                                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditUnit.setFocusOnElement('TagsUnitOrdering')"></i>
+                                                <div class="searchResultOverlay" id="tagDropDownDiv">
+                                                    <ul>
+                                                        <li ng-repeat="tag in M_AddEditUnit.FilteredTagList = (M_AddEditUnit.ActiveTagList | orderBy:'Name' | filter:{'Name' : M_AddEditUnit.TagNameStr})" 
+                                                        ng-mousedown="F_AddEditUnit.selectTag(tag)"
+                                                        ng-class="{'selected-row': $index == M_AddEditUnit.tagCurrentIndex}"
+                                                        id="tag{{$index}}">
+                                                            <div class="fullName">{{tag.Name}}</div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="unitOrdertag col-sm-12 P0" ng-class="{'PB16':M_AddEditUnit.unitRec.AssignedTags && M_AddEditUnit.unitRec.AssignedTags.length}">
+                                        <ul class="tag-ul-list">
+                                            <li class="tag-list" ng-repeat="tag in M_AddEditUnit.unitRec.AssignedTags">
+                                                <span class="tag-name-span">{{tag}}
+                                                <i class="svg_width blue_008DC1 cross-icon" ng-include="'{!Application_Images}/Icons/close.svg'" 
+                                                data-toggle="tooltip" title="{{ 'Label_Remove' | translate }}" ng-click="F_AddEditUnit.removeTag(tag, $index)"> </i></span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="form-input col-xs-12 P0" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.Category.isPrimary">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Category_Object_Display_Label' | translate }}</label>
+                                            <div class="bp-cell  searchInputArea" ng-class = "{'showingOverlay' : M_AddEditUnit.showCategoryList }">
+                                                <input type="text" id="CategoryUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                    autocomplete="off" ng-focus = "F_AddEditUnit.getCategoryList()" ng-blur = "F_AddEditUnit.hideCategoryList()"
+                                                    ng-model="M_AddEditUnit.UnitCategoryName"
+                                                    readonly="readonly" />
+                                                 <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditUnit.setFocusOnElement('CategoryUnitOrdering')"></i>
+                                                <div class="searchResultOverlay"  id="categoryDropDownDiv">
+                                                    <ul>
+                                                        <li ng-repeat="category in M_AddEditUnit.UnitCategoryList"
+                                                            ng-mousedown="F_AddEditUnit.changeUnitCategory(category)"
+                                                            ng-class="{'selected-row': $index == M_AddEditUnit.categoryCurrentIndex}"
+                                                            id="category{{$index}}">
+                                                            <div class="fullName">{{category.Name}}</div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.Cylinders.isPrimary">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Cylinders' | translate }}</label>
+                                            <div class="bp-cell searchInputArea ">
+                                                <numbers-only 
+                                                        class-value="bp-input-text searchInput"
+                                                        id-value="CylindersUnitOrdering"
+                                                        place-holder-value="{{ 'Placeholder_cylinder' | translate }}"
+                                                        max-length="2"
+                                                        include-blank="true"
+                                                        input-model-value="M_AddEditUnit.unitRec.Cylinders" />
+                                            </div>
+                                        </div>
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.Displacement.isPrimary">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Displacement' | translate }}</label>
+                                            <div class="bp-cell searchInputArea ">
+                                                <numbers-only 
+                                                    class-value="bp-input-text searchInput"
+                                                    id-value="DisplacementUnitOrdering"
+                                                    place-holder-value="{{ 'Placeholder_displacement' | translate }}"
+                                                    max-length="6"
+                                                    include-blank="true"
+                                                    input-model-value="M_AddEditUnit.unitRec.Displacement" />
+                                            </div>
+                                        </div>
+                                    <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.EngineSerialNo.isPrimary">
+                                        <div class="bp-cell searchInputArea ">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Engine_serial_number' | translate }}</label>
+                                            <input type="text" class="bp-input-text searchInput" placeholder="{{ 'Placeholder_engine_serial_number' | translate }}"
+                                                autocomplete="off" maxlength="40" ng-model="M_AddEditUnit.unitRec.EngineSerialNo" />
+                                        </div>
+                                    </div>
+                                    <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.InteriorColour.isPrimary">
+                                        <div class="bp-cell searchInputArea ">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Interior_colour_Label' | translate }}</label>
+                                            <input type="text" class="bp-input-text searchInput" placeholder="{{ 'Placeholder_color' | translate }}"
+                                                autocomplete="off" maxlength="20" ng-model="M_AddEditUnit.unitRec.InteriorColour" />
+                                        </div>
+                                    </div>
+                                    </div>
+                                    <div class="col-sm-6 P0 additional-info-right-container">
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.KeyNo.isPrimary">
+                                            <div class="bp-cell searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Key_number' | translate }}</label>
+                                                <input type="text" id="KeyNumberUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Placeholder_key_number' | translate }}"
+                                                            autocomplete="off" maxlength="40" ng-model="M_AddEditUnit.unitRec.KeyNo" />
+                                            </div>
+                                        </div>
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.Location.isPrimary">
+                                            <div class="bp-cell searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Label_Location' | translate }}</label>
+                                                <input type="text" id="KeyNumberUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Placeholder_location' | translate }}"
+                                                        autocomplete="off"  ng-model="M_AddEditUnit.unitRec.Location" />
+                                            </div>
+                                        </div>
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.ManufacturedDate.isPrimary">
+                                            <div class="bp-cell searchInputArea makeSeachingWrapper">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Manufacture_date' | translate }}</label>
+                                                <input type="text" id="ManufacturedDateCOU" class="bp-input-text searchInput UnitOrderingMFDate" 
+                                                        placeholder="{{ 'Select_manufactured_date' | translate }}" ui-date="M_AddEditUnit.ManufactureDateOptions"
+                                                        ui-date-format="{{M_AddEditUnit.dateFormat}}" ng-model="M_AddEditUnit.unitRec.ManufacturedDate" 
+                                                        readonly="readonly"/>
+                                                <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="UnitOrderingMFDateicon grey_DDDDDD"
+                                                        id="removeKeywordBtn" ng-click = "F_AddEditUnit.showCalender('ManufacturedDateCOU')">
+                                            </i> 
+                                            </div>
+                                        </div>
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.OtherSerialNo.isPrimary">
+                                            <div class="bp-cell searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Other_serial_number' | translate }}</label>
+                                                <input type="text" class="bp-input-text searchInput" placeholder="{{ 'Placeholder_other_serial_number' | translate }}"
+                                                    maxLength="40" id="serialUnitOrdering" autocomplete="off" ng-model="M_AddEditUnit.unitRec.OtherSerialNo" />
+                                            </div>
+                                        </div>
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.ComplianceDate.isPrimary">
+                                            <div class="bp-cell searchInputArea makeSeachingWrapper">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Compliance_date' | translate }}</label>
+                                                <input type="text" class="bp-input-text inputText  searchInput" placeholder="Enter compliance date"
+														ng-model="M_AddEditUnit.unitRec.ComplianceDate"  maxlength = "10"  />
+                                            </div>
+                                        </div>
+                                        <div class="form-input col-xs-12 P0" ng-if="M_AddEditUnit.AdditionalFieldsInfo.Yearof1stRego.isPrimary">
+                                        <div class="col-sm-12 P0 mr50">
+                                            <label class="print-item-label bp-dark-grey2-font">{{ 'Year_of_1st_rego' | translate }}</label>
+                                            <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showYearof1stRegoYears }">
+                                                <numbers-only 
+                                                    class-value="bp-input-text searchInput"
+                                                    id-value="Yearof1stRegoAddEditUnit"
+                                                    place-holder-value="Select year of 1st rego"
+                                                    include-blank="true"
+                                                    blur-value="M_AddEditUnit.showYearof1stRegoYears = false"
+                                                    focus-value="F_AddEditUnit.getYears('Yearof1stRego')"
+                                                    input-model-value="M_AddEditUnit.SearchYearYearof1stRego"
+                                                    input-keyup-value="F_AddEditUnit.keyBoardNavigation($event, filteredYearof1stRego, 'Yearof1stRego')" />
+                                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditUnit.setFocusOnElement('Yearof1stRegoAddEditUnit')"></i>
+                                                <div class="searchResultOverlay" id="Yearof1stRegoDropDownDiv">
+                                                    <ul>
+                                                        <li  ng-if="filteredYearof1stRego.length > 0" ng-repeat="yearValue in M_AddEditUnit.Years | filter:{'year' : M_AddEditUnit.SearchYearYearof1stRego} as filteredYearof1stRego"
+                                                        	ng-mousedown="M_AddEditUnit.unitRec.Yearof1stRego = yearValue.year; M_AddEditUnit.SearchYearYearof1stRego = yearValue.year;"
+                                                        	ng-class="{'selected-row': $index == M_AddEditUnit.Yearof1stRegoCurrentIndex}"
+                                                    		id="Yearof1stRego{{$index}}">
+                                                            <div class="fullName">{{yearValue.year}}</div>
+                                                        </li>
+                                                       	<li  ng-if="filteredYearof1stRego.length == 0" id="TradeInNoResults" class="BP_angucomplete-row-NoResults-Msg">
+                                                            <div class="">{{ 'No_Results_Found' | translate }}</div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                        <div class="form-input" ng-if="M_AddEditUnit.AdditionalFieldsInfo.RegistrationSerial.isPrimary">
+                                        <label class="print-item-label">{{ 'Registration_serial' | translate }}</label>
+                                        <div class="bp-cell  searchInputArea ">
+                                            <input  type="text" id="RegistrationSerial_Unit" class="bp-input-text searchInput" 
+                                                ng-model="M_AddEditUnit.unitRec.RegistrationSerial" maxlength = "10" placeholder="Enter registration serial #"/>
+                                        
+                                        </div>
+                                    </div>
+                                        <div class="form-input" ng-if = "M_AddEditUnit.AdditionalFieldsInfo.TransmissionType.isPrimary">
+                                        <div class="col-sm-6 unit-PopupInputRight">
+                                        <div class="bp-cell  searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Transmission_type' | translate }}<!-- {!$Label.Exterior_colour_Label} --></label>
+                                                <div class="bp-cell  searchInputArea " ng-class = "{'showingOverlay' : M_AddEditUnit.showTransmissionTypes }">
+                                            <input  type="text" id="TransmissionTypeUnitOrdering" class="bp-input-text searchInput" placeholder="{{ 'Please_select' | translate }}"
+                                                autocomplete="off" ng-focus="M_AddEditUnit.showTransmissionTypes = true" ng-blur="M_AddEditUnit.showTransmissionTypes = false"
+                                                readonly="readonly" ng-model="M_AddEditUnit.unitRec.TransmissionType" />
+                                            <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditUnit.setFocusOnElement('TransmissionTypeUnitOrdering')"></i>
+                                            <div class="searchResultOverlay" id="yearDropDownDiv">
+                                                <ul>
+                                                    <li ng-repeat="type in M_AddEditUnit.TransmissionTypeList" ng-mousedown="F_AddEditUnit.selectTansmissionType(type)">
+                                                        <div class="fullName">{{type}}</div>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                            </div>
+                                            
+                                        </div>
+                                        <div class ="col-sm-6 unit-PopupInputLeft">
+                                            <div class="bp-cell  searchInputArea ">
+                                                <label class="print-item-label bp-dark-grey2-font">{{ 'Gears' | translate }}</label>
+                                                <numbers-only 
+                                                    class-value="bp-input-text searchInput"
+                                                    id-value="GearsUnitOrdering"
+                                                    place-holder-value="{{ 'Placeholder_gear_number' | translate }}"
+                                                    max-length="2"
+                                                    include-blank="true"
+                                                    disabled-value = "M_AddEditUnit.unitRec.TransmissionType != 'Manual'"
+                                                    input-model-value="M_AddEditUnit.unitRec.Gears" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                        
+                                    </div>
+                                    <div class="col-sm-12 P0">
+                                    <ul class="additional-information-buttons">
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.Tags.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('Tags')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Tags' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.Category.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('Category')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'SalesTaxGridItem_Category' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.Cylinders.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('Cylinders')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Cylinders' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.Displacement.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('Displacement')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Displacement' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.EngineSerialNo.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('EngineSerialNo')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Engine_serial_number' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.InteriorColour.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('InteriorColour')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Interior_colour_Label' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.TransmissionType.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('TransmissionType')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Transmission_type' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.KeyNo.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('KeyNo')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Key_number' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.Location.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('Location')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Label_Location' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.ManufacturedDate.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('ManufacturedDate')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Manufacture_date' | translate }}</a></li>
+                                            <li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.OtherSerialNo.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('OtherSerialNo')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Other_serial_number' | translate }}</a></li>
+                                  			<li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.ComplianceDate.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('ComplianceDate')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Compliance_date' | translate }}</a></li>
+                                  			<li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.Yearof1stRego.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('Yearof1stRego')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Year_of_1st_rego' | translate }}</a></li>
+                                  			<li ng-if = "!M_AddEditUnit.AdditionalFieldsInfo.RegistrationSerial.isPrimary" ng-click = "F_AddEditUnit.showAdditionalField('RegistrationSerial')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Registration_serial' | translate }}</a></li>
+                                  </ul>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="row lr-pad-14" ng-if="M_AddEditUnit.UnitType == 'COU'">
+                            <div class="col-sm-12">
+                                  <div class="col-sm-3 col-sm-offset-9 P0">
+                                      <div class="form-input text-right">
+                                            <button  class="bp-btn btn-add" ng-click = "F_AddEditUnit.addUnit()"
+                                                ng-disabled="F_AddEditUnit.disablesaveBtn()">{{ 'Label_Add' | translate }}</button>
+                                      </div>
+                                  </div>
+                            </div>
+                          </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+    <!-- END: Print/Email Document Modal window -->
+    
+    <div class="LoadingDiv" ng-show="M_AddEditUnit.isLoading">
+        <div class="loadingIconContainer">
+            <c:BPLoading />
+        </div>
+    </div>
+</apex:page>

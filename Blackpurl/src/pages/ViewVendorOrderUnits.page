@@ -1,0 +1,154 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0" controller="GlobalController">
+<!-- <apex:stylesheet value="{!Application}/css/ViewVendorOrderUnits.css"/> -->
+<div class="GroupSummaryWrapper" id="viewVendorOrderUnitsWrapperId" ng-class = "{'paddingBottom60' : M_ViewVOUs.enableReceivedUnitsBtnFlag}">
+	<div class = "viewVendorUnitOrderSubHeader">
+		<div class = "UnitNameWrapper">
+			<h2><span class="text-capitalize">{{M_ViewVOUs.vendorName}}</span> {!$Label.Order}</h2>
+			<button class ="text-uppercase bp-btn-secondaryCTA" ng-show="GroupOnlyPermissions['Unit ordering']['create/modify']"
+				ng-click="F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId})">
+				{!$Label.order_new_unit}
+			</button>
+		</div>
+		<div class = "activehistoryListNav">
+			<ul>
+				<li class ="text-uppercase" ng-class="{'activeorderList': M_ViewVOUs.viewName == 'ActiveOrders'}"
+				 	ng-click="F_ViewVOUs.changeView('ActiveOrders')">{!$Label.ViewLabour_Active_Orders}</li>
+				<li class = "text-uppercase" ng-class="{'activeorderList': M_ViewVOUs.viewName == 'OrderHistory'}"
+					ng-click="F_ViewVOUs.changeView('OrderHistory')">{!$Label.order_history}</li>
+			</ul>
+		</div>
+	</div>
+	<div class="viewVendorUnitOrderTableHeader table-responsive">
+       <table class = "bp-editable-table activeOrdersGrid" ng-if="M_ViewVOUs.viewName == 'ActiveOrders'">
+		     <col width="5%"  />
+		     <col width="10%"  />
+		     <col width="10%"  />
+		     <col width="16%"  />
+		     <col width="16%"  />
+		     <col width="16%"  />
+		     <col width="10%"  />
+		     <col width="9%"  />  
+		     <col width="8%"  />    
+              <thead>
+                  <tr>
+                      <th><i ng-include="'{!Application_Images}/Icons/receive.svg'" class="grey"
+                      	ng-show="GroupOnlyPermissions['Unit ordering']['create/modify']"></i></th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('ActiveOrders', 'unitId')">{!$Label.Unit_ID}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('ActiveOrders', 'year')">{!$Label.Label_Year}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('ActiveOrders', 'make')">{!$Label.Make_Object_Display_Label}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('ActiveOrders', 'model')">{!$Label.Model_Details}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('ActiveOrders', 'factoryOrder')">{!$Label.Factory_Order} #</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('ActiveOrders', 'date')">{!$Label.Label_Date}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('ActiveOrders', 'totalCost')">{!$Label.Total_Cost}</th>
+                      <th class = "bp-text-uppercase"></th>
+                  </tr>
+              </thead>
+                                    
+              <tbody>
+              	<tr class = "bp-expanded-deletable-div-transition" id = "activeOrder_{{activeOrder.UnitId}}"
+              		 ng-repeat="activeOrder in M_ViewVOUs.ActiveOrderList">
+              		<td> 
+              			<span class="chk_tick" ng-click="F_ViewVOUs.changeActiveOrderSelectedStatus($index)"
+              				ng-show="GroupOnlyPermissions['Unit ordering']['create/modify']">
+	                         <i class="green_00A3DB doneIcon svg_width closeiconWidth" 
+	                            ng-include="'{!Application_Images}/Icons/check-1.svg'"
+	                          ng-if="activeOrder.isSelected" ></i>
+                    	</span>
+                    </td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : activeOrder.UnitId })">{{activeOrder.UnitNumber}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : activeOrder.UnitId })">{{activeOrder.Year}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : activeOrder.UnitId })">{{activeOrder.Make}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : activeOrder.UnitId })" class="modelDetails">{{activeOrder.Model}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : activeOrder.UnitId })" class="FactoryOrder">{{activeOrder.FactoryOrder}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : activeOrder.UnitId })">{{activeOrder.CreatedDate}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : activeOrder.UnitId })">{{activeOrder.TotalWithTax | currency}}</td>
+              		<td>
+              			<span data-toggle="tooltip" title="Delete"
+              				ng-show="GroupOnlyPermissions['Unit ordering']['create/modify']">
+                            <i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="gray_DDDDDD bp-pointer-cursor trDeleteBtn"
+                            	ng-click="F_ViewVOUs.openActiveOrderDeleteConfirmationPopup(activeOrder.UnitId, 'activeOrder_'+ activeOrder.UnitId, activeOrder.CoNumber, activeOrder.DealItemId)"></i>
+                        </span>
+              		</td>
+              	</tr>
+              	<tr ng-show="GroupOnlyPermissions['Unit ordering']['create/modify']">
+              		<td></td>
+              		<td colspan = '8' ng-show="GroupOnlyPermissions['Unit ordering']['create/modify']">
+              			<div class="orderNewUnitfootr">
+							<div class="bp-grid-column createNewunit">
+								<a ng-click="F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId})">
+									<i ng-include="'{!Application_Images}/Icons/add-circle.svg'" class="blue_008DC1 bp-pointer-cursor"></i>
+									{!$Label.order_new_unit}
+								</a>
+							</div>
+						</div>
+              		</td>
+              	</tr>
+            </tbody>
+       </table>
+    
+    	 <table class = "bp-editable-table orderHostoryGrid" ng-if="M_ViewVOUs.viewName == 'OrderHistory'">
+		      <!-- <col width="5%"  />
+		     <col width="10%"  />
+		     <col width="10%"  />
+		     <col width="16%"  />
+		     <col width="16%"  />
+		     <col width="16%"  />
+		     <col width="10%"  />
+		     <col width="9%"  />  --> 
+              <thead>
+                  <tr>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'unitId')">{!$Label.Unit_ID}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'year')">{!$Label.Label_Year}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'make')">{!$Label.Make_Object_Display_Label}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'model')">{!$Label.Model_Details}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'factoryOrder')">{!$Label.Factory_Order} #</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'status')">{!$Label.Label_Status}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'StockedInDateTime')">{!$Label.Label_Date}</th>
+                      <th class = "bp-text-uppercase" ng-click="F_ViewVOUs.sortUnitsByColumnHeadings('OrderHistory', 'totalCost')">{!$Label.Total_Cost}</th>
+                  </tr>
+              </thead>
+                                    
+              <tbody>
+              	<tr ng-repeat="orderHistoryRec in M_ViewVOUs.OrderHistoryList">
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })"><span >
+              				{{orderHistoryRec.UnitNumber}}
+              			</span>
+              		</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })">{{orderHistoryRec.Year}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })">{{orderHistoryRec.Make}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })" class="modelDetails">{{orderHistoryRec.Model}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })" class="FactoryOrder">{{orderHistoryRec.FactoryOrder}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })" ng-class="{'statusGreen': (orderHistoryRec.Status == 'Received'), 'statusRed': (orderHistoryRec.Status == 'Cancelled')}">
+              			{{orderHistoryRec.Status}}
+              		</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })">{{orderHistoryRec.StockedInDateTime}}</td>
+              		<td ng-click = "F_UO.MoveToState('UnitOrdering.AddeditUnitOrder', {'vendorId': M_ViewVOUs.vendorId,'unitId' : orderHistoryRec.UnitId })">{{orderHistoryRec.TotalWithTax | currency}}</td>
+              	</tr>
+              	<tr class = "noRecordFound" ng-if="M_ViewVOUs.OrderHistoryList.length == 0">
+              		<td colspan = "8" class = "text-center">
+              			No order to display
+              		</td>
+              	</tr>
+            </tbody>
+       </table>
+    </div>
+</div>
+
+<div class="AddEditUnitfotter" ng-class = "{'bp-fotter-btnshow': M_ViewVOUs.enableReceivedUnitsBtnFlag}">
+	<button class="bp-btn bp-btn-normal createUnitOrder" ng-click = "F_UO.MoveToState('UnitOrdering.ViewVendorOrderUnits.UnitReceivingDialog')">{!$Label.receive} {{M_ViewVOUs.selectedActiveOrdersCount}}</button>
+</div>
+
+<div class="deleteConfiramtionPopup">
+	<div ng-if="!M_ViewVOUs.COExists" class="heading">{!$Label.Are_you_sure_delete_order_permanently}?</div>
+	<div ng-if="M_ViewVOUs.COExists" class="heading">You cannot delete this unit because it has been linked to a deal.</div>
+	<div ng-if="!M_ViewVOUs.COExists" class="deletePopupActionBtns">
+		<button class="bp-btn deleteBtn" ng-click = "F_ViewVOUs.removeActiveOrder()">{!$Label.Delete_Label}</button>
+   		<button class="bp-btn cancelBtn" ng-click = "F_ViewVOUs.hideDeleteConfirmationPopup()">{!$Label.Cancel_Label}</button>
+	</div>
+	<div ng-if="M_ViewVOUs.COExists" class="deletePopupActionBtns coexists">
+   		<button class="bp-btn bp-btn-normal coexistsbtn" ng-click = "F_ViewVOUs.hideDeleteConfirmationPopup()">OKAY</button>
+	</div>
+</div>
+      
+<div class="fadein viewA" ui-view="UnitReceiving" autoscroll='false'></div>
+</apex:page>

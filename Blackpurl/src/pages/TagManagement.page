@@ -1,0 +1,146 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"
+    controller="GlobalController">
+   <!--  <apex:stylesheet value="{!Assests}/css/bootstrap4.css"/>
+    <apex:stylesheet value="{!Application}/css/GroupSummary.css"/>
+    <apex:stylesheet value="{!Application}/css/TagManagement.css"/>
+    <apex:stylesheet value="{!Application}/css/newUI.css"/> -->
+    <div class="content bp-wrapper-container tagContainer">
+    	<!-- START : Header Div -->
+    	<div class="bp-subHeader">
+        	<div class="row container bp-top-header">
+        	 	<div class="col-lg-1 hiddenSmall"> </div>
+           		<h1 class="col-lg-3 col-sm-6 col-xs-6 bp-hasEyebrow M0 P0">
+           			<small class="eyeBrow">
+           				<i ng-include="'{!Application_Images}/Icons/arrow-left-1.svg'" class="backLinkArrow blue_00A3DB" ng-click="TagMgntModel.MoveToState('UserSetting', {Id:  'Home'});"></i>
+           					<span ng-click="TagMgntModel.MoveToState('UserSetting', {Id:  'Home'});">{{ 'System_Settings' | translate }}</span>
+           			</small>
+           			{{ 'Tag_management' | translate }}
+           		</h1>
+           		<div class="col-lg-1 hiddenSmall pull-right"></div>
+            	<div class="col-lg-3 col-md-4 col-xs-5 userProfile pull-right">  
+               		<h4 class="shortName text-uppercase">
+               			{{TagMgntModel.UserFirstName | limitTo : 1}}{{ TagMgntModel.UserLastName | limitTo : 1}}
+               		</h4>
+               		<div class="fullNameAndRole pull-left">
+                  		<h4 class="fullName M0 text-capitalize">
+                  			{{TagMgntModel.UserFirstName}} {{ TagMgntModel.UserLastName}}
+                  		</h4>
+                  		<span class="text-capitalize" style="--currentUserGroupColor: {{currentUserGroupColor}}">
+                  			{{currentUserGroupName}}
+                  		</span>
+               		</div>
+            	</div>
+         	</div>
+         	<div class="row container">
+            	<div class="col-lg-1 hiddenSmall"></div>
+	            <div class="col-xs-11  bp-blue-navBar P0">
+	            	<ul class="nav nav-tabs bp-sub-header-menu-item">
+	                	<li class="bp-active-nav">
+	                  		<a class="bp-active-group text-uppercase">{{ 'Edit_create_tags' | translate }}</a>
+	                  	</li>
+	               	</ul>
+	            </div>
+       		</div>
+      	</div>
+        <!-- END : Header Div -->  
+	  	
+	  	
+	  	<!-- START : Page Content Div -->
+	  	<div class="pageContent">
+            <div class="container">
+            	<div class="accountSettingsDashboard search-div">
+  					<div class="row GroupSummaryWrapper">
+	                    <div class="col-sm-7 col-xs-6 col-md-8 searchAndSortWrapper">
+	                        <div class="searchAndSort">
+	                            <div class="searchFrom col-xs-12 col-sm-9 col-md-7 P0">
+	                            	<i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797"> </i>
+	                                <input class="bp-input-text" type="text" placeholder="{{ 'Search_tags' | translate }}" ng-model="TagMgntModel.tagSearchStr" id="newTag" />
+	                            </div>
+	                            <div class="sortBy col-xs-12 col-sm-12 col-md-4 P0">
+	                                <label class="text-uppercase">{{ 'Sort_by' | translate }}</label>
+	                                <i ng-click="TagMgntModel.changeOrder()" ng-include="'{!Application_Images}/Icons/sort.svg'" 
+	                                		class="blue_008DC1"> 
+	                               	</i>
+	                                <select class="bp-tagmgnsortdropdown" ng-model="TagMgntModel.SortJson.SortBy" >
+	                                    <option value="CreatedDate">{{ 'Date_created' | translate }}</option>
+	                                    <option value="Name">{{ 'Label_Name' | translate }}</option>
+	                                </select>
+	                            </div>
+	                        </div>
+	                    </div>
+	                </div>
+	  			</div>
+	  			
+	  			<div class="row createTagDiv">
+	  				<div class="border-div" ng-class="{'onFocusBorder' : TagMgntModel.isFocusOnCreateNewTagInput}"> 
+	  					<input type="text" class="create-tag-input" ng-model="TagMgntModel.newTagStr" id="createNewTagId"
+		  						ng-keydown="TagMgntModel.saveTagAction($event)" maxlength="20" placeholder="Create a new tag" 
+		  						ng-focus="TagMgntModel.createNewTagFocus()" ng-blur="TagMgntModel.createNewTagFocusOut()" />
+						<i class="plus-icon blue_008DC1" ng-include="'{!Application_Images}/Icons/add-circle.svg'" ng-click="TagMgntModel.setFocus('createNewTagId')"></i>
+	  				</div>		
+	  				<div class="info-text-div">
+	  					<span ng-class="{'hidden' : !(!TagMgntModel.isFocusOnCreateNewTagInput || TagMgntModel.newTagStr.length == 0)}">&nbsp;</span>
+	  					<span class="text-lowercase" ng-class="{'hidden' : (!TagMgntModel.isFocusOnCreateNewTagInput || TagMgntModel.newTagStr.length == 0)}">{{ 'Press_enter_to_create' | translate }}</span>
+	  				</div>
+	  			</div>
+	  				
+	  			<div class="row tagListDiv">
+  					<ul>
+	  					<li class="tagName" ng-class="{'deactive-color': tag.IsActive == false, 'active-color': tag.IsActive == true}"
+	  						ng-repeat="tag in TagMgntModel.TagList | filter:TagMgntModel.tagSearchStr  | orderBy:TagMgntModel.SortJson.SortBy:TagMgntModel.SortJson.Reverse as filteredTagList">
+	  						<span ng-click="TagMgntModel.editTagRecord($event, $index, tag)" ng-show="!TagMgntModel.TagList_editRow[$index].isEdit" class="tag-name-span">{{tag.Name}}</span>
+	  						<span ng-show="TagMgntModel.TagList_editRow[$index].isEdit" class="tag-name-edit-span"> 
+	  							<input type="text" class="bp-input-text edit-tag-input" id="tag{{$index}}" ng-model="tag.Name" maxlength="20" 
+  											ng-keydown="TagMgntModel.saveTagAfterEdit($index, tag, $event);" ng-blur="TagMgntModel.saveTagAfterEdit($index, tag);" />
+	  							<span class="icon-wrapper-span" data-toggle="tooltip" title="{{tag.IsActive == true ? ('Make_inactive' | translate ) : ('Make_active' | translate)}}" ng-mousedown="TagMgntModel.deactiveTag($index);">
+	  								<i class="blue_008DC1 inactive-icon" ng-class="{'white_FFF': tag.IsActive == false}"
+	  									ng-include="'{!Application_Images}/Icons/inactive.svg'"></i>
+	  							</span>
+	  						</span>
+	  						<span class="icon-wrapper-span pull-right" data-toggle="tooltip" title="{{ 'Label_Remove' |translate }}">
+	  							<i class="svg_width blue_008DC1 cross-icon" ng-include="'{!Application_Images}/Icons/close.svg'" 
+	  									ng-class="{'white_FFF': tag.IsActive == false}"
+	  									ng-mousedown="TagMgntModel.openDeleteTagPopup(tag);" ng-click="TagMgntModel.openRemovePopup(tag)"></i>
+	  						</span>
+	  					</li>
+  					</ul>
+	  			</div>
+	  		</div>
+	  	</div>
+	  	<!-- END : Page Content Div -->
+	  	
+	  	
+	  	<!-- START : Delete Confirmation Page popup -->
+	  	<div class="modal fade CreateGroupModal bp-model-dialog CreateGroupModal confirmationModal" id="deleteConfirmPopup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+	  		<div class="modal-dialog" role="document">
+				<div class="modal-content">
+			  		<div class="modal-header">
+						<button type="button" class="close bp-close-but" data-dismiss="modal" aria-label="Close" ng-click="TagMgntModel.cancelButtonAction();">
+	                 		<span aria-hidden="true">
+	                 			<i class="white_FFF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+	                 		</span>
+	            		</button>
+			  		</div>		 
+			  		<div class="modal-body">
+						<div class="userGroupInfoArea">
+							<div class="heading text-uppercase">{{ 'Are_you_sure' | translate }}</div>
+							<div class="form">
+								<div class="body-div"> <span translate="This_tag_used_in_n_tag_instances" translate-values="{{ {tagCount:TagMgntModel.TagUsedCounter} }}"></span></div>
+								<div class="text-center formBtn">
+									<button class="bp-btn-normal bp-btn confirmButton text-uppercase" ng-click="TagMgntModel.removeTag();" data-dismiss="modal" aria-label="Close" >
+										{{ 'Delete_Confirmation_Label' | translate }}
+									</button>
+									<div class="cancel-link text-uppercase" data-dismiss="modal" aria-label="Close" ng-click="TagMgntModel.cancelButtonAction();">
+										{{ 'Cancel_Label' | translate }}
+									</div>	
+								</div>
+							</div>
+                		</div>
+                	</div>
+                </div>
+            </div>
+        </div>
+        <!-- END : Delete Confirmation Page popup -->
+        
+    </div>
+</apex:page>

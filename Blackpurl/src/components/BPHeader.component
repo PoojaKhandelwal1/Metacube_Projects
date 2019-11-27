@@ -1,0 +1,462 @@
+<apex:component controller="BPGlobalHeaderCtrl">
+    <apex:attribute name="Application_Images" Description="" required="true" type="String"/>
+    <apex:attribute name="Application" Description="" required="true" type="String"/>
+    <apex:attribute name="Assests" Description="" required="true" type="String"/>
+    <apex:stylesheet value="{!Application}/css/BPHeader.css"/>
+    <c:AutoCompleteSuggestion />
+    <c:AutoComplete1 />
+    <script>
+        var BPGlobalHeader = angular.module('BPGlobalHeader', ['autocomplete', 'autocomplete1','globalSearchModule']);
+            BPGlobalHeader.controller('BPGlobalHeader', function ($scope, $rootScope, $q, $state, $stateParams, CustomerActiveOrdersServiceForSta) {
+            
+            $(function() {
+                /*
+                 * Menu Toggle Script
+                 */
+                $(document).on('click', function(e) {
+                    if (!$(e.target).parent().hasClass('drawer-menu-icon') &&
+                        !$(e.target).prev().hasClass('app-drop-menu-toggle') &&
+                        !$(e.target).hasClass('app-drop-menu-toggle') && !$(e.target).hasClass('drawer-menu') &&
+                        !$(e.target).closest('menu').hasClass('drop-menu') ) {
+                        $('.app-drop-menu-toggle').prop('checked', false);
+                    } else {
+                        var thisDropMenu = $(e.target).closest('.app-menu-toggle-icon').find('.app-drop-menu-toggle').attr('id');
+                        $('.app-drop-menu-toggle:not(#' + thisDropMenu + ')').prop('checked', false);
+                    }
+                });
+            
+                /*
+                 * hide header on
+                 * doesn't require fallback, if wheel function not support or not present 
+                 * then event won't bind, and header will remain sticky.
+                 * CSS Helper class used : hide-on-scroll
+                 */
+                if ($('.app-global-header.hide-on-scroll').length) {
+                    // Hide Header on on scroll down
+                    var didScroll;
+                    var lastScrollTop = 0;
+                    var delta = 0;
+                    var navbarHeight = $('.app-global-header.hide-on-scroll').outerHeight();
+            
+                    $(window).scroll(function(event) {
+                        didScroll = true;
+                    });
+            
+                    setInterval(function() {
+                        if (didScroll) {
+                            hasScrolled();
+                            didScroll = false;
+                        }
+                    }, 20);
+            
+                    function hasScrolled() {
+                        //st = scroll top
+                        var st = $(this).scrollTop();
+            
+                        // Make sure they scroll more than delta
+                        if (Math.abs(lastScrollTop - st) <= delta)
+                            return;
+                        // toggle hide-now class and hide drop menu if opened while scrolling.
+                        if (st > lastScrollTop && st > navbarHeight && !$('#HamburgerToggle').is(':checked')) {
+                            // Scroll Down
+                            $('.app-global-header.hide-on-scroll').addClass('hide-now');
+                            $('.app-drop-menu-toggle').prop('checked', false);
+                        } else {
+                            // Scroll Up
+                            if (st + $(window).height() < $(document).height()) {
+                                $('.app-global-header.hide-on-scroll').removeClass('hide-now');
+                            }
+                        }
+            
+                        lastScrollTop = st;
+                    }
+                }
+            });
+            
+               /*  $('body').on('click', '.search-panel-button', function(e){
+                    e.preventDefault();
+                    $(this).parent().find('.search-panel-input').toggleClass('active').focus();
+                }); */
+            
+                $('body').on('focus', '.app-search-form .search-input', function(e){
+                    e.preventDefault();
+                    //Need to make it 768px;
+                    if(window.outerWidth > 768) {
+                        $(".globalSearchWrapperContainer").addClass('active');
+                    }
+                    $(this).closest('.search-field').addClass('active');
+                    $(this).parent().find('.search-suggestions').addClass('active');
+                     angular.element('#globalSearchStrInput').css('padding-left', 36);
+                });
+            
+                $('body').on('focus', '.app-search-form .close-search, .app-search-form .close-overlay', function(e){
+                    e.preventDefault();
+                    $('.search-field.active').removeClass('active');
+                     $(".globalSearchWrapperContainer").removeClass('active');
+                    $('.search-suggestions.active').removeClass('active');
+                });
+            
+                $(window).resize(function(){
+                    $('.search-field.active').removeClass('active');
+                     $(".globalSearchWrapperContainer").removeClass('active');
+                    $('.search-suggestions.active').removeClass('active');
+                });
+
+            $rootScope.GroupOnlyPermissions = $Global.Permission.GroupOnlyPermissions;
+            $scope.BPGlobalHeader = {};
+            $scope.CustomerModal = {};
+            $scope.BPGlobalHeader.IsTrialOrg = {!IsTrialOrg}; 
+            $scope.BPGlobalHeader.TrailOrgDays = $Global.TrailOrgDays;
+            $scope.BPGlobalHeader.showNotificationSidePanel = false;
+            $scope.BPGlobalHeader.pageToOpenForCreateBtn = null;
+            $scope.BPGlobalHeader.ActiveOrders = [];
+            $scope.BPGlobalHeader.communityURL = $Global.communityURL;
+            $rootScope.CompanyLocale = $Global.CompanyLocale;
+            $scope.BPGlobalHeader.isLoadCustomerOrder_V2 = {!Load_Customer_Order_V2};
+            $scope.isLoadTechScheduling = $Global.IsLoadTechScheduling;
+            $scope.BPGlobalHeader.IsFusionMappingEnabled = $Global.IsFusionMappingEnabled;
+            
+            $scope.BPGlobalHeader.openCommunityPage = function(url) {
+                window.open(url, '_blank');
+            }
+            
+            $scope.BPGlobalHeader.MoveToState = function(stateName, attr)  {
+                if(window.outerWidth < 768 ) {
+                    $('#HamburgerToggle').prop('checked', false);
+                } else {
+                    $('.app-drop-menu-toggle').prop('checked', false);
+                }
+                if(stateName == 'CustomerOrder_V2' && $rootScope.currentStateName == 'CustomerOrder_V2' && ($stateParams.Id || $stateParams.AppointmentId)) {
+                   $rootScope.CustomerOrder_V2Parms = {};
+                   $state.go('CustomerOrder_V2', {Id:'', AppointmentId: ''});
+                } else if(stateName == 'AddEditUnit') {
+                    var addSKU_Json = { customerMasterData : null,
+                                        customerId : null,
+                                        unitType : 'STOCK'
+                                      };
+                    loadState($state, 'AddEditUnit', {AddEditUnitParams: addSKU_Json}); 
+                } else {
+                    if (stateName == 'PayrollClocking' || stateName == 'JobClocking') {
+                        angular.element(".click-back-drop").show();
+                    }
+                    if(attr != undefined && attr != null && attr != '') {
+                       loadState($state, stateName, attr); 
+                    } else  {
+                        loadState($state, stateName);
+                    }
+                }
+            }
+            
+            $scope.BPGlobalHeader.brandNavBarAction = function(event)   {
+                if(event.ctrlKey) {
+                    var url = $state.href('homePage');
+                    window.open(url,'_blank');
+                } else if($state.current.name === 'homePage')   {
+                    angular.element('html, body').stop().animate({
+                        scrollTop: 0
+                    }, 1);
+                } else  {
+                    $scope.BPGlobalHeader.MoveToState('homePage');
+                }
+            }
+            
+            $scope.BPGlobalHeader.createOrderAction = function(orderActionName) {
+                if(window.outerWidth > 768 ) {
+                 $('.app-drop-menu-toggle').prop('checked', false);
+                }
+                if(orderActionName === 'Vendor Order' || orderActionName === 'Vendor Receiving' || orderActionName === 'Vendor Invoicing' || orderActionName === 'Return Vendor Order') {
+                    selectVendorAction(orderActionName);
+                } else if(orderActionName === 'UO')  {
+                    $scope.BPGlobalHeader.MoveToState('UnitOrdering.UnitOrderingVendorList');
+                }
+            }
+            
+            var selectVendorAction = function(type) {
+                $scope.BPGlobalHeader.type = type;
+                $scope.BPGlobalHeader.MoveToState('SelectCustomer', {myParams: {type : $scope.BPGlobalHeader.type}});
+            }
+            
+            $rootScope.$on('selectedCustomerCallback', function (event, args) {
+                if($scope.BPGlobalHeader.type == 'Vendor Order') {
+                    createVOHeader(args);
+                } else if($scope.BPGlobalHeader.type == 'Vendor Receiving') {
+                    createVOReceiving(args);
+                } else if($scope.BPGlobalHeader.type == 'Vendor Invoicing') {
+                    createVOInvoicing(args);
+                } else if($scope.BPGlobalHeader.type == 'Return Vendor Order') {
+                    createReturnVO(args);
+                }
+            });
+            
+            var createVOHeader = function(vendorId) {
+                CustomerActiveOrdersServiceForSta.createVendorOrder(vendorId).then(function (successfulSearchResult) {
+                    $scope.BPGlobalHeader.MoveToState('VendorOrder', {Id: successfulSearchResult});
+                },
+                function (errorSearchResult) {
+                    //Notification.error("Some error occurred, please refresh the page");
+                });
+            }
+            
+            var createVOReceiving = function(vendorId) {
+                CustomerActiveOrdersServiceForSta.createVendorReceiving(vendorId).then(function (successfulSearchResult) {
+                    $scope.BPGlobalHeader.MoveToState('VendorOrderReceiving', {Id: successfulSearchResult});
+                },
+                function (errorSearchResult) {
+                    //Notification.error("Some error occurred, please refresh the page");
+                });
+            }
+            
+            var createVOInvoicing = function(vendorId) {
+                CustomerActiveOrdersServiceForSta.createVendorInvoicing(vendorId).then(function (successfulSearchResult) {
+                    $scope.BPGlobalHeader.MoveToState('VendorOrderInvoicing', {Id: successfulSearchResult});
+                },
+                function (errorSearchResult) {
+                    //Notification.error("Some error occurred, please refresh the page");
+                });
+            }
+            
+            var createReturnVO = function(vendorId) {
+                CustomerActiveOrdersServiceForSta.createReturnVO(vendorId).then(function (successfulSearchResult) {
+                    $scope.BPGlobalHeader.MoveToState('ReturnVO', {Id: successfulSearchResult});
+                },
+                function (errorSearchResult) {
+                    //Notification.error("Some error occurred, please refresh the page");
+                });
+            }
+            
+            $scope.BPGlobalHeader.loadSchedulerAction = function() {
+                if(window.outerWidth < 768 ) {
+                    $('#HamburgerToggle').prop('checked', false);
+                }
+                if($scope.isLoadTechScheduling) {
+                    if($rootScope.currentStateName === 'TechScheduler.JobScheduler') {
+                        $state.go('TechScheduler', {}, {reload: true});
+                    } else {
+                        $state.go('TechScheduler');
+                    }
+                } else {
+                    $state.go('JobScheduling');
+                }
+            }
+            
+            $scope.BPGlobalHeader.calculateScreenMarginTop = function(){
+                $rootScope.wrapperHeight = angular.element("#app-global-header-container-id").height();
+                if($scope.BPGlobalHeader.TrailOrgDays == 0){
+                    $rootScope.wrapperHeight -= angular.element("#BP_ExpirationDetailsAndUpgradeBtn_Wrapper_Id").height();
+                }
+                angular.element("#BP_Home_mainContainer").css("margin-top", $rootScope.wrapperHeight);
+            }
+            
+            $scope.BPGlobalHeader.calculateScreenMarginTopResponsive = function() {
+                $rootScope.wrapperHeight = angular.element("#app-global-header-container-id").height();
+                angular.element("#BP_Home_mainContainer").css("margin-top", $rootScope.wrapperHeight);
+            }
+            
+            $scope.BPGlobalHeader.calculateScreenMarginTop();
+            
+            $(window).resize(function(){
+                $scope.BPGlobalHeader.calculateScreenMarginTopResponsive();
+            });
+        });
+        
+        BPGlobalHeader.service("CustomerActiveOrdersServiceForSta", function ($q) {
+            this.getCustomerActiveOrders = function (customerId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.getActiveCustomerOrdersById}', customerId);
+            },
+            this.createVendorOrder = function (vendorId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createNewVendorOrder}', vendorId);
+            },
+            
+            this.createVendorReceiving = function (vendorId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createNewVendorReceiving}', vendorId);
+            },
+            
+            this.createVendorInvoicing = function (vendorId) {
+                return RemoteActionService($q, '{!$RemoteAction.BPGlobalHeaderCtrl.createNewVendorInvoicing}', vendorId);
+            },
+            
+            this.createReturnVO = function (vendorId) {
+                vendorId = encodeString(vendorId);
+                var deferred = $q.defer();
+                // make AJAX request to the remote service
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.BPGlobalHeaderCtrl.createNewReturnVO}',vendorId,
+                    function (result, event) {
+                        if (event.type == 'exception') {
+                            deferred.reject(event.message);
+                        } else {
+                            var vendorReceivingHeaderId = decodeString(result);
+                            deferred.resolve(vendorReceivingHeaderId);
+                        }
+                    }, {
+                        escape : true
+                });
+                return deferred.promise;
+            }
+        });
+    </script>
+    <header class="app-global-header sticky" ng-controller="BPGlobalHeader" id="app-global-header-container-id">
+        <div class="app-main-logo">
+            <a tabindex="1" class="main-logo" ng-click="BPGlobalHeader.brandNavBarAction($event)">
+                <img src="{!Application_Images}/img/bp-logo.svg" title="Home"/>
+            </a>
+            <h1>Go to home</h1>
+        </div>
+        <input type="checkbox" id="HamburgerToggle"/>
+        <label class="hamburger-icon" for="HamburgerToggle">
+            <span class="text">MENU</span>
+            <span class="bun-top"></span>
+            <span class="ham"></span>
+            <span class="bun-bottom"></span>
+        </label>
+        <div class="nav-container">
+            <nav class="app-main-nav">
+                <ul class="menu">
+                    <li class = "sell">
+                        <a tabindex="1" ng-click = "BPGlobalHeader.MoveToState('CustomerOrder_V2')">Sell</a>
+                    </li>
+                    <li class="app-menu-toggle-icon Order">
+                        <input class="app-drop-menu-toggle" type="checkbox" id="OrderSubMenu"/>
+                        <label tabindex="1" for="OrderSubMenu" class="OrderSubMenu">Order</label>
+                        <menu class="drop-menu icon-grid">
+                            <a tabindex="2" ng-click="BPGlobalHeader.createOrderAction('UO')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Unit ordering']['view']}">
+                            <img src="{!Application_Images}/img/icons/unit-order-icon-blue.svg"/>
+                            <span>Unit orders</span>
+                            </a>
+                            <a tabindex="2" ng-click="BPGlobalHeader.createOrderAction('Vendor Order')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Vendor order']['create/modify']}">
+                                <img src="{!Application_Images}/img/icons/part-icon-blue.svg"/>
+                            <span>Part orders</span>
+                            </a>
+                            <a tabindex="2" ng-click="BPGlobalHeader.createOrderAction('Vendor Receiving')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Vendor receiving']['create/modify']}">
+                                <img src="{!Application_Images}/img/icons/part-rec-icon-blue.svg"/>
+                                <span>Part receivings</span>
+                            </a>
+                            <a tabindex="2" ng-click="BPGlobalHeader.createOrderAction('Return Vendor Order')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Vendor order']['create/modify']}">
+                                <img src="{!Application_Images}/img/icons/part-ret-icon-blue.svg"/>
+                                <span>Part returns</span>
+                            </a>
+                            <a tabindex="2" ng-click="BPGlobalHeader.createOrderAction('Vendor Invoicing')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Vendor invoicing']['create/modify']}">
+                                <img src="{!Application_Images}/img/icons/part-invoice-icon-blue.svg"/>
+                                <span>Part invoices</span>
+                            </a>
+                        </menu>
+                    </li>
+                    <li class="Schedule">
+                        <a tabindex="1" ng-click = "BPGlobalHeader.loadSchedulerAction()">Schedule</a>
+                    </li>
+                    <li class="Reporting">
+                        <a tabindex="1" ng-click="BPGlobalHeader.MoveToState('HomeSearch')">Reporting</a>
+                    </li>
+                </ul>
+            </nav>
+            <nav class="app-secondary-nav app-menu-toggle-icon has-icon">
+                
+                <input class="app-drop-menu-toggle" type="checkbox" id="AppDrawer"/>
+                <label for="AppDrawer" tabindex="1" class="drawer-menu-icon tool-tip"><img src="{!Application_Images}/img/icons/grid-icon.svg" alt="app drawer"/><span>Other tools</span></label>
+                <ul class="sec-menu">
+					<li><a tabindex="1" ng-click="BPGlobalHeader.MoveToState('PayrollClocking')">Payroll clocking</a></li>
+					<li><a tabindex="1" ng-click="BPGlobalHeader.MoveToState('JobClocking')">Job clocking</a></li>
+                    <li><a tabindex="1" ng-click="BPGlobalHeader.MoveToState('CashReconciliation')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Cash reconciliation'].submit}">Cash reconciliation</a></li>
+                </ul>
+                <menu class="drop-menu drawer-menu icon-grid">
+                <h3>Other tools</h3>
+                <!-- duplicated links from sec-menu -->
+				<a class="on-sec-menu" tabindex="2" ng-click="BPGlobalHeader.MoveToState('PayrollClocking')">
+                    <img src="{!Application_Images}/img/icons/payroll-icon.svg"/>
+                    <span>Payroll clocking</span>
+                </a>
+				<a class="on-sec-menu" tabindex="2" ng-click="BPGlobalHeader.MoveToState('JobClocking')">
+                    <img src="{!Application_Images}/img/icons/job-clock-icon.svg"/>
+                    <span>Job clocking</span>
+                </a>
+                <a class="on-sec-menu" tabindex="2" ng-click="BPGlobalHeader.MoveToState('CashReconciliation')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Cash reconciliation'].submit}">
+                    <img src="{!Application_Images}/img/icons/cash-rec-icon.svg"/>
+                    <span>Cash reconciliation</span>
+                </a>
+                <!-- duplicated links from sec-menu ends here -->
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('UserSetting', {Id: 'Import_And_Export'})"  ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Accounting settings export'].enabled}">
+                    <img src="{!Application_Images}/img/icons/import-export-icon.svg"/>
+                    <span>Import &amp; export</span>
+                </a>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('PriceFileImport')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Price file import'].enabled}">
+                    <img src="{!Application_Images}/img/icons/file-import-icon.svg"/>
+                    <span>Price file import</span>
+                </a>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('FusionBenchmarking')" ng-if = "BPGlobalHeader.IsFusionMappingEnabled">
+                    <img src="{!Application_Images}/img/icons/fusion-bench-icon.svg"/>
+                    <span>Fusion benchmarking</span>
+                </a>
+				<a tabindex="2" ng-if="isBRPEnabled" ng-click="BPGlobalHeader.MoveToState('DealerLookup')">
+                    <img src="{!Application_Images}/img/icons/brp-icon.svg"/>
+                    <span>Dealer lookup</span>
+                </a>
+                </menu>
+            </nav>
+            <nav class="app-add-menu app-menu-toggle-icon has-icon">
+                <input class="app-drop-menu-toggle " type="checkbox" id="AppAddMenu"/>
+                <label tabindex="1" for="AppAddMenu" class="tool-tip"><img src="{!Application_Images}/img/icons/add-icon-sq.svg" title="Add New"/><span>Add new</span></label>
+                <menu class="drop-menu add-menu-items icon-grid">
+                <h3>Add New</h3>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('AddEditCustomerV2')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Customers'].enabled}">
+                    <img src="{!Application_Images}/img/icons/customer-icon.svg"/>
+                    <span>Customer</span>
+                </a>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('AddEditVendor')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Vendors'].enabled}">
+                    <img src="{!Application_Images}/img/icons/vendor-icon.svg"/>
+                    <span>Vendor</span>
+                </a>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('AddEditPart')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Parts'].enabled}">
+                    <img src="{!Application_Images}/img/icons/part-icon.svg"/>
+                    <span>Part</span>
+                </a>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('AddEditLabour')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Labor'].enabled}">
+                    <img src="{!Application_Images}/img/icons/labor-icon.svg"/>
+                    <span>Labor code</span>
+                </a>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('AddEditKit')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Kits'].enabled}">
+                    <img src="{!Application_Images}/img/icons/kit-icon.svg"/>
+                    <span>Kit</span>
+                </a>
+                <a tabindex="2" ng-click="BPGlobalHeader.MoveToState('AddEditFee')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Fees'].enabled}">
+                    <img src="{!Application_Images}/img/icons/fee-icon.svg"/>
+                    <span>Fee</span>
+                </a>
+                <a tabindex="2" ng-click = "BPGlobalHeader.MoveToState('AddEditUnit')" ng-class="{'disabld-nav-bar-action': !GroupOnlyPermissions['Stock units'].enabled}">
+                    <img src="{!Application_Images}/img/icons/stock-unit-icon.svg"/>
+                    <span>Stock unit</span>
+                </a>
+                </menu>
+            </nav>
+            <form class="app-search-form">
+                <fieldset class="search-field">
+                    <c:GlobalSearch_V2 Application_Images="{!Application_Images}"/>
+                </fieldset>
+            </form>
+            <nav class="app-setting-nav">
+                <ul class="icon-menu">
+                    <li>
+                        <a ng-click="BPGlobalHeader.openCommunityPage(BPGlobalHeader.communityURL)" tabindex="1" class="tool-tip">
+                            <img src="{!Application_Images}/img/icons/help-icon.svg" alt="Help &amp; community"/>
+                            <span>Help &amp; community</span>
+                        </a>
+                    </li>
+                    <li class="app-menu-toggle-icon has-icon show-arrow">
+                        <input class="app-drop-menu-toggle" type="checkbox" id="AppSettingMenu"/>
+                        <label tabindex="1" for="AppSettingMenu" class="tool-tip right-zero"><img src="{!Application_Images}/img/icons/cog-icon.svg"/><span>Account &amp; settings</span></label>
+                        <menu class="drop-menu app-setting-menu list-grid">
+                            <header class="user-info">
+                                <h4 class="user-name">{!JSENCODE($User.FirstName)} {!JSENCODE($User.LastName)}</h4>
+                                <p class="user-co" ng-hide="true">Close Motorcycles</p>
+                                <p class="user-type" ng-hide="true">Admin group</p>
+                            </header>
+                            <a href="#" ng-hide="true"><span>My profile</span></a>
+                            <a ng-click="BPGlobalHeader.MoveToState('UserSetting', {Id: 'Home'})" ng-class = "{'disabld-nav-bar-action': !GroupOnlyPermissions['System Settings'].enabled}"><span>System settings</span></a>
+                            <a ng-href="/secur/logout.jsp" class="log-out"><span>Logout</span></a>
+                        </menu>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+	<div class = "click-back-drop"></div>
+</apex:component>

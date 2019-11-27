@@ -1,0 +1,447 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"  controller="GlobalController">
+   <!--  <apex:stylesheet value="{!Application}/css/AddEditLabour.css"/> -->
+   	<div>
+    	<route-loading-indicator></route-loading-indicator>
+    	<div ng-if="!isRouteLoading" ng-cloak="ng-cloak"> 
+    	<div id="AddEditLabour" class="modal fade" role="dialog">
+        <div class="modal-dialog" ng-class="{'edit_modal-dialog' : AddEditLabour.IsEditMode == true}">
+            <!-- Modal content-->
+            <div class="modal-content col-md-12">
+                <div class="modal-body popup_container labourModelBodyContainer" ng-class="{extended: (AddEditLabour.LabourRecord.CalculateSupplies && AddEditLabour.hasShopSuppliesCalculationMethod)}">
+                    <div class="popupinside"> 
+                        
+                        <!-- popup left start here -->
+                        <div class="col-lg-4 col-md-4 popupleft" ng-show="AddEditLabour.IsEditMode == false" style="height: 520px;">
+                            <div class="popupleft_container" id="topsection">
+                                
+                                <h1 class="letpanel_heading">{{ 'existing_labors_like_this' | translate }}</h1>
+                                <i class="fa fa-question-circle helptip" 
+                                    data-toggle="tooltip" title="Similar labor codes that have already been created for your business"
+                                    style="float: left; font-weight: bold; color: #B7BEC6; margin-top: 20px; margin-bottom: 10px; font-size: 20px;"></i>
+                                <div class="min_overflow">
+	                                <!-- Similar record 1st record -->
+	                                <div class="goldbox col-lg-12 col-md-12" ng-repeat="SimilarLabourRecord in AddEditLabour.SimilarLabourRecords">
+	                                    <div class="rightgoldbox rightgoldboxML" id="CustomerSugesstionDiv" style="margin-left: 0px;">
+	                                        <div>
+	                                            <p class="cust_name">{{SimilarLabourRecord.LabourCode}}</p>
+	                                            <p>{{SimilarLabourRecord.LabourHours}} {{ 'hrs' | translate }} @ {{ 'Currency_Symbol' | translate }}{{SimilarLabourRecord.LabourRate}}</p>
+	                                            <p>{{SimilarLabourRecord.LabourDescription}}</p>
+	                                            <p>{{SimilarLabourRecord.LabourStatus ? "Active" : "Inactive"}}</p>
+	                                        </div>
+	                                    </div>
+	                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- popup left end here -->
+                        
+                        <!--  new Labour form start here -->
+                        <div class="popupright"
+                            ng-class="{'col-lg-8 col-md-8': AddEditLabour.IsEditMode == false , 'leftBorderNone col-lg-12 col-md-12': AddEditLabour.IsEditMode == true, extended: AddEditLabour.LabourRecord.CalculateSupplies && AddEditLabour.hasShopSuppliesCalculationMethod}">
+                            <div class="right_heading_container col-md-12">
+                                <h1 class="right_panel_heading" ng-if="!AddEditLabour.IsEditMode">{{ 'new_labor' | translate }}</h1>
+                                <h1 class="right_panel_heading" ng-if="AddEditLabour.IsEditMode"> {{ 'edit_labor' | translate }}</h1>
+
+                                <div class="savecancle_btncntnr">
+                                    <button type="button" id="closemodal" class="btn btn-default grayBtn" ng-click="AddEditLabour.closePopup();" ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 31}}" ng-keydown="AddEditLabour.adjustTabIndex($event);">{{ 'Cancel_Label' | translate }}</button>
+
+
+                                    <button type="button" class="btn btn-default greenBtn" ng-click="AddEditLabour.SaveLabourForm();" 
+									ng-disabled="AddEditLabour.disableSaveButton" ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 30}}">{{ 'Save_Label' | translate }}</button> <!-- ng-disabled Added by richa 21/01/2017 for disabling button after one click -->
+                                </div>
+                            </div>
+                 
+                            <div class="tabconainer">
+                                <form>
+                                    <!-- START: Code field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field">
+                                        <div class="lable_fields required">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p class="req-label">{{ 'Label_Code' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group MB WP">
+                                                <input type="text" class="form-control" id="Code" placeholder="{{'Label_Code'| translate }}" rel="LabourCode" maxlength="255"
+                                                        ng-model="AddEditLabour.LabourRecord.LabourCode"
+                                                        ng-disabled="AddEditLabour.IsEditMode"
+                                                        ng-blur="AddEditLabour.getSimilarLabours('CODE'); AddEditLabour.validateFieldWithKey('LabourCode');"
+                                                        ng-class="{'redborder' : AddEditLabour.LabourFormValidationModal['LabourCode']['isError'] == true}" 
+                                                        data-toggle="tooltip" title="{{AddEditLabour.LabourFormValidationModal['LabourCode']['ErrorMessage']}}"
+                                                        ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 1}}"
+                                                        ng-focus="AddEditLabour.formFieldJustGotFocus('LabourCode')"/>
+                                            </div>
+                                            
+                                        </div>
+                                        <div  class=" controls" id="LabourCode">
+                                                <i class="fa fa-question-circle MTP" data-toggle="tooltip" title="{{AddEditLabour.helpText['LabourCode']}}"></i>
+                                                <i class="fa fa-times" ng-click="AddEditLabour.LabourRecord.LabourCode = ''"></i>
+                                        </div>
+                                    </div>
+                                    <!-- END: Code field -->
+                                    
+                                    <!-- START: Description field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field">
+                                        <div class="lable_fields required">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p class="req-label">{{ 'Label_Description' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group MB WP">
+                                                <input type="text" class="form-control" id="Description" placeholder="{{'Label_Description'| translate }}" rel="LabourDescription" maxlength="255"
+                                                        ng-model="AddEditLabour.LabourRecord.LabourDescription" 
+                                                        ng-blur="AddEditLabour.getSimilarLabours('DESCRIPTION'); AddEditLabour.validateFieldWithKey('LabourDescription');"
+                                                        ng-class="{'redborder' : AddEditLabour.LabourFormValidationModal['LabourDescription']['isError'] == true}" 
+                                                        data-toggle="tooltip" title="{{AddEditLabour.LabourFormValidationModal['LabourDescription']['ErrorMessage']}}"
+                                                        ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 2}}" ng-focus="AddEditLabour.formFieldJustGotFocus('LabourDescription')"/>
+                                            </div>
+                                            
+                                        </div>
+                                        <div  class=" controls" id="LabourDescription">
+                                                <i class="fa fa-question-circle MTP" data-toggle="tooltip" title="{{AddEditLabour.helpText['LabourDescription']}}"></i>
+                                                <i class="fa fa-times" ng-click="AddEditLabour.LabourRecord.LabourDescription = ''"></i>
+                                        </div>
+                                    </div>
+                                    <!-- END: Description field -->
+                                    
+                                    <!-- START: Hours field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field">
+                                        <div class="lable_fields required">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p class="req-label">{{ 'Label_Hours' | translate }}
+</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large MB">
+                                                <price-only-input id-value = "Hours"
+                                                                  class-value = "form-control medium"
+                                                                  place-holder-value = "{!JSENCODE($ObjectType.Labour_Code__c.fields.Hours__c.label)}"
+                                                                  max-length = "5" 
+                                                                  precision-length = "1" 
+                                                                  tab-index = "{{AddEditLabour.tabIndexValue + 3}}"
+                                                                  input-value = "AddEditLabour.LabourRecord.LabourHours"
+                                                                  validation-modal = "AddEditLabour.LabourFormValidationModal"
+                                                                  validation-modal-key = "LabourHours"
+                                                                  input-model = "AddEditLabour" 
+                                                                  rel-value = "LabourHours"
+                                                                  />
+                                            </div>
+                                            
+                                        </div>
+                                        <div  class=" controls" id="LabourHours">
+                                                <i class="fa fa-question-circle MTP" data-toggle="tooltip" title="{{AddEditLabour.helpText['LabourHours']}}"></i>
+                                                <i class="fa fa-times" ng-click="AddEditLabour.LabourRecord.LabourHours = ''"></i>
+                                        </div>
+                                    </div>
+                                    <!-- END: Hours field -->
+                                    
+                                    <!-- START: Fixed Rate field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p>{{ 'fixed_rate' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <label class="checkbox smschkbox">
+                                                    <span class="chk_tick" style="margin: 6px 0;" id="FixedRate" rel="LabourFixedRate"
+                                                            ng-class="{'chked' : AddEditLabour.LabourRecord.LabourFixedRate}" >
+                                                        <i class="fa fa-check-square chksqure" 
+                                                            ng-click="AddEditLabour.onSelectFixedRate();"
+                                                            ng-keyup="AddEditLabour.onKeyUpFixedRate($event);"
+                                                            ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 4}}"></i>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                           
+                                        </div>
+                                         <div  class=" controls" id="LabourFixedRate">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{AddEditLabour.helpText['LabourFixedRate']}}"></i>
+                                        </div>
+                                    </div>
+                                    <!-- END: Fixed Rate field -->
+                                    
+                                    <!-- START: Rate field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p>{{ 'SalesTaxGrid_Rate' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large MB">
+                                                <input id="Rate" type="text" rel="LabourRate" class="form-control medium" 
+	                                                 ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 5}}" ng-keydown="AddEditLabour.numberOnly($event)"
+	                                                 placeholder="{{'SalesTaxGridItem_Rate'| translate }}" ng-model="AddEditLabour.LabourRecord.LabourRate" ng-blur="AddEditLabour.validateFieldWithKey('LabourRate');"
+	                                                 ng-class="{'redborder' : AddEditLabour.LabourFormValidationModal['LabourRate']['isError'] == true}" 
+	                                                 data-toggle="tooltip" title="{{AddEditLabour.LabourFormValidationModal['LabourRate']['ErrorMessage']}}"
+	                                                 input-model = "AddEditLabour" rel-value = "LabourRate" ng-focus="AddEditLabour.formFieldJustGotFocus('LabourRate')"/>
+                                            	<!-- <div class="form-group pricefiled" id="msrpPretax"  style="padding: 6px;"
+	                                            	ng-if="AddEditLabour.IsTaxIncludingPricing && AddEditLabour.LabourRecord.LabourTaxable">
+	                                                <span class="T3">pretax =  {{AddEditLabour.LabourRecord.LabourRate/(1 + AddEditLabour.Tax_Rate/100) | currency}} </span>          
+                                            </div> -->
+                                            </div>                                            
+                                            
+                                        </div>
+                                        <div  class=" controls" id="LabourRate">
+                                                <i class="fa fa-question-circle MTP" data-toggle="tooltip" title="{{AddEditLabour.helpText['LabourRate']}}"></i>
+                                                <i class="fa fa-times" ng-click="AddEditLabour.LabourRecord.LabourRate = ''"></i>
+                                        </div>
+                                    </div>
+                                    <!-- END: Rate field -->
+                                    
+                                    <!-- START: Cost Method field by Nikhil 10/07/17-->
+									<div class="clearfix" ng-if="!AddEditLabour.IsEditMode || (AddEditLabour.IsEditMode && GroupOnlyPermissions['Costs']['read only'])"></div>
+									<div class="option_field" ng-if="!AddEditLabour.IsEditMode || (AddEditLabour.IsEditMode && GroupOnlyPermissions['Costs']['read only'])">
+										<div class="lable_fields">
+											<span class="form_lable_icons text" style="background: none;"></span>
+											<p>{{ 'cost_method' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group medium MB">
+                                             	<select class = "form-control" ng-model="AddEditLabour.LabourRecord.CostMethod" 
+                                             		ng-options="costValues for costValues in AddEditLabour.costMethodValueList track by costValues"
+                                             		ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 6}}"
+                                             		ng-change = "AddEditLabour.changeCostMethodValidateType()"
+                                             		ng-disabled="AddEditLabour.IsEditMode && !GroupOnlyPermissions['Costs'].modify">
+                                             		
+                                             	</select>
+											</div>
+										</div>
+									</div>
+									 
+									<!-- END: Cost Method field -->
+									
+									<!-- START: Cost Rate field by gourav(Performance) 08/08/17 -->
+									<div class="clearfix" ng-if="!AddEditLabour.IsEditMode || (AddEditLabour.IsEditMode && GroupOnlyPermissions['Costs']['read only'])"></div>
+									<div class="option_field" ng-if="!AddEditLabour.IsEditMode || (AddEditLabour.IsEditMode && GroupOnlyPermissions['Costs']['read only'])">
+										<div class="lable_fields">
+											<span class="form_lable_icons text" style="background: none;"></span>
+											<p>{{ 'cost_rate' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group medium MB">
+													<price-only-input id-value="CostRate"
+													class-value="form-control large" place-holder-value="Cost Rate"
+													max-length="15" precision-length="2"
+													validationkey="CostRate"
+													errorclass="AddEditLabour.LabourFormValidationModal"
+													tab-index="{{AddEditLabour.tabIndexValue + 7}}"
+													input-value="AddEditLabour.LabourRecord.CostRate"
+													validation-modal="AddEditLabour.LabourFormValidationModal"
+													validation-modal-key="CostRate" input-model="AddEditLabour"
+													rel-value="labourCostRate" format-value="AddEditLabour.formatCostValue" 
+													disabled-value="AddEditLabour.IsEditMode && !GroupOnlyPermissions['Costs'].modify" />
+											
+											</div>
+											
+											<div class="controls" id="labourCostRate">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditLabour.helpText['CostRate']}}"></i> 
+													<i class="fa fa-times" ng-click="AddEditLabour.LabourRecord.CostRate = '0.00'"></i>
+											</div>
+										</div>
+										
+									</div>
+									
+									<!-- END: Cost Rate field -->
+                                    
+                                    <!-- Shop Supplies Section -->
+                                    <div ng-if="AddEditLabour.hasShopSuppliesCalculationMethod">
+                                        <!-- START: Calculate Supplies field -->
+                                        <div class="clearfix"></div>
+                                        <div class="option_field">
+                                            <div class="lable_fields">
+                                                <span class="form_lable_icons text hiddenfield"> </span>
+                                                <p>{{ 'Calculate_Supplies' | translate }}</p>
+                                            </div>
+                                            <div class="form_fields">
+                                                <div class="form-group large">
+                                                    <label class="checkbox smschkbox">
+                                                        <span class="chk_tick" style="margin: 6px 0;" id="CalculateSuppliesChkBx"
+                                                                ng-class="{'chked' : AddEditLabour.LabourRecord.CalculateSupplies}" >
+                                                            <i class="fa fa-check-square chksqure"  ng-click="AddEditLabour.LabourRecord.CalculateSupplies = !AddEditLabour.LabourRecord.CalculateSupplies" 
+                                                                ng-keyup="" tab-index="{{AddEditLabour.tabIndexValue + 8}}">
+                                                            </i>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- END: Calculate Supplies -->
+                                        
+                                        <!-- START: Supplies Detail field -->
+                                        <div class="option_field suppliesDetail" ng-show="AddEditLabour.LabourRecord.CalculateSupplies">
+                                            <div class="lable_fields">
+                                                <span class="form_lable_icons text hiddenfield"> </span>
+                                                <p>{{ 'Supplies_Detail' | translate }}</p>
+                                            </div>
+                                            <div class="form_fields">
+                                                <div class="multiselect form-group WP">
+                                                    <div ng-repeat="supplyDetail in AddEditLabour.SuppliesDetailList track by $index">
+                                                        <span ng-if="AddEditLabour.SuppliesDetailEditableIndex !== $index">
+                                                            <span ng-click="AddEditLabour.SuppliesDetailEditableIndex = $index;">
+                                                                {{supplyDetail}}
+                                                            </span>
+                                                            <i class="fa fa-times" ng-click="AddEditLabour.removeFromMultiSelect($index)"></i>
+                                                        </span>
+                                                        <div ng-if="AddEditLabour.SuppliesDetailEditableIndex == $index">
+                                                            <input type="text" id="suppliesDetail_{{$index}}" class="mytxtbox form-control suppliesDetailEdit_{{$index}}" 
+                                                                ng-attr-tabindex="" maxlength="255" ng-model="AddEditLabour.SuppliesDetailList[$index]" 
+                                                                placeholder="{{'Label_Add'| translate }}{{'Label_Item'| translate }}" 
+                                                                ng-keydown="AddEditLabour.editSuppliesDetailItemTabOut($event, $index);" />
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" class="mytxtbox form-control" ng-model="AddEditLabour.NewSuppliesDetail" 
+                                                        ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 9}}" 
+                                                        placeholder="{{'Label_Add'| translate }}{{'Label_Item'| translate }}" rel="NewSuppliesDetailId"
+                                                        ng-keydown="AddEditLabour.addAndRemoveFromMultiSelect($event, AddEditLabour.NewSuppliesDetail);" />
+                                                </div>
+                                                <div class="controls" id="NewSuppliesDetailId">
+	                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{AddEditLabour.helpText['CalculateSupplies']}}"></i> 
+	                                                <i class="fa fa-times" ng-click="AddEditLabour.SuppliesDetailList = []"></i>
+	                                            </div>
+                                            </div>
+                                        </div>
+                                        <div class="clearfix"></div>
+                                        <!-- END: Supplies Detail field -->
+                                    </div>
+                                    <!-- END: Shop Supplies Section -->
+                                    
+                                    <!-- START: Category field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p>{{ 'SalesTaxGridItem_Category' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields angucomplete-overide-dropdown Z_Index_P">
+                                            <div class="form-group  MB WP">
+                                                <autocompleteold id="Category"
+                                                              tab-index ="{{AddEditLabour.tabIndexValue + 10}}" 
+                                                              rel-value="LabourCategory_P"
+                                                              placeholder="{{'Category_Object_Display_Label'| translate }}" 
+                                                              type="{!$Label.Category_Object_Display_Label}" 
+                                                              titlefield="Name"
+                                                              validationkey="LabourCategory" 
+                                                              errorclass="AddEditLabour.LabourFormValidationModal"  
+                                                              typesearchmodal="AddEditLabour.CategoryNameStr"
+                                                              filter-param = "AddEditLabour.LabourFieldsFilter.LabourCategory"/>
+                                            </div>
+                                            <div  class=" controls" id="LabourCategory_P">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{AddEditLabour.helpText['LabourCategory']}}"></i>
+                                                <i class="fa fa-times" ng-click="AddEditLabour.CategoryNameStr = ''"></i>
+                                        </div>
+                                        </div>
+                                        
+                                    </div>
+                                    <!-- END: Category field -->
+                                    
+                                    <!-- START: Taxable field -->
+                                    <div class="clearfix"></div>
+                                    <div class="option_field">
+                                        <div class="lable_fields">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p>{{ 'ViewLabour_Taxable' | translate }}	</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <label class="checkbox smschkbox">
+                                                    <span class="chk_tick" style="margin: 6px 0;" id="Taxable" rel="LabourTaxable"
+                                                            ng-class="{'chked' : AddEditLabour.LabourRecord.LabourTaxable, 'permissionDisabledChk': AddEditLabour.IsEditMode && !GroupOnlyPermissions['Sales Taxes'].assign}" >
+                                                        <i class="fa fa-check-square chksqure" 
+                                                            ng-click="AddEditLabour.onSelectTaxable();"
+                                                            ng-keyup="AddEditLabour.onKeyUpTaxable($event);"
+                                                           tab-index="{{AddEditLabour.tabIndexValue + 11}}"></i>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                           
+                                        </div>
+                                         <div  class=" controls" id="LabourTaxable">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="{{AddEditLabour.helpText['LabourTaxable']}}"></i>
+                                        </div>
+                                    </div>
+                                    <!-- END: Taxable field -->
+                                    
+                                    <!-- START: Applicable Tax field -->
+                                    <div class="option_field" ng-show="AddEditLabour.LabourRecord.LabourTaxable == true">
+                                        <div class="lable_fields">
+                                            <span class="form_lable_icons text hiddenfield"> </span>
+                                            <p>{{ 'Applicable_tax_Label' | translate }}</p>
+                                        </div>
+                                        <div class="form_fields">
+                                            <div class="form-group large">
+                                                <select class="form-control" rel="applicabletax"
+                                             		ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 12}}"
+                                             		ng-model = "AddEditLabour.LabourRecord.ApplicableTaxId"
+                                             		ng-change = "AddEditLabour.changeApplicableTax()"
+                                             		ng-options="taxItem.Id as taxItem.Name for taxItem in AddEditLabour.TaxList"
+                                             		ng-focus="AddEditLabour.formFieldJustGotFocus('applicabletax')"
+                                             		ng-disabled="AddEditLabour.IsEditMode && !GroupOnlyPermissions['Sales Taxes'].assign"></select>
+                                            </div>
+                                            
+                                        </div>
+                                        <div  class=" controls" id="applicabletax">
+                                                <i class="fa fa-question-circle" data-toggle="tooltip" title="Labor Applicable Tax"></i>
+                                        </div>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                    <!-- END: Applicable Tax field -->
+                                    
+                                    <!-- Active start -->
+									<div class="clearfix"></div>
+									<div class="option_field" ng-show=" AddEditLabour.IsEditMode ==true">
+										<div class="lable_fields">
+											<span class="form_lable_icons text hiddenfield"> </span>
+											<p>{{ 'Label_Active' | translate }}</p>
+										</div>
+										<div class="form_fields">
+											<div class="form-group large">
+												<label class="checkbox smschkbox"> <span
+													class="chk_tick" style="margin: 6px 0;" id="labourTaxable"
+													rel="LabourStatus"
+													ng-class="{'chked' :AddEditLabour.LabourRecord.LabourStatus}">
+														<i class="fa fa-check-square chksqure"
+														ng-click="AddEditLabour.onSelectActive();"
+														ng-keyup="AddEditLabour.onKeyUpActive($event);"
+														ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 11}}"></i>
+												</span>
+												</label>
+											</div>
+											
+										</div>
+										<div class=" controls" id="LabourStatus">
+												<i class="fa fa-question-circle" data-toggle="tooltip"
+													title="{{AddEditLabour.helpText['FeeActive']}}"></i>
+									   </div>
+									</div>
+									
+									<!-- Active end -->
+                                    
+                                </form>
+                            </div>
+                            
+                            <div class="right_heading_container col-md-12">
+                                <div class="savecancle_btncntnr">
+                                    <button type="button" id="closemodal" class="btn btn-default grayBtn" ng-click="AddEditLabour.closePopup();" ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 21}}">{{ 'Cancel_Label' | translate }}</button>
+
+
+                                    <button type="button" class="btn btn-default greenBtn" ng-click="AddEditLabour.SaveLabourForm();" 
+									ng-disabled="AddEditLabour.disableSaveButton" ng-attr-tabindex="{{AddEditLabour.tabIndexValue + 20}}">{{ 'Save_Label' | translate }}</button> <!-- ng-disabled Added by richa 21/01/2017 for disabling button after one click -->
+                                </div>
+                            </div>
+                        </div>
+                        <!--  new Labour form ends here -->
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    	</div>
+    </div>
+</apex:page>

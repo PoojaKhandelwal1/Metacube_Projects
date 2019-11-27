@@ -1,0 +1,210 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" Controller="PrintCashReconciliationCtrl">
+    <html lang="en" ng-app="printCashReconciliationModule">
+        <head>
+            <c:CSSFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />
+            <c:JsFiles Application="{!Application}" Application_Images="{!Application_Images}" Assests="{!Assests}" />  
+            <apex:includeScript value="{!JSENCODE(Assests)}/Js/angular-ui-notification.min.js" />
+            <apex:stylesheet value="{!Assests}/css/font-awesome.min.css"/>
+            <apex:stylesheet value="{!Application}/css/BPNewUI.css"/>
+            <apex:stylesheet value="{!Application}/css/PrintCashReconciliation.css"/>
+            <script type="text/javascript">
+             var printCashReconciliationModule = angular.module('printCashReconciliationModule', ['ui-notification']);
+             
+            printCashReconciliationModule.controller('PrintCashReconciliationCtrl', function($scope, Notification, printCashReconciliationService) {
+                $scope.M_printCR = $scope.M_printCR || {};
+                $scope.F_printCR = $scope.F_printCR || {};
+                
+                $scope.F_printCR.LoadPrintCashReconciliationData = function () {
+                    var reconciledDate = "{!$CurrentPage.parameters.ReconciledDate}";
+                    var cashDrawerId = "{!$CurrentPage.parameters.CashDrawerId}";
+                    printCashReconciliationService.getCashReconciliationDetails(reconciledDate, cashDrawerId).then(function (reconciliationData) {
+                        $scope.M_printCR.reconciliationData = reconciliationData;
+                        console.log("$scope.M_printCR.reconciliationData");
+                        console.log($scope.M_printCR.reconciliationData);
+                        $scope.F_printCR.calculateAmountTotals();
+                    }, function (errorSearchResult) {
+                        Notification.error("{!$Label.Generic_Error}");
+                    });
+                }
+                
+                $scope.F_printCR.calculateAmountTotals = function() {
+                    for (var k=0; k<$scope.M_printCR.reconciliationData.ReconciliationObj.CashDrawerReconcilationObjList.length; k++) {
+                        var TotalActualAmount = 0;
+                        var TotalProcessedAmount = 0;
+                        var CashDrawerReconcilationRec = $scope.M_printCR.reconciliationData.ReconciliationObj.CashDrawerReconcilationObjList[k];
+                        
+                        for (var i = 0; i < CashDrawerReconcilationRec.CashReconciliationPaymentList.length; i++) {
+                            var ActualAmount = 0;
+                            if(!CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ActualAmount) {
+                                CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ActualAmount = 0;
+                            }
+                            if (typeof CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ActualAmount == 'number') {
+                                CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ActualAmount = CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ActualAmount.toFixed(2);
+                            }
+                            TotalActualAmount += parseFloat(CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ActualAmount);
+                            ActualAmount = parseFloat(CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ActualAmount);
+                            
+                            TotalProcessedAmount += parseFloat(CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ProcessedAmount);
+                            CashDrawerReconcilationRec.CashReconciliationPaymentList[i].VarianceAmount = ActualAmount - parseFloat(CashDrawerReconcilationRec.CashReconciliationPaymentList[i].ProcessedAmount)
+                        }
+                        
+                        $scope.M_printCR.reconciliationData.ReconciliationObj.CashDrawerReconcilationObjList[k].TotalActualAmount = parseFloat(TotalActualAmount);
+                        $scope.M_printCR.reconciliationData.ReconciliationObj.CashDrawerReconcilationObjList[k].TotalProcessedAmount = parseFloat(TotalProcessedAmount);
+                        $scope.M_printCR.reconciliationData.ReconciliationObj.CashDrawerReconcilationObjList[k].TotalVarianceAmount = TotalActualAmount - TotalProcessedAmount;
+                    }
+                }
+             });
+                 
+             printCashReconciliationModule.service("printCashReconciliationService", function ($q) {
+                this.getCashReconciliationDetails = function (reconciledDate, cashDrawerId) {
+                    reconciledDate = encodeString(reconciledDate);
+                    cashDrawerId = cashDrawerId ? encodeString(cashDrawerId) : null;
+                    var deferred = $q.defer();
+                    
+                    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.PrintCashReconciliationCtrl.getCashReconciliationDetails}', reconciledDate, cashDrawerId, function (result, event) {
+                        if (event.type == 'exception') {
+                            deferred.reject(event.message);
+                        } else {
+                            var reconciliationData = decodeString(result);
+                            var find = '\''; 
+                            var re = new RegExp(find, 'g');
+                            reconciliationData = reconciliationData.replace(re, '');
+                            deferred.resolve(JSON.parse(reconciliationData));
+                        }
+                    }, {
+                        escape : true
+                    });
+                    return deferred.promise;
+                }                 
+            });
+            </script>
+        </head>
+        <body class="print-body" ng-controller="PrintCashReconciliationCtrl" ng-init="F_printCR.LoadPrintCashReconciliationData()" ng-cloak="ng-cloak">
+        
+        <section class="print-page cta-print">
+			<a href="javascript:window.print()" class="button secondary large green">Print</a>
+		</section>
+        
+        <section class="print-page" ng-repeat="CashDrawerReconcilationRec in M_printCR.reconciliationData.ReconciliationObj.CashDrawerReconcilationObjList">
+            <header class="print-page-header">
+                <table>
+                    <thead>
+                        <tr>
+                            <td>
+                                <time class="print-date" datetime="2017-08-13 20:00">{{M_printCR.reconciliationData.ReconciliationDate}}</time>
+                                <h4 class="print-title">{{CashDrawerReconcilationRec.DrawerName}}</h4>
+                            </td>
+                            <td class="text-right">
+                                <address class="print-address">
+                                    <p class="co-name">
+                                        {{M_printCR.reconciliationData.CompanyInfo.CompanyName}}
+                                    </p>
+                                    <span class="co-address">
+                                        {{M_printCR.reconciliationData.CompanyInfo.Address1}} {{M_printCR.reconciliationData.CompanyInfo.Address2}}<br/>
+                                        {{M_printCR.reconciliationData.CompanyInfo.City}} &nbsp;&nbsp; {{M_printCR.reconciliationData.CompanyInfo.State}} &nbsp;&nbsp; {{M_printCR.reconciliationData.CompanyInfo.PostalCode}}
+                                    </span>
+                                </address>
+                            </td>
+                        </tr>
+                    </thead>
+                </table>
+            </header>
+            <main class="print-page-content">
+                <table class="print-cash-table">
+                    <thead>
+                        <tr>
+                            <th>PAYMENT TYPE</th>
+                            <th class="text-right">PROCESSED</th>
+                            <th class="text-right">ACTUAL</th>
+                            <th class="text-right">VARIANCE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Start Mode of Payment Repeat -->
+                        <tr class="mode-of-payment" ng-repeat-start="cashReconciliationPaymentRec in CashDrawerReconcilationRec.CashReconciliationPaymentList">
+                            <td><strong>{{cashReconciliationPaymentRec.PaymentMethod}}</strong></td>
+                            
+                            <td class="text-right">{{cashReconciliationPaymentRec.ProcessedAmount | currency}}</td>
+                            <td class="text-right">{{cashReconciliationPaymentRec.ActualAmount | currency}}</td>
+                            <td class="text-right"><strong>{{cashReconciliationPaymentRec.VarianceAmount | currency}}</strong></td>
+                        </tr>
+                        <!-- Start: if summary available -->
+                        <tr ng-repeat-end="ng-repeat-end" ng-if="cashReconciliationPaymentRec.PaymentDetailList.length > 0">
+                            <td colspan="4">
+                                <table class="mode-of-payment-summary">
+                                    <tbody>
+                                        <tr>
+                                            <th>Amount</th>
+                                            <th>Customer</th>
+                                            <th>Payment #</th>
+                                            <th>Order #</th>
+                                        </tr>
+                                        <!-- Mode of Payment, summary nested repeat -->
+                                        <tr ng-repeat="invoicePayment in cashReconciliationPaymentRec.PaymentDetailList">
+                                            <td>{{invoicePayment.Amount | currency}}</td>
+                                            <td>{{invoicePayment.CustomerName}}</td>
+                                            <td>{{invoicePayment.PaymentNumber}}</td>
+                                            <td>{{invoicePayment.COHeaderName}}</td>
+                                        </tr>
+                                        <!-- Ends: Mode of Payment, summary nested repeat -->
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- ends: if summary available -->
+                        <!-- Ends: Mode of Payment Repeat -->
+                    </tbody>
+                    <tfoot class="total-footer">
+                        <tr>
+                            <td><strong>TOTAL</strong></td>
+                            
+                            <td class="text-right">{{CashDrawerReconcilationRec.TotalProcessedAmount | currency}}</td>
+                            <td class="text-right">{{CashDrawerReconcilationRec.TotalActualAmount | currency}}</td>
+                            <td class="text-right"><strong>{{CashDrawerReconcilationRec.TotalVarianceAmount | currency}}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </main>
+            <footer class="print-page-footer">
+                <table class="print-cash-table">
+                    <thead>
+                        <tr>
+                            <th>PAYMENT TYPE</th>
+                            <th class="text-right">PROCESSED</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="mode-of-payment" ng-repeat-start="cashReconciliationPaymentRec in CashDrawerReconcilationRec.OtherReconciliationPaymentList">
+                            <td><strong>{{cashReconciliationPaymentRec.PaymentMethod}}</strong></td>
+                            <td class="text-right">{{cashReconciliationPaymentRec.ProcessedAmount | currency}}</td>
+                        </tr>
+                        
+                        <tr ng-repeat-end="ng-repeat-end" ng-if="cashReconciliationPaymentRec.PaymentDetailList.length > 0">
+                            <td colspan="2">
+                                <table class="mode-of-payment-summary">
+                                    <tbody>
+                                        <tr>
+                                            <th>Amount</th>
+                                            <th>Customer</th>
+                                            <th>Payment #</th>
+                                            <th>Order #</th>
+                                        </tr>
+                                        <!-- Mode of Payment, summary nested repeat -->
+                                        <tr ng-repeat="invoicePayment in cashReconciliationPaymentRec.PaymentDetailList">
+                                            <td>{{invoicePayment.Amount | currency}}</td>
+                                            <td>{{invoicePayment.CustomerName}}</td>
+                                            <td>{{invoicePayment.PaymentNumber}}</td>
+                                            <td>{{invoicePayment.COHeaderName}}</td>
+                                        </tr>
+                                        <!-- Ends: Mode of Payment, summary nested repeat -->
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </footer>
+        </section>
+        </body>
+    </html>
+</apex:page>

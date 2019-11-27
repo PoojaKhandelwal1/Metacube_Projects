@@ -1,0 +1,398 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0" controller="GlobalController">
+     <!-- <apex:stylesheet value="{!Application}/css/CustomerMessagingPopup.css"/>
+    <apex:stylesheet value="{!Application}/css/ServiceJobClaimResponse_V2.css"/>
+    <apex:stylesheet value="{!Application}/css/MiniCalendar.css"/>  -->
+    
+        <div class="modal fade bp-model-dialog CreateGroupModal SendSMSModal ServiceJobClaimRes SendEmailModal CreateFeeModal" id="ServiceJobClaimResponseModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content row M0">
+                    <div class="modal-header">
+                        <button type="button" class="close bp-close-but CreateGroupModalCloseIcon" data-dismiss="modal" aria-label="Close" ng-click="F_SOClaimRes.closeSOClaimResModal()">
+                            <span aria-hidden="true">
+                                <i class="white_FFF svg_width closeiconWidth" ng-click="F_SOClaimRes.closeSOClaimResModal()" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                            </span>
+                        </button>
+                    </div>       
+                    <div class="modal-body rasponseBody" ng-if="M_SOClaimRes.ClaimResponseStepNo == 1">
+                        <div class="userGroupInfoArea">
+                        <div class="heading">{{M_SOClaimRes.ClaimResponseStepNo}}/{{M_SOClaimRes.NoOfStepsInClaimResponse}} - {{F_SOClaimRes.ClaimResponseStepName(M_SOClaimRes.ClaimResponseStepNo)}}</div>
+                            <div class ="form">
+                                <div class = "col-xs-12">
+                                    <label class = "col-xs-12 text-left P0">{!$Label.Claim_number}</label>
+                                    <div class="col-xs-12 P0">
+                                        <input type="text" class="bp-input-text" placeholder="Enter claim number" ng-disabled = "M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'"
+                                            ng-model="M_SOClaimRes.wizardInfo.ProviderClaimNumber" />   
+                                    </div>
+                                </div>
+                                <div class = "col-xs-12">
+                                    <label class = "col-xs-12 text-left P0">{!$Label.Response_date}</label>
+                                    <div class="col-xs-12 P0">
+                                        <div class="bp-cell  searchInputArea makeSeachingWrapper">
+                                           <div class="datePickerWrappercontainer">
+                                                <input type="text"  id="ResponseDate" style="background: #FFF;position: initial;" ui-date="M_SOClaimRes.ResponseDateOptions" 
+                                                    ui-date-format="{{M_SOClaimRes.dateFormat}}" 
+                                                    ng-disabled = "M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'" 
+                                                    class="bp-input-text  datePickerColor datepicker UnitOrderingMFDate"
+                                                    ng-model = "M_SOClaimRes.wizardInfo.ResponseDate" placeholder="Please select" readonly="readonly"/>        
+                                                    <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="UnitOrderingMFDateicon grey_DDDDDD"
+                                                        ng-class="{'bp-no-cursor': M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'}" id="responseDateBtn" ng-click = "F_SOClaimRes.showCalander('ResponseDate')">
+                                                    </i>
+                                           </div>
+                                        </div>  
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 margin-top-2">
+                                    <textarea type="text" id="TextBox" class="bp-input-text send-message-text-area" rows="4"  maxlength="255" 
+                                    placeholder="Notes" ng-model="M_SOClaimRes.wizardInfo.Notes" ng-disabled = "M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'"></textarea>
+                                </div>
+                               
+                            </div>
+                        </div>
+                        <div class="formBtn ResponseNextBut">
+                            <button id="text-now-btn" class="bp-btn text-now-but bp-btn-normal"
+                                ng-click="F_SOClaimRes.SaveClaimResponse(M_SOClaimRes.wizardInfo.SOHeaderId, M_SOClaimRes.wizardInfo, 1, false); M_SOClaimRes.ClaimResponseStepNo = 2"
+                                ng-disabled="F_SOClaimRes.isStep1NextButtonDisabled()">
+                                {!$Label.NEXT}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    
+                    
+                    <div class="modal-body varianceGridTable claimResponseDetailSection" ng-if="M_SOClaimRes.ClaimResponseStepNo == 2">
+                        <div class="userGroupInfoArea">
+                        <div class="heading">{{M_SOClaimRes.ClaimResponseStepNo}}/{{M_SOClaimRes.NoOfStepsInClaimResponse}} - {{F_SOClaimRes.ClaimResponseStepName(M_SOClaimRes.ClaimResponseStepNo)}}</div>
+                        <h2 class = "bp-response-heading">{!$Label.Please_verify_and_or_adjust_claim_line_items}</h2>
+                            <div class ="form">
+                                <div class = "col-xs-6 claimDispositionDropdown">
+                                    <label class = "col-xs-12 text-left P0">{!$Label.Claim_disposition}</label>
+                                    <div class="bp-cell  searchInputArea makeSeachingWrapper" ng-class = "{'showingOverlay' : M_SOClaimRes.showDropDown == 'Disposition' }">
+                                        <input  type="text" id="ClaimDisposition" class="bp-input-text searchInput" placeholder="Select make"
+                                            autocomplete="off" ng-focus = "M_SOClaimRes.showDropDown = 'Disposition'" ng-blur = "M_SOClaimRes.showDropDown = ''"
+                                            ng-model="M_SOClaimRes.wizardInfo.ClaimDisposition"
+                                            ng-disabled = "M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'"
+                                            ng-keyup=""  readonly="readonly"/>
+                                        <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow"
+                                            ng-class="{'bp-no-cursor': M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'}"
+                                            ng-click="F_SOClaimRes.SetFocusOnDropdown('ClaimDisposition'); M_SOClaimRes.showDropDown = 'Disposition'"></i>
+                                        <div class="searchResultOverlay" id="ClaimDispositionDropDownDiv">
+                                            <ul>
+                                                <li ng-repeat="disp in M_SOClaimRes.wizardInfo.ClaimDispositionsList"
+                                                    ng-mousedown="M_SOClaimRes.wizardInfo.ClaimDisposition = disp; F_SOClaimRes.changeClaimDisposition(true)"
+                                                    ng-class=""
+                                                    id="ClaimDisposition{{$index}}">
+                                                    <div class="fullName">{{disp}}</div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                
+                                <div class="col-xs-12 P0">
+                                    <div class="table-responsive">
+                                        <table class = "bp-editable-table varianceGrid SOJobItemsGrid">
+                                            <col width="4%"  />
+                                            <col width="13%"  />
+                                            <col width="11%"  />
+                                            <col width="11%"  />
+                                            <col width="11%"  />
+                                            <col width="11%"  />
+                                            <col width="11%"  />
+                                            <col width="11%"  />
+                                            <col width="17%"  />
+                                            <thead>
+                                                <tr class = "">
+                                                   <th colspan = "2"></th>
+                                                   <th colspan = "3" class="text-center"><div>{!$Label.Claimed}</div></th>
+                                                   <th colspan = "3" class="text-center"><div class = "bp-approved">{!$Label.Approved}</div></th>
+                                                   <th></th>
+                                                </tr>
+                                                <tr>
+                                                    <th></th>
+                                                    <th class = "bp-text-uppercase separatorBorder">{!$Label.Item_description}</th>
+                                                    <th class = "bp-text-uppercase text-center">{!$Label.Label_Quantity}</th>
+                                                    <th class = "bp-text-uppercase text-center">{!$Label.Label_Price}</th>
+                                                    <th class = "bp-text-uppercase text-right PL10 separatorBorder">{!$Label.Label_Subtotal}</th>
+                                                    <th class = "bp-text-uppercase text-center">{!$Label.Label_Quantity}</th>
+                                                    <th class = "bp-text-uppercase text-center">{!$Label.Label_Price}</th>
+                                                    <th class = "bp-text-uppercase text-right separatorBorder PL10">{!$Label.Label_Subtotal}</th>
+                                                    <th class = "bp-text-uppercase text-center">{!$Label.Variance}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr class = "bp-expanded-deletable-div-transition" id = ""
+                                                    ng-repeat="ClaimLineItem in M_SOClaimRes.wizardInfo.NonVarianceLineItemList">
+                                                    <td></td>
+                                                    <td class="boldText text-left separatorBorder">
+                                                        <div class="liItemDesc_setTextEllipsis">
+                                                            <span>{{ClaimLineItem.Itemdesc}}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="VarianceBillTo" ng-if="M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI && ClaimLineItem.SOLIType != 'Shop Supply'">
+                                                            <numbers-only id-value=""
+                                                                class-value="bp-input-text inTimeEdit timeField text-center"
+                                                                input-model-value="ClaimLineItem.ClaimedQty" 
+                                                                include-negative=""
+                                                                include-zero=""
+                                                                precision-length="2"
+                                                                blur-value="F_SOClaimRes.updateClaimedValues($index)"
+                                                                input-keyup-value="" />
+                                                        </span>
+                                                        <span class="VarianceBillTo" ng-if="!(M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI && ClaimLineItem.SOLIType != 'Shop Supply')">
+                                                          {{ClaimLineItem.ClaimedQty}}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="VarianceBillTo" ng-if="M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI && ClaimLineItem.SOLIType != 'Shop Supply'">
+                                                            <numbers-only id-value=""
+                                                                class-value="bp-input-text inTimeEdit timeField text-center"
+                                                                input-model-value="ClaimLineItem.ClaimedPrice" 
+                                                                include-negative=""
+                                                                include-zero=""
+                                                                precision-length="2"
+                                                                blur-value="F_SOClaimRes.updateClaimedValues($index)"
+                                                                input-keyup-value=""/>
+                                                        </span>
+                                                        <span class="VarianceBillTo" ng-if="!(M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI && ClaimLineItem.SOLIType != 'Shop Supply')">
+                                                          {{ClaimLineItem.ClaimedPrice}}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-right separatorBorder PL10">
+                                                        <span>{{ClaimLineItem.ClaimedSubtotal | currency}}</span>
+                                                    </td>
+                                                    <td class="text-center" ng-class = "{'setBgColor' : true}">
+                                                        <!-- <span ng-if = "true">{{ClaimLineItem.ApprovedQty}}</span> -->
+                                                        <span class = "VarianceBillTo" ng-if = "M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI">
+                                                            <numbers-only id-value = ""
+                                                                class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                                input-model-value = "ClaimLineItem.ApprovedQty" 
+                                                                include-negative = ""
+                                                                include-zero = ""
+                                                                precision-length = "2"
+                                                                blur-value = "F_SOClaimRes.isValueValid('Qty', $index ,$event)"
+                                                                input-keyup-value=""/>
+                                                        </span>
+                                                        <span class= "VarianceBillTo" ng-if="!(M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI)">
+                                                          {{ClaimLineItem.ApprovedQty}}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center" ng-class = "{'setBgColor' : true}">
+                                                        <!-- <span ng-if = "true">{{ClaimLineItem.ApprovedPrice | currency}}</span> -->
+                                                        <span class = "VarianceBillTo" ng-if="M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI">
+                                                            <numbers-only id-value = ""
+                                                                class-value = "bp-input-text inTimeEdit timeField text-center"
+                                                                input-model-value = "ClaimLineItem.ApprovedPrice" 
+                                                                include-negative = ""
+                                                                include-zero = ""
+                                                                precision-length = "2"
+                                                                blur-value = "F_SOClaimRes.isValueValid('Price', $index ,$event)"
+                                                                input-keyup-value=""/>
+                                                        </span>
+                                                        <span class= "VarianceBillTo" ng-if="!(M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced' && !ClaimLineItem.IsKitLI)">
+                                                          {{ClaimLineItem.ApprovedPrice}}
+                                                        </span>
+                                                    </td>
+                                                    <td class="PL10 text-right boldText separatorBorder" ng-class = "{'setBgColor' : true}">
+                                                        <span>{{ClaimLineItem.ApprovedSubTotal | currency}}</span>
+                                                    </td>
+                                                    <td class="text-center boldText" ng-class = "{'setBgColor' : true, 'bp-red-font': ClaimLineItem.VarianceAmount != 0}">
+                                                        <span>{{-ClaimLineItem.VarianceAmount | currency}}</span>
+                                                    </td>
+                                                </tr>
+                                                
+                                                <tr class="totalSectionSeparatorRow">
+                                                    <td colspan="9"></td>
+                                                </tr>
+                                                
+                                                <tr class="totalSectionRow">
+                                                    <td colspan="5"></td>
+                                                    <td colspan="3"> 
+                                                        <div class="pull-left">
+                                                            <span class="pull-left">{!$Label.Approved_items}</span>
+                                                            <span class="pull-right">{{M_SOClaimRes.wizardInfo.ApprovedItems | currency}}</span>
+                                                        </div>
+
+                                                        <div class="pull-left">
+                                                            <span class="pull-left">{!$Label.Label_Tax}</span>
+                                                            <span class="pull-right">{{M_SOClaimRes.wizardInfo.TaxAmount | currency}}</span>
+                                                        </div>
+
+                                                        <div class="pull-left">
+                                                            <span class="pull-left">{!$Label.Less_deducible}</span>
+                                                            <span class="pull-right">{{-M_SOClaimRes.wizardInfo.DeductibleAmount | currency}}</span>
+                                                        </div>
+
+                                                        <div class="pull-left total">
+                                                            <span class="pull-left">{!$Label.Total_approved}</span>
+                                                            <span class="pull-right">{{M_SOClaimRes.wizardInfo.Total | currency}}</span>
+                                                        </div>
+                                                    </td>
+
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                
+                                
+                            </div>
+                        </div>
+                        <div class="formBtn">
+                            <div class="bp-required-text-msg" ng-if="(M_SOClaimRes.wizardInfo.VarianceHeader != null && M_SOClaimRes.wizardInfo.VarianceHeader.length != 0)">
+                                <p class="required">
+                                    <span>{{M_SOClaimRes.wizardInfo.VarianceHeader}}</span> 
+                                    <span class="req-icon">!</span>
+                                </p>
+                            </div>
+                            
+                            <button id="text-now-btn" class="bp-btn text-now-but bp-btn-normal"
+                                ng-click="F_SOClaimRes.SaveClaimResponse(M_SOClaimRes.wizardInfo.SOHeaderId, M_SOClaimRes.wizardInfo, 2, false); M_SOClaimRes.ClaimResponseStepNo = 3"
+                                ng-disabled="">
+                                {!$Label.NEXT}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="modal-body varianceGridTable" ng-if="M_SOClaimRes.ClaimResponseStepNo == 3">
+                        <div class="userGroupInfoArea">
+                        <div class="heading">{{M_SOClaimRes.ClaimResponseStepNo}}/{{M_SOClaimRes.NoOfStepsInClaimResponse}} - {{F_SOClaimRes.ClaimResponseStepName(M_SOClaimRes.ClaimResponseStepNo)}}</div>
+                        <h2 class = "bp-response-heading">{!$Label.Please_review_and_or_dispose_response_variances}</h2>
+                            <div ng-if="M_SOClaimRes.SaveButtonAvail && M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced'"> 
+                                <div class="bp-warning-template">
+                                    <span class="bp-orange-warning-icon">
+                                        <i class="orange" ng-include="'{!Application_Images}/Icons/warning-filled.svg'"></i>
+                                    </span>
+                                    <div class="bp-warning-msg">    
+                                        <span class="bp-dark-grey1-font H301 line-height-large">Once a claim is finalized, the service job will be locked and no further changes can be made.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class ="form">
+                                
+                                <div class="col-xs-12 P0">
+                                    <div class="table-responsive ">
+                                        <table class = "bp-editable-table varianceGrid SOJobItemsGrid">
+                                            <col width="5%"  />
+                                            <col width="25%"  />
+                                            <col width="10%"  />
+                                            <col width="10%"  />
+                                            <col width="10%"  />
+                                            <col width="20%"  />
+                                            <col width="20%"  />
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th class = "text-center varianceBorder" colspan = "3">
+                                                        {!$Label.Variances}
+                                                    </th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                                <tr>
+                                                    <th></th>
+                                                    <th>{!$Label.Item_description}</th>
+                                                    <th class = "text-center">
+                                                        {!$Label.Label_Quantity}
+                                                    </th>
+                                                    <th class = "text-center" >{!$Label.Label_Price}</th>
+                                                    <th class = "text-center">{!$Label.Label_Total}</th>
+                                                    <th class = "text-center">{!$Label.Bill_to}</th>
+                                                    <th>{!$Label.Category_Object_Display_Label}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr ng-repeat="VarianceLineItem in M_SOClaimRes.wizardInfo.VarianceLineItemList" ng-init="varianceLIIndex = $index">
+                                                    <td></td>
+                                                    <td class = "boldText text-left">
+                                                        <div class="liItemDesc_setTextEllipsis">
+                                                            <span>{{VarianceLineItem.Itemdesc}}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class = "text-center">{{VarianceLineItem.VarianceQuantity}}</td>
+                                                    <td class = "text-center">{{VarianceLineItem.VarianceAmount | currency}}</td>
+                                                    <td class = "text-center boldText">{{VarianceLineItem.TotalVariance | currency}}</td>
+                                                    <td class = "text-center">
+                                                        <div class="col-xs-12 P0">
+	                                                        <div>
+                                                                {{VarianceLineItem.BillTo}}
+                                                            </div>
+                                                        </div>
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    </td>
+                                                    <td class = "text-left">
+                                                        <div class="col-xs-12 P0" ng-if="VarianceLineItem.BillTo != 'Customer' && (VarianceLineItem.BillTo == 'Internal' || VarianceLineItem.VarianceQuantity == 0 || (VarianceLineItem.VarianceQuantity != 0 && VarianceLineItem.VarianceAmount != 0))">
+                                                            <div class="bp-cell  searchInputArea VarianceBillTo selectableDropdown VarianceBillToDropdown" 
+                                                                ng-class="{'showingOverlay' : M_SOClaimRes.showDropDown == 'Category' + $index}"
+                                                                ng-if = "M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced'">
+                                                                <input type="text" id="VarianceCategory{{$index}}" class="searchInput" placeholder="Please select"
+                                                                    name="jobTypeInput" autocomplete="off"
+                                                                    ng-focus="M_SOClaimRes.showDropDown = 'Category' + $index"
+                                                                    ng-blur="M_SOClaimRes.showDropDown = ''"
+                                                                    ng-model="VarianceLineItem.CategoryName"
+                                                                    readonly="readonly"/>
+                                                                <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" 
+                                                                    class="bp-blue downArrow"
+                                                                    ng-click="F_SOClaimRes.SetFocusOnDropdown('VarianceCategory' + $index); M_SOClaimRes.showDropDown = 'Category' + $index"></i>
+                                                                <div class="searchResultOverlay" id="autocompleteScrollDiv">
+                                                                    <ul ng-repeat="category in M_SOClaimRes.wizardInfo.InternalCategoryList">
+                                                                        <li ng-mousedown="F_SOClaimRes.changeVarianceCategory(category, varianceLIIndex)">
+                                                                            <div class="fullName">{{category.CategoryName}}</div>
+                                                                        </li>
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                           <div ng-if = "M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'" >
+                                                               {{::VarianceLineItem.CategoryName}}
+                                                           </div>
+                                                        
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                
+                                
+                            </div>
+                        </div>
+                        <div class="formBtn">
+                            <button id="text-now-btn" class="btn-label H300" ng-if="M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced'"
+                                ng-click="F_SOClaimRes.SaveClaimResponse(M_SOClaimRes.wizardInfo.SOHeaderId, M_SOClaimRes.wizardInfo, 3, false); M_SOClaimRes.isExitSOClaimRes = true;"
+                                ng-disabled="M_SOClaimRes.isExitSOClaimRes">
+                                {!$Label.Save_Label} &amp; {!$Label.Exit}
+                            </button>
+                            <button id="text-now-btn" class="btn-label H300" ng-if="M_SOClaimRes.WizardSOHeaderStatus == 'Invoiced'"
+                                ng-click="F_SOClaimRes.SaveClaimResponse(M_SOClaimRes.wizardInfo.SOHeaderId, M_SOClaimRes.wizardInfo, 3, false);">
+                                {!$Label.Exit}
+                            </button>
+                            <button id="text-now-btn" class="bp-btn text-now-but bp-btn-normal" ng-if="M_SOClaimRes.WizardSOHeaderStatus != 'Invoiced'"
+                                ng-click="F_SOClaimRes.finalizeClaimResponse(M_SOClaimRes.wizardInfo.SOHeaderId, M_SOClaimRes.wizardInfo); M_SOClaimRes.isExitSOClaimRes = true;"
+                                ng-disabled="!M_SOClaimRes.SaveButtonAvail || M_SOClaimRes.isExitSOClaimRes">
+                                Finalize
+                            </button>
+                        </div>
+                    </div>
+                    
+                    
+                    
+                </div>
+                
+            </div>
+        </div>
+        <div class="LoadingDiv" ng-show="M_SOClaimRes.isLoading">
+            <div class="loadingIconContainer">
+                <c:BPLoading />
+            </div>
+        </div>
+</apex:page>

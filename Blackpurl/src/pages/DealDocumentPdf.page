@@ -1,0 +1,842 @@
+<apex:page renderAs="pdf" showHeader="false"  sidebar="false" standardstylesheets="false"  applyHtmlTag="false" docType="html-5.0" applyBodyTag="false" controller="DealDocumentPrintCtrl">
+    <body style="font-size: font-size: 14px;;font-family: Arial Unicode MS,sans-serif; margin-top:0px;">
+    <!-- Start: company info Section -->
+        <div style="{!if(companyLogoURL != null, 'height:130px', 'height:70px')};width:800px;margin-bottom:30px;">
+            <apex:outputPanel rendered="{!companyLogoURL != null}" layout="none">
+                <div style="width:135px;float: left;">
+                    <img height="130px;" src="{!(companyLogoURL)}" width="130px;"/>
+                </div>
+            </apex:outputPanel>
+            <div style="width:300px;float: left;"> 
+                <apex:outputText style="font-size: 14px;font-family: Arial Unicode MS,sans-serif;text-transform: capitalize;" value="{!dealDocumentDetailRecord.CompanyInfo.CompanyName}"></apex:outputText> <br/>
+                <apex:outputText style="font-size: 14px;font-family: Arial Unicode MS,sans-serif;" value="{!dealDocumentDetailRecord.CompanyInfo.Address1} {!dealDocumentDetailRecord.CompanyInfo.Address2}"></apex:outputText><br/>
+                <apex:outputText style="font-size: 14px;font-family: Arial Unicode MS,sans-serif;" rendered="{!dealDocumentDetailRecord.CompanyInfo.City != null}" value="{!dealDocumentDetailRecord.CompanyInfo.City} ,"></apex:outputText>
+                <apex:outputText style="font-size: 14px;font-family: Arial Unicode MS,sans-serif;" value="{!dealDocumentDetailRecord.CompanyInfo.State} , {!dealDocumentDetailRecord.CompanyInfo.PostalCode}"></apex:outputText>
+                <br/>
+                <apex:outputText style="font-size: 14px;font-family: Arial Unicode MS,sans-serif;" value="{!dealDocumentDetailRecord.CompanyInfo.BusinessPhone}"></apex:outputText> &nbsp;&nbsp;
+                <apex:outputText style="font-size: 14px;font-family: Arial Unicode MS,sans-serif;" value="{!dealDocumentDetailRecord.CompanyInfo.BusinessEmail}"></apex:outputText><br/>
+                <apex:outputText style="font-size: 14px;font-family: Arial Unicode MS,sans-serif;" value="{!dealDocumentDetailRecord.CompanyInfo.TaxId}"></apex:outputText>
+            </div>
+            <div style="width: 250px;{!if(companyLogoURL == null, 'padding-left:120px', 'padding-left:0px')};font-family: Arial Unicode MS,sans-serif;float:left;font-size:14px;">
+                <apex:outputPanel rendered="{!documentType != null && documentType != ''}" layout="none">
+                    <apex:outputPanel rendered="{!documentType == 'Offer to purchase'}" layout="none">
+                        <span style="float:right;margin-right:10px;">O F F E R<span style="padding-left:10px;padding-right:10px;"> T O</span>P U R C H A S E</span>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!documentType != null && documentType != '' && (documentType != 'Bill of sale' || (documentType == 'Bill of sale' &&  !isDisplayTaxInvoice))}" layout="none">
+                        <span style=" float:right;margin-right:10px;">B I L L<span style="padding-left:10px;padding-right:10px;"> O F</span>S A L E</span>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!documentType != null && documentType != '' && (documentType == 'Bill of sale' &&  isDisplayTaxInvoice)}" layout="none">
+                        <span style=" float:right;margin-right:10px;">T A X<span style="padding-left:10px;padding-right:10px;">I N V O I C E</span></span>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!documentType == '' || documentType == null}" >
+                    <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.Status != 'Invoiced'}" layout="none">
+                        <span style="float:right;margin-right:10px;">O F F E R<span style="padding-left:10px;padding-right:10px;"> T O</span>P U R C H A S E</span>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.Status == 'Invoiced'}" layout="none">
+                        <span style=" float:right;margin-right:10px;">B I L L<span style="padding-left:10px;padding-right:10px;"> O F</span>S A L E</span>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </div>
+        </div>
+        <!-- End : Company info section --> 
+        <!-- Start : sold to section -->
+       <div style="width:800px;min-height:110px;font-family: Arial Unicode MS,sans-serif;padding-bottom:20px;">
+            <div style="width:500px;float: left;">
+                <div style="width:320px;">
+                    <div style="width:360px;{!if(companyLogoURL == null, 'margin-top:15px', 'margin-top:0px')};font-size: 14px;font-weight: bold;font-family: Arial Unicode MS,sans-serif;border-bottom:1px solid black;">
+                        <apex:outputPanel rendered="{!documentType != 'Bill of sale'}"><apex:outputText > SOLD TO</apex:outputText></apex:outputPanel>
+                        <apex:outputPanel rendered="{!documentType == 'Bill of sale' && !isDisplayTaxInvoice}"><apex:outputText >SOLD TO</apex:outputText></apex:outputPanel>
+                         <apex:outputPanel rendered="{!documentType == 'Bill of sale' && isDisplayTaxInvoice}"><apex:outputText >INVOICED AND DELIVERED TO</apex:outputText></apex:outputPanel>
+                    </div>
+                    <apex:outputPanel style="font-size: 14px;" layout="none" > 
+                <div style="width:390px;float: left;font-family: Arial Unicode MS,sans-serif;margin-top:10px;margin-bottom:8px;">   
+                    <div style="width:220px;"></div>
+                        <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerName != null}" layout="none">
+                            <apex:outputText style="font-size:14px;padding-top:10px;font-weight: bold;" value="{!dealDocumentDetailRecord.DealInfo.CustomerName}"></apex:outputText><br/>
+                            </apex:outputPanel>
+                           <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerAddress != null}" layout="none">
+                                <apex:outputText style="font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.CustomerAddress}"></apex:outputText>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerAddress2 != null}" layout="none">
+                                <apex:outputText style="font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.CustomerAddress2} "></apex:outputText>
+                            </apex:outputPanel>
+                           
+                            <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerCityProv != null}" layout="none">
+                                <apex:outputText style="font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.CustomerCityProv} "></apex:outputText><br/>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerState != null}" layout="none">
+                                <apex:outputText style="font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.CustomerState}"></apex:outputText><br/>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerPostal != null}" layout="none">
+                                <apex:outputText style="font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.CustomerPostal}"></apex:outputText><br/>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerPhone != null}" layout="none">
+                                <span style="font-size:14px;font-weight: bold;">Phone:</span>
+                                <apex:outputText style="font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.CustomerPhone}"></apex:outputText><br/>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.CustomerEmail != null}" layout="none">
+                                <span style="font-size:14px;font-weight: bold;">Email:</span>
+                                <apex:outputText style="font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.CustomerEmail}"></apex:outputText><br/> 
+                            </apex:outputPanel>
+                            </div>
+                         </apex:outputPanel>
+                </div>
+            </div>
+            <apex:outputPanel rendered="{!documentType == null || documentType == ''}" layout="none">
+                <div style="width:60px;float:left;margin-top: 45px;font-family: Arial Unicode MS,sans-serif;">
+                    <apex:outputLabel style="width:120px;margin-bottom:10px; float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.Status == 'Invoiced'}" value="Invoice #:"></apex:outputLabel>
+                    <apex:outputLabel style="width:120px;margin-bottom:10px; float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.Status != 'Invoiced'}" value="Order #:"></apex:outputLabel>
+                    <br/>
+                    <apex:outputLabel style="width:120px;margin-bottom:10px;float:left;font-size:14px;" value="Date:"></apex:outputLabel><br/>
+                    <apex:outputLabel style="width:120px;margin-bottom:10px;float:left; font-size:14px;" value="Sold By:"></apex:outputLabel>
+                </div>
+                <div style="width:200px;float: left;margin-top: 45px;font-family: Arial Unicode MS,sans-serif;">
+                    <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.Status == 'Invoiced'}" layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.InvoiceNumber != null}" value="{!dealDocumentDetailRecord.DealInfo.InvoiceNumber}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.OrderNumber != null}" value="{!dealDocumentDetailRecord.DealInfo.OrderNumber}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.Status == 'Invoiced'}" layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.InvoiceDate != null}" value="{!dealDocumentDetailRecord.DealInfo.InvoiceDate}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.Status != 'Invoiced'}" layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.OrderDate != null}" value="{!dealDocumentDetailRecord.DealInfo.OrderDate}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.SoldBy != null}" value="{!dealDocumentDetailRecord.DealInfo.SoldBy}"></apex:outputText><br/>
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!documentType != null && documentType != ''}" layout="none">
+                <div style="width:60px;float:left;margin-top: 45px;font-family: Arial Unicode MS,sans-serif;">
+                    <apex:outputLabel style="width:120px;margin-bottom:10px; float:left;font-size:14px;" value="Order #:"></apex:outputLabel>
+                    <apex:outputLabel style="width:120px;margin-bottom:10px; float:left;font-size:14px;" rendered="{!documentType == 'Bill of sale'}" value="Invoice #:"></apex:outputLabel>
+                    <br/>
+                    <apex:outputLabel style="width:120px;margin-bottom:10px;float:left;font-size:14px;" value="Date:"></apex:outputLabel><br/>
+                    <apex:outputLabel style="width:120px;margin-bottom:10px;float:left; font-size:14px;" value="Sold By:"></apex:outputLabel>
+                </div>
+                <div style="width:200px;float: left;margin-top: 45px;font-family: Arial Unicode MS,sans-serif;">
+                    <apex:outputPanel layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" value="{!dealDocumentDetailRecord.DealInfo.OrderNumber}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!documentType == 'Bill of sale'}" layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!documentType == 'Bill of sale'}" value="{!IF(dealDocumentDetailRecord.DealInfo.InvoiceNumber != null || dealDocumentDetailRecord.DealInfo.InvoiceNumber != '', dealDocumentDetailRecord.DealInfo.InvoiceNumber, dealDocumentDetailRecord.DealInfo.OrderNumber)}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!documentType == 'Bill of sale'}" layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!documentType == 'Bill of sale'}" value="{!dealDocumentDetailRecord.DealInfo.InvoiceDate}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!documentType != 'Bill of sale'}" layout="none">
+                        <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!documentType != 'Bill of sale'}" value="{!dealDocumentDetailRecord.DealInfo.OrderDate}"></apex:outputText><br/>
+                    </apex:outputPanel>
+                    <apex:outputText style="margin-left:10px;width:200px; margin-bottom:10px;float:left;font-size:14px;" rendered="{!dealDocumentDetailRecord.DealInfo.SoldBy != null}" value="{!dealDocumentDetailRecord.DealInfo.SoldBy}"></apex:outputText><br/>
+                </div>
+            </apex:outputPanel>
+        </div>
+        <!-- End : sold to section -->
+        <apex:variable value="{!0}" var="unitIndex"/>
+        <apex:variable value="{!0}" var="index1"/>
+        <apex:variable value="{!0}" var="index2"/>
+        <apex:variable value="{!0}" var="index4"/>
+        <apex:variable value="{!0}" var="index6"/>
+        <apex:variable value="{!0}" var="index7"/>
+        <apex:variable value="{!0}" var="index8"/>
+         <!-- Start : Unit section -->
+         <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.UnitList.size > 0}" layout="none">
+            <apex:repeat value="{!dealDocumentDetailRecord.DealDetailWrapperObj.UnitList}" var="unitDeal">
+                <apex:variable var="unitIndex" value="{!unitIndex + 1}"/>
+                <table style="width:700px;margin-top:50px;float:left;">
+                    <thead>
+                        <tr>
+                            <th style="border-bottom: 1px solid black;">
+                                <div style="width:300px;font-weight: bold;display: inline-block;text-transform: uppercase;font-size:14px;">Unit Purchased - 
+                                    <apex:outputPanel rendered="{!unitDeal.ItemDesc.COUId != null}" layout="none"><span>{!unitDeal.ItemDesc.UnitNumber}</span> </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!unitDeal.ItemDesc.COUId == null}" layout="none"><span>Temporary unit {!unitIndex}</span></apex:outputPanel> 
+                                </div>
+                                <apex:outputPanel rendered="{!unitDeal.ItemDesc.VIN !=''}" layout="none">
+                                    <div style="width:345px;text-align:right;display: inline-block;text-transform: uppercase;font-size:14px;">VIN: {!unitDeal.ItemDesc.VIN}
+                                    </div>
+                                </apex:outputPanel>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>
+                               <table style="width:700px;">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:60px;font-size: 14px;">{!unitDeal.ItemDesc.Year}</td>
+                                            <td style="width:400px;font-size: 14px;text-transform: capitalize;">{!unitDeal.ItemDesc.UnitName}</td>
+                                            <td style="width:30px;"></td>
+                                            <td style="width:200px;font-size: 14px;text-transform: capitalize;">{!unitDeal.ItemDesc.Colour}</td>
+                                            <td style="width:150px;font-size: 14px;">{!unitDeal.ItemDesc.Mileage}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                             </td>
+                        </tr>
+                    </tbody> 
+                </table>
+                <div style="margin-left:68px;width:650px;float:left;">
+                    <apex:repeat value="{!unitDeal.ItemDesc.NotesList}" var="dealNotes">
+                        <div style="font-size: 14px;">{!dealNotes}</div>
+                    </apex:repeat>
+                </div>
+                <!-- START: UnitDetails -->
+                <div style="width:600px;margin-left:50px;margin-top:15px;float:left;">
+                    <apex:outputPanel rendered="{!unitDeal.DealUnitPriceCost.size > 0}" layout="none">
+                        <div>
+                            <div style="border-bottom: 1px solid black;margin-left:19px;font-size: 14px;margin-bottom: 10px;">Unit Details
+                            </div>
+                            <table style="width:600px;">
+                                <apex:repeat value="{!unitDeal.DealUnitPriceCost}" var="dealUnitPrice">
+                                    <apex:variable var="index1" value="{!index1 + 1}"/>
+                                    <tbody>
+                                        <tr>
+                                            <td style="min-width:37px;font-size: 14px;padding-bottom: 10px;"></td>
+                                            <td style="min-width:455px;font-size: 14px;padding-bottom: 10px;">{!dealUnitPrice.ItemDescription}</td>
+                                            
+                                            <td style="min-width:58px;font-size: 14px;text-align:right;padding-bottom: 10px;">
+                                                <apex:outputText value="{0, number, currency}">
+                                                    <apex:param value="{!dealUnitPrice.TotalPrice}"/>
+                                                </apex:outputText>
+                                            </td>
+                                            <td style="font-weight: bold;font-size: 14px;min-width:58px;text-align: left;padding-bottom: 10px;">
+                                                <apex:outputPanel rendered="{!unitDeal.DealUnitPriceCost.size == index1}" layout="none">
+                                                    <apex:outputText value="{0, number, currency}">
+                                                    <apex:param value="{!unitDeal.UnitAndPriceCost}"/>
+                                                    </apex:outputText>
+                                                </apex:outputPanel>
+                                            </td>
+                                            <td style="min-width:30px;padding-bottom: 10px;"></td>
+                                        </tr>
+                                    </tbody>
+                                </apex:repeat>
+                            </table>
+                        </div>
+                    </apex:outputPanel>
+                </div>
+                <!-- End: UnitDetails -->
+                <!-- START: Installed Options -->
+                <div style="width:600px;margin-left:50px;margin-top:15px;float:left;">
+                     <apex:outputPanel rendered="{!unitDeal.InstalloptionAndFeeList.size > 0}" layout="none">
+                        <div style="border-bottom: 1px solid black;margin-left:19px;margin-bottom: 10px;">Installed Options
+                        </div>
+                        <table style="width:700px;">
+                            <apex:repeat value="{!unitDeal.InstalloptionAndFeeList}" var="installoptionAndFee">
+                                <apex:variable var="index2" value="{!index2 + 1}"/>
+                                <apex:variable var="index3" value="{!0}"/>
+                                <tbody>
+                                    <apex:outputPanel rendered="{!installoptionAndFee.hasChildren}" layout="none">
+                                        <tr>
+                                            <td style="width:37px;font-size: 14px;padding-bottom: 10px;"></td>
+                                            <td style="width:150px;font-size: 14px;padding-bottom: 10px;">{!installoptionAndFee.ItemDescription}</td><!--   -->
+                                            <td style="width:30px;font-size: 14px;padding-bottom: 10px;"></td>
+                                            <td style="width:50px;font-size: 14px;padding-bottom: 10px;"></td>
+                                            <td style="width:20px;font-size: 14px;padding-bottom: 10px;"></td>
+                                            <td style="width:20px;font-size: 14px;padding-bottom: 10px;"></td>
+                                            <td style="width:105px;font-size: 14px;padding-bottom: 10px;text-align: right;"><!-- padding-left:45px; --> 
+                                                <apex:outputText value="{0, number, currency}">
+                                                    <apex:param value="{!installoptionAndFee.Price}"/>
+                                                </apex:outputText>
+                                            </td>
+                                            <td style="width:88px;padding-bottom: 10px;padding-right:30px;"></td>
+                                        </tr>
+                                    </apex:outputPanel> 
+                                        <apex:repeat value="{!installoptionAndFee.OptionAndFeeList}" var="installoptionFee">
+                                            <apex:variable var="index3" value="{!index3 + 1}"/>
+                                            <tr>
+                                                 <td style="width:37px;padding-bottom: 10px;"></td>
+                                                 <td style="width:150px;font-size: 14px;padding-bottom: 10px;{!if(installoptionAndFee.hasChildren, 'padding-left:30px', 'padding-left:0px')};">{!installoptionFee.Item}</td>
+                                                 <td style="width:30px;padding-bottom: 10px;"></td>
+                                                 <td style="width:50px;font-size: 14px;padding-bottom: 10px;">
+                                                    <apex:outputText value="{0, number, ###}">
+                                                            <apex:param value="{!installoptionFee.Qty}" />
+                                                    </apex:outputText>
+                                                 </td>
+                                                 <td style="width:20px;padding-bottom: 10px;font-size: 14px;">@</td>
+                                                 <td style="width:20px;padding-bottom: 10px;font-size: 14px;text-align: right;">
+                                                     <apex:outputText value="{0, number, currency}">
+                                                         <apex:param value="{!installoptionFee.Price}"/>
+                                                     </apex:outputText>
+                                                 </td>
+                                                 <td style="width:105px;font-size: 14px;padding-bottom: 10px;text-align: right;">
+                                                     <apex:outputPanel rendered="{!!installoptionAndFee.hasChildren}" layout="none">
+                                                         <apex:outputText style="font-size: 14px;" value="{0, number, currency}">
+                                                             <apex:param value="{!installoptionFee.Total}"/>
+                                                         </apex:outputText>
+                                                     </apex:outputPanel>
+                                                 </td>
+                                                 <td style="font-weight:bold;font-size: 14px;width:88px;padding-bottom: 10px;padding-right:20px;">
+                                                     <apex:outputPanel rendered="{!index2 == unitDeal.InstalloptionAndFeeList.size && index3 == installoptionAndFee.OptionAndFeeList.size}" layout="none">
+                                                        
+                                                         <apex:outputText value="{0, number, currency}">
+                                                             <apex:param value="{!unitDeal.InstalledOptionCost}"/>
+                                                         </apex:outputText>
+                                                     </apex:outputPanel>
+                                                 </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    
+                                </tbody>
+                            </apex:repeat>
+                        </table>
+                     </apex:outputPanel>
+                 </div>
+                 <!-- END: Installed Options -->
+                 <!-- START: Merchandise -->
+                 <div style="width:600px;margin-left:50px;margin-top:15px;float:left;">
+                     <apex:outputPanel rendered="{!unitDeal.MerchandiseOptionAndFeeList.size > 0}" layout="none">
+                            <div>
+                                <div style="border-bottom: 1px solid black;margin-left:19px;margin-bottom: 10px;font-size: 14px;">Merchandise
+                                </div>
+                                <table style="width:700px;">
+                                    <apex:repeat value="{!unitDeal.MerchandiseOptionAndFeeList}" var="merchandiseOptionAndFee">
+                                        <apex:variable var="index4" value="{!index4 + 1}" />
+                                        <apex:variable var="index5" value="{!0}" />
+                                        <tbody>
+                                            <apex:outputPanel rendered="{!merchandiseOptionAndFee.hasChildren}" layout="none">
+                                                <tr>
+                                                    <td style="width:30px;padding-bottom: 10px;"></td>
+                                                    <td style="width:120px;font-size: 14px;padding-bottom: 10px;">{!merchandiseOptionAndFee.ItemDescription}</td>
+                                                    <td style="width:20px;padding-bottom: 10px;"></td>
+                                                    <td style="width:40px;padding-bottom: 10px;"></td>
+                                                    <td style="width:5px;padding-bottom: 10px;"></td>
+                                                    <td style="width:5px;padding-bottom: 10px;"></td>
+                                                    <td style="width:95px;font-size: 14px;padding-bottom: 10px;text-align: right;">
+                                                        <apex:outputText value="{0, number, currency}">
+                                                            <apex:param value="{!merchandiseOptionAndFee.Price}"/>
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td style="width:88px;padding-bottom: 10px;"></td>
+                                                </tr>
+                                            </apex:outputPanel>
+                                            <apex:repeat value="{!merchandiseOptionAndFee.OptionAndFeeList}" var="merchandiseOptionFee">
+                                                <apex:variable var="index5" value="{!index5 + 1}" />
+                                                <tr>
+                                                    <td style="width:30px;padding-bottom: 10px;"></td>
+                                                    <td style="width:120px;font-size: 14px;padding-bottom: 10px;{!if(merchandiseOptionAndFee.hasChildren, 'padding-left:20px', 'padding-left:0px')};">{!merchandiseOptionFee.Item}</td>
+                                                    <td style="width:37px;padding-bottom: 10px;"></td>
+                                                    <td style="width:35px;font-size: 14px;padding-bottom: 10px;">
+                                                        <apex:outputText value="{0, number, ###}">
+                                                            <apex:param value="{!merchandiseOptionFee.Qty}" />
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td style="font-size: 14px;padding-bottom: 10px;">@</td>
+                                                    <td style="font-size: 14px;padding-bottom: 10px;  text-align: right;">
+                                                        <apex:outputText value="{0, number, currency}">
+                                                            <apex:param value="{!merchandiseOptionFee.Price}"/>
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td style="width:45px;font-size: 14px;padding-bottom: 10px;text-align: right;">
+                                                        <apex:outputPanel rendered="{!!merchandiseOptionAndFee.hasChildren}" layout="none">
+                                                            <apex:outputText value="{0, number, currency}">
+                                                                <apex:param value="{!merchandiseOptionFee.Total}"/>
+                                                            </apex:outputText>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <td style="text-align: left;font-weight: bold;font-size: 14px;width: 88px;padding-bottom: 10px;padding-right: 15px;">
+                                                        <apex:outputPanel rendered="{!unitDeal.MerchandiseOptionAndFeeList.size == index4 && index5 == merchandiseOptionAndFee.OptionAndFeeList.size}" layout="none">
+                                                            <apex:outputText value="{0, number, currency}">
+                                                                <apex:param value="{!unitDeal.MerchandiseOptionCost}"/>
+                                                            </apex:outputText>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </apex:repeat>
+                                </table>
+                            </div>
+                     </apex:outputPanel>
+                 </div>
+                 <!-- END: Merchandise -->
+                 <!-- START: Other Products & Fees -->
+                 <div style="width:600px;margin-left:50px;margin-top:15px;float:left;">
+                     <apex:outputPanel rendered="{!unitDeal.OtherProductsAndFeeList.size > 0}" layout="none">
+                        <div>
+                            <div style="border-bottom: 1px solid black;margin-left:19px;margin-bottom: 10px;">Other Products &amp; Fees
+                            </div>
+                            <table style="width:700px;">
+                                <apex:repeat value="{!unitDeal.OtherProductsAndFeeList}" var="otherProductsFee">
+                                    <apex:variable var="index6" value="{!index6 + 1}" />
+                                    <tbody>
+                                        <apex:repeat value="{!otherProductsFee.OptionAndFeeList}" var="otherProductFeeList">
+                                            <tr>
+                                                <td style="width:26px;padding-bottom: 10px;"></td>
+                                                <td style="width:170px;font-size: 14px;padding-bottom: 10px;">{!otherProductFeeList.Item}</td>
+                                                <td style="width:30px;padding-bottom: 10px;"></td>
+                                                <td style="width:10px;padding-bottom: 10px;"></td>
+                                                <td style="width:10px;padding-bottom: 10px;"></td>
+                                                <td style="width:10px;padding-bottom: 10px;"></td>
+                                                <td style="width:105px;font-size: 14px;padding-bottom: 10px;text-align: right;">
+                                                    <apex:outputText value="{0, number, currency}">
+                                                        <apex:param value="{!otherProductFeeList.Total}"/>
+                                                    </apex:outputText>
+                                                </td>
+                                                <td style="width:88px;font-size: 14px;padding-bottom: 10px;">
+                                                    <apex:outputPanel rendered="{!index6 == unitDeal.OtherProductsAndFeeList.size}" layout="none">
+                                                        <apex:outputText value="{0, number, currency}">
+                                                            <apex:param value="{!unitDeal.OtherProductsAndFeeCost}"/>
+                                                        </apex:outputText>
+                                                    </apex:outputPanel>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>    
+                                </apex:repeat>
+                            </table>
+                        </div>
+                     </apex:outputPanel>
+                 </div>
+                 <!-- END: Other Products & Fees -->
+         </apex:repeat>
+         </apex:outputPanel>
+         <!-- End : Unit section -->
+         <!--STATRT: TradeIn section -->
+         <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TradeInList.size > 0}" layout="none">
+            <div style="width:700px;float:left;">
+                <apex:repeat value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TradeInList}" var="tradeInDeal">
+                    <table style="width:700px;">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div style="border-bottom: 1px solid black;">
+                                        <div style="width:250px;font-weight: bold;display: inline-block;text-transform: uppercase;font-size: 14px;">Trade-In - {!tradeInDeal.ItemDesc.UnitNumber}
+                                        </div>
+                                        <apex:outputPanel rendered="{!tradeInDeal.ItemDesc.VIN !=''}" layout="none">
+                                            <div style="width:345px;text-align:right;display: inline-block;text-transform: uppercase;font-size: 14px;">VIN: {!tradeInDeal.ItemDesc.VIN}</div>
+                                        </apex:outputPanel>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <table style="width:700px;">
+                                        <tbody>
+                                            <tr>
+                                                <td style="font-size: 14px;">{!tradeInDeal.ItemDesc.Year}</td>
+                                                <td style="font-size: 14px;">{!tradeInDeal.ItemDesc.UnitName}</td>
+                                                <td></td>
+                                                <td style="font-size: 14px;">{!tradeInDeal.ItemDesc.Colour}</td>
+                                                <td style="font-size: 14px;">{!tradeInDeal.ItemDesc.Mileage}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </tbody> 
+                    </table>
+                    <div style="margin-left:68px;width:650px;font-size: 14px;">
+                        <apex:repeat value="{!tradeInDeal.ItemDesc.NotesList}" var="tradeInNotes">
+                            <div style="font-size: 14px;">{!tradeInNotes}</div>
+                        </apex:repeat>
+                    </div>
+                    <div style="width:650px;text-align: right;font-size: 14px;display:inline-block;margin-top:10px;">Agreed Trade-In value
+                        <div style="margin-left:20px;display:inline-block;font-size: 14px;">
+                            <apex:outputText value="{0, number, currency}">
+                                <apex:param value="{!tradeInDeal.AgreedValue}"/>
+                            </apex:outputText>
+                        </div>
+                    </div>
+                </apex:repeat>
+            </div>
+         </apex:outputPanel>
+         <!--END: TradeIn section -->
+         <!--STATRT: Financing section -->
+         <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealInfo.DealType == 'Financed'}" layout="none">
+            <div style="width:700px;float:left;">
+                    <table style="width:700px;">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div style="border-bottom: 1px solid black;">
+                                        <div style="width:350px;font-weight: bold;display: inline-block;text-transform: uppercase;font-size: 14px;">Financing - {!dealDocumentDetailRecord.DealFinanceObj.FinanceCompanyName}
+                                        </div>
+                                        
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.CoBuyerId != null}">
+                                    <span>Co-buyer:</span> <span>{!dealDocumentDetailRecord.DealFinanceObj.CoBuyerName}</span>
+                                    </apex:outputPanel>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div style="width:600px;margin-left:50px;margin-top:15px;float:left;">
+                                    <div style="margin-left:19px;margin-bottom: 10px;font-size: 14px;">
+                                        <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.EstimatedPayment != null}">
+                                        <apex:outputPanel rendered="{!dealDocumentDetailRecord.AmountFinanced != null}"><span>$</span>{!dealDocumentDetailRecord.AmountFinanced}</apex:outputPanel>
+                                        at &nbsp; <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.InterestRate != null}">{!dealDocumentDetailRecord.DealFinanceObj.InterestRate}%</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.InterestRate == null}">0%</apex:outputPanel>
+                                    with <span style="text-transform:capitalize;">{!dealDocumentDetailRecord.DealFinanceObj.PaymentFrequency}</span>
+                                    payments of &nbsp;
+                                    <apex:outputText value="{0, number, currency}">
+                                         <apex:param value="{!dealDocumentDetailRecord.DealFinanceObj.EstimatedPayment}"/>
+                                     </apex:outputText>
+                                   <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.LoanTerm != null}" layout="none">
+                                         for {!dealDocumentDetailRecord.DealFinanceObj.LoanTerm}
+                                     </apex:outputPanel>
+                                      <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.LoanTerm != null}" layout="none">
+                                     <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.LoanTerm == 1 && dealDocumentDetailRecord.DealFinanceObj.TermType == 'Months'}" layout="none">
+                                         Month
+                                     </apex:outputPanel>
+                                     </apex:outputPanel>
+                                     <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.LoanTerm != null}" layout="none">
+                                        <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.LoanTerm == 1 && dealDocumentDetailRecord.DealFinanceObj.TermType == 'Years'}" layout="none">
+                                            Year
+                                        </apex:outputPanel>
+                                     </apex:outputPanel>
+                                     <apex:outputPanel rendered="{!dealDocumentDetailRecord.DealFinanceObj.LoanTerm != null}" layout="none">
+                                        <apex:outputPanel style="text-transform:capitalize;" rendered="{!dealDocumentDetailRecord.DealFinanceObj.LoanTerm > 1}" layout="none">
+                                         {!dealDocumentDetailRecord.DealFinanceObj.TermType}
+                                        </apex:outputPanel>
+                                        </apex:outputPanel>
+                                        </apex:outputPanel>
+                                    </div>
+                     <apex:outputPanel rendered="{! dealDocumentDetailRecord.DealFinanceObj.FIProductList != null && dealDocumentDetailRecord.DealFinanceObj.FIProductList.size > 0}" layout="none">
+                            <div>
+                                <div style="border-bottom: 1px solid black;margin-left:19px;margin-bottom: 10px;font-size: 14px;">Financing Product
+                                </div>
+                                <table style="width:700px;">
+                                    <apex:variable value="{!0}" var="FIProductRecIndex"/>
+                                        <apex:repeat value="{!dealDocumentDetailRecord.DealFinanceObj.FIProductList}" var="FIProductRec">
+                                            <tbody>
+                                            
+                                                <tr>
+                                                    <td style="width:15px;padding-bottom: 10px;"></td>
+                                                    <td style="width:135px;font-size: 14px;padding-bottom: 10px;">{!FIProductRec.ItemDescription}</td>
+                                                    <td style="width:20px;padding-bottom: 10px;"></td>
+                                                    <td style="width:40px;padding-bottom: 10px;"></td>
+                                                    <td style="width:5px;padding-bottom: 10px;"></td>
+                                                    <td style="width:5px;padding-bottom: 10px;"></td>
+                                                    <td style="width:95px;font-size: 14px;padding-bottom: 10px;text-align: right;">
+                                                        <apex:outputText value="{0, number, currency}">
+                                                            <apex:param value="{!FIProductRec.Price}"/>
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td style="width:88px;padding-bottom: 10px;font-size: 14px;">
+                            <apex:outputText value="{0, number, currency}" rendered="{!dealDocumentDetailRecord.DealFinanceObj.FIProductList.size - 1 == FIProductRecIndex}">
+                                                            <apex:param value="{!dealDocumentDetailRecord.DealFinanceObj.FIProductTotal + dealDocumentDetailRecord.DealFinanceObj.FIProductTax}"/>
+                                                        </apex:outputText></td>
+                                                </tr>
+                                                </tbody>
+                                                <apex:variable value="{!FIProductRecIndex + 1}" var="FIProductRecIndex"/>
+                                            </apex:repeat>
+                                            
+                                        
+                                    
+                                </table>
+                            </div>
+                     </apex:outputPanel>
+                 </div>
+                                </td>
+                            </tr>
+                        </tbody> 
+                    </table>
+             </div>
+         </apex:outputPanel>
+         <!--END: financing  section -->
+        
+         <!--START: Deal PAyment section -->
+         <div style="width:700px;margin-right:200px;font-size: 14px;">
+                 <apex:outputPanel rendered="{!dealDocumentDetailRecord.Transactions.size > 0}" layout="none">
+                    <div style="width:300px;padding-top:6px; float:left;margin-top: 40px;">
+                        <div style="border-bottom: 1px solid black;text-transform: uppercase;font-size: 14px;" >Deal Payments
+                        </div>
+                        <table style="width:300px;font-size: 14px;">
+                            <apex:repeat value="{!dealDocumentDetailRecord.Transactions}" var="paymentInfo">
+                                <tbody>
+                                    <tr>
+                                        <td style="width:100px;font-size: 14px;padding-bottom: 10px;">{!paymentInfo.Method}</td>
+                                        <td style="width:100px;font-size: 14px;padding-bottom: 10px;">{!paymentInfo.TransactionDate}</td>
+                                        <td style="width:100px;font-size: 14px;text-align:right;padding-bottom: 10px;">
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!paymentInfo.Amount}"/>
+                                            </apex:outputText>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </apex:repeat>
+                        </table>
+                    </div>
+                 </apex:outputPanel>
+                 <!--END: Deal PAyment  section -->
+                 <!--START: Totals  section -->
+                 <div style="width:300px;padding-top:6px;float: right;margin-right: 50px;">
+                    <div style="width:250px; margin-top:40px;font-size:14px;float:right;font-weight:bold;text-transform: uppercase;border-bottom: 1px solid black; margin-bottom:8px;">
+                        <span>TOTALS</span>
+                    </div><br/>
+                    <div style="width:250px; float:right; font-size:14px;">
+                        <div style="float: right !important;margin-left : 22px !important;">
+                            <div  style="float: left !important;margin-right: 10px !important;">
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalUnits != 0}" layout="none">
+                                    <div style="width: 250px !important;">
+                                       <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                                    Units
+                                                </label> 
+                                        <span style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalUnits}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalTradeIn != 0}" layout="none">
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                        Trade-Ins
+                                        </label> 
+                                        <span style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalTradeIn}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalLienPayout != 0}" layout="none">
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                        Lien Payout
+                                        </label> 
+                                        <span style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalLienPayout}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalInstalledOption != 0}" layout="none">
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                             Installed Options
+                                        </label> 
+                                        <span style="text-align:right; width:85px; padding: 5px 0px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalInstalledOption}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalMerchandiseOption != 0}" layout="none">
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                            Merchandise
+                                        </label> 
+                                        <span style=" text-align:right;width:85px;  padding: 5px 0px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalMerchandiseOption}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalOtherProductsAndFee != 0 }" layout="none">
+                                    <div style="width: 250px !important; ">
+                                        <label style="font-weight:bold; width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                            Other Products &amp; Fees
+                                        </label> 
+                                        <span style="text-align:right;width:85px; padding: 5px 0px 0px 0px !important; float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalOtherProductsAndFee }"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalStampDuty != 0}" layout="none">
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                            Stamp Duty
+                                        </label> 
+                                        <span style=" text-align:right;width:85px;  padding: 5px 0px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.DealDetailWrapperObj.TotalStampDuty}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                
+                                <apex:outputpanel rendered="{! dealDocumentDetailRecord.DealFinanceObj.FIProductList != null && dealDocumentDetailRecord.DealFinanceObj.FIProductList.size > 0 && dealDocumentDetailRecord.DealInfo.DealType == 'Financed' && !dealDocumentDetailRecord.IsTaxIncludingPricing && dealDocumentDetailRecord.DealFinanceObj.FIProductTotal != 0}" layout="none">
+                                    <div style="width: 250px !important; font-weight:bold;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 10px 0px 15px !important;margin-left: 10px;">
+                                            Financing Product
+                                        </label> 
+                                        <span style=" text-align:right;width:85px;padding: 5px 5px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" rendered="{!!dealDocumentDetailRecord.IsTaxIncludingPricing}">
+                                                <apex:param value="{!dealDocumentDetailRecord.DealFinanceObj.FIProductTotal}"/>
+                                            </apex:outputText>                                                                                       
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.DealInfo.DealType == 'Financed' && dealDocumentDetailRecord.IsTaxIncludingPricing && 
+                                (dealDocumentDetailRecord.DealFinanceObj.FIProductTotal + dealDocumentDetailRecord.DealFinanceObj.FIProductTax) != 0}" layout="none">
+                                    <div style="width: 250px !important; font-weight:bold;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 10px 0px 15px !important;margin-left: 10px;">
+                                            Financing Product
+                                        </label> 
+                                        <span style=" text-align:right;width:85px;padding: 5px 5px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" rendered="{!dealDocumentDetailRecord.IsTaxIncludingPricing}">
+                                                <apex:param value="{!dealDocumentDetailRecord.DealFinanceObj.FIProductTotal + dealDocumentDetailRecord.DealFinanceObj.FIProductTax}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.SubTotal != 0}" layout="none">
+                                    <div style="width: 250px !important; font-weight:bold;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 10px 0px 15px !important;margin-left: 10px;">
+                                            Sub-Total
+                                        </label> 
+                                        <span style=" text-align:right;width:85px;padding: 5px 5px 0px 0px !important;float: left;">
+                                            <apex:outputText value="{0, number, currency}" >
+                                                <apex:param value="{!dealDocumentDetailRecord.SubTotal}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+            
+                                <apex:outputpanel rendered="{!!dealDocumentDetailRecord.IsTaxIncludingPricing}" layout="none">
+                                    <apex:repeat value="{!dealDocumentDetailRecord.SalesTaxList}" var="tax"> 
+                                        <div style="width: 250px !important;">
+                                            <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                                {!tax.TaxName}
+                                            </label> 
+                                            <span style="padding: 5px 0px 0px 0px !important;width:85px; text-align:right;float: left;">
+                                                <apex:outputText value="{0, number, currency}" >
+                                                    <apex:param value="{!tax.TaxAmount}"/>
+                                                </apex:outputText>
+                                            </span>
+                                        </div>
+                                    </apex:repeat>
+                                </apex:outputpanel>                     
+                                        
+                                <div style="width: 250px !important;">
+                                    <label style="font-weight:bold;width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                        Total
+                                    </label> 
+                                    <span style=" font-weight:bold;text-align:right;width:85px;  padding: 5px 0px 0px 0px !important; float: left;">
+                                        <apex:outputText value="{0, number, currency}" >
+                                            <apex:param value="{!dealDocumentDetailRecord.Total}"/>
+                                        </apex:outputText>
+                                    </span>
+                                </div>                                        
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.IsTaxIncludingPricing}" layout="none">
+                                    <apex:repeat value="{!dealDocumentDetailRecord.SalesTaxList}" var="tax"> 
+                                        <div style="width: 250px !important;">
+                                            <label style="width: 145px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                                {!tax.TaxName} included
+                                            </label> 
+                                            <span class="T7  " style="padding: 5px 0px 0px 0px !important; width:60px;text-align:right; float: left;">
+                                                <apex:outputText value="{0, number, currency}" >
+                                                    <apex:param value="{!tax.TaxAmount}"/>
+                                                </apex:outputText>
+                                            </span>
+                                        </div>
+                                    </apex:repeat>
+                                </apex:outputpanel>                                 
+                                <apex:outputpanel rendered="{! dealDocumentDetailRecord.DealFinanceObj != null && dealDocumentDetailRecord.DealFinanceObj.DownPayment >= 0 && dealDocumentDetailRecord.DealInfo.DealType == 'Financed'}" layout="none">
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                            Agreed Downpayment
+                                         </label> 
+                                        <span style="padding: 5px 0px 0px 0px !important;width:85px; text-align:right; float: left;">
+                                             <apex:outputText value="{0, number, currency}">
+                                            <apex:param value="{!dealDocumentDetailRecord.DealFinanceObj.DownPayment * -1}"/>
+                                        </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                
+                               <apex:outputPanel rendered="{!dealDocumentDetailRecord.AmountFinanced != null && dealDocumentDetailRecord.DealInfo.DealType == 'Financed' }" layout="none">       
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important; font-weight: 600;">
+                                            Amount Financed
+                                        </label> 
+                                        <span class="T7" style="padding: 5px 0px 0px 0px !important; width:85px; text-align:right;float: left;">
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!dealDocumentDetailRecord.AmountFinanced}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!dealDocumentDetailRecord.AmountPaid != 0}" layout="none">       
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                            Amount Paid
+                                        </label> 
+                                        <span class="T7" style="padding: 5px 0px 0px 0px !important; width:85px; text-align:right;float: left;">
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!dealDocumentDetailRecord.AmountPaid * -1}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputPanel>       
+                                <apex:outputpanel rendered="{!dealDocumentDetailRecord.BalanceDue != 0 && dealDocumentDetailRecord.DealInfo.DealType != 'Financed'}" layout="none">
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                            Balance Due
+                                        </label> 
+                                        <span style="padding: 5px 0px 0px 0px !important;width:85px; text-align:right; float: left;">
+                                             <apex:outputText value="{0, number, currency}">
+                                            <apex:param value="{!dealDocumentDetailRecord.BalanceDue}"/>
+                                        </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputpanel>
+                                <apex:outputPanel rendered="{!dealDocumentDetailRecord.DueFromCustomer != null && dealDocumentDetailRecord.DealInfo.DealType == 'Financed'}" layout="none">       
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                           Due from customer
+                                        </label> 
+                                        <span class="T7" style="padding: 5px 0px 0px 0px !important; width:85px; text-align:right;float: left;">
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!dealDocumentDetailRecord.DueFromCustomer}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!dealDocumentDetailRecord.DueFromFinance != null && dealDocumentDetailRecord.DealInfo.DealType == 'Financed'}" layout="none">       
+                                    <div style="width: 250px !important;">
+                                        <label style="width: 120px !important; float: left; padding: 5px 0px 0px 15px !important;margin: 0px 10px !important;">
+                                           Due from financing
+                                        </label> 
+                                        <span class="T7" style="padding: 5px 0px 0px 0px !important; width:85px; text-align:right;float: left;">
+                                            <apex:outputText value="{0, number, currency}">
+                                                <apex:param value="{!dealDocumentDetailRecord.DueFromFinance}"/>
+                                            </apex:outputText>
+                                        </span>
+                                    </div>
+                                </apex:outputPanel> 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+         <!--END: Totals  section -->
+         <!-- Start: Disclaimers Section --> 
+         <div style="width:690px;margin-top:15px;float:left;font-family: Arial Unicode MS,sans-serif; float: left; ">
+        <p style = "width:690px;word-break:break-word;font-size:14px;float:left;white-space: pre-wrap;text-align: left;">{!dealDocumentDetailRecord.DealDocumentWarrantyText}</p>
+        <apex:OutputPanel rendered="{!dealDocumentDetailRecord.IsSignatureLineforDealDocument}" layout="none">
+            <apex:outputText style="margin-top:15px;float:left; font-size:14px;width: 90px;" value="Buyer :"  />
+                <div style="border-bottom: 1px solid black;float:left;width: 220px;padding-top:30px;"></div>
+         </apex:OutputPanel>
+         <apex:OutputPanel rendered="{!dealDocumentDetailRecord.IsSignatureLineforDealDocument}" layout="none">
+            <apex:outputText style="margin-top:15px;float:left; font-size:14px;width: 90px; padding-left:60px" value="Seller :"  />
+                <div style="border-bottom: 1px solid black;float:left;width: 220px;padding-top:30px;"></div>
+         </apex:OutputPanel>
+        </div>
+         <!-- End: Disclaimers Section --> 
+         
+        </body>
+</apex:page>

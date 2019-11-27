@@ -1,0 +1,97 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+    <apex:stylesheet value="{!Application}/css/UnitOrdering.css"/>
+    <link href="https://fonts.googleapis.com/css?family=Barlow:300,400,600" rel="stylesheet" />
+    <div class="modal  bp-model-dialog fade-scale unit-receiving-modal" id="unitReceivingModel" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                <i class=" doneIcon white_FFF_NewCO closeiconWidth" data-dismiss="modal" ng-include="'{!Application_Images}/Icons/close.svg'" ng-click=" F_VOUR.closeUnitReceivingModel(false, M_VOUR.defaultPrevState)"></i>
+                    <div class="unit-receiving-grid">
+                        <h2 class="heading">{{ 'Unit_Receiving_Label' | translate }}</h2> 
+                        <p class="sub-heading">{{ 'Unit_receiving_fill_fields_message' | translate }}</p>
+                        <div class="table-responsive">
+                            <table class="unit-receiving-table">
+                                <thead>
+                                    <tr>
+                                    	<th class="noborder"></th>
+                                        <th class="text-uppercase vin">{{ 'Label_VIN' | translate }}</th>
+                                        <th class="text-uppercase">{{ 'Model' | translate }}</th>
+                                        <th class="text-uppercase">{{ 'Cost' | translate }}</th>
+                                        <th class="text-uppercase">{{ 'Sales_Tax' | translate }}</th>
+                                        <th class="text-uppercase">{{ 'Label_Total' | translate }}</th>
+                                        <th class="text-uppercase invoice-number">{{ 'Invoice_Number' | translate }}</th>
+                                        <th class="text-uppercase invoice-date">{{ 'Invoice_Page_Invoice_Date' | translate }}</th>
+                                        <th class="noborder"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat-start="unit in M_VOUR.selectedUnits" id = "unitSpecification_{{$index}}" ng-init = "unitSpecificationIndex = $index">
+                                        <td class="noborder"></td>
+                                        <td class="vin bp-word-break-all" ng-if="::!!unit.VIN">
+                                            {{::unit.VIN}}
+                                        </td>
+                                        <td class="vin" ng-if="::!unit.VIN" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">
+                                            <input type="text" class="bp-input-text" ng-class="{error: (M_VOUR.error.required && (!unit.VIN )) || M_VOUR.duplicateVINError[$index]}" placeholder="{{ 'Enter_VIN_Text' | translate }}" maxlength="40" ng-model="unit.VIN" ng-blur="F_VOUR.isDuplicateVIN($index, $event)"/>
+                                            <i class="input-loading-icon" ng-if="unit.vehicleSpecificationsResult == 'Loading'">
+										      	<svg class="input-spiner" width="85px" height="85px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+												   <circle class="input-spiner-path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+												</svg>
+	                                       	</i>
+                                            <span class="green-circle-tick-mark" ng-if="unit.vehicleSpecificationsResult == 'Match found with all fields match'">
+                                             	<i ng-include="'{!Application_Images}/Icons/check-1.svg'"></i>
+                                             </span>
+                                            <span class="green-circle-tick-mark bp-yellow-dark" ng-if="unit.vehicleSpecificationsResult == 'Match found with not all fields match'">
+                                             	<span class="exclamation-mark">!</span>
+                                             </span>
+                                             
+                                            
+                                        </td>
+                                        <td class="model" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">{{unit.ModelName}}</td>
+                                        <td class="cost" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">{{unit.TotalCost | currency}}</td>
+                                        <td class="salestax" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">{{unit.SalesTaxValue | currency}}</td>
+                                        <td class="total" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">{{(unit.TotalCost + unit.SalesTaxValue) | currency}}</td>
+                                        <td class="invoice-number" ng-if="::!!unit.InvoiceNumber" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">
+                                            {{::unit.InvoiceNumber}}
+                                        </td>
+                                        <td class="invoice-number" ng-if="::!unit.InvoiceNumber" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">
+                                            <input id="{{ 'InvoiceNumber-' + $index }}" type="text" class="bp-input-text" ng-class="{error: (M_VOUR.error.required && !unit.InvoiceNumber)}" placeholder="{{ 'Enter_Invoice_Number_Text' | translate }}" 
+                                                maxlength="21" ng-model="unit.InvoiceNumber" ng-blur="F_VOUR.isValid(); F_VOUR.isDuplicateInvoice($index, unit.InvoiceNumber);"/>
+                                             
+                                        </td>
+                                        <td class="date-control" ng-class="{'noborder' : unit.vehicleSpecificationsResult == 'Match not found' || unit.vehicleSpecificationsResult == 'Match found with not all fields match' }">
+	                                        <div class="datePickerWrappercontainer" >
+                                               <input type="text" id="invoiceDate{{$index}}" style="background: #FFF;position: initial;" ui-date="M_VOUR.dateOptions" 
+                                                   ng-class="{error: (M_VOUR.error.required && !unit.StockedInDateTime)}"
+                                                   ui-date-format="{{M_VOUR.dateFormat}}" class="bp-input-text datePickerColor datepicker UnitOrderingMFDate"
+                                                   ng-model = "unit.StockedInDateTime" placeholder="{{ 'Invoice_Page_Invoice_Date' | translate }}" readonly="readonly"/>
+                                                    <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="cal-icon downArrow grey_DDDDDD"
+                                                       ng-click="F_VOUR.showCalendar('invoiceDate'+$index)">
+                                                   </i> 
+                                            </div>
+                                        </td>
+                                        <td class="noborder"></td>
+                                    </tr>
+                                
+                                    <tr class="unit-specification-card-container" ng-if="unit.vehicleSpecificationsResult == 'Match found with not all fields match' || unit.vehicleSpecificationsResult == 'Match not found'"
+                                    ng-class="{'match-not-found': unit.vehicleSpecificationsResult == 'Match not found' }"
+                                     ng-repeat-end = "ng-repeat-end"> 
+                                        <td> <input id = "hidden-input_{{unitSpecificationIndex}}" type = "hidden" value = "{{unitSpecificationIndex}}" ng-model = "unitSpecificationIndex"/></td>
+                                        <td colspan="7" ng-if="unit.vehicleSpecificationsResult == 'Match found with not all fields match'"  unit-specification = "unit.mapOfNewAndOldValue"></td>
+                                        <td ng-if="unit.vehicleSpecificationsResult == 'Match not found'" colspan="7">{{ 'This_is_not_a_valid_VIN_for_this_vendor' | translate }}</td>
+                                        <td></td>
+                                   	</tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="unitReceivingMsgSection">
+	                        <p class="unit-receiving-error-msg" ng-show="M_VOUR.error.required || F_VOUR.isDuplicateVINExists()">
+	                            {{ 'Unit_Receiving_Validation_Msg' | translate }}
+	                        </p>
+	                        <button class="bp-btn bp-btn-normal" ng-click="F_VOUR.saveUnitReceiving()">{{ 'Confirm_Receiving_Label' | translate }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</apex:page>

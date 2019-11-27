@@ -1,0 +1,282 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+   <!-- <apex:stylesheet value="{!Application}/css/newUI.css"/>
+   <apex:stylesheet value="{!Application}/css/JobClocking.css"/>
+   <apex:stylesheet value="{!Application}/css/PayrollClocking.css"/>
+   <apex:stylesheet value="{!Application}/css/MiniCalendar.css"/> -->
+   <div class="modal fade bp-model-dialog bp-job-clocking-wrapper bp-payroll-clocking-wrapper" id="bp-payroll-clocking-id" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+         <div class="modal-content">
+            <div class="modal-body P0">
+               <button type="button" class="close bp-close-but" ng-click = "PayrollClockingModel.hidePayrollClockingPopup();">
+					<span aria-hidden="true">
+						<i class="white_FFF svg_width closeiconWidth" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+					</span>	  				
+               </button>
+               <div class="content bp-wrapper-container">
+                  <div class="bp-subHeader">
+                     <div class="container">
+                        <div class="GroupSummaryWrapper bp-top-header">
+                           <div class="row">
+                              <div class="col-sm-6">
+                                 <h1 class="modalHeader">
+                                    {{ 'Payroll_time_clocking' | translate }}
+                                 </h1>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row0">
+                           <div class = "col-xs-12  bp-blue-navBar P0">
+                              <ul class="nav nav-tabs bp-sub-header-menu-item">
+                                 <li class="bp-active-nav" ng-click = "PayrollClockingModel.changeView('time clock')">
+                                 	<a class = "text-uppercase" ng-class = "{'bp-active-group' : PayrollClockingModel.viewChange == 'time clock'}">{{ 'Time_clock' | translate }}</a>
+                                 </li>
+                                 <li class="bp-active-nav" ng-show="GroupOnlyPermissions['Manage payroll clocking']['enabled']" ng-click = "PayrollClockingModel.changeView('manage')">
+                                 	<a class = "text-uppercase" ng-class = "{'bp-active-group' : PayrollClockingModel.viewChange == 'manage'}">manage{{ '' | translate }}</a>
+                                 </li>
+                              </ul>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               
+               <div class = "pageContent bp-wrapper-container" ng-if = "PayrollClockingModel.viewChange == 'time clock'">
+               	   <div class="pageHeader bp-wrapper-container"></div>
+	               <div class="container">
+						<div class="otherTaskList isTechnicianSelected">
+							<div class="otherTaskEntry bp-flex-grid-container" ng-repeat = "timeClockingStaffRec in PayrollClockingModel.TimeClockingStaffList">
+								<div class="bp-grid-column">
+									<!-- <div class="taskName">{{timeClockingStaffRec.Name}}</div> -->
+									
+									<div class="taskName taskName_InnerFlexContainer">
+	                                    <span class="taskNameInitials text-uppercase">{{timeClockingStaffRec.TechnicianFirstName  | limitTo : 1}}{{timeClockingStaffRec.TechnicianLastName | limitTo : 1}}</span>
+	                                    <span class="staffName">{{timeClockingStaffRec.TechnicianName}}</span>
+                                   </div>
+                                        
+			  					</div>
+			  					<div class="bp-grid-column counter" ng-class = "{'on':timeClockingStaffRec.IsClockedOn,  'off' : !timeClockingStaffRec.IsClockedOn}">
+									<div class="taskTime">
+			  							<div class="timeLogingToggleBtn">
+			  								<label class="bp-switchLabel text-uppercase">{{ 'Off' | translate }}</label>
+			         						<label class="bp-switch">
+			                                	<input type="checkbox" ng-model="timeClockingStaffRec.IsClockedOn"
+			                                		ng-change="PayrollClockingModel.saveClockStatus($index)"/> <!-- ng-click = "PayrollClockingModel.toggleTimeClockingStaffClock($index)" -->
+			                                  	<div class="bp-slider round"></div>
+			                              	</label>
+			                              	<label class="bp-switchLabel text-uppercase">{{ 'On' | translate }}   </label>
+			  							</div>{{timeClockingStaffRec.FormattedTotalTime}}
+			  						</div> 
+			  					</div>	
+			  				 </div>
+			  			</div>		  			
+			  		</div>
+		  		</div>
+		  		
+		  		<div class = "pageContent bp-wrapper-container" ng-if = "PayrollClockingModel.viewChange == 'manage' && GroupOnlyPermissions['Manage payroll clocking']['enabled']">
+              		 <div class="pageHeader bp-wrapper-container"></div>
+              		 <div class="container">
+              		 	<div class = "manageTaskList">
+              		 			<div class = "searchforManageTaskList">
+              		 				<p class = "manageTaskHeading">{{ 'Search_by_date_range' | translate }}</p>
+              		 				<div class="datePickerWrappercontainer">
+										<input type="text"  id="fromDate_Id" style="background: #FFF;position: initial;" ui-date="PayrollClockingModel.ManagePayrollFromDateOptions" 
+				                              ui-date-format="{{PayrollClockingModel.dateFormat}}" 
+				                              class="bp-input-text  datePickerColor datepicker jobclockingcalenderDateTextBox"
+				                              ng-model = "PayrollClockingModel.fromDate" placeholder="{{ 'Label_From' | translate }}" readonly="readonly"
+				                              ng-change="PayrollClockingModel.setToDateFormate(); PayrollClockingModel.loadPayrollClockingEntriesUsingFilter();"/> 
+					                          <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon grey_DDDDDD"
+							                     id="fromDate_Id" ng-click = "PayrollClockingModel.showDatePicker($event,'fromDate_Id')">
+							                  </i>
+						             </div>
+					             
+              		 				<div class="datePickerWrappercontainer">
+				              			 <input type="text"  id="toDate_Id" style="background: #FFF;position: initial;" ui-date="PayrollClockingModel.ManagePayrollToDateOptions" 
+				                              ui-date-format="{{PayrollClockingModel.dateFormat}}"  
+				                              class="bp-input-text  datePickerColor datepicker jobclockingcalenderDateTextBox"
+				                              ng-model = "PayrollClockingModel.toDate" placeholder="{{ 'Label_To' | translate }}" readonly="readonly"
+				                              ng-change="PayrollClockingModel.loadPayrollClockingEntriesUsingFilter()"/>
+					                         <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon grey_DDDDDD"
+							                	id="toDate_Id" ng-click = "PayrollClockingModel.showDatePicker($event,'toDate_Id')">
+							                 </i>
+						            </div>
+					            
+              		 				<div class="searchInputAreaforTask searchInputArea" ng-class="{'showingOverlay' : PayrollClockingModel.isFocused}">
+	                                    <i ng-include="'{!Application_Images}/Icons/search.svg'" class="gray_979797" 
+	                                    	ng-class = "{'blue_008DC1' : PayrollClockingModel.EmployeeObj.Name}"></i>
+	                                    <input type="text" id="searchAnEmployee" class="searchInput datePickerColor datepicker jobclockingcalenderDateTextBox" placeholder="{{ 'Placeholder_employee' | translate }}"
+	                                       ng-focus="PayrollClockingModel.isFocused = true; PayrollClockingModel.getInitialsOnFocus();" name="SelectAnEmployee"
+	                                       ng-blur="PayrollClockingModel.isFocused = false"
+	                                       ng-keyup="PayrollClockingModel.changeSeletedclockingStaff($event)"  
+	                                       ng-model="PayrollClockingModel.EmployeeObj.Name"
+	                                       />
+	                                    <div class="searchResultOverlay" id="autocompleteScrollDiv">
+	                                       <ul>
+	                                          <li ng-repeat="timeClockingStaffRec in PayrollClockingModel.TimeClockingStaffList | filter:{'TechnicianName' : PayrollClockingModel.EmployeeObj.Name} as filtered" id="timeClockingStaffRec_{{$index}}"
+	                                             ng-class="{'selected-row': $index == PayrollClockingModel.currentSelectedClockingStaffIndex}"
+	                                             ng-mousedown="PayrollClockingModel.selectClockingstaff(timeClockingStaffRec)" >
+	                                             <div class = "circle text-uppercase">{{timeClockingStaffRec.TechnicianFirstName | limitTo : 1}}{{timeClockingStaffRec.TechnicianLastName | limitTo : 1}}</div>
+	                                             <div class="fullName">{{timeClockingStaffRec.TechnicianName}}</div>
+	                                          </li>
+	                                       </ul>
+	                                    </div>
+	                                 </div>
+	                            </div>
+	                            
+	                            <div class = "taskListTable" id = "payrollClockingEntriesTable">
+	              		 			<table class = "bp-editable-table">
+	              		 				<col width="21%"  />
+				                        <col width="17%"  />
+				                        <col width="17%"  />
+				                        <col width="17%"  />
+				                        <col width="18%"  />
+				                        <col width="10%"  /> 
+	              		 				<thead>
+	          		 						<tr>
+	          		 							<th class = "bp-text-uppercase">{{ 'Label_Employee' | translate }}</th>
+	          		 							<th class = "bp-text-uppercase">{{ 'Label_Date' | translate }}</th>
+	          		 							<th class = "bp-text-uppercase">{{ 'In' | translate }}</th>
+	          		 							<th class = "bp-text-uppercase">{{ 'Out' | translate }}</th>
+	          		 							<th class = "bp-text-uppercase">{{ 'Time' | translate }}</th>
+	          		 							<th class = "bp-text-uppercase"></th>
+	          		 						</tr>
+	              		 				</thead>
+	              		 				
+	              		 				<tbody> 
+	              		 					<tr ng-repeat = "payrollClockingEntryRec in PayrollClockingModel.PayrollClockingEntries track by payrollClockingEntryRec.Id" 
+		       		 							class = "bp-expanded-deletable-div-transition" id = "{{payrollClockingEntryRec.Id}}">
+		       		 							<!-- <td>{{payrollClockingEntryRec.Name}}</td> -->
+		       		 							<td ng-class = "{'setBgColor' : PayrollClockingModel.editManagePayrollEntry == $index}">
+				                                    <div class="InnerFlexContainer">
+				                                        <span class="NameInitials text-uppercase">{{payrollClockingEntryRec.TechnicianFirstName  | limitTo : 1}}{{payrollClockingEntryRec.TechnicianLastName | limitTo : 1}}</span>
+				                                        <span class ="setTextEllipsis">{{payrollClockingEntryRec.TechnicianName}}</span>
+				                                    </div>
+		                             			</td>
+		                             			<td ng-class = "{'setBgColor' : PayrollClockingModel.editManagePayrollEntry == $index}">{{payrollClockingEntryRec.StartDate}}</td> 
+		                             			
+		                             			<td ng-class = "{'setBgColor' : PayrollClockingModel.editManagePayrollEntry == $index}">
+		                             				<span ng-if = "PayrollClockingModel.editManagePayrollEntry != $index" >{{payrollClockingEntryRec.TimeIn}}</span>
+	                                    			<span ng-if = "PayrollClockingModel.editManagePayrollEntry == $index" >
+	                                    				<input type="text" class = "bp-input-text inTimeEdit timeField" id = "TimeIn_{{$index}}" ng-model = "payrollClockingEntryRec.TimeIn" 
+	                                    					ng-blur = "PayrollClockingModel.saveManagePayrollEntry($index,payrollClockingEntryRec,$event,'TimeIn');"/> 
+	                                    			</span>
+	                                    		</td>
+	                                   			<td ng-class = "{'setBgColor' : PayrollClockingModel.editManagePayrollEntry == $index}">
+	                                   				<span ng-if = "PayrollClockingModel.editManagePayrollEntry != $index" >{{payrollClockingEntryRec.TimeOut}}</span>
+	                                   				<span ng-if = "PayrollClockingModel.editManagePayrollEntry == $index" >
+	                                   					<input type="text" class = "bp-input-text inTimeEdit timeField" id = "TimeOut_{{$index}}" ng-model = "payrollClockingEntryRec.TimeOut"
+	                                   						ng-blur = "PayrollClockingModel.saveManagePayrollEntry($index,payrollClockingEntryRec,$event,'TimeOut');"/> 
+	                                   				</span>
+	                                   			</td>
+												<td ng-class = "{'setBgColor' : PayrollClockingModel.editManagePayrollEntry == $index}" class = "boldText">{{payrollClockingEntryRec.FormattedTotalTime}}</td>
+								 				<td ng-class = "{'setBgColor' : PayrollClockingModel.editManagePayrollEntry == $index}">
+				                                    <i ng-include="'{!Application_Images}/Icons/edit_filled.svg'" data-toggle="tooltip" title="{{ 'Edit_Label' | translate }} " 
+				                                    	class="gray_DDDDDD bp-pointer-cursor pull-left"
+				                                    	 ng-click="PayrollClockingModel.editManagePayrollEntries($index)"></i>
+				                                    <div class="deleteIconContainer" data-toggle="tooltip" title="{{ 'Delete_Label' | translate }}">
+				                                    	<i ng-include="'{!Application_Images}/Icons/trash_filled.svg'" class="gray_DDDDDD bp-pointer-cursor pull-left"
+					                                    	ng-click="PayrollClockingModel.openDeleteConfirmationPopup($index)"
+					                                    	data-target="#PayrollDeleteConfiramtionPopup" data-toggle="modal"></i>
+				                                    </div>
+				                                </td>
+		       		 						</tr>
+	       		 							
+	       		 							<tr ng-if = "PayrollClockingModel.createNewPayrollEntryDiv" class = "createNewManageTask">
+	       		 								<td>
+	              		 							<span>
+						                                <div class="searchInputArea" ng-class="{'showingOverlay' : PayrollClockingModel.isFocusedNewEntrySearchInput}">
+						                                    <input type="text" id="searchAnEmployeeForNewEntry" class="searchInput inTimeEdit" placeholder="{{ 'Placeholder_employee' | translate }}"
+						                                       ng-focus="PayrollClockingModel.isFocusedNewEntrySearchInput = true; PayrollClockingModel.getInitialsOfNewEntryOnFocus();" name="SelectAnEmployee"
+						                                       ng-blur="PayrollClockingModel.isFocusedNewEntrySearchInput = false"
+						                                       ng-keyup="PayrollClockingModel.changeclockingStaffForNewPayrollEntry($event)"  
+						                                       ng-model="PayrollClockingModel.NewEntryEmployeeObj.Name"
+						                                       />
+						                                    <div class="searchResultOverlay" id="autocompleteScrollDiv1">
+						                                       <ul>
+						                                          <li ng-repeat="timeClockingStaffRec in PayrollClockingModel.TimeClockingStaffList | filter:{'TechnicianName' : PayrollClockingModel.NewEntryEmployeeObj.Name} as filtered" id="newEntrytimeClockingStaffRec_{{$index}}"
+						                                             ng-class="{'selected-row': $index == PayrollClockingModel.currentNewEntrySelectedClockingStaffIndex}"
+						                                             ng-mousedown="PayrollClockingModel.selectNewEntryClockingstaff(timeClockingStaffRec)" >
+						                                             <div class = "circle text-uppercase">{{timeClockingStaffRec.TechnicianFirstName | limitTo : 1}}{{timeClockingStaffRec.TechnicianLastName | limitTo : 1}}</div>
+						                                             <div class="fullName">{{timeClockingStaffRec.TechnicianName}}</div>
+						                                          </li>
+						                                       </ul>
+						                                    </div>
+						                                 </div>
+              		 								</span>
+              		 							</td>
+              		 							
+	       		 								<td>
+              		 								<div class="datePickerWrappercontainer">
+														<span>
+															<input type="text"  id="date_Id" ui-date="PayrollClockingModel.ManagePayrollFromDateOptions" 
+									                              ui-date-format="{{PayrollClockingModel.dateFormat}}" 
+									                              class="bp-input-text  datePickerColor inTimeEdit datepicker jobclockingcalenderDateTextBox"
+									                              ng-model = "PayrollClockingModel.newPayrollEntry.StartDate" placeholder="{{ 'Placeholder_date' | translate }}" readonly="readonly"/> 
+									                          <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="jobclockingcalendericon grey_DDDDDD"
+											                     id="fromDate_Id" ng-click = "PayrollClockingModel.showDatePicker($event,'date_Id')">
+											                  </i>
+											             </span>
+										             </div>
+              		 							</td>
+                                    			<td>
+                                    				<span><input type="text" class = "bp-input-text inTimeEdit timeField" id="" ng-model="PayrollClockingModel.newPayrollEntry.TimeIn" 
+                                    					placeholder="{{ 'Placeholder_time_in' | translate }}" ng-blur="PayrollClockingModel.validateTime(-1, 'TimeIn')"/> </span>
+                                    			</td>
+                                    			
+                                    			<td>
+                                    				<span><input type="text" class = "bp-input-text inTimeEdit timeField" id="" ng-model="PayrollClockingModel.newPayrollEntry.TimeOut" 
+                                    					placeholder="{{ 'Placeholder_time_out' | translate }}" ng-blur="PayrollClockingModel.validateTime(-1, 'TimeOut')"/>  </span>
+                                    			</td>
+ 												<td>
+ 												<button class = "bp-btn bp-btn-normal pull-right bp-btn-small text-uppercase" 
+ 													ng-click="PayrollClockingModel.saveNewPayrollEntry()"
+ 													ng-enter="PayrollClockingModel.saveNewPayrollEntry()"
+ 													ng-disabled="PayrollClockingModel.disableNewPayrollEntrySaveButton()"
+			  										>Save</button>
+ 												</td>
+              		 							<td>
+			  									<button class = "bp-btn bp-btn-secondaryCTA bp-btn-small text-uppercase"
+			  										ng-click="PayrollClockingModel.cancelNewManagePayrollEntry()">{{ 'Cancel_Label' | translate }}</button>
+              		 							</td>
+              		 						</tr>
+              		 					</tbody>
+              		 				</table>
+              		 			</div>
+              		 			
+              		 			<div class="otherTaskEntry bp-flex-grid-container"> 
+		  							<div class="bp-grid-column createNewTask">
+		 								<a ng-click="PayrollClockingModel.createManagePayrollEntry()"><i ng-include="'{!Application_Images}/Icons/add-circle.svg'" class="blue_008DC1 bp-pointer-cursor"></i>{{ 'Add_new_entry' | translate }}</a>
+		  							</div>
+		  						</div>
+		  					</div>
+		              	</div>
+		             </div>
+
+            </div>
+         </div>
+      </div>
+   </div>
+   
+   <div class="modal fade PayrollDeleteConfiramtionPopup bp-model-dialog bp-confirmation-model-dialog" id="PayrollDeleteConfiramtionPopup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+	  			<div>
+					<button type="button" class="close bp-close-but PayrollDeleteConfiramtionCloseIcon" data-dismiss="modal" aria-label="Close">
+                		<span aria-hidden="true" ng-click = "">
+                			<i class="white_FFF" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                		</span>
+           			</button>
+	  			</div>		 
+	  			<div class="modal-body">
+					<div class="Modal-Info-Area">
+						<div class="heading bp-text-uppercase">{{ 'Are_you_sure' | translate }}</div>
+						<!-- <div class="heading subheading"><span>{!$Label.Permanent_update}</span><span>{!$Label.Not_able_to_reconcile_again}</span></div> -->
+						<button class="bp-btn bp-btn-normal bp-btn-medium bp-confirmBtn" data-dismiss="modal" aria-label="Close"
+							ng-click = "PayrollClockingModel.deletePayrollClockingEntry()" ng-disabled="">{{ 'Delete_Confirmation_Label' | translate }}</button>	
+						<div class="heading bp-confirmation-model-cancelBtn" data-dismiss="modal" aria-label="Close">{{ 'Cancel_Label' | translate }}</div> 
+               		</div>
+               </div>
+            </div>
+        </div>
+   	</div> 
+   
+</apex:page>

@@ -1,0 +1,545 @@
+<apex:page standardStylesheets="false" showChat="false" showHeader="false" sidebar="false" docType="html-5.0"
+    controller="GlobalController">
+    <!-- <apex:stylesheet value="{!Assests}/css/bootstrap4.css"/> -->
+    <!--  <apex:stylesheet value="{!Application}/css/newUI.css"/>
+    <apex:stylesheet value="{!Application}/css/MiniCalendar.css"/>
+    <apex:stylesheet value="{!Application}/css/CashReconciliation.css"/> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+    <div class="content bp-wrapper-container">
+        <div class="bp-subHeader bp-techScheduler-subHeader">
+            <div class="row container bp-top-header bp-tech-navigation-bar PB0">
+                <div class="cash-reconciliation-header-wrapper">
+                	 <section class="bp-breadcrumb-container">
+	                    <nav class="bp-breadcrumb-nav">
+	                        <ul>
+	                            <li><a ui-sref="homePage">Home</a></li>
+	                            <li> <a class="bp-breadcrumb-active">{{'CashRreconciliation' | translate}}</a></li>
+	                        </ul>
+	                    </nav>
+	                </section>
+	                <h1  class="col-xs-6  bp-hasEyebrow M0 P0">{{'CashRreconciliation' | translate}}</h1>
+                </div>
+            </div>
+        </div>
+        
+        <div class="pageContent">
+            <div class="container">
+            	<div class="accountSettingsDashboard">
+               		<div class="dashboardOptions">
+                		<div class="row M0 GroupSummaryWrapper CashReconciliationWrapper">
+                			<div class="sideBarWrapperContent pull-left">
+				            	<div class="sidebarWrapper">
+					               <div class="sidebar">
+					                  <ul class="calenderNavigation">
+					                     <li><a href="" ng-click="CashReconciliationModel.getPreviousMonth()"><i class = "blue_008DC1 svg_width_2px iconWidth" ng-include="'{!Application_Images}/Icons/arrow-left-1.svg'"></i></a></li>
+					                     <li><a href="" ng-click="CashReconciliationModel.getNextMonth()" ng-class="{'bp-disable-chevron': CashReconciliationModel.disableNextMonthChevron()}"><i class = "blue_008DC1 svg_width_2px iconWidth" ng-include = "'{!Application_Images}/Icons/arrow-right-1.svg'"></i></a></li>
+					                     <li class="weekName">
+					                        {{CashReconciliationModel.currentMonth.format("MMMM YYYY")}}
+					                     </li>
+					                  </ul>
+					                  <table class="calenderTable">
+					                     <thead>
+					                        <tr>    
+					                           <th>{{ 'S' | translate }}</th>
+					                           <th>{{ 'M' | translate }}</th>
+					                           <th>{{ 'T' | translate }}</th>
+					                           <th>{{ 'W' | translate }}</th>
+					                           <th>{{ 'T' | translate }}</th>
+					                           <th>{{ 'F' | translate }}</th>
+					                           <th>{{ 'S' | translate }}</th>
+					                        </tr>
+					                     </thead>
+					                     <tbody>
+					                        <tr ng-repeat="week in CashReconciliationModel.weeksOfMonth">
+					                           <td ng-click="CashReconciliationModel.selectDay(day)" ng-repeat="day in week.days"
+					                              ng-class="{'nonCurrentMonth': !day.isCurrentMonth || day.isDisabled,
+					                              'calendarToday': day.isToday,
+					                              'borderRadius50': !CashReconciliationModel.isHighlightedDaysContainToday(),
+					                              'highlightDay': day.highlightDay,
+					                              'bp-no-cursor': day.isDisabled,
+					                              'reconciledDay': day.isReconciled,
+                                                  'submitted-day': day.isSubmitted,
+                                                  'reviewed-day': day.isReviewed}"><div>{{day.number}}</div></td>
+					                        </tr>
+					                     </tbody>
+					                  </table>
+					              	  <div class="bp-filledCircle RedDotMean"><span>{{ 'Reconciled' | translate }}</span></div>
+                                      <div class="bp-filledCircle RedDotMean submitted-status-bg-color"><span>{{ 'Submitted' | translate }}</span></div>
+                                   </div>
+				            	</div>
+				            </div>
+                		
+                			<div class="bp-collapsible-grid-container pull-right P0" ng-show="!CashReconciliationModel.isContentLoading">
+                				<div class="calenderArea" ng-if="(CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList.length > 1) || CashReconciliationModel.isSingleCashDrawer">
+	                				<div class="calenderHeader row M0">
+	                					<div class="col-sm-8 col-xs-8 dateHeader"
+	                						ng-class="{'reconciledStatusDateHeader': CashReconciliationModel.ReconciliationDataForDate.Status == 'Reconciled',
+                                            			'single-drawer-date-header': CashReconciliationModel.isSingleCashDrawer}">
+				                           <ul class="calenderNavigation">
+				                           	  <li class="bp-today-wrapper"><button class = "bp-btn-secondaryCTA bp-btn bp-today-but bp-text-uppercase" ng-click = "CashReconciliationModel.selectCurrentDay()"
+				                           	  									ng-disabled="CashReconciliationModel.disableToday()">{{ 'Today' | translate }}</button>
+				                           	  </li>
+				                              <li class="bp-border-blue bp-arrow-height"><a href="" ng-click="CashReconciliationModel.getDayFromChevrons('Previous')"><i class = "blue_008DC1 svg_width_2px iconWidth" ng-include="'{!Application_Images}/Icons/arrow-left-1.svg'"></i></a></li>
+				                              <li class="bp-border-blue bp-arrow-height bp-arrow-rightcal" ng-class="{'bp-disable-chevron': CashReconciliationModel.disableRightChevron()}"><a href="" ng-click="CashReconciliationModel.getDayFromChevrons('Next')"><i class = "blue_008DC1 svg_width_2px iconWidth" ng-include = "'{!Application_Images}/Icons/arrow-right-1.svg'"></i></a></li>
+				                              <li class="weekName" ng-class="{'bp-panel-transition': CashReconciliationModel.showAnimation}">
+				                                 {{CashReconciliationModel.currentDay}}
+				                              </li>
+				                           </ul>
+				                  		</div>
+				                  		<div class="col-sm-4 col-xs-4 statusHeader"
+				                  			ng-class="{'reconciledStatusContainer': CashReconciliationModel.ReconciliationDataForDate.Status == 'Reconciled',
+				                  						'bp-panel-transition': CashReconciliationModel.showAnimation}">
+				                  			<ul class="calenderNavigation bp-alignment-right">				                              
+				                              <li class="">
+				                              	<span class="bp-oval-large"
+				                              		ng-class="{'bp-oval-green': CashReconciliationModel.ReconciliationDataForDate.Status == 'Reconciled',
+				                              					'bp-oval-red': CashReconciliationModel.ReconciliationDataForDate.Status == 'Unreconciled'}">
+				                              					{{CashReconciliationModel.ReconciliationDataForDate.Status}}
+				                              	</span>
+				                              </li>
+				                              <li ng-if="CashReconciliationModel.ReconciliationDataForDate.Status == 'Reconciled'" class="greyText">{{ 'On' | translate }} {{CashReconciliationModel.ReconciliationDataForDate.CommitReconciliationDate}}</li>
+				                           </ul>
+				                  		</div>
+				                  </div>
+				            	</div>
+                                
+                                <div class="drawer-header" ng-if="CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList.length == 1"> 
+    								<div class="display-flex-align-item-center MB20"> <!-- ng-class="{'MB20': CashReconciliationModel.disableToday()}" -->
+    									<div class="drawer-header-left display-flex-align-item-center">
+	    									<a class="arrow-back" ng-if="!CashReconciliationModel.isSingleCashDrawer" ng-click="CashReconciliationModel.loadDrawerView('')">
+	    									</a>
+                                            <span class="drawer-name bp-first-letter-capitalize bp-dark-grey1-font">{{CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList[0].DrawerName}}</span>
+	    								</div>
+	
+										<div class="drawer-header-right display-flex-align-item-center">
+	                                        <i class="bp-blue bp-pointer-cursor print-icon" ng-include="'{!Application_Images}/Icons/print.svg'" ng-click="CashReconciliationModel.printCashReconciliationData()"></i>
+	                                        <a class="bp-blue-font H300" ng-click="CashReconciliationModel.printCashReconciliationData()">{{'Print_Label' | translate}}</a>
+	                                    </div>
+    								</div>
+                                    
+                                    <span class="bp-status-bubble drawer-status MT18" ng-if="!CashReconciliationModel.isSingleCashDrawer"
+	                                	ng-class="{'bp-oval-cyan-light' : (CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList[0].Status == 'Submitted'), 
+	                                              'bp-oval-coral-light': (CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList[0].Status == 'Unreconciled'), 
+	                                              'bp-oval-green-light': (CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList[0].Status == 'Reviewed'
+	                                              							|| CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList[0].Status == 'Reconciled')}">{{CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList[0].Status}}</span>
+                                </div>
+                                
+                                
+                                <section class="multi-cash-drawer-container" ng-if="CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList.length > 1 ">
+                                    <span class="bp-dark-grey1-font H300">{{'Viewing_by' | translate}}</span>
+                                    <header class="multi-cash-drawer-header display-flex-align-item-center M0">
+                                        <div class="multi-cash-drawer-header-left display-flex-justify-content-center multi-cashdrawer-views-tab-btn-container">
+	                                        <a class="btn tab-btns bp-first-letter-capitalize H400" ng-class="{'selected' : CashReconciliationModel.viewName === 'Drawer'}" 
+	                                        	ng-click="CashReconciliationModel.viewName = 'Drawer'; CashReconciliationModel.loadCashReconciliationData();">{{'Drawer' | translate}}</a>
+	                                        <a class="btn tab-btns bp-first-letter-capitalize H400" ng-class="{'selected' : CashReconciliationModel.viewName === 'Transaction Type'}" 
+	                                        	ng-click="CashReconciliationModel.viewName = 'Transaction Type'; CashReconciliationModel.loadCashReconciliationData();">{{'transaction_type' | translate}}</a>
+                                        </div>
+                                        
+                                        <div class="multi-cash-drawer-header-right display-flex-align-item-center">
+                                            <i class="bp-blue bp-pointer-cursor print-icon" ng-include="'{!Application_Images}/Icons/print.svg'" ng-click="CashReconciliationModel.printCashReconciliationData()"></i><!-- bp-blue3384ff  -->
+                                            <a class="bp-blue-font H300" ng-click="CashReconciliationModel.printCashReconciliationData()">{{'Print_all_cash_drawers' | translate}}</a>
+                                        </div>
+                                    </header>
+                                    
+                                    <section class="drawer-view" ng-if="CashReconciliationModel.viewName === 'Drawer'" 
+                                    	ng-class="{'bp-panel-transition': CashReconciliationModel.showAnimation}">
+                                    	<div class="multi-cash-drawer-items multi-cash-drawer-items-header MB5 H200 bp-grey-font text-uppercase d-flex">
+	                                        <div class="cash-drawer-name">{{'Cash_drawer' | translate}}</div>
+                                    		<div class="payment-records-wrapper d-flex">
+                                   				<span class="payment-type">{{'Payment_Type' | translate}}</span>
+                                   				<span class="processed d-flex">{{'Processed' | translate}}</span>
+                                    			<span class="actual d-flex">{{'Actual' | translate}}</span>
+											</div> 
+											<div class="variance-total d-flex">{{'Variance' | translate}}</div>
+                                    	</div>
+                                    	
+                                    	<div class="multi-cash-drawer-items MB5 bp-white-bg text-capitalize d-flex" 
+                                    		ng-repeat="drawerRec in CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList"
+                                    		ng-click="CashReconciliationModel.loadDrawerView(drawerRec.DrawerId);">
+                                    		<div class="cash-drawer-name">
+                                    			<a class="H400 bp-blue-font d-flex drawer-name bp-first-letter-capitalize">{{drawerRec.DrawerName}}</a>
+                                    			<span class="bp-status-bubble MT5 drawer-status" 
+	                                                ng-class="{'bp-oval-cyan-light' : (drawerRec.Status == 'Submitted'), 
+	                                                            'bp-oval-coral-light': (drawerRec.Status == 'Unreconciled'), 
+	                                                            'bp-oval-green-light': (drawerRec.Status == 'Reviewed' || drawerRec.Status == 'Reconciled')}">{{drawerRec.Status}}</span>
+                                    		</div>
+                                    		<ul class="payment-records-wrapper P0 M0 H300 bp-grey1-font">
+                                    			<li class="drawer-record d-flex MB5 cash-payment-details">
+                                    				<span class="payment-type">{{'Cash_/_cards' | translate}}</span>
+	                                    			<span class="processed d-flex">{{drawerRec.CashPaymentObj.ProcessedAmount | currency}}</span>
+	                                    			<span class="actual d-flex">{{drawerRec.CashPaymentObj.ActualAmount | currency}}</span>
+                                    			</li>
+                                    			<li class="drawer-record d-flex MB5 non-cash-payment-details">
+                                    				<span class="payment-type">{{'Non_cash' | translate}}</span>
+	                                    			<span class="processed d-flex">{{drawerRec.NonCashPaymentObj.ProcessedAmount | currency}}</span>
+	                                    			<span class="actual d-flex">{{drawerRec.NonCashPaymentObj.ActualAmount | currency}}</span>
+                                    			</li>
+											</ul>
+											<div class="variance-total d-flex H300 bp-coral-font">{{drawerRec.Variance | currency}}</div>
+	                                    </div>
+	                                    
+	                                    <div class="multi-cash-drawer-items multi-cash-drawer-items-total MB5 bp-white-bg text-capitalize d-flex">
+                                    		<div class="cash-drawer-name total">
+                                    			<span class="bp-dark-grey1-font text-uppercase">{{'Label_Total' | translate}}</span>
+                                    		</div>
+                                    		<ul class="payment-records-wrapper P0 M0 H300 bp-grey1-font">
+                                    			<li class="drawer-record d-flex MB5 cash-payment-details">
+                                    				<span class="payment-type">{{'Cash_/_cards' | translate}}</span>
+	                                    			<span class="processed d-flex">{{CashReconciliationModel.ReconciliationData.TotalCashPaymentObj.ProcessedAmount | currency}}</span>
+	                                    			<span class="actual d-flex">{{CashReconciliationModel.ReconciliationData.TotalCashPaymentObj.ActualAmount | currency}}</span>
+                                    			</li>
+                                    			<li class="drawer-record d-flex MB5 non-cash-payment-details">
+                                    				<span class="payment-type">{{'Non_cash' | translate}}</span>
+	                                    			<span class="processed d-flex">{{CashReconciliationModel.ReconciliationData.TotalNonCashPaymentObj.ProcessedAmount | currency}}</span>
+	                                    			<span class="actual d-flex">{{CashReconciliationModel.ReconciliationData.TotalNonCashPaymentObj.ActualAmount | currency}}</span>
+                                    			</li>
+											</ul>
+											<div class="variance-total d-flex H300 bp-coral-font">{{CashReconciliationModel.ReconciliationData.Variance | currency}}</div>
+	                                    </div>
+	                                    
+	                                    <div class="d-flex MT22 reconcile-btn" ng-if="(CashReconciliationModel.ReconciliationDataForDate.Status !== 'Reconciled' && GroupOnlyPermissions['Cash reconciliation']['reconcile'])">
+	                                    	<button class="primary bp-normal-button" ng-disabled="CashReconciliationModel.disableReconcileDayActionBtn()"
+	                                    		data-target="#ReconciliationPopup"  data-toggle="modal">{{'Reconcile_day' | translate}}</button>
+	                                    </div>
+                                    </section>
+                                    
+                                    
+                                    <section class="transaction-type-view" ng-if="CashReconciliationModel.viewName === 'Transaction Type'"
+                                    	ng-class="{'bp-panel-transition': CashReconciliationModel.showAnimation}">
+                                    	<div class="transaction-type-items transaction-type-items-header MB5 H200 bp-grey-font text-uppercase d-flex">
+	                                        <div class="transaction-type">{{'transaction_type' | translate}}</div>
+                                    		<div class="drawer-records-wrapper d-flex">
+                                   				<span class="drawer-name">{{'Drawer' | translate}}</span>
+                                   				<span class="processed d-flex">{{'Processed' | translate}}</span>
+                                    			<span class="actual d-flex">{{'Actual' | translate}}</span>
+											</div> 
+											<div class="variance-total d-flex">{{'Variance' | translate}}</div>
+                                    	</div>
+                                    	
+                                    	
+                                    	
+                                    	<div class="transaction-type-items MB5 bp-white-bg text-capitalize d-flex" 
+                                    		ng-repeat="transactionTypeRec in CashReconciliationModel.TransactionTypeList">
+                                    		<div class="transaction-type">
+                                    			<i class="bp-blue payment-method-icon" ng-include="trustSrc(transactionTypeRec.Icon)"></i>
+                                    			<p class="bp-dark-grey1-font H400 bp-first-letter-capitalize">{{transactionTypeRec.PaymentMethod}}</p>
+                                    		</div>
+                                    		<ul class="drawer-records-wrapper H300 P0 M0">
+                                    			<li class="drawer-record d-flex MB5" ng-repeat="drawerRec in transactionTypeRec.CashDrawerDetailObjList">
+                                    				<span class="drawer-name bp-dark-grey1-font bp-first-letter-capitalize">{{drawerRec.CashDrawerName}}</span>
+	                                    			<span class="processed d-flex bp-grey1-font">{{drawerRec.ProcessedAmount | currency}}</span>
+	                                    			<span class="actual d-flex bp-grey1-font">{{drawerRec.ActualAmount | currency}}</span>
+                                    			</li>
+                                    			<li class="drawer-record drawers-total d-flex text-uppercase">
+                                    				<span class="drawer-name bp-dark-grey1-font">{{'Label_Total' | translate}}</span>
+	                                    			<span class="processed d-flex bp-grey1-font">{{transactionTypeRec.TotalProcessedAmount | currency}}</span>
+	                                    			<span class="actual d-flex bp-grey1-font">{{transactionTypeRec.TotalActualAmount | currency}}</span>
+                                    			</li>
+											</ul>
+											<div class="variance-total d-flex bp-coral-font H300">{{transactionTypeRec.TotalVarianceAmount | currency}}</div>
+	                                    </div>
+                                    </section>
+                                 </section>
+                                 
+				            	<div ng-if="CashReconciliationModel.ReconciliationData.CashDrawerReconcilationObjList.length == 1"> 
+                                    <div id="warning-template-container-id" class="warning-template-container bp-collapse-div-transition"
+                                    	ng-if="CashReconciliationModel.isSingleCashDrawer">
+                                      <div class="bp-warning-template">
+                                          <span class="bp-warning-icon">
+                                              <i class="yellow" ng-include="'{!Application_Images}/Icons/warning.svg'"></i>
+                                          </span>
+                                          <div class="bp-warning-msg">	
+                                              <span>{{ 'Rreconciliation_Warning_Less' | translate }}</span>
+                                              <span>{{ 'Rreconciliation_Warning_More' | translate }}</span>
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                   <table class="table bp-collapsible-grid" ng-class="{'bp-panel-transition': CashReconciliationModel.showAnimation}">
+                                         <col width="29%"  />
+                                         <col width="22%"  />
+                                         <col width="22%"  />
+                                         <col width="22%"  />
+                                         <col width="5%"  />
+                                        <thead>
+                                          <tr>
+                                            <th class="">{{ 'Payment_Type' | translate }}</th>
+                                            <th class="">{{ 'Processed' | translate }}</th>
+                                            <th class="">{{ 'Actual' | translate }}</th>
+                                            <th class="">{{ 'Variance' | translate }}</th>
+                                            <th></th>
+                                          </tr>
+                                        </thead>
+                                        <tbody ng-repeat="paymentRecord in CashReconciliationModel.CashReconciliationPaymentList" class="noBorder">
+
+                                          <tr class="bp-collapsible-grid-first-tr">
+                                              <td class="bold">
+                                                  <div>
+                                                      <span><i class="blue_008DC1" ng-include="trustSrc(paymentRecord.Icon)"></i></span>
+                                                      <span class="textPL">{{paymentRecord.PaymentMethod}}</span>
+                                                  </div>
+                                              </td>
+                                              <td class="semibold">
+                                                  <span class="" ng-class="{'bp-grey-font': paymentRecord.ProcessedAmount >= 0, 'bp-red-font': paymentRecord.ProcessedAmount < 0}">$</span>
+                                                  <span class="amount text-right"
+                                                      ng-class="{'bp-red-font': paymentRecord.ProcessedAmount < 0}">{{paymentRecord.ProcessedAmount | currency:""}}</span>
+                                              </td>
+                                              <td class="semibold input-td">
+                                                  <span class="currency bp-grey-font">$</span>
+                                                  <numbers-only id-value = "actualAmount_{{$index}}"
+                                                                class-value = "bp-input-text bp-grid-form-control text-right"
+                                                                input-model-value = "paymentRecord.ActualAmount" 
+                                                                include-negative = "true"
+                                                                include-zero = "true"
+                                                                precision-length = "2"
+                                                                tab-index="{{$index + CashReconciliationModel.tabIndexValue}}"
+                                                                include-blank="true"
+                                                                max-length="16"
+                                                                input-keydown-value="CashReconciliationModel.disableTypingOnActualValue($event)"
+                                                                blur-value="CashReconciliationModel.saveCashReconciliationData($index, 'Line Item')"
+                                                                input-keyup-value = "CashReconciliationModel.calculateAmountTotals()"
+                                                                disabled-value="!CashReconciliationModel.isIndividualDrawerEditReconcileActionAvailable()"
+                                                            /> 
+                                              </td>
+                                              <td class="semibold">
+                                                  <span class="" ng-class="{'bp-grey-font': paymentRecord.VarianceAmount >= 0, 'bp-red-font': paymentRecord.VarianceAmount < 0}">$</span>
+                                                  <span class="amount text-right" ng-class="{'bp-grey-font': paymentRecord.VarianceAmount >= 0, 'bp-red-font': paymentRecord.VarianceAmount < 0}">{{paymentRecord.VarianceAmount | currency:""}}</span>
+                                              </td>
+                                              <td>
+                                                  <a ng-if="paymentRecord.PaymentDetailList.length > 0 && !CashReconciliationModel.CashReconciliationPaymentList[$index].isEdit"
+                                                      class="grid-arrow" ng-click="CashReconciliationModel.expandEditablePaymentMethods($index)">
+                                                      <i class = "blue_008DC1 iconWidth bp-alignment-left" ng-include = "'{!Application_Images}/Icons/arrow-down-1.svg'"></i>
+                                                  </a>
+                                                  <a ng-if="paymentRecord.PaymentDetailList.length > 0 && CashReconciliationModel.CashReconciliationPaymentList[$index].isEdit" class="grid-arrow" ng-click="CashReconciliationModel.hideEditablePaymentMethods($index)">
+                                                      <i class = "blue_008DC1 iconWidth bp-alignment-left" ng-include = "'{!Application_Images}/Icons/arrow-up-1.svg'"></i>
+                                                  </a>
+                                              </td>
+                                          </tr>
+                                          <tr id="payment-details-wrapper-tr_1_{{$index}}" class="payment-details-wrapper-tr" > 
+                                              <td colspan="5" class="payment-details-wrapper bp-main-bg-grey">
+                                                  <div class="NoRPaymentRecordsDiv bp-text-uppercase bp-collapse-div-transition" ng-if="paymentRecord.PaymentDetailList.length == 0">
+                                                      <p>{{ 'No_Payment_Record' | translate }}</p>
+                                                  </div>
+
+                                                  <div class="bp-collapse-div-transition">
+                                                      <table class="table"  ng-if="paymentRecord.PaymentDetailList.length > 0">
+                                                          <col width="29%"  />
+                                                          <col width="22%"  />
+                                                          <col width="22%"  />
+                                                          <col width="22%"  />
+                                                          <col width="5%"  />
+
+                                                          <thead>
+                                                              <tr>
+                                                                <th>{{ 'Label_Amount' | translate }}</th>
+                                                                <th>{{ 'Label_Customer' | translate }}</th>
+                                                                <th>{{ 'Payment_Section_Display_Label' | translate }}#</th>
+                                                                <th>{{ 'Label_Order' | translate }}#</th>
+                                                                <th></th>
+                                                              </tr>
+                                                        </thead>
+
+                                                        <tbody>
+                                                          <tr ng-repeat="invoicePayment in paymentRecord.PaymentDetailList">
+                                                              <td>
+                                                                  <span>{{invoicePayment.Amount | currency}}</span>
+                                                              </td>
+                                                              <td class="text-capitalize">
+                                                                  <span>{{invoicePayment.CustomerName}}</span>
+                                                              </td>
+                                                              <td>
+                                                                  <span>{{invoicePayment.PaymentNumber}}</span>
+                                                              </td>
+                                                              <td class="hyperLink">
+                                                                   <span ng-if="{!IsLoadNewCustomerOrder}">
+                                                                      <a ui-sref="CustomerOrder_V2({Id: invoicePayment.COHeaderId})" target="_blank">{{invoicePayment.COHeaderName}}</a>
+                                                                   </span>
+                                                                   <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                                                      <a ui-sref="CustomerOrder({Id: invoicePayment.COHeaderId})" target="_blank">{{invoicePayment.COHeaderName}}</a>
+                                                                   </span>
+                                                              </td>
+                                                              <td></td>
+                                                          </tr>
+
+                                                        </tbody>
+                                                      </table>
+                                                  </div>
+                                              </td>
+                                          </tr>
+
+                                        </tbody>
+                                        <tbody>
+
+                                          <tr class="total-row bp-bg-light-blue" ng-class="{'total-row-border-botom': (!CashReconciliationModel.isIndividualDrawerEditReconcileActionAvailable() || (CashReconciliationModel.isSingleCashDrawer && !GroupOnlyPermissions['Cash reconciliation']['reconcile']))}">
+                                              <td class="large-text bp-blue-font">
+                                                  <span class="text-uppercase">{{ 'Label_Total' | translate }}</span>
+                                              </td>
+                                              <td class="semibold">
+                                                  <span class="" ng-class="{'bp-green-font': CashReconciliationModel.ReconciliationDataForDate.TotalProcessedAmount >= 0, 'bp-red-font': CashReconciliationModel.ReconciliationDataForDate.TotalProcessedAmount < 0}">$</span>
+                                                  <span class="amount total-amount text-right" ng-class="{'bp-green-font': CashReconciliationModel.ReconciliationDataForDate.TotalProcessedAmount >= 0, 'bp-red-font': CashReconciliationModel.ReconciliationDataForDate.TotalProcessedAmount < 0}">{{CashReconciliationModel.ReconciliationDataForDate.TotalProcessedAmount | currency:""}}</span>
+                                              </td>
+                                              <td class="semibold">
+                                                  <span class="actual-total-currency" ng-class="{'bp-green-font': CashReconciliationModel.ReconciliationDataForDate.TotalActualAmount >= 0, 'bp-red-font': CashReconciliationModel.ReconciliationDataForDate.TotalActualAmount < 0}">$</span>
+                                                  <span class="amount total-amount actual-total-amount text-right" ng-class="{'bp-green-font': CashReconciliationModel.ReconciliationDataForDate.TotalActualAmount >= 0, 'bp-red-font': CashReconciliationModel.ReconciliationDataForDate.TotalActualAmount < 0}">{{CashReconciliationModel.ReconciliationDataForDate.TotalActualAmount | currency:""}}</span>
+                                              </td>
+                                              <td class="semibold">
+                                                  <span class="" ng-class="{'bp-green-font': CashReconciliationModel.ReconciliationDataForDate.TotalVarianceAmount >= 0, 'bp-red-font': CashReconciliationModel.ReconciliationDataForDate.TotalVarianceAmount < 0}">$</span>
+                                                  <span class="amount total-amount text-right" ng-class="{'bp-green-font': CashReconciliationModel.ReconciliationDataForDate.TotalVarianceAmount >= 0, 'bp-red-font': CashReconciliationModel.ReconciliationDataForDate.TotalVarianceAmount < 0}">{{CashReconciliationModel.ReconciliationDataForDate.TotalVarianceAmount | currency:""}}</span>
+                                              </td>
+                                              <td></td>
+                                          </tr>
+                                          <tr class="action-row bp-bg-light-blue" ng-show="CashReconciliationModel.isIndividualDrawerEditReconcileActionAvailable() && (!CashReconciliationModel.isSingleCashDrawer || GroupOnlyPermissions['Cash reconciliation']['reconcile'])">
+                                              <td colspan="4" class="text-right">
+                                                      <button class="btn btn-primary text-uppercase" ng-attr-tabindex="{{CashReconciliationModel.tabIndexValue + 6}}" data-toggle="modal"
+                                                          ng-disabled="CashReconciliationModel.disableCommitButton()" ng-if="!CashReconciliationModel.isSingleCashDrawer"
+                                                          ng-click="CashReconciliationModel.CommitIndividualDrawerChanges()">
+                                                          {{ (GroupOnlyPermissions['Cash reconciliation']['reconcile'] ? 'Reviewed' : 'Submit_for_review') | translate }}  
+                                                      </button> 
+
+                                                      <button class="btn btn-primary" ng-attr-tabindex="{{CashReconciliationModel.tabIndexValue + 6}}" data-target="#ReconciliationPopup" data-toggle="modal" 
+                                                          ng-disabled="CashReconciliationModel.disableCommitButton()" ng-if="CashReconciliationModel.isSingleCashDrawer && GroupOnlyPermissions['Cash reconciliation']['reconcile']">
+                                                      {{ 'Commit_Changes' | translate }}	
+                                                  </button>	
+                                              </td>
+                                              <td></td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+
+
+                                      <table class="table bp-collapsible-grid flex-bp-collapsible-grid" ng-class="{'bp-panel-transition': CashReconciliationModel.showAnimation}">
+                                         <col width="28%"  />
+                                         <col width="22%"  />
+                                         <col width="22%"  />
+                                         <col width="22%"  />
+                                         <col width="6%"  />
+                                        <thead>
+                                          <tr>
+                                            <th class=""></th>
+                                            <th class=""></th>
+                                            <th class=""></th>
+                                            <th class=""></th>
+                                            <th></th>
+                                          </tr>
+                                        </thead>
+                                        <tbody ng-repeat="paymentRecord in CashReconciliationModel.OtherReconciliationPaymentMethodsList">
+                                          <tr class="bp-collapsible-grid-first-tr">
+                                              <td class="bold">
+                                                  <div>
+                                                      <span><i class="blue_008DC1" ng-include="trustSrc(paymentRecord.Icon)"></i></span>
+                                                      <span class="textPL flex-span">{{paymentRecord.PaymentMethod}}</span>
+                                                  </div>
+                                              </td>
+                                              <td class="semibold">
+                                                  <span class="" ng-class="{'bp-grey-font': paymentRecord.ProcessedAmount >= 0, 'bp-red-font': paymentRecord.ProcessedAmount < 0}">$</span>
+                                                  <span class="amount text-right"
+                                                      ng-class="{'bp-grey-font': paymentRecord.ProcessedAmount >= 0, 'bp-red-font': paymentRecord.ProcessedAmount < 0}">{{paymentRecord.ProcessedAmount | currency:""}}</span>
+                                              </td>
+                                              <td></td>
+                                              <td></td>
+                                              <td>
+                                                  <a ng-if="paymentRecord.PaymentDetailList.length > 0 && !CashReconciliationModel.OtherReconciliationPaymentMethodsList[$index].isEdit"
+                                                      class="grid-arrow" ng-click="CashReconciliationModel.expandNotEditablePaymentMethods($index)">
+                                                      <i class = "blue_008DC1 iconWidth bp-alignment-left" ng-include = "'{!Application_Images}/Icons/arrow-down-1.svg'"></i>
+                                                  </a>
+                                                  <a ng-if="paymentRecord.PaymentDetailList.length > 0 && CashReconciliationModel.OtherReconciliationPaymentMethodsList[$index].isEdit" class="grid-arrow" ng-click="CashReconciliationModel.hideNotEditablePaymentMethods($index)">
+                                                      <i class = "blue_008DC1 iconWidth bp-alignment-left" ng-include = "'{!Application_Images}/Icons/arrow-up-1.svg'"></i>
+                                                  </a>
+                                              </td>
+                                          </tr>
+
+                                          <tr id="payment-details-wrapper-tr_2_{{$index}}" class="payment-details-wrapper-tr"> 
+                                              <td colspan="5" class="payment-details-wrapper bp-main-bg-grey">
+                                                  <div class="NoRPaymentRecordsDiv bp-text-uppercase bp-collapse-div-transition" ng-if="paymentRecord.PaymentDetailList.length == 0">
+                                                      <p>{{ 'No_Payment_Record' | translate }}</p>
+                                                  </div>
+
+                                                  <div class="bp-collapse-div-transition">
+                                                      <table class="table" ng-if="paymentRecord.PaymentDetailList.length > 0">
+                                                          <col width="28%"  />
+                                                          <col width="22%"  />
+                                                          <col width="22%"  />
+                                                          <col width="22%"  />
+                                                          <col width="6%"  />
+
+                                                          <thead>
+                                                              <tr>
+                                                                <th>{{ 'Label_Amount' | translate }}</th>
+                                                                <th>{{ 'Label_Customer' | translate }}</th>
+                                                                <th>{{ 'Payment_Section_Display_Label' | translate }}#</th>
+                                                                <th>{{ 'Label_Order' | translate }}#</th>
+                                                                <th></th>
+                                                              </tr>
+                                                        </thead>
+
+                                                        <tbody>
+                                                          <tr ng-repeat="invoicePayment in paymentRecord.PaymentDetailList">
+                                                              <td>
+                                                                  <span>{{invoicePayment.Amount | currency}}</span>
+                                                              </td>
+                                                              <td class="text-capitalize">
+                                                                  <span>{{invoicePayment.CustomerName}}</span>
+                                                              </td>
+                                                              <td>
+                                                                  <span>{{invoicePayment.PaymentNumber}}</span>
+                                                              </td>
+                                                              <td class="hyperLink">
+                                                                  <span ng-if="{!IsLoadNewCustomerOrder}">
+                                                                      <a ui-sref="CustomerOrder_V2({Id: invoicePayment.COHeaderId})" target="_blank">{{invoicePayment.COHeaderName}}</a>
+                                                                  </span>
+                                                                  <span ng-if="{!!IsLoadNewCustomerOrder}">
+                                                                      <a ui-sref="CustomerOrder({Id: invoicePayment.COHeaderId})" target="_blank">{{invoicePayment.COHeaderName}}</a>
+                                                                  </span>
+                                                              </td>
+                                                              <td></td>
+                                                          </tr>
+
+                                                        </tbody>
+                                                      </table>
+                                                  </div>
+
+                                              </td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+    
+    <div class="LoadingDiv" ng-show="CashReconciliationModel.isLoading">
+        <div class="loadingIconContainer">
+            <c:BPLoading />
+        </div>
+    </div>
+    
+    <div class="modal fade ReconciliationPopup bp-model-dialog bp-confirmation-model-dialog" id="ReconciliationPopup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+	  			<div>
+					<button type="button" class="close bp-close-but ReconciliationModalCloseIcon" data-dismiss="modal" aria-label="Close">
+                		<span aria-hidden="true" ng-click = "">
+                			<i class="white_FFF" ng-include="'{!Application_Images}/Icons/close.svg'"></i>
+                		</span>
+           			</button>
+	  			</div>		 
+	  			<div class="modal-body">
+					<div class="Modal-Info-Area">
+						<div class="heading bp-text-uppercase">{{ 'Are_you_sure' | translate }}</div>
+						<div class="heading subheading"><span>{{ 'Permanent_update' | translate }}</span><span>{{ 'Not_able_to_reconcile_again' | translate }}</span></div>
+						<button class="bp-btn bp-btn-normal bp-btn-large bp-confirmBtn" 
+                        	data-dismiss="modal" aria-label="Close" ng-click = "CashReconciliationModel.CommitReconciliationChanges()" 
+                            ng-disabled="">{{ 'Commit_Changes_Confirmation' | translate }}</button>	
+						<!-- <div class="heading cancelBtn" data-dismiss="modal" aria-label="Close" ng-click = "JobSchedulingModel.notCreatePastEvent()">CANCEL</div> -->
+               		</div>
+               </div>
+            </div>
+        </div>
+   	</div> 
+    
+    
+</apex:page>

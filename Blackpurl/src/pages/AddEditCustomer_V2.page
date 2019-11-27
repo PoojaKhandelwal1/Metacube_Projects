@@ -1,0 +1,365 @@
+<apex:page sidebar="false" showheader="false" standardstylesheets="false" controller="GlobalController">
+<!-- <apex:stylesheet value="{!Application}/css/AddEditCustomer_V2.css"/> --> 
+<div class="modal fade-scale bp-model-dialog bs-example-modal-lg bp-customer-popup customer-order-modal" id = "customerpopup" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content row">
+          <div class="small-header">
+            <h2 ng-if="!M_AddEditCustomerV2.isEditMode" class="text-capitalize">{{ 'Create_new_customer' | translate }}</h2>
+            <h2 ng-if="M_AddEditCustomerV2.isEditMode" class="text-capitalize">{{ 'Edit_customer' | translate }}</h2>
+            <button type="button" class="btn btn-default modal-close-btn" data-dismiss="modal" ng-click="F_AddEditCustomerV2.hideAddEditCustomerModal()">
+                <i ng-include="'{!Application_Images}/Icons/close.svg'" class="white_FFF"></i>
+            </button>
+          </div>
+          <div class="tab-btn-container">
+            <a class="btn tab-btns" ng-class = "{'selected' : M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' }" ng-click = "F_AddEditCustomerV2.clearSimilarCustomer('Individual')">{{ 'Label_Individual' | translate }}</a>
+            <a class="btn tab-btns" ng-class = "{'selected' : M_AddEditCustomerV2.CustomerInfo.Type == 'Business' }"  ng-click = "F_AddEditCustomerV2.clearSimilarCustomer('Business')">{{ 'Label_Business' | translate }}</a>
+          </div>
+          <div classs="form-fields-container">
+            <form class="customer_form">
+                <div class="row lr-pad-44">
+                    <div class="col-sm-6 left-container">
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual'">
+                            <p class="DetailLabel">{{ 'First_name' | translate }}</p>
+                            <input type="text" id="customer-first-name" 
+                            ng-blur="F_AddEditCustomerV2.validateForm('FirstName');" class="bp-input-text" ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['FirstName']['isError'] == true}"
+                             placeholder="{{ 'Placeholder_first_name' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.FirstName" />
+                        </div>
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual'">
+                            <p class="DetailLabel">{{ 'Last_name' | translate }} </p>
+                            <input type="text" id="customer-last-name" class="bp-input-text" 
+                            ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['LastName']['isError'] == true}"
+                            ng-blur = "F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('LastName');" placeholder="{{ 'Placeholder_last_name' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.LastName" />
+                        </div>
+                         <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual'">
+                                <p class="DetailLabel bp-first-letter-capitalize">{{ 'Account_Type' | translate }}</p>
+                                <div class="bp-cell bp-unitSearch-area bp-customerdropdown customerDropDown searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_AddEditCustomerV2.isFocusedAccountType}">
+                                        <input type="text" id="customer-account-type" class="searchInput bp-input-text" placeholder="{{ 'Placeholder_Account_Type' | translate }}" 
+                                           name="country"
+                                           ng-focus = "M_AddEditCustomerV2.isFocusedAccountType = true"
+                                           ng-blur = "M_AddEditCustomerV2.isFocusedAccountType = false"
+                                           ng-keyup="F_AddEditCustomerV2.keyPressNavigationOnDropdownElements($event, 'account-type-drop-down-div', 'accountTypeto',  M_AddEditCustomerV2.AccountTypeList)"
+                                           ng-model="M_AddEditCustomerV2.CustomerInfo.AccountType" readonly="readonly" ng-disabled=""/>
+                                        <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" ng-click = "F_AddEditCustomerV2.setFocus('customer-account-type')" class="bp-blue downArrow"></i>
+                                        
+                                        <div class="searchResultOverlay" id="account-type-drop-down-div">
+                                           <ul>
+                                              <li ng-repeat = "accountRec in M_AddEditCustomerV2.AccountTypeList" 
+                                              id = "accounttype_{{$index}}" 
+                                              ng-class="{'selected-row': $index == M_AddEditCustomerV2.currentDropDownIndex}"
+                                              ng-mousedown="F_AddEditCustomerV2.selectAccountType(accountRec);">
+                                                 <div class="fullName">{{accountRec.AccountType}}</div>
+                                              </li>
+                                           </ul>
+                                        </div>
+                                     </div>
+                            </div>
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual'">
+                            <p class="DetailLabel">{{ 'Email_address' | translate }} </p>
+                            <input type="text" id="customer-email" 
+                            ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['HomeEmail']['isError'] == true}"
+                            ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('HomeEmail');"
+                             class="bp-input-text"  placeholder="{{ 'Placeholder_email' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.HomeEmail"  />
+                        </div>
+                        
+                        
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual'">
+                            <p class="DetailLabel">{{ 'Mobile_number' | translate }}</p>
+                            <input type="text" id="customer-mobile-number"
+                            ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('HomeNumber');"
+                            ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['HomeNumber']['isError'] == true}"
+                             maxlength="20" class="bp-input-text"  placeholder="{{ 'Placeholder_mobile_no' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.HomeNumber"  />
+                        </div>
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Business'">
+                            <p class="DetailLabel">{{ 'Business_name' | translate }}</p>
+                            <input type="text" id="customer-first-name" maxlength="80" class="bp-input-text" 
+                            ng-blur = "F_AddEditCustomerV2.getOtherSimilarCustomer()" placeholder="{{ 'Placeholder_business_name' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.BusinessName" />
+                        </div>
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Business'">
+                                <p class="DetailLabel bp-first-letter-capitalize">{{ 'Account_Type' | translate }}</p>
+                                <div class="bp-cell bp-unitSearch-area bp-customerdropdown customerDropDown searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_AddEditCustomerV2.isFocusedAccountType}">
+                                        <input type="text" id="customer-account-type" class="searchInput bp-input-text" placeholder="{{ 'Placeholder_Account_Type' | translate }}" 
+                                           name="country"
+                                           ng-focus = "M_AddEditCustomerV2.isFocusedAccountType = true"
+                                           ng-blur = "M_AddEditCustomerV2.isFocusedAccountType = false"
+                                           ng-keyup="F_AddEditCustomerV2.keyPressNavigationOnDropdownElements($event, 'account-type-drop-down-div', 'accountTypeto',  M_AddEditCustomerV2.AccountTypeList)"
+                                           ng-model="M_AddEditCustomerV2.CustomerInfo.AccountType" readonly="readonly" ng-disabled=""/>
+                                        <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" ng-click = "F_AddEditCustomerV2.setFocus('customer-account-type')" class="bp-blue downArrow"></i>
+                                        
+                                        <div class="searchResultOverlay" id="account-type-drop-down-div">
+                                           <ul>
+                                              <li ng-repeat = "accountRec in M_AddEditCustomerV2.AccountTypeList" 
+                                              id = "accounttype_{{$index}}" 
+                                              ng-class="{'selected-row': $index == M_AddEditCustomerV2.currentDropDownIndex}"
+                                              ng-mousedown="F_AddEditCustomerV2.selectAccountType(accountRec);">
+                                                 <div class="fullName">{{accountRec.AccountType}}</div>
+                                              </li>
+                                           </ul>
+                                        </div>
+                                     </div>
+                            </div>
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Business'">
+                            <p class="DetailLabel">{{ 'Email_address' | translate }}</p>
+                            
+                            <input type="text" id="customer-email"  
+                             ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['WorkEmail']['isError'] == true}"
+                            ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('WorkEmail');"
+                            class="bp-input-text"  placeholder="{{ 'Placeholder_business_email' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.WorkEmail"  />
+                        </div>
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Business'">
+                            <p class="DetailLabel">{{ 'Label_Phone_Number' | translate }}</p>
+                            <input type="text" id="customer-first-name" maxlength="20" 
+                             ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['WorkNumber']['isError'] == true}"
+                             ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('WorkNumber');"
+                            class="bp-input-text"  placeholder="{{ 'Placeholder_phone_no' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.WorkNumber" />
+                        </div>
+                        <div class="form-group" ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Business'">
+                            <p class="DetailLabel">{{ 'Mobile_number' | translate }}</p>
+                            <input type="text" id="customer-mobile-number" maxlength="20"
+                             ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['OtherPhone']['isError'] == true}"
+                            ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('OtherPhone');"
+                             class="bp-input-text"  placeholder="{{ 'Placeholder_mobile_no' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.OtherPhone"  />
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <p class="DetailLabel">{{ 'Label_Address' | translate }}</p>
+                            <input type="text" id="customer-Address" maxlength="110" class="bp-input-text"  placeholder="{{ 'Label_Address' | translate }}" ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();" ng-model = "M_AddEditCustomerV2.CustomerInfo.BillingStreet1" />
+                        </div>
+                        <div class="form-group">
+                            <p class="DetailLabel">{{ 'Address_line2' | translate }} ({{ 'Optional_tag' | translate }})</p>
+                            <input type="text" id="customer-Address2" maxlength="110" class="bp-input-text"  placeholder="{{ 'Address_line2' | translate }}"  ng-model = "M_AddEditCustomerV2.CustomerInfo.BillingStreet2" />
+                        </div>
+                        <div class="two-in-column">
+                            <div class="form-group col-sm-6 col-xs-6">
+                                <p class="DetailLabel">{{ 'Label_Country' | translate }}</p>
+                                <div class="bp-cell bp-unitSearch-area bp-customerdropdown customerDropDown searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_AddEditCustomerV2.isFocusedCountry}">
+                                    <input type="text" id="customer-Country" class="searchInput bp-input-text" placeholder="{{ 'Placeholder_country_name' | translate }}" 
+                                           name="country"
+                                           ng-focus = "F_AddEditCustomerV2.showCountry()"
+                                           ng-blur = "F_AddEditCustomerV2.hideCountry()"
+                                            ng-model="M_AddEditCustomerV2.CustomerInfo.BillingCountry" readonly="readonly" ng-disabled=""/>
+                                        <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" ng-click = "F_AddEditCustomerV2.setFocus('customer-Country')" class="bp-blue downArrow"></i>
+                                        
+                                        <div class="searchResultOverlay" id="autocompleteScrollDiv">
+                                           <ul>
+                                              <li ng-repeat = "country in M_AddEditCustomerV2.CustomerMasterData.CountryList" ng-mousedown="F_AddEditCustomerV2.selectCountryName(country);F_AddEditCustomerV2.validatePhone()">
+                                                 <div class="fullName">{{country.CountryName}}</div>
+                                              </li>
+                                           </ul>
+                                        </div>
+                                     </div>
+                                </div>
+                            <div class="form-group col-sm-6 col-xs-6">
+                                <p class="DetailLabel">City </p>
+                                    <div class="bp-cell bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+                                        <input type="text" id="customer-City" class="searchInput bp-input-text" placeholder="{{ 'Placeholder_city_name' | translate }}"
+                                           name="City"
+                                           ng-model="M_AddEditCustomerV2.CustomerInfo.BillingCity"  ng-disabled=""/>
+                                     </div>
+                            </div>
+                        </div>
+                        <div class="two-in-column">
+                            <div class="form-group col-sm-6 col-xs-6">
+                                <p class="DetailLabel">{{ 'Label_State' | translate }}</p>
+                                <div class="bp-cell bp-customerdropdown bp-unitSearch-area customerDropDown searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_AddEditCustomerV2.isFocusedState}">
+                                        <input type="text" id="customer-State" class="searchInput bp-input-text" placeholder="{{ 'Please_select' | translate }}"
+                                           name="State"
+                                           ng-focus = "F_AddEditCustomerV2.showStateList()"
+                                           ng-blur = "F_AddEditCustomerV2.hideState()"
+                                           ng-model="M_AddEditCustomerV2.CustomerInfo.BillingState" readonly="readonly" ng-disabled=""/>
+                                        <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" ng-click = "F_AddEditCustomerV2.setFocus('customer-State')" class="bp-blue downArrow"></i>
+                                        
+                                        <div class="searchResultOverlay" id="autocompleteScrollDiv">
+                                           <ul>
+                                              <li ng-repeat = "stateRec in M_AddEditCustomerV2.State" ng-mousedown="F_AddEditCustomerV2.selectStateName(stateRec)">
+                                                 <div class="fullName">{{stateRec.StateName}}</div>
+                                              </li>
+                                           </ul>
+                                        </div>
+                                     </div>
+                            </div>
+                            <div class="form-group col-sm-6 col-xs-6">
+                                <p class="DetailLabel">{{ 'Postcode' | translate }}</p>
+                                <input type="text" id="customer-Postcode" 
+                                 ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['BillingPostalCode']['isError'] == true}"
+                            ng-blur="F_AddEditCustomerV2.validateForm('BillingPostalCode');"
+                                maxlength="20" class="bp-input-text"  placeholder="{{ 'Placeholder_postal_code' | translate }}" ng-model = "M_AddEditCustomerV2.CustomerInfo.BillingPostalCode" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                 <div class="row lr-pad-44">
+                                    <div class="col-sm-12 P0">
+                                        <h2 class="print-item-label bp-dark-grey2-font MB20">{{ 'Additional_information' | translate }}</h2>
+                                    </div>
+                                    <div class="col-sm-6">
+                                         <div class="form-group " ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' && M_AddEditCustomerV2.AdditionalFieldsInfo.Birthday.isPrimary">
+                                                     <p class="DetailLabel">{{ 'Birthday' | translate }} </p>
+                                                        <div class="bp-cell bp-customerdropdown bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+                                                            <div class="datePickerWrappercontainer" >
+                                                                <input type="text"  id="BirthDate" style="background: #FFF;position: initial;" ui-date="M_AddEditCustomerV2.Birthdate" 
+                                                                    ui-date-format="{{M_AddEditCustomerV2.dateFormat}}" 
+                                                                    class="bp-input-text  datePickerColor datepicker UnitOrderingMFDate"
+                                                                    ng-model = "M_AddEditCustomerV2.CustomerInfo.Birthdate" placeholder="{{ 'Please_select' | translate }}" readonly="readonly"/>        
+                                                                     <i ng-include="'{!Application_Images}/Icons/calendar-filled.svg'" class="downArrow  grey_DDDDDD"
+                                                                        id="BirthDateBtn" ng-click="F_AddEditCustomerV2.setFocus('BirthDate')">
+                                                                    </i> 
+                                                           </div>
+                                                    </div>
+                                                </div>
+                                         
+                                         <div class="form-group " ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' && M_AddEditCustomerV2.AdditionalFieldsInfo.Company.isPrimary">
+                                            <p class="DetailLabel">{{ 'Company' | translate }} </p>
+                                                <div class="bp-cell bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+                                                    <input type="text" id="customer-City" class="searchInput bp-input-text" placeholder="{{ 'Company' | translate }}"
+                                                       name="City"
+                                                       ng-model="M_AddEditCustomerV2.CustomerInfo.Company"  ng-disabled=""/>
+                                                 </div>
+                                        </div>
+                                         <div class="form-group " ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' && M_AddEditCustomerV2.AdditionalFieldsInfo.JobTitle.isPrimary">
+                                            <p class="DetailLabel">{{ 'Job_Title' | translate }} </p>
+                                                <div class="bp-cell bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+                                                    <input type="text" id="customer-City" class="searchInput bp-input-text" placeholder="{{ 'Job_Title' | translate }}"
+                                                       name="JobTitle"
+                                                       ng-model="M_AddEditCustomerV2.CustomerInfo.JobTitle"  ng-disabled=""/>
+                                                 </div>
+                                        </div>
+                                         <div class="form-group " ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Business' && M_AddEditCustomerV2.AdditionalFieldsInfo.OtherEmail.isPrimary">
+                                            <p class="DetailLabel">{{ 'Other_Email' | translate }} </p>
+                                                <div class="bp-cell bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+                                                    <input type="text" id="customer-City" class="searchInput bp-input-text" placeholder="{{ 'Other_Email' | translate }}"
+                                                       name="JobTitle"
+                                                       ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['OtherEmail']['isError'] == true}"
+                                                        ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('OtherEmail');"
+                                                       ng-model="M_AddEditCustomerV2.CustomerInfo.OtherEmail"  ng-disabled=""/>
+                                                 </div>
+                                        </div>
+                                        </div>
+                                         <div class="col-sm-6">
+                                        
+                                        
+                                        
+                                        <div class="form-group " ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' &&  M_AddEditCustomerV2.AdditionalFieldsInfo.OtherEmail.isPrimary">
+                                            <p class="DetailLabel">{{ 'Other_Email' | translate }} </p>
+                                                <div class="bp-cell bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+                                                    <input type="text" id="customer-City" class="searchInput bp-input-text" placeholder="{{ 'Other_Email' | translate }}"
+                                                       name="JobTitle"
+                                                       ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['OtherEmail']['isError'] == true}"
+                                                        ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('OtherEmail');"
+                                                       ng-model="M_AddEditCustomerV2.CustomerInfo.OtherEmail"  ng-disabled=""/>
+                                                 </div>
+                                        </div>
+                                        
+                                                                                    
+                                       <!--  <div class="form-group " ng-if = "M_AddEditCustomerV2.AdditionalFieldsInfo.OtherPhone.isPrimary">
+                                            <p class="DetailLabel">{{ 'Other_Phone' | translate }} </p>
+                                                <div class="bp-cell bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+                                                    <input type="text" id="customer-City" class="searchInput bp-input-text" placeholder="{{ 'Other_Phone' | translate }}"
+                                                       name="JobTitle"
+                                                       ng-blur="F_AddEditCustomerV2.getOtherSimilarCustomer();F_AddEditCustomerV2.validateForm('OtherPhone');"
+                                                        ng-class="{'bp-redborder' : M_AddEditCustomerV2.CustomerValidation['OtherPhone']['isError'] == true}"
+                                                         maxlength="20"
+                                                       ng-model="M_AddEditCustomerV2.CustomerInfo.OtherPhone"  ng-disabled=""/>
+                                                 </div>
+                                        </div> -->
+                                        <div class="form-group " ng-if = "M_AddEditCustomerV2.AdditionalFieldsInfo.PriceLevel.isPrimary">
+                                            <p class="DetailLabel">{{ 'Label_Price_Level' | translate }} </p>
+                                                <div class="bp-cell bp-unitSearch-area bp-customerdropdown customerDropDown searchInputArea selectableDropdown" ng-class="{'showingOverlay' : M_AddEditCustomerV2.isFocusedPriceLevel}">
+                                                    <input type="text" id="customer-price-level" class="searchInput bp-input-text" placeholder="{{ 'Placeholder_Account_Type' | translate }}" 
+                                                       name="country"
+                                                       ng-focus = "M_AddEditCustomerV2.isFocusedPriceLevel = true"
+                                                       ng-blur = "M_AddEditCustomerV2.isFocusedPriceLevel = false"
+                                                        ng-keyup="F_AddEditCustomerV2.keyPressNavigationOnDropdownElements($event, 'price-level-drop-down-div', 'pricelevelto',  M_AddEditCustomerV2.CustomerMasterData.PriceLevelList)"
+                                                       ng-model="M_AddEditCustomerV2.CustomerInfo.PriceLevelName" readonly="readonly" ng-disabled=""/>
+                                                    <i ng-include="'{!Application_Images}/Icons/arrowDown.svg'" class="bp-blue downArrow" ng-click = "F_AddEditCustomerV2.setFocus('customer-price-level')" ></i>
+                                                    
+                                                    <div class="searchResultOverlay" id="price-level-drop-down-div">
+                                                       <ul>
+                                                          <li ng-repeat = "pricelevelrec in M_AddEditCustomerV2.CustomerMasterData.PriceLevelList" 
+                                                          id = "pricelevel_{{$index}}" 
+                                                          ng-class="{'selected-row': $index == M_AddEditCustomerV2.currentDropDownIndex}"
+                                                           ng-mousedown="F_AddEditCustomerV2.selectPriceLevelType(pricelevelrec);">
+                                                             <div class="fullName">{{pricelevelrec.PriceLevelName}}</div>
+                                                          </li>
+                                                       </ul>
+                                                    </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group " ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' && M_AddEditCustomerV2.AdditionalFieldsInfo.DriversLicense.isPrimary">
+			                                <p class="DetailLabel">{{ 'Drivers_License' | translate }} </p>
+			                                    <div class="bp-cell bp-unitSearch-area customerDropDown searchInputArea selectableDropdown">
+			                                        <input type="text" id="customer-drivers-license" class="searchInput bp-input-text" placeholder="{{ 'Drivers_License' | translate }}"
+			                                           name="DriversLicense"
+			                                           ng-model="M_AddEditCustomerV2.CustomerInfo.DriversLicense"  ng-disabled="" maxlength="25"/>
+			                                     </div>
+			                            </div>
+                                    </div>
+                                    <div class="col-sm-12 P0">
+                                    <ul class="additional-information-buttons" >
+                                     <li ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' && !M_AddEditCustomerV2.AdditionalFieldsInfo.Birthday.isPrimary" ng-click = "F_AddEditCustomerV2.showAdditionalField('Birthday')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Birthday' | translate }}</a></li>
+                                     <li ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' && !M_AddEditCustomerV2.AdditionalFieldsInfo.Company.isPrimary" ng-click = "F_AddEditCustomerV2.showAdditionalField('Company')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Company' | translate }}</a></li>
+                                     <li ng-if = "M_AddEditCustomerV2.CustomerInfo.Type == 'Individual' && !M_AddEditCustomerV2.AdditionalFieldsInfo.JobTitle.isPrimary" ng-click = "F_AddEditCustomerV2.showAdditionalField('JobTitle')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Job_Title' | translate }}</a></li>
+                                     <li ng-if = "!M_AddEditCustomerV2.AdditionalFieldsInfo.OtherEmail.isPrimary" ng-click = "F_AddEditCustomerV2.showAdditionalField('OtherEmail')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Other_Email' | translate }}</a></li>
+                                     <!-- <li ng-if = "!M_AddEditCustomerV2.AdditionalFieldsInfo.OtherPhone.isPrimary" ng-click = "F_AddEditCustomerV2.showAdditionalField('OtherPhone')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Other_Phone' | translate }}</a></li> -->  
+                                     <li ng-if = "!M_AddEditCustomerV2.AdditionalFieldsInfo.PriceLevel.isPrimary" ng-click = "F_AddEditCustomerV2.showAdditionalField('PriceLevel')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Label_Price_Level' | translate }}</a></li>  
+                                  	 <li ng-if = "!M_AddEditCustomerV2.AdditionalFieldsInfo.DriversLicense.isPrimary" ng-click = "F_AddEditCustomerV2.showAdditionalField('DriversLicense')"><a><i ng-include="'{!Application_Images}/Icons/Add.svg'" class="white_FFF"></i> {{ 'Drivers_License' | translate }}</a></li>
+                                  </ul>
+                                  </div>
+                              </div>
+                          
+                          
+                
+                
+                
+                
+                
+                <div class="customer-order-buttons">
+                    <a class="btn btn-primary add-btn bp-text-uppercase" ng-class = "{'disablecustomerbtn' : F_AddEditCustomerV2.validateUserDetails() || M_AddEditCustomerV2.isCreateBtnDisabled}" ng-disabled = "F_AddEditCustomerV2.validateUserDetails() || M_AddEditCustomerV2.isCreateBtnDisabled" ng-click = "F_AddEditCustomerV2.saveCustomer(M_AddEditCustomerV2.CustomerInfo, true)"
+                        ng-if="!M_AddEditCustomerV2.isEditMode">{{ 'Create' | translate }} &amp; {{ 'Add_a_customer_unit' | translate }}</a>
+                    <a class="btn bp-btn-normal save-btn bp-text-uppercase" ng-class = "{'disablecustomerbtn' : F_AddEditCustomerV2.validateUserDetails() || M_AddEditCustomerV2.isCreateBtnDisabled}" ng-disabled = "F_AddEditCustomerV2.validateUserDetails() || M_AddEditCustomerV2.isCreateBtnDisabled" ng-click = "F_AddEditCustomerV2.saveCustomer(M_AddEditCustomerV2.CustomerInfo, false)"
+                        ng-if="!M_AddEditCustomerV2.isEditMode">{{ 'Create' | translate }}</a>
+                    <a class="btn bp-btn-normal save-btn bp-text-uppercase" ng-class = "{'disablecustomerbtn' : F_AddEditCustomerV2.validateUserDetails() || M_AddEditCustomerV2.isCreateBtnDisabled}" ng-disabled = "F_AddEditCustomerV2.validateUserDetails() || M_AddEditCustomerV2.isCreateBtnDisabled" ng-click = "F_AddEditCustomerV2.saveCustomer(M_AddEditCustomerV2.CustomerInfo, false)"
+                        ng-if="M_AddEditCustomerV2.isEditMode">{{ 'Save_Label' | translate }}</a>
+                </div>
+            </form>
+          </div>
+            <div class="user-suggestion show-desktop-view" ng-if = "M_AddEditCustomerV2.SimilarCustomers.length > 0  && !M_AddEditCustomerV2.isEditMode">
+               <p class="message" ng-if="M_AddEditCustomerV2.SimilarCustomers.length ==1">{{ 'We_found_a_similar_customer_in_the_system' | translate }} </p>
+            	<p class="message" ng-if="M_AddEditCustomerV2.SimilarCustomers.length >1">{{ 'We_found_similar_customers_in_the_system' | translate }} </p>
+               <ul ng-repeat = "SimilarCustomerRec in M_AddEditCustomerV2.SimilarCustomers" ng-class="{'similar-first-customer': $index == 0}">
+                     <li>
+                    	<div class = "suggestion-details">	
+	                        <p class="name">{{SimilarCustomerRec.CustomerName}}</p>
+	                        <p class="phone">{{SimilarCustomerRec.HomeNumber}}</p>
+	                    </div>
+	                    <div class = "suggestion-details">    
+	                        <p class="sku" ng-repeat = "couRec in SimilarCustomerRec.COURecords">{{couRec.Description}}</p>
+                       </div>
+                        <button ng-if="(currentStateName == 'CustomerOrder_V2.AddEditCustomerV2') || (currentStateName == 'AddEditAppointment.AddEditCustomerV2')" 
+                            class="btn bp-btn-normal bp-text-uppercase" ng-click = "F_AddEditCustomerV2.UseExistingCustomer(SimilarCustomerRec.Id)">{{ 'Use' | translate }}</button>
+                    </li>
+                </ul>
+            </div>            
+        </div>
+      </div>
+      <div class="user-suggestion show-mobile-view" ng-if = "M_AddEditCustomerV2.SimilarCustomers.length > 0  && !M_AddEditCustomerV2.isEditMode">
+            	<p class="message" ng-if="M_AddEditCustomerV2.SimilarCustomers.length ==1">{{ 'We_found_a_similar_customer_in_the_system' | translate }} </p>
+            	<p class="message" ng-if="M_AddEditCustomerV2.SimilarCustomers.length >1">{{ 'We_found_similar_customers_in_the_system' | translate }} </p>
+                <ul ng-repeat = "SimilarCustomerRec in M_AddEditCustomerV2.SimilarCustomers"  ng-class="{'similar-first-customer': $index == 0}">
+                    <li>
+                    	<div class = "suggestion-details">	
+	                        <p class="name">{{SimilarCustomerRec.CustomerName}}</p>
+	                        <p class="phone">{{SimilarCustomerRec.HomeNumber}}</p>
+	                    </div>
+	                    <div class = "suggestion-details">    
+	                        <p class="sku" ng-repeat = "couRec in SimilarCustomerRec.COURecords">{{couRec.Description}}</p>
+                       </div>
+                       <button ng-if="(currentStateName == 'CustomerOrder_V2.AddEditCustomerV2') || (currentStateName == 'AddEditAppointment.AddEditCustomerV2')" 
+                            class="btn bp-btn-normal bp-text-uppercase" ng-click = "F_AddEditCustomerV2.UseExistingCustomer(SimilarCustomerRec.Id)">{{ 'Use' | translate }}</button>
+                    </li>
+                </ul>
+            </div>
+    </div>
+</apex:page>

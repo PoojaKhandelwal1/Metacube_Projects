@@ -1,0 +1,983 @@
+<apex:component Controller="GlobalSearchCtrl">
+    <apex:attribute name="Application_Images" Description="" required="true" type="String"/>
+    <script>
+    var globalSearchModule = angular.module('globalSearchModule', []);
+	globalSearchModule.factory('globalSearchservice', function($q) {
+	    return {
+	        getGlobalSearchResult: function(globalSearchQueryJson) {
+	            return RemoteActionService($q, '{!$RemoteAction.GlobalSearchCtrl.getGlobalSearchResult}', globalSearchQueryJson);
+	        }
+	    }
+	});
+	globalSearchModule.controller('globalSearchController', function($scope, $timeout, globalSearchservice, $filter, $state, $rootScope) {
+	    var lastSearchTerm = null;
+	    var isGlobalSearchStrBlank = "";
+	    var filteredKeywordListSize = 0;
+	    var previousResult = [];
+	    var newUrl = window.location.origin;
+	    $scope.globalSearchModal = {};
+	    $scope.globalSearchModal.currentIndex = null;
+	    $scope.globalSearchModal.searchTimer = null;
+	    $scope.globalSearchModal.searchTimer1 = null;
+	    $scope.globalSearchModal.searching = false;
+	    $scope.globalSearchModal.pause = 1000;
+	    $scope.globalSearchModal.minLength = 3;
+	    $scope.globalSearchModal.globalSearchStr = null;
+	    $scope.globalSearchModal.totalGlobalSearchRecords = 0;
+	    $scope.globalSearchModal.isKeyword = false;
+	    $scope.globalSearchModal.keywordValue = "";
+	    $scope.globalSearchModal.isGlobalSearchInputFocused = false;
+	    $scope.globalSearchModal.showDefaultDropdown = true;
+	    $scope.globalSearchModal.indexValue = null;
+	    $scope.globalSearchModal.maxRecordsToDisplay = 5;
+	    $scope.globalSearchModal.KeywordNameToPermissionNameMap = {
+	        "Customer Orders": {
+	            "permissionNames": "Merchandise,Service job,Deal",
+	            "permissionLabel": "view",
+	            "keywordNames": ['CO']
+	        },
+	        "Sales Taxes": {
+	            "permissionNames": "Sales Taxes",
+	            "permissionLabel": "assign",
+	            "keywordNames": ['Tax', 'Tax Code', 'Tax Rate']
+	        },
+	        "Users": {
+	            "permissionNames": "System Settings",
+	            "permissionLabel": "enabled",
+	            "keywordNames": ['User']
+	        },
+	        "Employees": {
+	            "permissionNames": "System Settings",
+	            "permissionLabel": "enabled",
+	            "keywordNames": ['Employee']
+	        },
+	        "Vendor Invoices": {
+	            "permissionNames": "Vendor invoicing",
+	            "permissionLabel": "view",
+	            "keywordNames": ['VI', 'Vendor Invoicing']
+	        },
+	        "Vendor Orders": {
+	            "permissionNames": "Vendor order",
+	            "permissionLabel": "view",
+	            "keywordNames": ['VO', 'PO', 'Vendor Order']
+	        },
+	        "Vendor Receivings": {
+	            "permissionNames": "Vendor receiving",
+	            "permissionLabel": "view",
+	            "keywordNames": ['VR', 'Vendor Receiving']
+	        }
+	    }
+	    /* Start: list of default keywords to display when focus on input field and global search string is blank and no keyword is selected */
+	    $scope.globalSearchModal.defaultKeywordsList = ["Customer", "Merchandise"];
+	    /* End: list of default keywords to display when focus on input field and global search string is blank and no keyword is selected */
+	    /* Start: list of all keywords to display when global search string has some value (when contents match) and no keyword is selected */
+	    $scope.globalSearchModal.keywordsList = {
+	        "Customer": "Customers",
+	        "Merchandise": "Parts",
+	        "Part": "Parts",
+	        "Labor": "Labor Codes",
+	        "Labor Code": "Labor Codes",
+	        "Labour": "Labor Codes",
+	        "Vendor": "Vendors",
+	        "CI": "Customer Invoices",
+	        "Customer Invoice": "Customer Invoices",
+	        "Fee": "Fees",
+	        "Vendor Product": "Vendor Product",
+	        "Kit": "Kits",
+	        "SKit": "Kits",
+	        "Service Kit": "Kits",
+	        "Category": "Item Categories",
+	        "Unit": "Inventory Unit",
+	        "Price Level": "Price Levels",
+	        "Vendor Return": "Vendor Return"
+	    };
+	    /* End: list of all keywords to display when global search string has some value (when contents match) and no keyword is selected */
+	    //list of keys from keywordsList
+	    $scope.globalSearchModal.keywordsList_keys = Object.keys($scope.globalSearchModal.keywordsList);
+	    $scope.globalSearchModal.calculatePaddingToAdjusInbox = function(isKeyWord, keywordValue) {
+	        if (isKeyWord) {
+	            if (keywordValue.length == 2) {
+	                angular.element('#globalSearchStrInput').css('padding-left', 110);
+	                return false;
+	            } else if (keywordValue.length > 12) {
+	                angular.element('#globalSearchStrInput').css('padding-left', 200);
+	                angular.element('.BP-New-Header-keyword').css('width', 150);
+	            } else if (keywordValue.length > 10) {
+	                angular.element('#globalSearchStrInput').css('padding-left', 170);
+	                angular.element('.BP-New-Header-keyword').css('width', 130);
+	            } else {
+	                angular.element('#globalSearchStrInput').css('padding-left', 150);
+	                angular.element('.BP-New-Header-keyword').css('width', 110);
+	            }
+	        }
+	    }
+	    var immediateResultsKeywordsList = {
+	        "Tax": "Sales Taxes",
+	        "Tax Code": "Sales Taxes",
+	        "Tax Rate": "Sales Taxes",
+	        "Labor": "Labor Codes",
+	        "Labour": "Labor Codes",
+	        "Vendor Product": "Vendor Product",
+	        "Fee": "Fees",
+	        "Kit": "Kits",
+	        "SKit": "Kits",
+	        "Category": "Item Categories"
+	    };
+	    //list of keys from immediateResultsKeywordsList
+	    var immediateResultsKeywordsList_keys = Object.keys(immediateResultsKeywordsList);
+	    /* Start: Added to close dropdown when click on document and not on globalSearchStrInput input field */
+	    $scope.globalSearchModal.hideDropDownClickOutSide = function(e) {
+	        // check that your clicked element has no id=globalSearchStrInput etc
+	        if (e.target.id != 'globalSearchStrInput' && angular.element(e.target.closest('#removeKeywordBtn')).attr('id') != 'removeKeywordBtn' // id check can be removed
+	            && angular.element(e.target.closest('#BP_GlobalSearchIcon')).attr('id') != 'BP_GlobalSearchIcon' && e.target.id != 'BP_GlobalSearchIcon' && e.target.id != 'BP_GlobalSearchIcon_Holder' && e.target.id != 'removeKeywordBtn' && e.target.closest('tr[class^="BP_globalSearch_angucomplete-row"]') == null && e.target.closest('td[class^="BP_GlobalSearch_data-td"]') == null) {
+	            $scope.globalSearchModal.showDropdown = false;
+	            $scope.globalSearchModal.searching = false;
+	            $scope.globalSearchModal.totalGlobalSearchRecords = 0;
+	            $scope.globalSearchModal.showDefaultDropdown = false;
+	            lastSearchTerm = null;
+	            angular.element('#globalSearchStrInput').css('padding-left', 15);
+	            filteredKeywordListSize = 0;
+	            angular.element('.search-field').removeClass('active');
+	            angular.element(".globalSearchWrapperContainer").removeClass('active');
+	            angular.element('.search-field').blur();
+	            clearText();
+	        } else if (angular.element(e.target.closest('#removeKeywordBtn')).attr('id') == 'removeKeywordBtn') {
+	            angular.element('#globalSearchStrInput').css('padding-left', 36);
+	            angular.element('#globalSearchStrInput').focus();
+	        }
+	    }
+	    /* End: Added to close dropdown when click on document and not on globalSearchStrInput input field */
+	    // condition to check whether new search is needed or not; will return true or false 
+	    var isNewSearchNeeded = function(newTerm, oldTerm) {
+	        return newTerm.length >= $scope.globalSearchModal.minLength && newTerm != oldTerm
+	    }
+	    /* Start: Sets default permission based keywords available */
+	    $scope.globalSearchModal.setDefaultData = function() {
+	        angular.forEach($scope.globalSearchModal.KeywordNameToPermissionNameMap, function(value, key) {
+	            var permissionsList = (value.permissionNames).split(',');
+	            var permissionValue = false;
+	            for (var i = 0; i < permissionsList.length; i++) {
+	                permissionValue = permissionValue || $rootScope.GroupOnlyPermissions[permissionsList[i]][value.permissionLabel];
+	            }
+	            if (permissionValue) {
+	                for (var j = 0; j < value.keywordNames.length; j++) {
+	                    $scope.globalSearchModal.keywordsList[value.keywordNames[j]] = key;
+	                    $scope.globalSearchModal.keywordsList_keys = Object.keys($scope.globalSearchModal.keywordsList);
+	                    if (key == 'Customer Orders') {
+	                        $scope.globalSearchModal.defaultKeywordsList.push(value.keywordNames[j]);
+	                    }
+	                }
+	            }
+	        });
+	        resetSearchResults();
+	        $scope.globalSearchModal.currentIndex = -1;
+	        clearText();
+	        isGlobalSearchStrBlank = "";
+	        filteredKeywordListSize = 0;
+	    }
+	    /* End: Sets default permission based keywords available */
+	    //if global search string is undefined then set it to null on focus on input field
+	    $scope.globalSearchModal.GetIntialdata = function() {
+	        //remove jquery
+	        angular.element(".bp-autocomplete-dropdown-wrapper").hide();
+	        angular.element(".bp-autocomplete-input").val('');
+	        angular.element('.app-drop-menu-toggle').prop('checked', false);
+	        $scope.globalSearchModal.globalSearchStr = !$scope.globalSearchModal.globalSearchStr ? null : $scope.globalSearchModal.globalSearchStr;
+	        $scope.globalSearchModal.results = [];
+	        previousResult = $scope.globalSearchModal.results;
+	        $scope.globalSearchModal.totalGlobalSearchRecords = 0;
+	        filteredKeywordListSize = 0;
+	    }
+	    //to assign global search response data into results array
+	    var processResults = function(responseData) {
+	        if (responseData) {
+	            $scope.globalSearchModal.results = responseData;
+	            previousResult = $scope.globalSearchModal.results;
+	        }
+	    }
+	    var searchTimerComplete = function(str) {
+	        if (str != null) {
+	            if (str.length >= $scope.globalSearchModal.minLength) {
+	                searchSuggestion(str);
+	            }
+	        }
+	    }
+	    var ajaxRequest;
+	    //call globalSearchservice to get global search results
+	    var searchSuggestion = function(str) {
+	        $scope.globalSearchModal.searching = true;
+	        $scope.globalSearchModal.showDropdown = true;
+	        var globalSearchQueryJson = {
+	            "GlobalSearchText": str,
+	            "GlobalSearchKeyword": $scope.globalSearchModal.keywordsList[$scope.globalSearchModal.keywordValue],
+	            "GlobalSearchKeywordKey": $scope.globalSearchModal.keywordValue
+	        }
+	        var responseData = "";
+	        ajaxRequest = globalSearchservice.getGlobalSearchResult(JSON.stringify(globalSearchQueryJson));
+	        ajaxRequest.then(function(successfulGlobalSearchResult) {
+	            if (successfulGlobalSearchResult == SKIP_API_REQUEST) {
+	                return;
+	            } else {
+	               responseData = responseHandler(successfulGlobalSearchResult);
+	            }
+	        }, function(errorSearchResult) {
+	            $scope.globalSearchModal.searching = false;
+	        });
+	    }
+	
+	    function responseHandler(successfulGlobalSearchResult) {
+	        responseData = successfulGlobalSearchResult.searchRecords;
+	        $scope.globalSearchModal.totalGlobalSearchRecords = successfulGlobalSearchResult.TotalRecords;
+	        $scope.globalSearchModal.searching = false;
+	        processResults(responseData);
+	        return responseData;
+	    }
+	    $scope.globalSearchModal.removeKeyword = function() {
+	        clearText();
+	        $scope.globalSearchModal.showDropdown = true;
+	        $scope.globalSearchModal.showDefaultDropdown = true;
+	        resetSearchResults();
+	        filteredKeywordListSize = 0;
+	        angular.element('#globalSearchStrInput').css('padding-left', 36);
+	        $scope.globalSearchModal.currentIndex = -1;
+	    }
+	    //to perform actions on keyup
+	    $scope.globalSearchModal.keyPressed = function(event) {
+	        // to remove keyword breadcrum by backspace
+	        if ((isBlankValue(isGlobalSearchStrBlank)) && event.which == 8) {
+	            clearText();
+	            angular.element('#globalSearchStrInput').css('padding-left', 36);
+	            $scope.globalSearchModal.showDropdown = true;
+	            $scope.globalSearchModal.showDefaultDropdown = true;
+	            resetSearchResults();
+	            filteredKeywordListSize = 0;
+	            $scope.globalSearchModal.currentIndex = -1;
+	        } else {
+	            if (!(event.which == 38 || event.which == 40 || event.which == 13) || event.type == 'paste') { //if pressed key code is not for up & down arrow keys and enter 
+	                if ((!$scope.globalSearchModal.globalSearchStr) && $scope.globalSearchModal.isKeyword == true) {
+	                    resetSearchResults();
+	                    isGlobalSearchStrBlank = $scope.globalSearchModal.globalSearchStr;
+	                } else if ((!$scope.globalSearchModal.globalSearchStr) && $scope.globalSearchModal.isKeyword == false) {
+	                    $scope.globalSearchModal.showDropdown = true;
+	                    resetSearchResults();
+	                    isGlobalSearchStrBlank = $scope.globalSearchModal.globalSearchStr;
+	                    $scope.globalSearchModal.showDefaultDropdown = true;
+	                } else if (isNewSearchNeeded($scope.globalSearchModal.globalSearchStr, lastSearchTerm)) {
+	                    lastSearchTerm = $scope.globalSearchModal.globalSearchStr;
+	                    $scope.globalSearchModal.currentIndex = -1;
+	                    checkIsKeyword($scope.globalSearchModal.globalSearchStr);
+	                    isGlobalSearchStrBlank = $scope.globalSearchModal.globalSearchStr;
+	                    $scope.globalSearchModal.showDefaultDropdown = false;
+	                    if ($scope.globalSearchModal.searchTimer) {
+	                        $timeout.cancel($scope.globalSearchModal.searchTimer);
+	                    }
+	                    $scope.globalSearchModal.searchTimer = $timeout(function() {
+	                        searchTimerComplete($scope.globalSearchModal.globalSearchStr);
+	                    }, $scope.globalSearchModal.pause);
+	                }
+	            } else {
+	                event.preventDefault();
+	            }
+	        }
+	    }
+	
+	    function resetSearchResults() {
+	        $scope.globalSearchModal.results = [];
+	        previousResult = $scope.globalSearchModal.results;
+	        $scope.globalSearchModal.totalGlobalSearchRecords = 0;
+	        $scope.globalSearchModal.searching = false;
+	        lastSearchTerm = null;
+	    }
+	    // on key Down Global search element
+	    $scope.globalSearchModal.keyDownTabHandler = function(event) {
+	        if (event.which == 9) {
+	            $scope.globalSearchModal.showDropdown = false;
+	            resetSearchResults();
+	            filteredKeywordListSize = 0;
+	            clearText();
+	        } else {
+	            keyNavigationHandler(event);
+	        }
+	    }
+	    // remove multiple times angular element fetch same top method
+	    function keyNavigationHandler(event) {
+	        var totalRecordsToTraverse = 0;
+	        if ($scope.globalSearchModal.results) {
+	            totalRecordsToTraverse += $scope.globalSearchModal.results.length;
+	        }
+	        if ($scope.globalSearchModal.showDefaultDropdown == true && $scope.globalSearchModal.isKeyword == false) {
+	            totalRecordsToTraverse += $scope.globalSearchModal.defaultKeywordsList.length;
+	        } else if ($scope.globalSearchModal.showDefaultDropdown == false && $scope.globalSearchModal.isKeyword == false) {
+	            totalRecordsToTraverse += $filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr).length;
+	        }
+	        if ($scope.globalSearchModal.totalGlobalSearchRecords > $scope.globalSearchModal.maxRecordsToDisplay) {
+	            totalRecordsToTraverse += 1;
+	        }
+	        totalRecordsToTraverse += 1; //Added for Advanced search
+	        //for down arrow key
+	        if (event.which === 40) {
+	            if ($scope.globalSearchModal.results && ($scope.globalSearchModal.currentIndex + 1) < totalRecordsToTraverse) {
+	                $scope.globalSearchModal.currentIndex++;
+	                event.preventDefault;
+	                event.stopPropagation();
+	            }
+	        } else if (event.which == 38) { //for up arrow key
+	            if ($scope.globalSearchModal.currentIndex >= 1) {
+	                $scope.globalSearchModal.currentIndex--;
+	                event.preventDefault;
+	                event.stopPropagation();
+	            }
+	        } else if (event.which == 13) { //for enter key
+	            if ($scope.globalSearchModal.results && $scope.globalSearchModal.showDefaultDropdown == false && $scope.globalSearchModal.currentIndex >= 0 && $scope.globalSearchModal.currentIndex < totalRecordsToTraverse) {
+	                var recordsLengthForKEywords = 0;
+	                if (!$scope.globalSearchModal.isKeyword) {
+	                    recordsLengthForKEywords = $scope.globalSearchModal.results.length + $filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr).length;
+	                } else {
+	                    recordsLengthForKEywords = $scope.globalSearchModal.results.length;
+	                }
+	                if ($scope.globalSearchModal.currentIndex >= 0 && $scope.globalSearchModal.currentIndex < $scope.globalSearchModal.results.length) {
+	                    $scope.globalSearchModal.selectResult($scope.globalSearchModal.results[$scope.globalSearchModal.currentIndex]);
+	                } else if ($scope.globalSearchModal.currentIndex >= $scope.globalSearchModal.results.length && $scope.globalSearchModal.currentIndex < recordsLengthForKEywords) {
+	                    $scope.globalSearchModal.selectKeyword($filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr)[$scope.globalSearchModal.currentIndex - $scope.globalSearchModal.results.length]);
+	                } else if ($scope.globalSearchModal.currentIndex >= recordsLengthForKEywords && $scope.globalSearchModal.currentIndex < recordsLengthForKEywords + 1) {
+	                    $scope.globalSearchModal.NavigateToHomeSearch();
+	                } else if ($scope.globalSearchModal.currentIndex >= recordsLengthForKEywords + 1 && $scope.globalSearchModal.currentIndex < recordsLengthForKEywords + 2) {
+	                    $scope.globalSearchModal.NavigateToHomeSearch();
+	                }
+	                event.preventDefault;
+	                event.stopPropagation();
+	            } else if ($scope.globalSearchModal.showDefaultDropdown == true) {
+	                if ($scope.globalSearchModal.currentIndex >= 0 && $scope.globalSearchModal.currentIndex < $scope.globalSearchModal.defaultKeywordsList.length) {
+	                    $scope.globalSearchModal.selectKeyword($scope.globalSearchModal.defaultKeywordsList[$scope.globalSearchModal.currentIndex]);
+	                } else if ($scope.globalSearchModal.currentIndex >= $scope.globalSearchModal.defaultKeywordsList.length && $scope.globalSearchModal.currentIndex < $scope.globalSearchModal.defaultKeywordsList.length + 1) {
+	                    $scope.globalSearchModal.NavigateToHomeSearch();
+	                }
+	            } else {
+	                $scope.globalSearchModal.showDropdown = true;
+	                event.preventDefault;
+	                event.stopPropagation();
+	            }
+	        } else if (event.which == 27) { //for escape key
+	            $scope.globalSearchModal.results = [];
+	            previousResult = $scope.globalSearchModal.results;
+	            $scope.globalSearchModal.showDropdown = false;
+	            $scope.globalSearchModal.searching = false;
+	            $scope.globalSearchModal.totalGlobalSearchRecords = 0;
+	            $scope.globalSearchModal.showDefaultDropdown = false;
+	        }
+	    }
+	    //to navigate to home search page when click on more results
+	    $scope.globalSearchModal.NavigateToHomeSearch = function() {
+	        angular.element('#searchInputDiv').animate({
+	            width: 'toggle'
+	        }, 350, function() {
+	            angular.element('#searchIconOnly').show();
+	            angular.element('#advanceSearchDropdownBtnSpan').show();
+	        });
+	        //remove type checking with single expression
+	        if ($scope.globalSearchModal.globalSearchStr == undefined || $scope.globalSearchModal.globalSearchStr == null || $scope.globalSearchModal.globalSearchStr == "") {
+	            $scope.globalSearchModal.MoveToState('HomeSearch');
+	        } else if ($scope.globalSearchModal.keywordValue == undefined || $scope.globalSearchModal.keywordValue == null || $scope.globalSearchModal.keywordValue == "") {
+	            $scope.BPGlobalHeader.MoveToState('HomeSearch', {
+	                q: $scope.globalSearchModal.globalSearchStr
+	            });
+	        } else {
+	            $scope.BPGlobalHeader.MoveToState('HomeSearch', {
+	                q: $scope.globalSearchModal.globalSearchStr,
+	                type: $scope.globalSearchModal.keywordsList[$scope.globalSearchModal.keywordValue]
+	            });
+	        }
+	        $scope.globalSearchModal.showDropdown = false;
+	        resetSearchResults();
+	        clearText();
+	        $scope.globalSearchModal.showDefaultDropdown = false;
+	        angular.element('#globalSearchStrInput').css('padding-left', 15);
+	        angular.element('.search-field').removeClass('active');
+	        angular.element(".globalSearchWrapperContainer").removeClass('active');
+	    }
+	    /* Start: to navigate to related page after selecting result */
+	    $scope.globalSearchModal.selectResult = function(result) {
+	        angular.element('#searchInputDiv').animate({
+	            width: 'toggle'
+	        }, 350, function() {
+	            angular.element('#searchIconOnly').show();
+	            angular.element('#advanceSearchDropdownBtnSpan').show();
+	        });
+	        $scope.globalSearchModal.showDropdown = false;
+	        resetSearchResults();
+	        clearText();
+	        $scope.globalSearchModal.showDefaultDropdown = false;
+	        angular.element('.search-field').removeClass('active');
+	        angular.element(".globalSearchWrapperContainer").removeClass('active');
+	        angular.element('#globalSearchStrInput').css('padding-left', 15);
+	        if (result.Type == 1) {
+	            loadState($state, 'ViewCustomer', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 2) {
+	            loadState($state, 'ViewVendor', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 3) {
+	            loadState($state, 'ViewPart', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 4) {
+	            loadState($state, 'ViewKit', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 5) {
+	            loadState($state, 'ViewFee', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 6) {
+	            loadState($state, 'ViewLabour', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 7) {
+	            loadState($state, 'User');
+	        } else if (result.Type == 8) {
+	            loadState($state, 'CustomerOrder_V2', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 9) {
+	            loadState($state, 'CustomerOrder_V2', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 10) {
+	            loadState($state, 'VendorOrder', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 11) {
+	            loadState($state, 'VendorOrderReceiving', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 12) {
+	            loadState($state, 'VendorOrderInvoicing', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 13) {
+	            window.open(newUrl + '/apex/BlackPurlHome?pageName=CategoryMgmt', '_self');
+	        } else if (result.Type == 14) {
+	            window.open(newUrl + '/apex/BlackPurlHome?pageName=SystemSettings', '_self');
+	        } else if (result.Type == 15) {
+	            window.open(newUrl + '/apex/BlackPurlHome?pageName=SystemSettings', '_self');
+	        } else if (result.Type == 16 || result.Type == 19 || result.Type == 20 || result.Type == 21) {
+	            loadState($state, 'ViewVendor', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 17) {
+	            loadState($state, 'CustomerOrder_V2', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 18) {
+	            loadState($state, 'ViewUnit', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 22) {
+	            loadState($state, 'ReturnVO', {
+	                Id: result.Id
+	            });
+	        } else if (result.Type == 23) {
+	            loadState($state, 'User');
+	        }
+	    }
+	    /* End: to navigate to related page after selecting result */
+	    /* Start: If colon(:) is pressed then check whether string entered is a keyword or not */
+	    var checkIsKeyword = function(str) {
+	        var lastCharacter = str.substr(str.length - 1);
+	        if (lastCharacter === ":") {
+	            angular.element('#globalSearchStrInput').attr('disabled', 'disabled');
+	            var tempStr = str.slice(0, (str.length - 1));
+	            //use lodash here
+	            var upperCaseKeyWords = $scope.globalSearchModal.keywordsList_keys.map(function(value) {
+	                return value.toUpperCase();
+	            });
+	            var i = -1;
+	            i = upperCaseKeyWords.indexOf(tempStr.toUpperCase());
+	            if (i > -1) {
+	                $scope.globalSearchModal.isKeyword = true;
+	                $scope.globalSearchModal.keywordValue = $scope.globalSearchModal.keywordsList_keys[i];
+	                $scope.globalSearchModal.globalSearchStr = $scope.globalSearchModal.globalSearchStr.length > $scope.globalSearchModal.keywordValue.length + 1 ? $scope.globalSearchModal.globalSearchStr.splice(0, $scope.globalSearchModal.keywordValue.length) : "";
+	                $scope.globalSearchModal.showDropdown = false;
+	                $scope.globalSearchModal.results = [];
+	                previousResult = $scope.globalSearchModal.results;
+	                lastSearchTerm = null;
+	                $scope.globalSearchModal.searching = false;
+	                $scope.globalSearchModal.totalGlobalSearchRecords = 0;
+	                $scope.globalSearchModal.showDefaultDropdown = false;
+	            } else {
+	                $scope.globalSearchModal.isKeyword = false;
+	            }
+	            angular.element('#globalSearchStrInput').removeAttr("disabled");
+	            angular.element('#globalSearchStrInput').focus();
+	        }
+	    }
+	    /* End: If colon(:) is pressed then check whether string entered is a keyword or not */
+	    /* Start: to display keywords (default or actual keywords) dropdown */
+	    $scope.globalSearchModal.showKeywordsDropdown = function() {
+	        filteredKeywordListSize = $filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr).length;
+	        $scope.globalSearchModal.currentIndex = -1;
+	        // to display default keywords dropdown when focus on input, global search string is blank              
+	        if ($scope.globalSearchModal.globalSearchStr == null || $scope.globalSearchModal.globalSearchStr == undefined || $scope.globalSearchModal.globalSearchStr == "") {
+	            $scope.globalSearchModal.showDropdown = true;
+	            $scope.globalSearchModal.showDefaultDropdown = true;
+	        } else {
+	            $scope.globalSearchModal.showDefaultDropdown = false;
+	            //condition to display actual keywords dropdown when global search str has some value and it matches from keywords keys list 
+	            if (filteredKeywordListSize > 0) {
+	                $scope.globalSearchModal.showDropdown = true;
+	            }
+	        }
+	    }
+	    /* End: to display keywords (default or actual keywords) dropdown */
+	    // Conditions for "No Results Found" message
+	    $scope.globalSearchModal.showNoResultsMessage = function() {
+	        filteredKeywordListSize = $filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr).length;
+	        if ($scope.globalSearchModal.isKeyword == true) {
+	            filteredKeywordListSize = 0;
+	            if (!$scope.globalSearchModal.searching && (!$scope.globalSearchModal.results || $scope.globalSearchModal.results.length == 0) && filteredKeywordListSize == 0 && $scope.globalSearchModal.showDefaultDropdown == false) {
+	                return true;
+	            } else {
+	                return false;
+	            }
+	        }
+	    }
+	    //when keyword is selected from dropdown
+	    $scope.globalSearchModal.selectKeyword = function(result) {
+	        $scope.globalSearchModal.isKeyword = true;
+	        $scope.globalSearchModal.keywordValue = result;
+	        $scope.globalSearchModal.globalSearchStr = "";
+	        $scope.globalSearchModal.showDropdown = false;
+	        $scope.globalSearchModal.results = [];
+	        previousResult = $scope.globalSearchModal.results;
+	        lastSearchTerm = null;
+	        $scope.globalSearchModal.showDefaultDropdown = false;
+	        $scope.globalSearchModal.searching = false;
+	        $scope.globalSearchModal.totalGlobalSearchRecords = 0;
+	        isGlobalSearchStrBlank = $scope.globalSearchModal.globalSearchStr; //Added by richa
+	        getSearchSuggestionsOnKeywordSelection();
+	        angular.element('#globalSearchStrInput').focus();
+	    }
+	    // will try with customerorder_V2.js keydown method 
+	    //calculate index value of row for filtered keywords
+	    $scope.globalSearchModal.calculateIndexForFilteredKeyword = function(index) {
+	        if ($scope.globalSearchModal.results) {
+	            $scope.globalSearchModal.indexValue = index + $scope.globalSearchModal.results.length;
+	        } else if (!$scope.globalSearchModal.results || $scope.globalSearchModal.results.length == 0) {
+	            $scope.globalSearchModal.indexValue = index;
+	        }
+	        if ($scope.globalSearchModal.indexValue == $scope.globalSearchModal.currentIndex) {
+	            return true;
+	        } else {
+	            return false;
+	        }
+	    }
+	    //calculate index value of row for show more results
+	    $scope.globalSearchModal.calculateIndexForShowMoreResults = function() {
+	        if ($scope.globalSearchModal.results) {
+	            if ($scope.globalSearchModal.showDefaultDropdown == false && $scope.globalSearchModal.isKeyword == false) {
+	                $scope.globalSearchModal.indexValue = $scope.globalSearchModal.results.length + $filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr).length;
+	            } else {
+	                $scope.globalSearchModal.indexValue = $scope.globalSearchModal.results.length;
+	            }
+	        }
+	        if ($scope.globalSearchModal.indexValue == $scope.globalSearchModal.currentIndex) {
+	            return true;
+	        } else {
+	            return false;
+	        }
+	    }
+	    $scope.globalSearchModal.calculateIndexForAdvancedSearch = function() {
+	        if ($scope.globalSearchModal.showDefaultDropdown == true) {
+	            $scope.globalSearchModal.indexValue = $scope.globalSearchModal.defaultKeywordsList.length;
+	        } else if ($scope.globalSearchModal.results) {
+	            if ($scope.globalSearchModal.showDefaultDropdown == false && $scope.globalSearchModal.isKeyword == false) {
+	                if ($scope.globalSearchModal.totalGlobalSearchRecords > 5) {
+	                    $scope.globalSearchModal.indexValue = $scope.globalSearchModal.results.length + $filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr).length + 1;
+	                } else {
+	                    $scope.globalSearchModal.indexValue = $scope.globalSearchModal.results.length + $filter("filter")($scope.globalSearchModal.keywordsList_keys, $scope.globalSearchModal.globalSearchStr).length;
+	                }
+	            } else {
+	                if ($scope.globalSearchModal.totalGlobalSearchRecords > 5) {
+	                    $scope.globalSearchModal.indexValue = $scope.globalSearchModal.results.length + 1;
+	                } else {
+	                    $scope.globalSearchModal.indexValue = $scope.globalSearchModal.results.length;
+	                }
+	            }
+	        }
+	        if ($scope.globalSearchModal.indexValue == $scope.globalSearchModal.currentIndex) {
+	            return true;
+	        } else {
+	            return false;
+	        }
+	    }
+	    var getSearchSuggestionsOnKeywordSelection = function() {
+	        if ((immediateResultsKeywordsList_keys).indexOf($scope.globalSearchModal.keywordValue) >= 0) {
+	            $scope.globalSearchModal.showDropdown = true;
+	            if ($scope.globalSearchModal.searchTimer1) {
+	                $timeout.cancel($scope.globalSearchModal.searchTimer1);
+	            }
+	            $scope.globalSearchModal.searchTimer1 = $timeout(function() {
+	                searchTimerCompleteForImmediateSearchSugggestions($scope.globalSearchModal.globalSearchStr);
+	            }, $scope.globalSearchModal.pause);
+	        }
+	    }
+	    var clearText = function() {
+	        $scope.globalSearchModal.isKeyword = false;
+	        $scope.globalSearchModal.keywordValue = "";
+	        $scope.globalSearchModal.globalSearchStr = "";
+	    }
+	    var searchTimerCompleteForImmediateSearchSugggestions = function(str) {
+	        if (str != null) {
+	            searchSuggestion(str);
+	        }
+	    }
+	    $scope.globalSearchModal.MoveToState = function(stateName, attr) {
+	        if (attr != undefined && attr != null && attr != '') {
+	            loadState($state, stateName, attr);
+	        } else {
+	            loadState($state, stateName);
+	        }
+	    }
+	});
+         
+    </script>
+    <div id="globalSearchElement" class = "globalSearchElement" ng-keydown = "globalSearchModal.keyDownTabHandler($event)" ng-controller="globalSearchController"
+        ng-init="globalSearchModal.setDefaultData();">
+        <div class="BP-New-Header-Keyword-Container" ng-if="globalSearchModal.isKeyword">
+            <div class="BP-New-Header-keyword" >
+                <span class="" ng-if="globalSearchModal.keywordValue != null && globalSearchModal.keywordValue != undefined && globalSearchModal.keywordValue != ''">{{ globalSearchModal.keywordValue }}:
+                </span>
+                <i ng-include="'{!Application_Images}/Icons/remove-1.svg'" class="BP-New-Header-Remove_Btn blue_008DC1"  
+                    ng-click="globalSearchModal.removeKeyword()" id="removeKeywordBtn" >
+                </i>
+            </div>
+        </div>
+        <a class="close-overlay" ng-mousedown = "globalSearchModal.hideDropDownClickOutSide($event)">&nbsp;</a>
+        <div class="globalSearchWrapperContainer">
+            <input ng-class="{'globalSearchStr': globalSearchModal.calculatePaddingToAdjusInbox(globalSearchModal.isKeyword, globalSearchModal.keywordValue)}" id="globalSearchStrInput" name="search-app"
+                ng-model="globalSearchModal.globalSearchStr" class="search-input" autocomplete="off" ng-change=" globalSearchModal.showKeywordsDropdown();"
+                ng-focus="globalSearchModal.GetIntialdata(); this.placeholder = '';globalSearchModal.showKeywordsDropdown(); globalSearchModal.isGlobalSearchInputFocused = true;"  
+                type="search" placeholder='Search' ng-keyup = "globalSearchModal.keyPressed($event)" ng-paste="globalSearchModal.keyPressed($event)"/>
+            <button tabindex="1" class="search-button"><img src="{!Application_Images}/img/icons/search-icon.svg"/><span hidden="true">Search</span></button>
+            <a href="#" class="close-search" ng-mousedown="globalSearchModal.hideDropDownClickOutSide($event)">X</a>
+        </div>
+        <!-- Start: Div to display dropdown which will show 'No results found' message or global search results, remaining count of search results and keywords  -->  
+        <div id="globalSearchStrInputSuggestions" class="BP_GlobalSearch_angucomplete-dropdown BP-Global-Search-Dropdown"
+            ng-if="globalSearchModal.showDropdown"
+            ng-class="{'PT12': !globalSearchModal.showNoResultsMessage(), 'BP_GlobalSearch_angucomplete-dropdown-top': globalSearchModal.isKeyword}">
+            <!-- Start: Global search results grid -->
+            <table id="globalSearchResultGrid" class="col-xs-12 col-sm-12 col-md-12 col-lg-12 globalSearchResultGrid">
+                <!-- Start: to display global search results -->    
+                <tbody class="">
+                    <tr class="BP_globalSearch_angucomplete-loading-row" ng-if="globalSearchModal.searching">
+                        <td class="BP_GlobalSearch_empty-td-left"></td>
+                        <td class="BP_GlobalSearch_icon-td">
+                            <span class="BP_GlobalSearch_entity-icon-td BP_GlobalSearch_entity-icon-BGGrey BP_GlobalSearch_loading-animated-background">
+                            </span> 
+                        </td>
+                        <td class="BP_GlobalSearch_data-td">
+                            <div class="BP_GlobalSearch_loading-content-div BP_GlobalSearch_loading-animated-background">
+                            </div>
+                        </td>
+                        <td class="BP_GlobalSearch_type-td"></td>
+                        <td class="BP_GlobalSearch_empty-td-right"></td>
+                    </tr>
+                    <tr id="SearchResult_{{$index}}" class="BP_globalSearch_angucomplete-row" 
+                        ng-repeat="result in globalSearchModal.results"
+                        ng-if="globalSearchModal.results && globalSearchModal.results.length > 0"
+                        ng-click="globalSearchModal.selectResult(result)"
+                        ng-class="{'BP_angucomplete-selected-row': $index == globalSearchModal.currentIndex}">
+                        <td class="BP_GlobalSearch_empty-td-left"></td>
+                        <td class="BP_GlobalSearch_icon-td">
+                            <span class="BP_GlobalSearch_entity-icon-td BP_GlobalSearch_entity-icon-BGWhite">
+                                <i ng-if="result.Type == 1" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/customer.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 2" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/vendor.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 3" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/part.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 4" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/kit.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 5" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/fee.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 6" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/labor.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 7" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/user.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 8" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/box-order.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 9" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/invoice.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 10" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/box-order.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 11" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/receiving.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 12" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/invoice.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 13" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/categorie.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 14" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/fee.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 15" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/tax.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 16" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/sublet.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 19" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/financing-product.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 20" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/deal-product.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 21" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/Warranty-product.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 22" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/vendor-return.svg'" >
+                                </i>
+                                <!-- <i ng-if="result.Type == 17" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/payment.svg'" >
+                                    </i> -->
+                                <i ng-if="result.Type == 18" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/car-8.svg'" >
+                                </i>
+                                <i ng-if="result.Type == 23" class="BP_GlobalSearch_entity-icon blue_008DC1 pull-left"
+                                    ng-include="'{!Application_Images}/Icons/user.svg'" >
+                                </i>
+                            </span>
+                        </td>
+                        <td class="BP_GlobalSearch_data-td">
+                            <div class="BP_GlobalSearch_content-div">
+                                <span class="BP_GlobalSearch_content-header">
+                                {{::result.ItemName}}
+                                </span>
+                                <span class="BP_GlobalSearch_content-data">
+                                    <span class="" ng-if="result.AdditionalInfo1 && result.Type != '3'">
+                                        <span class="">{{::result.AdditionalInfoLabel1}}</span>
+                                        <span ng-if="result.AdditionalInfoLabel1 && result.AdditionalInfo1">: </span>
+                                        <span ng-class="{'text-capitalize': result.Type == '8', 'AdditionalInfoLabel': result.Type == '8', 'AdditionalInfo': result.Type != '8'}">{{result.AdditionalInfo1}}</span><!-- class="AdditionalInfo"  -->
+                                    </span>
+                                    <span class="" ng-if="result.AdditionalInfo1 && result.Type == '3'">
+                                        <span class="bp-bold-font">{{result.AdditionalInfo1}}</span><!-- class="AdditionalInfo"  -->
+                                    </span>
+                                    <span ng-if="(result.Type == '8') && result.AdditionalInfo1 && (result.AdditionalInfo2 || result.AdditionalInfo3 || result.AdditionalInfo4)">: </span> <!-- Added By Pooja 20 Jan. 2107 -->
+                                    <span ng-if="(result.Type == '3') && result.AdditionalInfo1 && (result.AdditionalInfo2 || result.AdditionalInfo3 || result.AdditionalInfo4)">- </span>
+                                    <span ng-if="(result.Type != '8' && result.Type != '3') && result.AdditionalInfo1 && (result.AdditionalInfo2 || result.AdditionalInfo3 || result.AdditionalInfo4)">, </span> <!-- ng-if="result.AdditionalInfo1 && result.AdditionalInfo2"->  
+                                        ng-if="(result.Type != '8') && result.AdditionalInfo1 && (result.AdditionalInfo2 || result.AdditionalInfo3 || result.AdditionalInfo4):
+                                         Changed By Pooja 20 Jan. 2107 -->
+                                    <span ng-if="result.AdditionalInfo2 && result.Type != '3'">
+                                    <span class="">{{::result.AdditionalInfoLabel2}}:</span>
+                                    <span ng-if="(result.Type == '1' || result.Type == '2' || result.Type == '7')" class="AdditionalInfo"> {{result.AdditionalInfo2}}</span>
+                                    <span ng-if="!(result.Type == '1' || result.Type == '2' || result.Type == '7')" class="AdditionalInfo"> {{result.AdditionalInfo2}}</span>
+                                    </span>
+                                    <span ng-if="result.AdditionalInfo2 && result.Type == '3'">
+                                    <span class="AdditionalInfo"> {{result.AdditionalInfo2}}</span>
+                                    <span class=""> {{::result.AdditionalInfoLabel2}}</span>
+                                    </span>
+                                    <span ng-if="result.Type != '3' && result.AdditionalInfo2 && (result.AdditionalInfo3 || result.AdditionalInfo4)">, </span>
+                                    <span ng-if="result.Type == '3' && result.AdditionalInfo2 && (result.AdditionalInfo3 || result.AdditionalInfo4)">- </span> 
+                                    <span ng-if="result.AdditionalInfo3 && result.Type != '3'">
+                                    <span class="AdditionalInfoLabel" ng-if="result.AdditionalInfoLabel3 != ''">{{result.AdditionalInfoLabel3}}:</span>
+                                    <span class="AdditionalInfo"> {{::result.AdditionalInfo3}}</span>
+                                    </span>
+                                    <span ng-if="result.AdditionalInfo3 && result.Type == '3'">
+                                    <span class="AdditionalInfo"> {{::result.AdditionalInfo3}}</span>
+                                    </span>
+                                    <span ng-if="result.AdditionalInfo3 && result.AdditionalInfo4">, </span>
+                                    <span ng-if="result.AdditionalInfo4">
+                                    <span class="AdditionalInfoLabel">{{::result.AdditionalInfoLabel4}}:</span>
+                                    <span class="AdditionalInfo"> {{::result.AdditionalInfo4}}</span>
+                                    </span>
+                                </span>
+                            </div>
+                        </td>
+                        <td ng-class="{'table-cell_align-bottom': !result.AdditionalInfo5 && (result.AdditionalInfo1 || result.AdditionalInfo2 || result.AdditionalInfo3 || result.AdditionalInfo4)}"
+                            class="BP_GlobalSearch_type-td">
+                            <div class="BP_GlobalSearch_StatusCotainer">
+                                <span class="text-right text-uppercase BP_GlobalSearch_content-status">
+                                {{::result.AdditionalInfo5}}
+                                </span>
+                                <span class="text-right BP_GlobalSearch_content-type"
+                                    ng-class="{'BP_GlobalSearch_content-type-MB-3': result.AdditionalInfo5, 'BP_GlobalSearch_content-type-MB10': !result.AdditionalInfo5 && (result.AdditionalInfo1 || result.AdditionalInfo2 || result.AdditionalInfo3 || result.AdditionalInfo4)}">
+                                {{::result.ObjectName}}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="BP_GlobalSearch_empty-td-right"></td>
+                    </tr>
+                </tbody>
+                <tbody class="">
+                    <tr id="SearchResult_{{$index}}" class="BP_globalSearch_angucomplete-row" 
+                        ng-repeat="result in ::globalSearchModal.defaultKeywordsList"
+                        ng-if="globalSearchModal.showDefaultDropdown && globalSearchModal.isKeyword == false"
+                        ng-click="globalSearchModal.selectKeyword(result)"
+                        ng-class="{'BP_angucomplete-selected-row': $index == globalSearchModal.currentIndex}">
+                        <td class="BP_GlobalSearch_empty-td-left"></td>
+                        <td class="BP_GlobalSearch_icon-td">
+                            <span class="BP_GlobalSearch_entity-icon-td BP_GlobalSearch_entity-icon-BGBlue">
+                            <i ng-include="'{!Application_Images}/Icons/customer.svg'" ng-if="result == 'Customer'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="result == 'Merchandise'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/box-order.svg'" ng-if="result == 'CO'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            </span> 
+                        </td>
+                        <td class="BP_GlobalSearch_data-td">
+                            <div class="BP_GlobalSearch_content-div">
+                                <span class="BP_GlobalSearch_content-header BP_GlobalSearch_keyword-header">
+                                {{::result}}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="BP_GlobalSearch_type-td"></td>
+                        <td class="BP_GlobalSearch_empty-td-right"></td>
+                    </tr>
+                </tbody>
+                <tbody class="">
+                    <tr id="SearchResult_{{$index}}" class="BP_globalSearch_angucomplete-row" 
+                        ng-repeat="result in globalSearchModal.keywordsList_keys | filter:globalSearchModal.globalSearchStr as filtered"
+                        ng-if="globalSearchModal.showDefaultDropdown  == false && globalSearchModal.isKeyword == false"
+                        ng-click="globalSearchModal.selectKeyword(result)"
+                        ng-class="{'BP_angucomplete-selected-row': globalSearchModal.calculateIndexForFilteredKeyword($index)}">
+                        <td class="BP_GlobalSearch_empty-td-left"></td>
+                        <td class="BP_GlobalSearch_icon-td">
+                            <span class="BP_GlobalSearch_entity-icon-td BP_GlobalSearch_entity-icon-BGBlue">
+                            <i ng-include="'{!Application_Images}/Icons/user.svg'" ng-if="result == 'User'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/user.svg'" ng-if="result == 'Employee'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/customer.svg'" ng-if="result == 'Customer'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/part.svg'" ng-if="result == 'Merchandise' || result == 'Part'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/labor.svg'" 
+                                ng-if="result == 'Labor' || result == 'Labor Code' || result == 'Labour'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/vendor.svg'" ng-if="result == 'Vendor'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/box-order.svg'" ng-if="result == 'CO'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/invoice.svg'" 
+                                ng-if="result == 'CI' || result == 'Customer Invoice'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/box-order.svg'" 
+                                ng-if="result == 'VO' || result == 'PO' || result == 'Vendor Order'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/receiving.svg'" 
+                                ng-if="result == 'VR' || result == 'Vendor Receiving'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/invoice.svg'" 
+                                ng-if="result == 'VI' || result == 'Vendor Invoicing'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/fee.svg'" ng-if="result == 'Fee'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/vendor-product.svg'" ng-if="result == 'Vendor Product'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/tax.svg'" 
+                                ng-if="result == 'Tax' || result == 'Tax Code' || result == 'Tax Rate'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/kit.svg'" 
+                                ng-if="result == 'Kit' || result == 'SKit' || result == 'Service Kit'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/categorie.svg'" ng-if="result == 'Category'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/car-8.svg'" ng-if="result == 'Unit'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/fee.svg'" ng-if="result == 'Price Level'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            <i ng-include="'{!Application_Images}/Icons/vendor-return.svg'" 
+                            	ng-if="result == 'Vendor Return'" 
+                                class="BP_GlobalSearch_entity-icon white">
+                            </i>
+                            </span>
+                        </td>
+                        <td class="BP_GlobalSearch_data-td">
+                            <div class="BP_GlobalSearch_content-div">
+                                <span class="BP_GlobalSearch_content-header BP_GlobalSearch_keyword-header">
+                                {{result}}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="BP_GlobalSearch_type-td"></td>
+                        <td class="BP_GlobalSearch_empty-td-right"></td>
+                    </tr>
+                </tbody>
+                <tbody class="" ng-if="globalSearchModal.showNoResultsMessage()">
+                    <tr class="BP_angucomplete-row-NoResults">
+                        <td class="BP_GlobalSearch_empty-td-left"></td>
+                        <td colspan="4">
+                            <span class="BP_angucomplete-row-NoResults-Msg">No results found</span>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody class="" ng-if="globalSearchModal.totalGlobalSearchRecords > globalSearchModal.maxRecordsToDisplay">
+                    <tr class="BP_angucomplete-row-MoreResults"
+                        ng-class="{'BP_angucomplete-selected-row-MoreResults': globalSearchModal.calculateIndexForShowMoreResults()}"
+                        ng-click="globalSearchModal.NavigateToHomeSearch()">
+                        <td class="BP_GlobalSearch_empty-td-left"></td>
+                        <td colspan="4">
+                            <a class="BP_GlobalSearch_MoreResults-link" ng-click="globalSearchModal.NavigateToHomeSearch()"
+                                ng-class="{'BP_angucomplete-selected-row-link': globalSearchModal.calculateIndexForShowMoreResults()}">
+                            View {{globalSearchModal.totalGlobalSearchRecords - globalSearchModal.maxRecordsToDisplay}} more results
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody class="">
+                    <tr class="BP_angucomplete-row-AdvanceSearch" 
+                        ng-class="{'BP_angucomplete-row-AdvanceSearch-large': !(globalSearchModal.totalGlobalSearchRecords > globalSearchModal.maxRecordsToDisplay) && !globalSearchModal.showNoResultsMessage()}"
+                        ng-click="globalSearchModal.NavigateToHomeSearch()">
+                        <td colspan="5">
+                            <div class="BP_angucomplete-row-AdvanceSearch-div" 
+                                ng-class="{'BP_angucomplete-row-AdvanceSearch-div-large': !(globalSearchModal.totalGlobalSearchRecords > globalSearchModal.maxRecordsToDisplay) && !globalSearchModal.showNoResultsMessage(), 'BP_angucomplete-selected-row-AdvanceSearch': globalSearchModal.calculateIndexForAdvancedSearch()}">
+                                <a class="BP_GlobalSearch_AdvanceSearch-link" ng-click="globalSearchModal.NavigateToHomeSearch()"
+                                    ng-class="{'BP_angucomplete-selected-row-link': globalSearchModal.calculateIndexForAdvancedSearch()}">
+                                Advanced search
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</apex:component>
